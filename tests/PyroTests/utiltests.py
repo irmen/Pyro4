@@ -1,20 +1,19 @@
 import unittest
 
 import Pyro.util
-import sys
 
 def crash(arg=100):
     pre1="black"
     pre2=999
     def nest(p1,p2):
-        s="white"+pre1
-        x=pre2
-        y=arg/2
+        s="white"+pre1 #@UnusedVariable
+        x=pre2 #@UnusedVariable
+        y=arg/2 #@UnusedVariable
         p3=p1/p2
         return p3
     a=10
     b=0
-    s="hello"
+    s="hello" #@UnusedVariable
     c=nest(a,b)
     return c
 

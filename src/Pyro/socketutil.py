@@ -27,7 +27,7 @@ def receiveData(sock, size):
     def receive(sock,size):
         """use optimal receive call to get the data"""
         if hasattr(socket,"MSG_WAITALL"):
-            data=sock.recv(size, socket.MSG_WAITALL)
+            data=sock.recv(size, socket.MSG_WAITALL) #@UndefinedVariable (pydev)
         else:
             msglen=0
             msglist=[]

@@ -65,7 +65,7 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                     ex_tb = ex_tb.tb_next
      
                 f = ex_tb.tb_frame
-                for x in line_number_stack:
+                for _ in line_number_stack:
                     frame_stack.append(f)
                     f = f.f_back
      
