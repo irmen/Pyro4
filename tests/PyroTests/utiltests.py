@@ -52,7 +52,7 @@ class TestUtils(unittest.TestCase):
             crash("stringvalue")
         except Exception,x: 
             setattr(x, Pyro.constants.TRACEBACK_ATTRIBUTE, pyro_tb)
-            pyrotb="".join(Pyro.util.getPyroTraceback(x))
+            pyrotb="".join(Pyro.util.getPyroTraceback())
             self.assertTrue("crash(\"stringvalue\")" in pyrotb)
             self.assertTrue("TypeError:" in pyrotb)
             self.assertTrue("Remote traceback" in pyrotb)

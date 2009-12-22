@@ -3,7 +3,7 @@ import traceback
 import linecache
 import Pyro.constants
 
-def getPyroTraceback(exc_obj):
+def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
     """return a list of strings that form the traceback information of a
     Pyro exception. Any remote Pyro exception information is included.
     Traceback information is automatically obtained via sys.exc_info() if 
@@ -21,9 +21,10 @@ def getPyroTraceback(exc_obj):
         result.append("\n +--- End of remote traceback")
         return result
     try:
-        exc_type, exc_value, exc_trb=sys.exc_info()
-        remote_tb=getattr(exc_obj,Pyro.constants.TRACEBACK_ATTRIBUTE,None)
-        local_tb=formatTraceback(exc_type, exc_value, exc_trb)
+        if ex_type is None and ex_tb is None:
+            ex_type, ex_value, ex_tb=sys.exc_info()
+        remote_tb=getattr(ex_value,Pyro.constants.TRACEBACK_ATTRIBUTE,None)
+        local_tb=formatTraceback(ex_type, ex_value, ex_tb)
         if remote_tb:
             remote_tb=formatRemoteTraceback(remote_tb)
             return local_tb + remote_tb
@@ -32,17 +33,17 @@ def getPyroTraceback(exc_obj):
             return local_tb
     finally:
         # clean up cycle to traceback, to allow proper GC
-        del exc_type, exc_value, exc_trb
+        del ex_type, ex_value, ex_tb
         
 
 
-def formatTraceback(ex_type=None, ex_value=None, tb=None, detailed=False):
+def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
     """format an exception traceback. If you ask for detailed formatting,
     the result will contain info on the variables in each stack frame.
     You don't have to provide the exception info objects, if you omit them,
     this function will obtain them itself using sys.exc_info()."""
-    if ex_type is None and tb is None:
-        ex_type,ex_value,tb=sys.exc_info()
+    if ex_type is None and ex_tb is None:
+        ex_type,ex_value,ex_tb=sys.exc_info()
     if detailed:
         get_line_number = traceback.tb_lineno
     
@@ -52,20 +53,18 @@ def formatTraceback(ex_type=None, ex_value=None, tb=None, detailed=False):
                '-'*50+'\n' ]
      
         try:
-            # Do some manipulation shit of stack
-            if tb != None:
+            if ex_tb != None:
                 frame_stack = []
                 line_number_stack = []
      
-                #tb = sys.exc_info()[2]
                 while 1:
-                    line_num = get_line_number(tb)
+                    line_num = get_line_number(ex_tb)
                     line_number_stack.append(line_num)
-                    if not tb.tb_next:
+                    if not ex_tb.tb_next:
                         break
-                    tb = tb.tb_next
+                    ex_tb = ex_tb.tb_next
      
-                f = tb.tb_frame
+                f = ex_tb.tb_frame
                 for x in line_number_stack:
                     frame_stack.append(f)
                     f = f.f_back
@@ -121,11 +120,11 @@ def formatTraceback(ex_type=None, ex_value=None, tb=None, detailed=False):
             return res
             
         except:
-            return ['-'*50+"\nError building extended traceback!!! :\n",
-                  ''.join(traceback.format_exception(* sys.exc_info() ) ) + '-'*50 + '\n',
-                  'Original Exception follows:\n',
-                  ''.join(traceback.format_exception(ex_type, ex_value, tb)) ]
+            return ["-"*50+"\nError building extended traceback!!! :\n",
+                  "".join(traceback.format_exception(* sys.exc_info() ) ) + '-'*50 + '\n',
+                  "Original Exception follows:\n",
+                  "".join(traceback.format_exception(ex_type, ex_value, ex_tb)) ]
 
     else:
         # default traceback format.
-        return traceback.format_exception(ex_type, ex_value, tb)
+        return traceback.format_exception(ex_type, ex_value, ex_tb)
