@@ -1,7 +1,6 @@
 import re
 from Pyro.errors import NamingError
-
-DEFAULT_PORT=7766
+import Pyro.config
 
 class PyroURI(object):
     """Pyro object URI (universal resource identifier)
@@ -13,7 +12,7 @@ class PyroURI(object):
           ./u:sockname   (unix domain socket on localhost)
     
     MAGIC URI formats:
-      PYRONAME:logicalobjectname
+      PYRONAME:logicalobjectname[@location]  (optional name server location)
       PYROLOC:logicalobjectname@location
         where location is the same as above.
       (these are used to be resolved to a direct PYRO: uri).
@@ -30,41 +29,50 @@ class PyroURI(object):
         self.object=m.group("object")
         location=m.group("location")
         if self.protocol=="PYRONAME":
-            if location:
-                raise NamingError("invalid uri")
+            self._parseLocation(location, Pyro.config.DEFAULT_NS_PORT)
             return
         if self.protocol in ("PYRO","PYROLOC"):
             if not location:
                 raise NamingError("invalid uri")
-            if location.startswith("./p:"):
-                self.pipename=location[4:]
-                if not self.pipename:
-                    raise NamingError("invalid uri (pipe)")
-            elif location.startswith("./u:"):
-                self.sockname=location[4:]
-                if not self.sockname:
-                    raise NamingError("invalid uri (socket)")
-            else:
-                self.host,_,self.port=location.partition(":")
-                if not self.port:
-                    self.port=DEFAULT_PORT
-                else:
-                    try:
-                        self.port=int(self.port)
-                    except ValueError:
-                        raise NamingError("invalid uri (port)")
+            self._parseLocation(location, Pyro.config.DEFAULT_PORT)
         else:
             raise NamingError("invalid uri (protocol)")
-    def __str__(self):
-        if self.protocol=="PYRONAME":
-            return "PYRONAME:"+self.object
+    def _parseLocation(self,location,defaultPort):
+        if not location:
+            return
+        if location.startswith("./p:"):
+            self.pipename=location[4:]
+            if not self.pipename:
+                raise NamingError("invalid uri (location)")
+        elif location.startswith("./u:"):
+            self.sockname=location[4:]
+            if not self.sockname:
+                raise NamingError("invalid uri (location)")
+        else:
+            self.host,_,self.port=location.partition(":")
+            if not self.port:
+                self.port=defaultPort
+            else:
+                try:
+                    self.port=int(self.port)
+                except ValueError:
+                    raise NamingError("invalid uri (port)")        
+    @property
+    def location(self):
         if self.host:
-            location="%s:%d" % (self.host, self.port)
+            return "%s:%d" % (self.host, self.port)
         elif self.sockname:
-            location="./u:"+self.sockname
+            return "./u:"+self.sockname
         elif self.pipename:
-            location="./p:"+self.pipename
-        return self.protocol+":"+self.object+"@"+location
+            return "./p:"+self.pipename
+        else:
+            return None
+    def __str__(self):
+        s=self.protocol+":"+self.object
+        location=self.location
+        if location:
+            s+="@"+location
+        return s
     def __repr__(self):
         return "<PyroURI "+str(self)+">"
     def __getstate__(self):
@@ -74,3 +82,23 @@ class PyroURI(object):
     def __eq__(self,other):
         return (self.protocol, self.object, self.pipename, self.sockname, self.host, self.port) \
                 == (other.protocol, other.object, other.pipename, other.sockname, other.host, other.port)
+
+
+
+class Proxy(object):
+    """Pyro proxy for a remote object."""
+    def __init__(self, uri):
+        if isinstance(uri, basestring):
+            uri=Pyro.core.PyroURI(uri)
+        elif not isinstance(uri, Pyro.core.PyroURI):
+            raise TypeError("expected Pyro URI")
+        self._pyroUri=uri
+        self._pyroObjectId=uri.object
+    def resolve(self, localobjectname):
+        # @todo: this shouldn't be a static method, but called remotely
+        # this stubs the resolve method on a pyro daemon
+        resolved=Pyro.core.PyroURI(self._pyroUri)
+        resolved.protocol="PYRO"
+        resolved.object="999999999999"
+        return resolved
+
