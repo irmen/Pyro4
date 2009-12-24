@@ -3,15 +3,9 @@ import socket
 import Pyro.socketutil as SU
 
 class TestSocketutil(unittest.TestCase):
-    def testHostname(self):
-        full=SU.getHostname(True)
-        short=SU.getHostname(False)
-        self.assertFalse('.' in short)
-        self.assertTrue('.' in full)
-        self.assertTrue(full.startswith(short))
     def testGetIP(self):
         localip=SU.getIpAddress()
-        localhost=SU.getHostname(ip=localip)
+        localhost=socket.getfqdn(localip)
         self.assertEqual(localip,SU.getIpAddress(localhost))
     def testSend(self):
         ss=SU.createSocket(bind=('localhost',9999))

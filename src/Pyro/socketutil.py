@@ -5,16 +5,9 @@ import errno
 from Pyro.errors import ConnectionClosedError, TimeoutError
 
 
-def getHostname(full=False, ip=None):
-    """obtain the hostname or fully qualified name of the current, or another, machine""" 
-    if full or ip:
-        return socket.getfqdn(ip or "")
-    else:
-        return socket.gethostname()
-
 def getIpAddress(hostname=None):
     """returns the IP address for the current, or another, hostname"""
-    return socket.gethostbyname(hostname or getHostname())
+    return socket.gethostbyname(hostname or socket.gethostname())
 
 def receiveData(sock, size):
     """Retrieve a given number of bytes from a socket.

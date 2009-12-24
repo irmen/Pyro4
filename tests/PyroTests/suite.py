@@ -4,7 +4,7 @@ sys.path.insert(0,"../../src")
 
 
 # add test modules here
-modules=["sockettests", "utiltests"]
+modules=["sockettests", "utiltests", "coretests"]
 
 print >>sys.stderr, "gathering testcases from",modules
 
