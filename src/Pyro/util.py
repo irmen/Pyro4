@@ -1,7 +1,10 @@
 import sys
 import traceback
 import linecache
+import logging
 import Pyro.constants
+
+log=logging.getLogger("Pyro.util")
 
 def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
     """return a list of strings that form the traceback information of a

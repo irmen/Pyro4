@@ -2,7 +2,10 @@
 
 import socket
 import errno
+import logging
 from Pyro.errors import ConnectionClosedError, TimeoutError
+
+log=logging.getLogger("Pyro.socketutil")
 
 
 def getIpAddress(hostname=None):
@@ -14,7 +17,7 @@ def receiveData(sock, size):
     It is expected the socket is able to supply that number of bytes.
     If it isn't, an exception is raised (you will not get a zero length result
     or a result that is smaller than what you asked for). The partial data that
-    has been received however is stored in the 'partialMsg' attribute of
+    has been received however is stored in the 'partialData' attribute of
     the exception object."""
 
     def receive(sock,size):
@@ -33,7 +36,7 @@ def receiveData(sock, size):
             data="".join(msglist)
         if len(data)!=size:
             err=ConnectionClosedError("receiving: not enough data")
-            err.partialMsg=data  # store the message that was received until now
+            err.partialData=data  # store the message that was received until now
             raise err
         return data
     

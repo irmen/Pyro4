@@ -6,15 +6,19 @@ class NSLookupTests(unittest.TestCase):
 
     def testLookup(self):
         self.assertRaises(NotImplementedError, Pyro.naming.NameServer.locate)
-        uri=Pyro.naming.NameServer.locate("host.com")
+        ns=Pyro.naming.NameServer.locate("host.com")
+        self.assertTrue(isinstance(ns, Pyro.core.Proxy))
+        uri=ns._pyroUri
         self.assertEqual("PYRO",uri.protocol)
         self.assertEqual("host.com",uri.host)
         self.assertEqual(Pyro.config.DEFAULT_NS_PORT,uri.port)
-        uri=Pyro.naming.NameServer.locate("host.com:9999")
+        ns=Pyro.naming.NameServer.locate("host.com:9999")
+        uri=ns._pyroUri
         self.assertEqual("PYRO",uri.protocol)
         self.assertEqual("host.com",uri.host)
         self.assertEqual(9999,uri.port)
-        uri=Pyro.naming.NameServer.locate("./p:pipename")
+        ns=Pyro.naming.NameServer.locate("./p:pipename")
+        uri=ns._pyroUri
         self.assertEqual("PYRO",uri.protocol)
         self.assertEqual("pipename",uri.pipename)
 
@@ -33,7 +37,6 @@ class NSLookupTests(unittest.TestCase):
         self.assertEqual("host.com",uri.host)
         self.assertNotEqual("objectname",uri.object)
         self.assertRaises(NotImplementedError, Pyro.naming.resolve, "PYRONAME:objectname" )
-        
         # test with wrong argument type
         self.assertRaises(TypeError, Pyro.naming.resolve, 999)
 

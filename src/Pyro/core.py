@@ -1,6 +1,9 @@
 import re
+import logging
 from Pyro.errors import NamingError
 import Pyro.config
+
+log=logging.getLogger("Pyro.core")
 
 class PyroURI(object):
     """Pyro object URI (universal resource identifier)
@@ -96,7 +99,8 @@ class Proxy(object):
         self._pyroObjectId=uri.object
     def resolve(self, localobjectname):
         # @todo: this shouldn't be a static method, but called remotely
-        # this stubs the resolve method on a pyro daemon
+        # this stubs the resolve method on a pyro daemon / resolve method on name server
+        log.info("temp stub Proxy.resolve "+str(localobjectname))
         resolved=Pyro.core.PyroURI(self._pyroUri)
         resolved.protocol="PYRO"
         resolved.object="999999999999"
