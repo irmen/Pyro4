@@ -1,3 +1,5 @@
+"""Miscellaneous utilities."""
+
 import sys
 import traceback
 import linecache

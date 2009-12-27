@@ -108,7 +108,8 @@ class SocketConnection(object):
     def recv(self, size):
         return receiveData(self.sock, size)
     def close(self):
-        self.sock.close()
+        if self.sock:
+            self.sock.close()
         self.sock=None
     def fileno(self):
         return self.sock.fileno()
@@ -120,12 +121,14 @@ class SocketServer(object):
         self.sock=createSocket(bind=(host,port))
         self.clients=[]
         self.callback=callbackObject
-        self.locationStr="%s:%d" % self.sock.getsockname()
-    def requestLoop(self):
+        if not host:
+            host=self.sock.getsockname()[0]
+        self.locationStr="%s:%d" % (host,port)
+    def requestLoop(self, loopCondition=lambda:True):
         if poll:
             raise NotImplementedError("poll loop not yet implemented")
         else:
-            while True:
+            while loopCondition():
                 rlist=self.clients[:]
                 rlist.append(self.sock)
                 rlist,wlist,elist=select.select(rlist, [], [], 1)
@@ -153,8 +156,9 @@ class SocketServer(object):
             csock.close()
 
     def close(self): 
-        self.sock.close()
+        if self.sock:
+            self.sock.close()
         self.sock=None
         for c in self.clients:
             c.close()
-        del self.callback
+        self.callback=None

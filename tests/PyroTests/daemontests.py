@@ -6,19 +6,23 @@ from Pyro.errors import *
 
 class DaemonTests(unittest.TestCase):
 
+    def setUp(self):
+        self.daemon=Pyro.core.Daemon()
+    def tearDown(self):
+        self.daemon.close()
+        
     def testDaemon(self):
-        d=Pyro.core.Daemon()
-        self.assertEqual( ("127.0.0.1",Pyro.config.DEFAULT_PORT), d.location)
+        d=self.daemon
+        self.assertEqual( "localhost:"+str(Pyro.config.DEFAULT_PORT), d.locationStr)
         self.assertTrue(d._pyroUri is None)
         self.assertTrue(d._pyroObjectId, Pyro.constants.INTERNAL_DAEMON_GUID)
         self.assertTrue(Pyro.constants.INTERNAL_DAEMON_GUID in d.objectsById)
         self.assertTrue(Pyro.constants.DAEMON_NAME in d.objectsByName)
         self.assertEqual(d.resolve(Pyro.constants.DAEMON_NAME).object, Pyro.constants.INTERNAL_DAEMON_GUID)
-        self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@127.0.0.1:7766", str(d.uriFor(d)))
-        d.close()
+        self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@localhost:7766", str(d.uriFor(d)))
         
     def testRegister(self):
-        d=Pyro.core.Daemon()
+        d=self.daemon
         self.assertEquals(1, len(d.objectsById))
         self.assertEquals(1, len(d.registeredObjects()))
         
@@ -48,7 +52,6 @@ class DaemonTests(unittest.TestCase):
         self.assertTrue(o1._pyroObjectId not in d.objectsById)
         self.assertTrue(o2._pyroObjectId not in d.objectsById)
         
-        d.close()
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

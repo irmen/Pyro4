@@ -34,17 +34,19 @@ class TestSocketServer(unittest.TestCase):
     def testServer(self):
         callback=ServerCallback()
         serv=SU.SocketServer(callback,"localhost",15555)
-        self.assertEqual("127.0.0.1:15555", serv.locationStr)
+        self.assertEqual("localhost:15555", serv.locationStr)
         self.assertTrue(serv.sock is not None)
         self.assertEqual(serv.callback, callback)
         conn=SU.SocketConnection(serv.sock, "12345")
         self.assertEqual("12345",conn.objectId)
         self.assertTrue(conn.sock is not None)
         conn.close()
+        conn.close()
         self.assertTrue(conn.sock is None)
         serv.close()
+        serv.close()
         self.assertTrue(serv.sock is None)
-        self.assertFalse(hasattr(serv,"callback"))
+        self.assertTrue(serv.callback is None)
         
 
 if __name__ == "__main__":

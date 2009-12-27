@@ -1,14 +1,18 @@
+"""
+Core Pyro logic (uri, daemon, objbase, proxy stuff).
+"""
+
 import re
 import logging
 import struct
 import uuid
+import threading
 from Pyro.errors import *
 import Pyro.config
 import Pyro.socketutil
 import Pyro.util
-import Pyro.naming
 
-__all__=["PyroURI"]
+__all__=["PyroURI", "ObjBase", "Proxy", "Daemon"]
 
 log=logging.getLogger("Pyro.core")
 
@@ -84,7 +88,7 @@ class PyroURI(object):
             s+="@"+location
         return s
     def __repr__(self):
-        return "<PyroURI "+str(self)+">"
+        return "<PyroURI '"+str(self)+"'>"
     def __getstate__(self):
         return (self.protocol, self.object, self.pipename, self.sockname, self.host, self.port)
     def __setstate__(self,state):
@@ -95,16 +99,14 @@ class PyroURI(object):
 
 
 class ObjBase(object):
+    """The object base class for Pyro remote objects"""
     def __init__(self):
         self._pyroObjectId=str(uuid.uuid4())
         self._pyroUri=None
 
 
 class _RemoteMethod(object):
-    # method call abstraction, adapted from Python's xmlrpclib
-    # it would be rather easy to add nested method calls, but
-    # that is not compatible with the way that Pyro's method
-    # calls are defined to work ( no nested calls ) 
+    """method call abstraction, adapted from Python's xmlrpclib, but without nested calls at the moment"""
     def __init__(self, send, name):
         self.__send = send
         self.__name = name
@@ -112,10 +114,8 @@ class _RemoteMethod(object):
         return self.__send(self.__name, args, kwargs)
 
 
-
-
 class Proxy(object):
-    """Pyro proxy for a remote object."""
+    """Pyro proxy for a remote object. Intercepts method calls and dispatches them to the remote object."""
     def __init__(self, uri):
         if isinstance(uri, basestring):
             uri=Pyro.core.PyroURI(uri)
@@ -128,6 +128,10 @@ class Proxy(object):
         if name in ("__getnewargs__","__getinitargs__"):        # allows it to be safely pickled
             raise AttributeError()
         return _RemoteMethod(self._pyroInvoke, name)
+    def __repr__(self):
+        return "<Pyro Proxy for "+str(self._pyroUri)+">"
+    def __str__(self):
+        return repr(self)
     def _pyroRelease(self):
         if self._pyroConnection:
             self._pyroConnection.close()
@@ -179,10 +183,11 @@ class Proxy(object):
                     conn.close()
                     raise ProtocolError("invalid msg type %d received" % msgType)
         else:
-            raise NotImplemented("non-socket uri connections not yet implemented")
+            raise NotImplementedError("non-socket uri connections not yet implemented")
 
 
 class MessageFactory(object):
+    """internal helper class to construct Pyro protocol messages"""
     headerFmt = '!4sHHHi'    # header (id, version, msgtype, flags, dataLen)
     version=40
     HEADERSIZE=struct.calcsize(headerFmt)
@@ -214,30 +219,37 @@ class MessageFactory(object):
             raise ProtocolError("unknown message type %d" % msgType)
         return msgType,flags,dataLen
 
-
-
     
 
 class Daemon(ObjBase):
     """Pyro daemon. Contains server side logic and dispatches incoming remote method
     calls to the appropriate objects."""
-    def __init__(self, transportServer=None, socketAddress=None):
+    def __init__(self, socketAddress=None):
         super(Daemon,self).__init__()
-        if transportServer:
-            self.transportServer=transportServer
-        else:
-            if socketAddress:
-                self.transportServer=Pyro.socketutil.SocketServer(self, socketAddress[0], socketAddress[1])
-            else:
-                self.transportServer=Pyro.socketutil.SocketServer(self, "localhost", Pyro.config.DEFAULT_PORT)
-            self.location=self.transportServer.sock.getsockname() 
+        if not socketAddress:
+            socketAddress=("localhost",Pyro.config.DEFAULT_PORT)
+        self.transportServer=Pyro.socketutil.SocketServer(self, socketAddress[0], socketAddress[1])
+        self.locationStr=self.transportServer.locationStr 
         self.serializer=Pyro.util.Serializer()
         self._pyroObjectId=Pyro.constants.INTERNAL_DAEMON_GUID
         self.objectsById={self._pyroObjectId: (Pyro.constants.DAEMON_NAME, self)}
         self.objectsByName={Pyro.constants.DAEMON_NAME: self._pyroObjectId}
+        self.mustshutdown=False
+        self.loopstopped=threading.Event()
+        self.loopstopped.set()
     def requestLoop(self):
-        self.transportServer.requestLoop()
+        self.mustshutdown=False
+        try:
+            self.loopstopped.clear()
+            self.transportServer.requestLoop(loopCondition=lambda: not self.mustshutdown)
+        finally:
+            self.loopstopped.set()
+    def shutdown(self):
+        self.mustshutdown=True
+        self.loopstopped.wait()
+        self.close()
     def handshake(self, conn):
+        """perform connection handshake with new clients"""
         header=conn.recv(MessageFactory.HEADERSIZE)
         msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
         if msgType!=MessageFactory.MSG_CONNECT:
@@ -248,24 +260,23 @@ class Daemon(ObjBase):
         conn.send(msg)
         return True
     def handleRequest(self, conn):
+        """handle incoming Pyro request"""
         header=conn.recv(MessageFactory.HEADERSIZE)
         msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
         if msgType!=MessageFactory.MSG_INVOKE:
             raise ProtocolError("invalid msg type %d received" % msgType)
-        data=self.serializer.deserialize(conn.recv(dataLen))
-        data=self.invoke(data)
+        data=conn.recv(dataLen)
+        objId, method, vargs, kwargs=self.serializer.deserialize(data)
+        log.info("remote invocation for %s method %s" % (objId,method))
+        obj=self.objectsById.get(objId)
+        if obj is not None:
+            data=getattr(obj[1], method) (*vargs,**kwargs)   # this is the actual method call
+        else:
+            raise PyroError("unknown object")
         data=self.serializer.serialize(data)
         msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, 0)
         del data
         conn.send(msg)
-    def invoke(self, data):
-        objId, method, vargs, kwargs=data
-        log.info("remote invocation for %s method %s" % (objId,method))
-        obj=self.objectsById.get(objId)
-        if obj is not None:
-            return getattr(obj[1], method) (*vargs,**kwargs)
-        else:
-            raise PyroError("unknown object")
     def close(self):
         self.transportServer.close()
     def register(self, object, name=None):
@@ -300,4 +311,6 @@ class Daemon(ObjBase):
             raise NamingError("unknown object")
     def registeredObjects(self):
         return self.objectsByName
+    def __str__(self):
+        return "<Pyro Daemon on "+self.locationStr+">"
 

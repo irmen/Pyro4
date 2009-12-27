@@ -1,4 +1,6 @@
-
+"""
+Pyro exceptions.
+"""
 class PyroError(Exception): pass
 
 class CommunicationError(PyroError): pass

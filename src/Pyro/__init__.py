@@ -1,3 +1,6 @@
+# Pyro package.
+# Contains some generic init stuff.
+
 import logging
 
 logging.basicConfig()   # @todo: more sophisticated logging init

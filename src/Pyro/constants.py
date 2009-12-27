@@ -1,3 +1,7 @@
+"""
+Fixed Pyro constants.
+"""
+
 # Pyro version
 VERSION = '4.0-svn'
 
