@@ -16,6 +16,7 @@ class NameServer(Pyro.core.ObjBase):
     def __init__(self):
         super(NameServer,self).__init__()
         self.namespace={}
+        log.info("nameserver initialized")
     def lookup(self,arg):
         return self.namespace[arg]
     def register(self,name,uri):
@@ -36,7 +37,8 @@ class NameServerDaemon(Pyro.core.Daemon):
         self.ns=NameServer()
         self.register(self.ns, Pyro.constants.NAMESERVER_NAME)
         self.ns.register(Pyro.constants.NAMESERVER_NAME, self.uriFor(self.ns))
-       
+        log.info("nameserver daemon running on %s",self.locationStr)
+
 
 def startNS(socketAddress=None):
     if not socketAddress:
@@ -44,7 +46,7 @@ def startNS(socketAddress=None):
     daemon=NameServerDaemon(socketAddress)
     try:
         print "NS running on",daemon.locationStr
-        print "URI=",daemon.uriFor(daemon.ns)
+        print "URI =",daemon.uriFor(daemon.ns)
         daemon.requestLoop()
     finally:
         daemon.close()

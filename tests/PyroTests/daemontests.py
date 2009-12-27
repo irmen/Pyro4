@@ -17,8 +17,8 @@ class DaemonTests(unittest.TestCase):
         self.assertTrue(d._pyroUri is None)
         self.assertTrue(d._pyroObjectId, Pyro.constants.INTERNAL_DAEMON_GUID)
         self.assertTrue(Pyro.constants.INTERNAL_DAEMON_GUID in d.objectsById)
-        self.assertTrue(Pyro.constants.DAEMON_NAME in d.objectsByName)
-        self.assertEqual(d.resolve(Pyro.constants.DAEMON_NAME).object, Pyro.constants.INTERNAL_DAEMON_GUID)
+        self.assertTrue(Pyro.constants.DAEMON_LOCALNAME in d.objectsByName)
+        self.assertEqual(d.resolve(Pyro.constants.DAEMON_LOCALNAME).object, Pyro.constants.INTERNAL_DAEMON_GUID)
         self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@localhost:7766", str(d.uriFor(d)))
         
     def testRegister(self):

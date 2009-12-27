@@ -87,14 +87,14 @@ def setReuseAddr(sock):
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,
             sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR) | 1)
     except:
-        pass
+        log.info("cannot set SO_REUSEADDR")
 
 def setKeepalive(sock):
     """sets the SO_KEEPALIVE option on the socket."""
     try:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     except:
-        pass
+        log.info("cannot set SO_KEEPALIVE")
 
 
 class SocketConnection(object):
@@ -145,11 +145,10 @@ class SocketServer(object):
 
     def handleConnection(self, sock):
         csock, caddr=sock.accept()
-        log.debug("connection from %s",caddr)
+        log.debug("new connection from %s",caddr)
         try:
             conn=SocketConnection(csock)
             if self.callback.handshake(conn):
-                log.debug("handshake ok, adding to connection list %s",caddr)
                 self.clients.append(conn)
         except (socket.error, PyroError), x:
             log.warn("error during connect: %s",x)

@@ -86,7 +86,6 @@ class NSLookupTests(unittest.TestCase):
         #this will crash the server for now
         #ns.lookup("unknown_object")
         
-        print ns.list()
         uri=ns.lookup("test.object3")
         self.assertEqual(Pyro.core.PyroURI("PYRO:333333@host.com"), uri)
         ns.remove("unknown_object")

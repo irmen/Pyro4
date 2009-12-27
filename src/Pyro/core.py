@@ -137,11 +137,9 @@ class Proxy(object):
             self._pyroConnection.close()
             self._pyroConnection=None
     def _pyroInvoke(self, methodname, vargs, kwargs):
-        log.debug("invoke method %s", methodname)
         if not self._pyroConnection:
             # rebind here, don't do it from inside the invoke because deadlock will occur
             self._pyroCreateConnection()
-            log.debug("connected to %s",self._pyroUri)
         data=self._pyroSerializer.serialize( (self._pyroConnection.objectId,methodname,vargs,kwargs) )
         data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, 0)
         self._pyroConnection.send(data)
@@ -177,8 +175,8 @@ class Proxy(object):
                     conn.close()
                     raise CommunicationError(error)
                 elif msgType==MessageFactory.MSG_CONNECTOK:
-                    log.info("connected")
                     self._pyroConnection=conn
+                    log.debug("connected to %s",self._pyroUri)
                 else:
                     conn.close()
                     raise ProtocolError("invalid msg type %d received" % msgType)
@@ -232,22 +230,26 @@ class Daemon(ObjBase):
         self.locationStr=self.transportServer.locationStr 
         self.serializer=Pyro.util.Serializer()
         self._pyroObjectId=Pyro.constants.INTERNAL_DAEMON_GUID
-        self.objectsById={self._pyroObjectId: (Pyro.constants.DAEMON_NAME, self)}
-        self.objectsByName={Pyro.constants.DAEMON_NAME: self._pyroObjectId}
+        self.objectsById={self._pyroObjectId: (Pyro.constants.DAEMON_LOCALNAME, self)}
+        self.objectsByName={Pyro.constants.DAEMON_LOCALNAME: self._pyroObjectId}
         self.mustshutdown=False
         self.loopstopped=threading.Event()
         self.loopstopped.set()
     def requestLoop(self):
         self.mustshutdown=False
+        log.info("daemon %s entering requestloop", self.locationStr)
         try:
             self.loopstopped.clear()
             self.transportServer.requestLoop(loopCondition=lambda: not self.mustshutdown)
         finally:
             self.loopstopped.set()
+        log.debug("daemon exits requestloop")
     def shutdown(self):
+        log.debug("daemon shutting down")
         self.mustshutdown=True
         self.loopstopped.wait()
         self.close()
+        log.info("daemon shut down")
     def handshake(self, conn):
         """perform connection handshake with new clients"""
         header=conn.recv(MessageFactory.HEADERSIZE)
@@ -267,7 +269,6 @@ class Daemon(ObjBase):
             raise ProtocolError("invalid msg type %d received" % msgType)
         data=conn.recv(dataLen)
         objId, method, vargs, kwargs=self.serializer.deserialize(data)
-        log.info("remote invocation for %s method %s" % (objId,method))
         obj=self.objectsById.get(objId)
         if obj is not None:
             data=getattr(obj[1], method) (*vargs,**kwargs)   # this is the actual method call
@@ -286,7 +287,7 @@ class Daemon(ObjBase):
         if name:
             self.objectsByName[name]=object._pyroObjectId
     def unregister(self, objectIdOrName):
-        if objectIdOrName in (Pyro.constants.INTERNAL_DAEMON_GUID, Pyro.constants.DAEMON_NAME):
+        if objectIdOrName in (Pyro.constants.INTERNAL_DAEMON_GUID, Pyro.constants.DAEMON_LOCALNAME):
             return
         obj=self.objectsById.get(objectIdOrName)
         if obj:
@@ -303,7 +304,6 @@ class Daemon(ObjBase):
             obj=obj._pyroObjectId
         return PyroURI("PYRO:"+obj+"@"+self.transportServer.locationStr)
     def resolve(self, objectName):
-        log.debug("daemon.resolve "+objectName)
         obj=self.objectsByName.get(objectName)
         if obj:
             return self.uriFor(obj)

@@ -3,7 +3,14 @@
 
 import logging
 
-logging.basicConfig()   # @todo: more sophisticated logging init
-logging.root.setLevel(logging.DEBUG)
-log=logging.getLogger("Pyro")
-log.warn("Pyro log needs better config init")
+if len(logging.root.handlers)==0:
+    # configure the logging with some sensible defaults.
+    logging.basicConfig(
+        level=logging.DEBUG,
+        filename="pyro.log",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        format="[%(asctime)s.%(msecs)03d,%(name)s,%(levelname)s] %(message)s"
+        )
+    log=logging.getLogger("Pyro")
+    log.info("Pyro log configured using built-in defaults")
+
