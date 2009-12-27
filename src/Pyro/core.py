@@ -98,9 +98,6 @@ class ObjBase(object):
     def __init__(self):
         self._pyroObjectId=str(uuid.uuid4())
         self._pyroUri=None
-        print "OBJBASE::INIT"
-    def init(self):
-        print "OBJBASE::INIT2"
 
 
 class _RemoteMethod(object):
