@@ -131,3 +131,18 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
     else:
         # default traceback format.
         return traceback.format_exception(ex_type, ex_value, ex_tb)
+
+
+class Serializer(object):
+    """(de)serializer that wraps a certain serialization protocol.
+    Currently it only supports standard pickle."""
+    try:
+        import cPickle as pickle
+    except ImportError:
+        import pickle
+    def __init__(self, pickleProtocol=None):
+        self.pickleProtocol=pickleProtocol if pickleProtocol is not None else self.pickle.HIGHEST_PROTOCOL
+    def serialize(self, data):
+        return self.pickle.dumps(data, self.pickleProtocol)
+    def deserialize(self, data):
+        return self.pickle.loads(data)

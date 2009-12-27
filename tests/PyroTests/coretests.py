@@ -1,7 +1,16 @@
 import unittest
 
+import Pyro.util
 import Pyro.core
 import Pyro.config
+import Pyro.errors
+
+class Thing(Pyro.core.ObjBase):
+    def __init__(self, arg):
+        super(Thing,self).__init__()
+        self.arg=arg
+    def __eq__(self,other):
+        return self.arg==other.arg and self._pyroObjectId==other._pyroObjectId
 
 class CoreTests(unittest.TestCase):
 
@@ -69,14 +78,41 @@ class CoreTests(unittest.TestCase):
         self.assertNotEqual(p1,p2)
         self.assertEqual(p2,p3)
 
-    def testUriPickle(self):
-        import pickle
-        p=Pyro.core.PyroURI("PYRO:12345@host.com:9999")
-        q=pickle.dumps(p, pickle.HIGHEST_PROTOCOL)
-        p2=pickle.loads(q)
-        self.assertEqual(p2,p)
+    def testMsgFactory(self):
+        MF=Pyro.core.MessageFactory
+        self.assertRaises(Pyro.errors.ProtocolError, MF.createMessage, 99, None)
+        self.assertRaises(Pyro.errors.ProtocolError, MF.parseMessageHeader, "FOOBAR")
+        hdr=MF.createMessage(MF.MSG_CONNECT, "hello")[:-5]
+        msgType,flags,dataLen=MF.parseMessageHeader(hdr)
+        self.assertEqual(MF.MSG_CONNECT, msgType)
+        self.assertEqual(0, flags)
+        self.assertEqual(5, dataLen)
+        hdr=MF.createMessage(MF.MSG_RESULT, None)
+        msgType,flags,dataLen=MF.parseMessageHeader(hdr)
+        self.assertEqual(MF.MSG_RESULT, msgType)
+        self.assertEqual(0, flags)
+        self.assertEqual(0, dataLen)
+        hdr=MF.createMessage(MF.MSG_RESULT, "hello", 42)[:-5]
+        msgType,flags,dataLen=MF.parseMessageHeader(hdr)
+        self.assertEqual(MF.MSG_RESULT, msgType)
+        self.assertEqual(42, flags)
+        self.assertEqual(5, dataLen)
 
+    def testSerializability(self):
+        ser=Pyro.util.Serializer()
+        uri=Pyro.core.PyroURI("PYRO:9999@host.com:4444")
+        p=ser.serialize(uri)
+        uri2=ser.deserialize(p)
+        self.assertEqual(uri, uri2)
+        
+        thing=Thing(42)
+        self.assertTrue(thing._pyroObjectId is not None)
+        p=ser.serialize(thing)
+        thing2=ser.deserialize(p)
+        self.assertEquals(thing2,thing)
+        self.assertEqual(thing2._pyroObjectId, thing._pyroObjectId)
 
+        
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

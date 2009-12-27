@@ -3,7 +3,12 @@
 import socket
 import errno
 import logging
-from Pyro.errors import ConnectionClosedError, TimeoutError
+try:
+    import poll
+except ImportError:
+    poll=None
+    import select
+from Pyro.errors import ConnectionClosedError, TimeoutError, PyroError
 
 log=logging.getLogger("Pyro.socketutil")
 
@@ -90,3 +95,66 @@ def setKeepalive(sock):
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     except:
         pass
+
+
+class SocketConnection(object):
+    """A connection wrapper for sockets"""
+    __slots__=["sock","objectId"]
+    def __init__(self, sock, objectId=None):
+        self.sock=sock
+        self.objectId=objectId
+    def send(self, data):
+        sendData(self.sock, data)
+    def recv(self, size):
+        return receiveData(self.sock, size)
+    def close(self):
+        self.sock.close()
+        self.sock=None
+    def fileno(self):
+        return self.sock.fileno()
+
+
+class SocketServer(object):
+    """transport server for socket connections"""
+    def __init__(self, callbackObject, host, port):
+        self.sock=createSocket(bind=(host,port))
+        self.clients=[]
+        self.callback=callbackObject
+        self.locationStr="%s:%d" % self.sock.getsockname()
+    def requestLoop(self):
+        if poll:
+            raise NotImplementedError("poll loop not yet implemented")
+        else:
+            while True:
+                rlist=self.clients[:]
+                rlist.append(self.sock)
+                rlist,wlist,elist=select.select(rlist, [], [], 1)
+                if self.sock in rlist:
+                    rlist.remove(self.sock)
+                    self.handleConnection(self.sock)
+                for sock in rlist:
+                    try:
+                        self.callback.handleRequest(sock)
+                    except (socket.error, PyroError), x:
+                        log.warn("dropping connection because of error: %s" % x)
+                        sock.close()
+                        self.clients.remove(sock)
+
+    def handleConnection(self, sock):
+        csock, caddr=sock.accept()
+        log.debug("connection from %s",caddr)
+        try:
+            conn=SocketConnection(csock)
+            if self.callback.handshake(conn):
+                log.debug("handshake ok, adding to connection list %s",caddr)
+                self.clients.append(conn)
+        except (socket.error, PyroError), x:
+            log.warn("error during connect: %s",x)
+            csock.close()
+
+    def close(self): 
+        self.sock.close()
+        self.sock=None
+        for c in self.clients:
+            c.close()
+        del self.callback

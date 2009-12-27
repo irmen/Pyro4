@@ -36,6 +36,8 @@ def resolve(uri):
         uri=Pyro.core.PyroURI(uri)
     elif not isinstance(uri, Pyro.core.PyroURI):
         raise TypeError("can only resolve Pyro URIs")
+    if uri.protocol=="PYRO":
+        return uri
     log.debug("resolving %s",uri)
     if uri.protocol=="PYROLOC":
         daemonuri=Pyro.core.PyroURI(uri)
@@ -43,9 +45,9 @@ def resolve(uri):
         daemonuri.object=Pyro.constants.INTERNAL_DAEMON_GUID
         daemon=Pyro.core.Proxy(daemonuri)
         return daemon.resolve(uri.object)
-    if uri.protocol=="PYRONAME":
+    elif uri.protocol=="PYRONAME":
         ns=NameServer.locate(uri.location)
         return ns.resolve(uri)
     else:
-        return uri  # uri is already a direct PYRO reference
+        raise PyroError("invalid uri protocol")
             

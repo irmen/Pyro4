@@ -56,8 +56,14 @@ class TestUtils(unittest.TestCase):
             self.assertTrue("TypeError:" in pyrotb)
             self.assertTrue("Remote traceback" in pyrotb)
             self.assertTrue("ZeroDivisionError" in pyrotb)
-            
-   
+
+    def testSerialize(self):
+        ser=Pyro.util.Serializer()
+        before=(42, ["a","b","c"], {"henry": 998877, "suzie": 776655})
+        pickle=ser.serialize(before)
+        after=ser.deserialize(pickle)
+        self.assertEqual(before,after)
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

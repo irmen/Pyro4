@@ -20,6 +20,31 @@ class TestSocketutil(unittest.TestCase):
         a[0].close()
         ss.close()
         cs.close()
+
+
+class ServerCallback(object):
+    def handshake(self, connection):
+        if not isinstance(connection, SU.SocketConnection):
+            raise TypeError("handshake expected SocketConnection parameter")
+    def handleRequest(self, connection):
+        if not isinstance(connection, SU.SocketConnection):
+            raise TypeError("handleRequest expected SocketConnection parameter")
+
+class TestSocketServer(unittest.TestCase):
+    def testServer(self):
+        callback=ServerCallback()
+        serv=SU.SocketServer(callback,"localhost",15555)
+        self.assertEqual("127.0.0.1:15555", serv.locationStr)
+        self.assertTrue(serv.sock is not None)
+        self.assertEqual(serv.callback, callback)
+        conn=SU.SocketConnection(serv.sock, "12345")
+        self.assertEqual("12345",conn.objectId)
+        self.assertTrue(conn.sock is not None)
+        conn.close()
+        self.assertTrue(conn.sock is None)
+        serv.close()
+        self.assertTrue(serv.sock is None)
+        self.assertFalse(hasattr(serv,"callback"))
         
 
 if __name__ == "__main__":
