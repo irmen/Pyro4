@@ -3,11 +3,7 @@
 import socket
 import errno
 import logging
-try:
-    import poll
-except ImportError:
-    poll=None
-    import select
+import select
 from Pyro.errors import ConnectionClosedError, TimeoutError, PyroError
 
 log=logging.getLogger("Pyro.socketutil")
@@ -131,23 +127,22 @@ class SocketServer(object):
             self.sock.close()
             self.sock=None
     def requestLoop(self, loopCondition=lambda:True):
-        if poll:
-            raise NotImplementedError("poll loop not yet implemented")
-        else:
-            while loopCondition():
-                rlist=self.clients[:]
-                rlist.append(self.sock)
-                rlist,wlist,elist=select.select(rlist, [], [], 1)
-                if self.sock in rlist:
-                    rlist.remove(self.sock)
-                    self.handleConnection(self.sock)
-                for sock in rlist:
-                    try:
-                        self.callback.handleRequest(sock)
-                    except (socket.error, PyroError), x:
-                        log.warn("dropping connection because of error: %s" % x)
-                        sock.close()
-                        self.clients.remove(sock)
+        #@todo: implement poll-based loop for systems that have it
+        while loopCondition():
+            rlist=self.clients[:]
+            rlist.append(self.sock)
+            rlist,wlist,elist=select.select(rlist, [], rlist, 1)
+            print "ELIST=",elist
+            if self.sock in rlist:
+                rlist.remove(self.sock)
+                self.handleConnection(self.sock)
+            for sock in rlist:
+                try:
+                    self.callback.handleRequest(sock)
+                except (socket.error, PyroError), x:
+                    log.warn("dropping connection because of error: %s" % x)
+                    sock.close()
+                    self.clients.remove(sock)
 
     def handleConnection(self, sock):
         csock, caddr=sock.accept()
