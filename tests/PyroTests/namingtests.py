@@ -69,7 +69,8 @@ class NSLookupTests(unittest.TestCase):
         self.assertNotEqual(Pyro.constants.NAMESERVER_NAME,uri.object)
         self.assertEqual(uri, ns._pyroUri)
 
-        # these test still crash the server
+        # these test will crash the server atm
+        #@todo: re-enable test when exception handling is in place
         #uri=Pyro.naming.resolve("PYRONAME:unknown_object@localhost")
 
         self.assertRaises(NotImplementedError, Pyro.naming.resolve, "PYRONAME:objectname" )
@@ -84,7 +85,8 @@ class NSLookupTests(unittest.TestCase):
         ns.register("test.sub.objectA",Pyro.core.PyroURI("PYRO:AAAAAA@host.com"))
         ns.register("test.sub.objectB",Pyro.core.PyroURI("PYRO:BBBBBB@host.com"))
         
-        #this will crash the server for now
+        #this will crash the server atm.
+        #@todo: re-enable test when exception handling is in place
         #ns.lookup("unknown_object")
         
         uri=ns.lookup("test.object3")
