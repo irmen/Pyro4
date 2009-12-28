@@ -165,7 +165,7 @@ class Proxy(object):
         uri=Pyro.naming.resolve(self._pyroUri)
         if uri.host and uri.port:
             # socket connection
-            log.info("connecting to %s",uri)
+            log.debug("connecting to %s",uri)
             conn=None
             try:
                 sock=Pyro.socketutil.createSocket(connect=(uri.host, uri.port))
@@ -281,7 +281,7 @@ class Daemon(object):
         self.mustshutdown=True
         self.loopstopped.wait()
         self.close()
-        log.info("daemon shut down")
+        log.info("daemon %s shut down", self.locationStr)
     def handshake(self, conn):
         """Perform connection handshake with new clients"""
         header=conn.recv(MessageFactory.HEADERSIZE)

@@ -131,16 +131,15 @@ class SocketServer(object):
         while loopCondition():
             rlist=self.clients[:]
             rlist.append(self.sock)
-            rlist,wlist,elist=select.select(rlist, [], rlist, 1)
-            print "ELIST=",elist
+            rlist,wlist,xlist=select.select(rlist, [], [], 1)
             if self.sock in rlist:
                 rlist.remove(self.sock)
                 self.handleConnection(self.sock)
             for sock in rlist:
                 try:
                     self.callback.handleRequest(sock)
-                except (socket.error, PyroError), x:
-                    log.warn("dropping connection because of error: %s" % x)
+                except (socket.error,ConnectionClosedError),x:
+                    # client went away.
                     sock.close()
                     self.clients.remove(sock)
 
