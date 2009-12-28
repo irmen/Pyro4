@@ -231,9 +231,21 @@ class MessageFactory(object):
             raise ProtocolError("unknown message type %d" % msgType)
         return msgType,flags,dataLen
 
-    
 
-class Daemon(ObjBase): # @todo:  split out the couple of remote methods in a separate object
+class DaemonObject(ObjBase):
+    """The part of the daemon that is exposed as a Pyro object."""
+    def __init__(self, daemon):
+        super(DaemonObject,self).__init__()
+        self.daemon=daemon
+    def resolve(self, objectName):
+        return self.daemon.resolve(objectName)
+    def registered(self):
+        return self.daemon.registeredObjects() 
+    def ping(self):
+        pass
+            
+
+class Daemon(object):
     """Pyro daemon. Contains server side logic and dispatches incoming remote method calls to the appropriate objects."""
     def __init__(self, host=None, port=None):
         super(Daemon,self).__init__()
@@ -245,7 +257,8 @@ class Daemon(ObjBase): # @todo:  split out the couple of remote methods in a sep
         self.locationStr=self.transportServer.locationStr 
         self.serializer=Pyro.util.Serializer()
         self._pyroObjectId=Pyro.constants.INTERNAL_DAEMON_GUID
-        self.objectsById={self._pyroObjectId: (Pyro.constants.DAEMON_LOCALNAME, self)}
+        pyroObject=DaemonObject(self)
+        self.objectsById={self._pyroObjectId: (Pyro.constants.DAEMON_LOCALNAME, pyroObject)}
         self.objectsByName={Pyro.constants.DAEMON_LOCALNAME: self._pyroObjectId}
         self.mustshutdown=False
         self.loopstopped=threading.Event()
@@ -334,6 +347,8 @@ class Daemon(ObjBase): # @todo:  split out the couple of remote methods in a sep
         else:
             if isinstance(obj, ObjBase):
                 obj=obj._pyroObjectId
+            elif type(obj) is not str:
+                raise TypeError("obj must be str or a Pyro object")
             return PyroURI("PYRO:"+obj+"@"+self.locationStr)
     def resolve(self, objectName):
         """Get a PyroURI for the given object name known by this daemon."""
@@ -343,8 +358,6 @@ class Daemon(ObjBase): # @todo:  split out the couple of remote methods in a sep
         else:
             log.debug("unknown object: %s",objectName)
             raise NamingError("unknown object")
-    def ping(self):
-        pass
     def registeredObjects(self):
         """Cough up the dict of known object names and their instances."""
         return self.objectsByName
