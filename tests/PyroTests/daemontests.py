@@ -47,9 +47,12 @@ class DaemonTests(unittest.TestCase):
         u1=d.uriFor(o1)
         u2=d.uriFor(o2._pyroObjectId)
         u3=d.uriFor("unexisting_thingie",True)
+        u4=d.uriFor(o2,True)
         self.assertEquals(Pyro.core.PyroURI, type(u1))
         self.assertEquals("PYRO",u1.protocol)
         self.assertEquals("PYROLOC",u3.protocol)
+        self.assertEquals("PYROLOC",u4.protocol)
+        self.assertEquals("obj2a",u4.object)
         self.assertEquals(Pyro.core.PyroURI("PYROLOC:unexisting_thingie@"+defaultLocation), u3)
 
         # test unregister

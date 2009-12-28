@@ -341,8 +341,10 @@ class Daemon(object):
         """Get a PyroURI for the given object (or objectId) from this daemon. Only a daemon can hand out
         proper uris because the access location is contained in them."""
         if asPyroloc:
-            if type(obj) is not str:
-                raise TypeError("obj must be str (name) for Pyroloc uri")
+            if isinstance(obj, ObjBase):
+                obj=self.objectsById[obj._pyroObjectId][0]
+            elif type(obj) is not str:
+                raise TypeError("obj must be str (name) or a Pyro object")
             return PyroURI("PYROLOC:"+obj+"@"+self.locationStr)
         else:
             if isinstance(obj, ObjBase):
