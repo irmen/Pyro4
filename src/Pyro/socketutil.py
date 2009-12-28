@@ -103,12 +103,14 @@ class SocketConnection(object):
     def __init__(self, sock, objectId=None):
         self.sock=sock
         self.objectId=objectId
+    def __del__(self):
+        self.close()
     def send(self, data):
         sendData(self.sock, data)
     def recv(self, size):
         return receiveData(self.sock, size)
     def close(self):
-        if self.sock:
+        if hasattr(self,"sock") and self.sock:
             self.sock.close()
         self.sock=None
     def fileno(self):
@@ -124,6 +126,10 @@ class SocketServer(object):
         if not host:
             host=self.sock.getsockname()[0]
         self.locationStr="%s:%d" % (host,port)
+    def __del__(self):
+        if hasattr(self,"sock") and self.sock:
+            self.sock.close()
+            self.sock=None
     def requestLoop(self, loopCondition=lambda:True):
         if poll:
             raise NotImplementedError("poll loop not yet implemented")

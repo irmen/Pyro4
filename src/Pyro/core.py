@@ -124,8 +124,11 @@ class Proxy(object):
         self._pyroUri=uri
         self._pyroConnection=None
         self._pyroSerializer=Pyro.util.Serializer()
+    def __del__(self):
+        if hasattr(self,"_pyroConnection"):
+            self._pyroRelease()
     def __getattr__(self, name):
-        if name in ("__getnewargs__","__getinitargs__"):        # allows it to be safely pickled
+        if name in ("__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri"):        # allows it to be safely pickled
             raise AttributeError()
         return _RemoteMethod(self._pyroInvoke, name)
     def __repr__(self):
@@ -133,10 +136,17 @@ class Proxy(object):
     def __str__(self):
         return repr(self)
     def _pyroRelease(self):
+        """release the connection to the pyro daemon"""
         if self._pyroConnection:
             self._pyroConnection.close()
             self._pyroConnection=None
+    def _pyroBind(self):
+        """Bind this proxy to the exact object from the uri. That means that the proxy's uri
+        will be updated with a direct PYRO uri, if it isn't one yet."""
+        self._pyroRelease()
+        self._pyroCreateConnection(True)
     def _pyroInvoke(self, methodname, vargs, kwargs):
+        """perform the remote method call communication"""
         if not self._pyroConnection:
             # rebind here, don't do it from inside the invoke because deadlock will occur
             self._pyroCreateConnection()
@@ -149,7 +159,9 @@ class Proxy(object):
             raise ProtocolError("invalid msg type %d received" % msgType)
         data=self._pyroConnection.recv(dataLen)
         return self._pyroSerializer.deserialize(data)
-    def _pyroCreateConnection(self):
+    def _pyroCreateConnection(self, replaceUri=False):
+        """Connects this proxy to the remote Pyro daemon. Does connection handshake."""
+        import Pyro.naming # don't import globally because of cyclic dependancy 
         uri=Pyro.naming.resolve(self._pyroUri)
         if uri.host and uri.port:
             # socket connection
@@ -176,6 +188,8 @@ class Proxy(object):
                     raise CommunicationError(error)
                 elif msgType==MessageFactory.MSG_CONNECTOK:
                     self._pyroConnection=conn
+                    if replaceUri:
+                        self._pyroUri=uri
                     log.debug("connected to %s",self._pyroUri)
                 else:
                     conn.close()
@@ -219,14 +233,15 @@ class MessageFactory(object):
 
     
 
-class Daemon(ObjBase):
-    """Pyro daemon. Contains server side logic and dispatches incoming remote method
-    calls to the appropriate objects."""
-    def __init__(self, socketAddress=None):
+class Daemon(ObjBase): # @todo:  split out the couple of remote methods in a separate object
+    """Pyro daemon. Contains server side logic and dispatches incoming remote method calls to the appropriate objects."""
+    def __init__(self, host=None, port=None):
         super(Daemon,self).__init__()
-        if not socketAddress:
-            socketAddress=("localhost",Pyro.config.DEFAULT_PORT)
-        self.transportServer=Pyro.socketutil.SocketServer(self, socketAddress[0], socketAddress[1])
+        if not host:
+            host=Pyro.config.DEFAULT_SERVERHOST
+        if not port:
+            port=Pyro.config.DEFAULT_PORT
+        self.transportServer=Pyro.socketutil.SocketServer(self, host, port)
         self.locationStr=self.transportServer.locationStr 
         self.serializer=Pyro.util.Serializer()
         self._pyroObjectId=Pyro.constants.INTERNAL_DAEMON_GUID
@@ -235,7 +250,10 @@ class Daemon(ObjBase):
         self.mustshutdown=False
         self.loopstopped=threading.Event()
         self.loopstopped.set()
+    def __del__(self):
+        self.close()
     def requestLoop(self):
+        """Goes in a loop to service incoming requests, until someone breaks this or calls shutdown from another thread."""  
         self.mustshutdown=False
         log.info("daemon %s entering requestloop", self.locationStr)
         try:
@@ -245,13 +263,14 @@ class Daemon(ObjBase):
             self.loopstopped.set()
         log.debug("daemon exits requestloop")
     def shutdown(self):
+        """Cleanly terminate a deamon that is running in the requestloop."""
         log.debug("daemon shutting down")
         self.mustshutdown=True
         self.loopstopped.wait()
         self.close()
         log.info("daemon shut down")
     def handshake(self, conn):
-        """perform connection handshake with new clients"""
+        """Perform connection handshake with new clients"""
         header=conn.recv(MessageFactory.HEADERSIZE)
         msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
         if msgType!=MessageFactory.MSG_CONNECT:
@@ -262,7 +281,7 @@ class Daemon(ObjBase):
         conn.send(msg)
         return True
     def handleRequest(self, conn):
-        """handle incoming Pyro request"""
+        """Handle incoming Pyro request"""
         header=conn.recv(MessageFactory.HEADERSIZE)
         msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
         if msgType!=MessageFactory.MSG_INVOKE:
@@ -279,14 +298,20 @@ class Daemon(ObjBase):
         del data
         conn.send(msg)
     def close(self):
-        self.transportServer.close()
+        """Close down the server and release resources"""
+        if hasattr(self,"transportServer"):
+            self.transportServer.close()
     def register(self, object, name=None):
+        """Register a Pyro object under the given (local) name. Note that this object
+        is now only known inside this daemon, it is not automatically available in a name server."""
         if object._pyroObjectId in self.objectsById or name in self.objectsByName:
             raise DaemonError("object already registered")
         self.objectsById[object._pyroObjectId]=(name,object)
         if name:
             self.objectsByName[name]=object._pyroObjectId
     def unregister(self, objectIdOrName):
+        """Remove an object from the known objects inside this daemon.
+        You can unregister by objectId or by (local) object name."""
         if objectIdOrName in (Pyro.constants.INTERNAL_DAEMON_GUID, Pyro.constants.DAEMON_LOCALNAME):
             return
         obj=self.objectsById.get(objectIdOrName)
@@ -299,17 +324,29 @@ class Daemon(ObjBase):
             if obj:
                 del self.objectsByName[objectIdOrName]
                 del self.objectsById[obj]
-    def uriFor(self, obj):
-        if isinstance(obj, ObjBase):
-            obj=obj._pyroObjectId
-        return PyroURI("PYRO:"+obj+"@"+self.transportServer.locationStr)
+    def uriFor(self, obj, asPyroloc=False):
+        """Get a PyroURI for the given object (or objectId) from this daemon. Only a daemon can hand out
+        proper uris because the access location is contained in them."""
+        if asPyroloc:
+            if type(obj) is not str:
+                raise TypeError("obj must be str (name) for Pyroloc uri")
+            return PyroURI("PYROLOC:"+obj+"@"+self.locationStr)
+        else:
+            if isinstance(obj, ObjBase):
+                obj=obj._pyroObjectId
+            return PyroURI("PYRO:"+obj+"@"+self.locationStr)
     def resolve(self, objectName):
+        """Get a PyroURI for the given object name known by this daemon."""
         obj=self.objectsByName.get(objectName)
         if obj:
             return self.uriFor(obj)
         else:
+            log.debug("unknown object: %s",objectName)
             raise NamingError("unknown object")
+    def ping(self):
+        pass
     def registeredObjects(self):
+        """Cough up the dict of known object names and their instances."""
         return self.objectsByName
     def __str__(self):
         return "<Pyro Daemon on "+self.locationStr+">"

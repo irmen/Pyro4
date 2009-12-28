@@ -8,8 +8,8 @@ class TestSocketutil(unittest.TestCase):
         localhost=socket.getfqdn(localip)
         self.assertEqual(localip,SU.getIpAddress(localhost))
     def testSend(self):
-        ss=SU.createSocket(bind=('localhost',9999))
-        cs=SU.createSocket(connect=('localhost',9999))
+        ss=SU.createSocket(bind=("localhost",9999))
+        cs=SU.createSocket(connect=("localhost",9999))
         SU.sendData(cs,"foobar!"*10)
         cs.shutdown(socket.SHUT_WR)
         a=ss.accept()

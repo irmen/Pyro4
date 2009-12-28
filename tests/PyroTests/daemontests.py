@@ -13,16 +13,18 @@ class DaemonTests(unittest.TestCase):
         
     def testDaemon(self):
         d=self.daemon
-        self.assertEqual( "localhost:"+str(Pyro.config.DEFAULT_PORT), d.locationStr)
+        defaultLocation="%s:%d" %(Pyro.config.DEFAULT_SERVERHOST, Pyro.config.DEFAULT_PORT)
+        self.assertEqual( defaultLocation, d.locationStr)
         self.assertTrue(d._pyroUri is None)
         self.assertTrue(d._pyroObjectId, Pyro.constants.INTERNAL_DAEMON_GUID)
         self.assertTrue(Pyro.constants.INTERNAL_DAEMON_GUID in d.objectsById)
         self.assertTrue(Pyro.constants.DAEMON_LOCALNAME in d.objectsByName)
         self.assertEqual(d.resolve(Pyro.constants.DAEMON_LOCALNAME).object, Pyro.constants.INTERNAL_DAEMON_GUID)
-        self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@localhost:7766", str(d.uriFor(d)))
+        self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@"+defaultLocation, str(d.uriFor(d)))
         
-    def testRegister(self):
+    def testRegisterEtc(self):
         d=self.daemon
+        defaultLocation="%s:%d" %(Pyro.config.DEFAULT_SERVERHOST, Pyro.config.DEFAULT_PORT)
         self.assertEquals(1, len(d.objectsById))
         self.assertEquals(1, len(d.registeredObjects()))
         
@@ -42,7 +44,17 @@ class DaemonTests(unittest.TestCase):
         self.assertEqual(o2._pyroObjectId, d.resolve("obj2a").object)
         self.assertEqual((None,o1), d.objectsById[o1._pyroObjectId])
         self.assertEqual(("obj2a",o2), d.objectsById[o2._pyroObjectId])
-        
+
+        # test uriFor
+        u1=d.uriFor(o1)
+        u2=d.uriFor(o2._pyroObjectId)
+        u3=d.uriFor("unexisting_thingie",True)
+        self.assertEquals(Pyro.core.PyroURI, type(u1))
+        self.assertEquals("PYRO",u1.protocol)
+        self.assertEquals("PYROLOC",u3.protocol)
+        self.assertEquals(Pyro.core.PyroURI("PYROLOC:unexisting_thingie@"+defaultLocation), u3)
+
+        # test unregister
         d.unregister("unexisting_thingie")
         d.unregister(None)
         d.unregister("obj2a")
@@ -51,6 +63,8 @@ class DaemonTests(unittest.TestCase):
         self.assertEqual(1, len(d.registeredObjects()))
         self.assertTrue(o1._pyroObjectId not in d.objectsById)
         self.assertTrue(o2._pyroObjectId not in d.objectsById)
+        
+
         
 
 if __name__ == "__main__":

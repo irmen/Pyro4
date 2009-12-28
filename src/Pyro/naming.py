@@ -10,9 +10,7 @@ from Pyro.errors import PyroError
 log=logging.getLogger("Pyro.naming")
 
 class NameServer(Pyro.core.ObjBase):
-    """Pyro name server.
-    Provides a simple flat name space to map logical object names to Pyro URIs.
-    """
+    """Pyro name server. Provides a simple flat name space to map logical object names to Pyro URIs."""
     def __init__(self):
         super(NameServer,self).__init__()
         self.namespace={}
@@ -26,24 +24,26 @@ class NameServer(Pyro.core.ObjBase):
             del self.namespace[name]
     def list(self):
         return self.namespace
+    def ping(self):
+        pass
 
 
 class NameServerDaemon(Pyro.core.Daemon):
     """Daemon that contains the Name Server."""
-    def __init__(self, socketAddress=None):
-        if not socketAddress:
-            socketAddress=("localhost",Pyro.config.DEFAULT_NS_PORT)
-        super(NameServerDaemon,self).__init__(socketAddress)
+    def __init__(self, host=None, port=None):
+        if not host:
+            host=Pyro.config.DEFAULT_SERVERHOST
+        if not port:
+            port=Pyro.config.DEFAULT_NS_PORT
+        super(NameServerDaemon,self).__init__(host,port)
         self.ns=NameServer()
         self.register(self.ns, Pyro.constants.NAMESERVER_NAME)
         self.ns.register(Pyro.constants.NAMESERVER_NAME, self.uriFor(self.ns))
         log.info("nameserver daemon running on %s",self.locationStr)
 
 
-def startNS(socketAddress=None):
-    if not socketAddress:
-        socketAddress=("localhost",Pyro.config.DEFAULT_NS_PORT)
-    daemon=NameServerDaemon(socketAddress)
+def startNS(host=None, port=None):
+    daemon=NameServerDaemon(host, port)
     try:
         print "NS running on",daemon.locationStr
         print "URI =",daemon.uriFor(daemon.ns)
@@ -54,7 +54,7 @@ def startNS(socketAddress=None):
 
 
 def locateNS(location=None):
-    """get a proxy for a name server somewhere in the network."""
+    """Get a proxy for a name server somewhere in the network."""
     uristring="PYRONAME:"+Pyro.constants.NAMESERVER_NAME
     if location:
         uristring+="@"+location
@@ -76,7 +76,7 @@ def locateNS(location=None):
 
 
 def resolve(uri):
-    """resolve a 'magic' uri (PYRONAME, PYROLOC) into the direct PYRO uri."""
+    """Resolve a 'magic' uri (PYRONAME, PYROLOC) into the direct PYRO uri."""
     if isinstance(uri, basestring):
         uri=Pyro.core.PyroURI(uri)
     elif not isinstance(uri, Pyro.core.PyroURI):

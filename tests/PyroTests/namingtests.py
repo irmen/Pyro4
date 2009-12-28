@@ -19,7 +19,7 @@ class NSDaemonThread(threading.Thread):
 class NSLookupTests(unittest.TestCase):
 
     def setUp(self):
-        self.nsdaemon=Pyro.naming.NameServerDaemon()
+        self.nsdaemon=Pyro.naming.NameServerDaemon(host="localhost")
         self.nsdaemonthread=NSDaemonThread(self.nsdaemon)
         self.nsdaemonthread.start()
         self.nsdaemonthread.started.wait()
@@ -75,8 +75,9 @@ class NSLookupTests(unittest.TestCase):
         self.assertRaises(NotImplementedError, Pyro.naming.resolve, "PYRONAME:objectname" )
         self.assertRaises(TypeError, Pyro.naming.resolve, 999)  #wrong arg type
 
-    def testRegister(self):
+    def testRegisterEtc(self):
         ns=Pyro.naming.locateNS("localhost")
+        ns.ping()
         ns.register("test.object1",Pyro.core.PyroURI("PYRO:111111@host.com"))
         ns.register("test.object2",Pyro.core.PyroURI("PYRO:222222@host.com"))
         ns.register("test.object3",Pyro.core.PyroURI("PYRO:333333@host.com"))
@@ -94,7 +95,34 @@ class NSLookupTests(unittest.TestCase):
         ns.remove("test.object3")
         all=ns.list()
         self.assertEqual(3, len(all))  # nameserver itself + 2 leftover objects
-        
+
+        # do a few proxy tests because they depend on a running daemon too
+        nsLocation="%s:%d" %("localhost", Pyro.config.DEFAULT_NS_PORT)
+        daemonUri="PYROLOC:"+Pyro.constants.DAEMON_LOCALNAME+"@"+nsLocation
+        p1=Pyro.core.Proxy(daemonUri)
+        p2=Pyro.core.Proxy(daemonUri)
+        self.assertTrue(p1._pyroConnection is None)
+        self.assertTrue(p2._pyroConnection is None)
+        p1.ping()
+        p2.ping()
+        x=p1.registeredObjects()
+        x=p2.registeredObjects()
+        self.assertTrue(p1._pyroConnection is not None)
+        self.assertTrue(p2._pyroConnection is not None)
+        p1._pyroRelease()
+        p1._pyroRelease()
+        p2._pyroRelease()
+        p2._pyroRelease()
+        self.assertTrue(p1._pyroConnection is None)
+        self.assertTrue(p2._pyroConnection is None)
+        p1._pyroBind()
+        x=p1.registeredObjects()
+        x=p2.registeredObjects()
+        self.assertTrue(p1._pyroConnection is not None)
+        self.assertTrue(p2._pyroConnection is not None)
+        self.assertNotEqual(p1._pyroUri, p2._pyroUri)
+        self.assertEqual("PYRO",p1._pyroUri.protocol)
+        self.assertEqual("PYROLOC",p2._pyroUri.protocol)
         
 
 if __name__ == "__main__":

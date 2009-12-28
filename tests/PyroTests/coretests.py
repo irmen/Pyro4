@@ -112,6 +112,17 @@ class CoreTests(unittest.TestCase):
         self.assertEquals(thing2,thing)
         self.assertEqual(thing2._pyroObjectId, thing._pyroObjectId)
 
+    def testProxyOffline(self):
+        # only offline stuff here.
+        # online stuff needs a running daemon, so we do that in the naming test.
+        self.assertRaises(TypeError, Pyro.core.Proxy, 999)  # wrong arg
+        p1=Pyro.core.Proxy("PYRO:9999@localhost:15555")
+        p2=Pyro.core.Proxy(Pyro.core.PyroURI("PYRO:9999@localhost:15555"))
+        self.assertEqual(p1._pyroUri, p2._pyroUri)
+        self.assertTrue(p1._pyroConnection is None)
+        p1._pyroRelease()
+        p1._pyroRelease()
+        
         
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
