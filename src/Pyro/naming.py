@@ -2,10 +2,10 @@
 Pyro name server and helper functions.
 """
 
-import logging
+import re,logging
 import Pyro.core
 import Pyro.constants
-from Pyro.errors import PyroError
+from Pyro.errors import PyroError, NamingError
 
 log=logging.getLogger("Pyro.naming")
 
@@ -16,14 +16,34 @@ class NameServer(Pyro.core.ObjBase):
         self.namespace={}
         log.info("nameserver initialized")
     def lookup(self,arg):
-        return self.namespace[arg]
+        try:
+            return self.namespace[arg]
+        except KeyError:
+            raise NamingError("unknown name")
     def register(self,name,uri):
+        if name in self.namespace:
+            raise NamingError("name already registered")
         self.namespace[name]=uri
     def remove(self,name):
         if name in self.namespace:
             del self.namespace[name]
-    def list(self):
-        return self.namespace
+    def list(self, prefix=None, regex=None):
+        if prefix:
+            result={}
+            for name,value in self.namespace.items():
+                if name.startswith(prefix):
+                    result[name]=value
+            return result
+        elif regex:
+            result={}
+            regex=re.compile(regex)
+            for name,value in self.namespace.items():
+                if regex.match(name):
+                    result[name]=value
+            return result
+        else:
+            # just return everything
+            return self.namespace
     def ping(self):
         pass
 
@@ -96,3 +116,6 @@ def resolve(uri):
     else:
         raise PyroError("invalid uri protocol")
             
+
+if __name__=="__main__":
+    startNS()

@@ -5,6 +5,8 @@ import Pyro.config
 from Pyro.errors import *
 
 class DaemonTests(unittest.TestCase):
+    # We create a daemon, but notice that we are not actually running the requestloop
+    # 'on-line' tests are all taking place in the NamingTests
 
     def setUp(self):
         self.daemon=Pyro.core.Daemon()

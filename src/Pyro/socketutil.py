@@ -106,7 +106,7 @@ class SocketConnection(object):
     def recv(self, size):
         return receiveData(self.sock, size)
     def close(self):
-        if hasattr(self,"sock") and self.sock:
+        if hasattr(self,"sock") and self.sock is not None:
             self.sock.close()
         self.sock=None
     def fileno(self):
@@ -123,7 +123,7 @@ class SocketServer(object):
             host=self.sock.getsockname()[0]
         self.locationStr="%s:%d" % (host,port)
     def __del__(self):
-        if hasattr(self,"sock") and self.sock:
+        if hasattr(self,"sock") and self.sock is not None:
             self.sock.close()
             self.sock=None
     def requestLoop(self, loopCondition=lambda:True):

@@ -2,6 +2,7 @@ import unittest
 import time
 import Pyro.naming
 import Pyro.config
+from Pyro.errors import *
 import threading
 
 class NSDaemonThread(threading.Thread):
@@ -16,8 +17,11 @@ class NSDaemonThread(threading.Thread):
         finally:
             self.nsdaemon.close()
         
-class NSLookupTests(unittest.TestCase):
-
+class OnlineTests(unittest.TestCase):
+    # These tests actually use a running name server.
+    # They also include a few tests that are not strictly name server tests,
+    # but just tests of some stuff that requires a working Pyro server.
+    
     def setUp(self):
         self.nsdaemon=Pyro.naming.NameServerDaemon(host="localhost")
         self.nsdaemonthread=NSDaemonThread(self.nsdaemon)
@@ -69,35 +73,12 @@ class NSLookupTests(unittest.TestCase):
         self.assertNotEqual(Pyro.constants.NAMESERVER_NAME,uri.object)
         self.assertEqual(uri, ns._pyroUri)
 
-        # these test will crash the server atm
-        #@todo: re-enable test when exception handling is in place
-        #uri=Pyro.naming.resolve("PYRONAME:unknown_object@localhost")
+        self.assertRaises(NamingError, Pyro.naming.resolve, "PYRONAME:unknown_object@localhost")
 
         self.assertRaises(NotImplementedError, Pyro.naming.resolve, "PYRONAME:objectname" )
         self.assertRaises(TypeError, Pyro.naming.resolve, 999)  #wrong arg type
 
-    def testRegisterEtc(self):
-        ns=Pyro.naming.locateNS("localhost")
-        ns.ping()
-        ns.register("test.object1",Pyro.core.PyroURI("PYRO:111111@host.com"))
-        ns.register("test.object2",Pyro.core.PyroURI("PYRO:222222@host.com"))
-        ns.register("test.object3",Pyro.core.PyroURI("PYRO:333333@host.com"))
-        ns.register("test.sub.objectA",Pyro.core.PyroURI("PYRO:AAAAAA@host.com"))
-        ns.register("test.sub.objectB",Pyro.core.PyroURI("PYRO:BBBBBB@host.com"))
-        
-        #this will crash the server atm.
-        #@todo: re-enable test when exception handling is in place
-        #ns.lookup("unknown_object")
-        
-        uri=ns.lookup("test.object3")
-        self.assertEqual(Pyro.core.PyroURI("PYRO:333333@host.com"), uri)
-        ns.remove("unknown_object")
-        ns.remove("test.object1")
-        ns.remove("test.object2")
-        ns.remove("test.object3")
-        all=ns.list()
-        self.assertEqual(3, len(all))  # nameserver itself + 2 leftover objects
-
+    def testOnlineStuff(self):
         # do a few proxy tests because they depend on a running daemon too
         nsLocation="%s:%d" %("localhost", Pyro.config.DEFAULT_NS_PORT)
         daemonUri="PYROLOC:"+Pyro.constants.DAEMON_LOCALNAME+"@"+nsLocation
@@ -125,6 +106,49 @@ class NSLookupTests(unittest.TestCase):
         self.assertNotEqual(p1._pyroUri, p2._pyroUri)
         self.assertEqual("PYRO",p1._pyroUri.protocol)
         self.assertEqual("PYROLOC",p2._pyroUri.protocol)
+        
+
+class OfflineTests(unittest.TestCase):
+    def testRegister(self):
+        ns=Pyro.naming.NameServer()
+        ns.ping()
+        ns.register("test.object1",Pyro.core.PyroURI("PYRO:111111@host.com"))
+        ns.register("test.object2",Pyro.core.PyroURI("PYRO:222222@host.com"))
+        ns.register("test.object3",Pyro.core.PyroURI("PYRO:333333@host.com"))
+        ns.register("test.sub.objectA",Pyro.core.PyroURI("PYRO:AAAAAA@host.com"))
+        ns.register("test.sub.objectB",Pyro.core.PyroURI("PYRO:BBBBBB@host.com"))
+        
+        self.assertRaises(NamingError, ns.lookup, "unknown_object")
+        
+        uri=ns.lookup("test.object3")
+        self.assertEqual(Pyro.core.PyroURI("PYRO:333333@host.com"), uri)
+        ns.remove("unknown_object")
+        ns.remove("test.object1")
+        ns.remove("test.object2")
+        ns.remove("test.object3")
+        all=ns.list()
+        self.assertEqual(2, len(all))  # 2 leftover objects
+    def testList(self):
+        ns=Pyro.naming.NameServer()
+        ns.register("test.objects.1","SOMETHING1")
+        ns.register("test.objects.2","SOMETHING2")
+        ns.register("test.objects.3","SOMETHING3")
+        ns.register("test.other.a","SOMETHINGA")
+        ns.register("test.other.b","SOMETHINGB")
+        ns.register("test.other.c","SOMETHINGC")
+        ns.register("entirely.else","MEH")
+        objects=ns.list()
+        self.assertEqual(7,len(objects))
+        objects=ns.list(prefix="nothing")
+        self.assertEqual(0,len(objects))
+        objects=ns.list(prefix="test.")
+        self.assertEqual(6,len(objects))
+        objects=ns.list(regex=r".+other")
+        self.assertEqual(3,len(objects))
+        self.assertTrue("test.other.a" in objects)
+        self.assertEqual("SOMETHINGA", objects["test.other.a"])
+        objects=ns.list(regex=r"\d\d\d\d\d\d\d\d\d\d")
+        self.assertEqual(0,len(objects))
         
 
 if __name__ == "__main__":

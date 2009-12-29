@@ -2,11 +2,8 @@
 Core Pyro logic (uri, daemon, objbase, proxy stuff).
 """
 
-import re
-import logging
-import struct
-import uuid
-import threading
+import sys, re, struct
+import logging, uuid, threading
 from Pyro.errors import *
 import Pyro.config
 import Pyro.socketutil
@@ -158,7 +155,11 @@ class Proxy(object):
         if msgType!=MessageFactory.MSG_RESULT:
             raise ProtocolError("invalid msg type %d received" % msgType)
         data=self._pyroConnection.recv(dataLen)
-        return self._pyroSerializer.deserialize(data)
+        data=self._pyroSerializer.deserialize(data)
+        if flags & MessageFactory.FLAGS_EXCEPTION:
+            raise data
+        else:
+            return data
     def _pyroCreateConnection(self, replaceUri=False):
         """Connects this proxy to the remote Pyro daemon. Does connection handshake."""
         import Pyro.naming # don't import globally because of cyclic dependancy 
@@ -208,6 +209,7 @@ class MessageFactory(object):
     MSG_CONNECTFAIL = 3
     MSG_INVOKE      = 4
     MSG_RESULT      = 5
+    FLAGS_EXCEPTION = 0x0001
     MSGTYPES=dict.fromkeys((MSG_CONNECT, MSG_CONNECTOK, MSG_CONNECTFAIL, MSG_INVOKE, MSG_RESULT))
     @classmethod
     def createMessage(cls, msgType, data, flags=0):
@@ -294,22 +296,42 @@ class Daemon(object):
         conn.send(msg)
         return True
     def handleRequest(self, conn):
-        """Handle incoming Pyro request"""
-        header=conn.recv(MessageFactory.HEADERSIZE)
-        msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
-        if msgType!=MessageFactory.MSG_INVOKE:
-            raise ProtocolError("invalid msg type %d received" % msgType)
-        data=conn.recv(dataLen)
-        objId, method, vargs, kwargs=self.serializer.deserialize(data)
-        obj=self.objectsById.get(objId)
-        if obj is not None:
-            data=getattr(obj[1], method) (*vargs,**kwargs)   # this is the actual method call
-        else:
-            raise PyroError("unknown object")
-        data=self.serializer.serialize(data)
-        msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, 0)
+        """Handle incoming Pyro request. Catches any exception that may occur and
+        wraps it in a reply to the calling side, as to not make this server side loop
+        terminate due to exceptions caused by remote invocations."""
+        try:
+            header=conn.recv(MessageFactory.HEADERSIZE)
+            msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
+            if msgType!=MessageFactory.MSG_INVOKE:
+                raise ProtocolError("invalid msg type %d received" % msgType)
+            data=conn.recv(dataLen)
+            objId, method, vargs, kwargs=self.serializer.deserialize(data)
+            obj=self.objectsById.get(objId)
+            if obj is not None:
+                data=getattr(obj[1], method) (*vargs,**kwargs)   # this is the actual method call
+            else:
+                raise DaemonError("unknown object")
+            data=self.serializer.serialize(data)
+            msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, 0)
+            del data
+            conn.send(msg)
+        except CommunicationError,x:
+            # communication errors are not caught
+            raise
+        except Exception,x:
+            # all other errors are caught
+            log.debug("Exception occurred while handling request: %s",x)
+            tblines=Pyro.util.formatTraceback()
+            self.sendExceptionResponse(conn, x, tblines)
+            
+    def sendExceptionResponse(self, connection, exc_value, tbinfo):
+        """send an exception back including the local traceback info"""
+        setattr(exc_value, Pyro.constants.TRACEBACK_ATTRIBUTE, tbinfo)
+        data=self.serializer.serialize(exc_value)
+        msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, MessageFactory.FLAGS_EXCEPTION)
         del data
-        conn.send(msg)
+        connection.send(msg)
+
     def close(self):
         """Close down the server and release resources"""
         if hasattr(self,"transportServer"):

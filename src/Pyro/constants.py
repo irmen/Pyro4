@@ -15,4 +15,4 @@ DAEMON_LOCALNAME = "Pyro.Daemon"
 NAMESERVER_NAME = "Pyro.NameServer"
 
 # exception attribute for remote stacktrace info
-TRACEBACK_ATTRIBUTE = "remote_stacktrace"
+TRACEBACK_ATTRIBUTE = "_pyroTraceback"
