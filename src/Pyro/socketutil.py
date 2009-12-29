@@ -4,9 +4,15 @@ import socket
 import errno
 import logging
 import select
+import os
 from Pyro.errors import ConnectionClosedError, TimeoutError, PyroError
 
 log=logging.getLogger("Pyro.socketutil")
+
+_selectfunction=select.select
+if os.name=="java":
+    # Jython needs a select wrapper. Should really use poll though.... 
+	from select import cpython_compatible_select as _selectfunction
 
 
 def getIpAddress(hostname=None):
@@ -131,7 +137,7 @@ class SocketServer(object):
         while loopCondition():
             rlist=self.clients[:]
             rlist.append(self.sock)
-            rlist,wlist,xlist=select.select(rlist, [], [], 1)
+            rlist,wlist,xlist=_selectfunction(rlist, [], [], 1)
             if self.sock in rlist:
                 rlist.remove(self.sock)
                 self.handleConnection(self.sock)

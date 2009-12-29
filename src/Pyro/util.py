@@ -49,7 +49,7 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
     this function will obtain them itself using sys.exc_info()."""
     if ex_type is None and ex_tb is None:
         ex_type,ex_value,ex_tb=sys.exc_info()
-    if detailed:
+    if detailed and sys.platform!="cli":           # detailed tracebacks don't work in ironpython 
         get_line_number = traceback.tb_lineno
     
         res = ['-'*50+ "\n",
@@ -73,6 +73,8 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                 for _ in line_number_stack:
                     frame_stack.append(f)
                     f = f.f_back
+                    if f is None:
+                        break
      
                 frame_stack.reverse()
      
@@ -107,7 +109,10 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                     flocals.sort()
                     fcode=frame.f_code
                     for key, value, in flocals:
-                        if key in fcode.co_names or key in fcode.co_varnames or key in fcode.co_cellvars:
+                        co_names=getattr(fcode,"co_names",[])
+                        co_varnames=getattr(fcode,"co_varnames",[])
+                        co_cellvars=getattr(fcode,"co_cellvars",[])
+                        if key in co_names or key in co_varnames or key in co_cellvars:
                             local_res="  %20s = " % key
                             try:
                                 local_res += repr(value)
@@ -124,7 +129,7 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
             res.append('-'*50+'\n')
             return res
             
-        except:
+        except Exception:
             return ["-"*50+"\nError building extended traceback!!! :\n",
                   "".join(traceback.format_exception(* sys.exc_info() ) ) + '-'*50 + '\n',
                   "Original Exception follows:\n",

@@ -1,5 +1,6 @@
 import unittest
 
+import sys
 import Pyro.util
 
 def crash(arg=100):
@@ -19,7 +20,7 @@ def crash(arg=100):
 
 class TestUtils(unittest.TestCase):
 
-    def testFormatTraceback(self):
+    def testFormatTracebackNormal(self):
         try:
             crash()
         except:
@@ -30,12 +31,16 @@ class TestUtils(unittest.TestCase):
             self.assertFalse(" s = 'whiteblack'" in tb)
             self.assertFalse(" pre2 = 999" in tb)
             self.assertFalse(" x = 999" in tb)
+
+    def testFormatTracebackDetail(self):
         try:
             crash()
         except:
             tb="".join(Pyro.util.formatTraceback(detailed=True))
             self.assertTrue("p3=p1/p2" in tb)
             self.assertTrue("ZeroDivisionError" in tb)
+            if " a = 10" not in tb:
+                self.failIfEqual("cli",sys.platform,"detailed tracebacks don't work in IronPython (ignore this fail)")
             self.assertTrue(" a = 10" in tb)
             self.assertTrue(" s = 'whiteblack'" in tb)
             self.assertTrue(" pre2 = 999" in tb)
