@@ -362,14 +362,16 @@ class Daemon(object):
             if obj:
                 del self.objectsByName[objectIdOrName]
                 del self.objectsById[obj]
-    def uriFor(self, obj=None, name=None, asPyroloc=False):
+    def uriFor(self, obj=None, name=None, pyroloc=False):
         """Get a PyroURI for the given object (or object name) from this daemon.
         Only a daemon can hand out proper uris because the access location is contained in them."""
-        if asPyroloc:
+        if pyroloc:
             if obj is not None:
                 name=self.objectsById[obj._pyroObjectId][0]
             elif type(name) is not str:
                 raise TypeError("name must be str")
+            if name is None:
+                raise DaemonError("object is not registered with a name")
             return PyroURI("PYROLOC:"+name+"@"+self.locationStr)
         else:
             if obj is not None:

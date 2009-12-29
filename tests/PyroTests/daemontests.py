@@ -50,9 +50,10 @@ class DaemonTests(unittest.TestCase):
 
         # test uriFor
         u1=d.uriFor(o1)
+        self.assertRaises(DaemonError, d.uriFor, o1, pyroloc=True)  #can't get a pyroloc for an object without name
         u2=d.uriFor(name=o2._pyroObjectId)
-        u3=d.uriFor(name="unexisting_thingie",asPyroloc=True)
-        u4=d.uriFor(o2,asPyroloc=True)
+        u3=d.uriFor(name="unexisting_thingie",pyroloc=True)
+        u4=d.uriFor(o2,pyroloc=True)
         self.assertEquals(Pyro.core.PyroURI, type(u1))
         self.assertEquals("PYRO",u1.protocol)
         self.assertEquals("PYROLOC",u3.protocol)
