@@ -9,10 +9,9 @@ from Pyro.errors import PyroError, NamingError
 
 log=logging.getLogger("Pyro.naming")
 
-class NameServer(Pyro.core.ObjBase):
+class NameServer(object):
     """Pyro name server. Provides a simple flat name space to map logical object names to Pyro URIs."""
     def __init__(self):
-        super(NameServer,self).__init__()
         self.namespace={}
         log.info("nameserver initialized")
     def lookup(self,arg):

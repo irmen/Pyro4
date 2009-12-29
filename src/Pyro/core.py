@@ -1,5 +1,5 @@
 """
-Core Pyro logic (uri, daemon, objbase, proxy stuff).
+Core Pyro logic (uri, daemon, proxy stuff).
 """
 
 import sys, re, struct
@@ -9,7 +9,7 @@ import Pyro.config
 import Pyro.socketutil
 import Pyro.util
 
-__all__=["PyroURI", "ObjBase", "Proxy", "Daemon"]
+__all__=["PyroURI", "Proxy", "Daemon"]
 
 log=logging.getLogger("Pyro.core")
 
@@ -86,20 +86,14 @@ class PyroURI(object):
         return s
     def __repr__(self):
         return "<PyroURI '"+str(self)+"'>"
-    def __getstate__(self):
-        return (self.protocol, self.object, self.pipename, self.sockname, self.host, self.port)
-    def __setstate__(self,state):
-        self.protocol, self.object, self.pipename, self.sockname, self.host, self.port = state
     def __eq__(self,other):
         return (self.protocol, self.object, self.pipename, self.sockname, self.host, self.port) \
                 == (other.protocol, other.object, other.pipename, other.sockname, other.host, other.port)
-
-
-class ObjBase(object):
-    """The object base class for Pyro remote objects"""
-    def __init__(self):
-        self._pyroObjectId=str(uuid.uuid4())
-        self._pyroUri=None
+# note: getstate/setstate are not needed if we use pickle protocol 2
+#    def __getstate__(self):
+#        return (self.protocol, self.object, self.pipename, self.sockname, self.host, self.port)
+#    def __setstate__(self,state):
+#        self.protocol, self.object, self.pipename, self.sockname, self.host, self.port = state
 
 
 class _RemoteMethod(object):
@@ -126,12 +120,20 @@ class Proxy(object):
             self._pyroRelease()
     def __getattr__(self, name):
         if name in ("__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri"):        # allows it to be safely pickled
-            raise AttributeError()
+            raise AttributeError(name)
         return _RemoteMethod(self._pyroInvoke, name)
     def __repr__(self):
         return "<Pyro Proxy for "+str(self._pyroUri)+">"
     def __str__(self):
         return repr(self)
+    def __getstate__(self):
+        return self._pyroUri,self._pyroSerializer    # skip the connection
+    def __setstate__(self, state):
+        self._pyroUri, self._pyroSerializer = state
+        self._pyroConnection=None
+    def __copy__(self):
+        uriCopy=PyroURI(self._pyroUri)
+        return Proxy(uriCopy)
     def _pyroRelease(self):
         """release the connection to the pyro daemon"""
         if self._pyroConnection:
@@ -234,10 +236,9 @@ class MessageFactory(object):
         return msgType,flags,dataLen
 
 
-class DaemonObject(ObjBase):
+class DaemonObject(object):
     """The part of the daemon that is exposed as a Pyro object."""
     def __init__(self, daemon):
-        super(DaemonObject,self).__init__()
         self.daemon=daemon
     def resolve(self, objectName):
         return self.daemon.resolve(objectName)
@@ -336,14 +337,16 @@ class Daemon(object):
         """Close down the server and release resources"""
         if hasattr(self,"transportServer"):
             self.transportServer.close()
-    def register(self, object, name=None):
+    def register(self, obj, name=None):
         """Register a Pyro object under the given (local) name. Note that this object
         is now only known inside this daemon, it is not automatically available in a name server."""
-        if object._pyroObjectId in self.objectsById or name in self.objectsByName:
+        if not hasattr(obj,"_pyroObjectId"):
+            obj._pyroObjectId=str(uuid.uuid4())
+        if obj._pyroObjectId in self.objectsById or name in self.objectsByName:
             raise DaemonError("object already registered")
-        self.objectsById[object._pyroObjectId]=(name,object)
+        self.objectsById[obj._pyroObjectId]=(name,obj)
         if name:
-            self.objectsByName[name]=object._pyroObjectId
+            self.objectsByName[name]=obj._pyroObjectId
     def unregister(self, objectIdOrName):
         """Remove an object from the known objects inside this daemon.
         You can unregister by objectId or by (local) object name."""
@@ -359,26 +362,28 @@ class Daemon(object):
             if obj:
                 del self.objectsByName[objectIdOrName]
                 del self.objectsById[obj]
-    def uriFor(self, obj, asPyroloc=False):
-        """Get a PyroURI for the given object (or objectId) from this daemon. Only a daemon can hand out
-        proper uris because the access location is contained in them."""
+    def uriFor(self, obj=None, name=None, asPyroloc=False):
+        """Get a PyroURI for the given object (or object name) from this daemon.
+        Only a daemon can hand out proper uris because the access location is contained in them."""
         if asPyroloc:
-            if isinstance(obj, ObjBase):
-                obj=self.objectsById[obj._pyroObjectId][0]
-            elif type(obj) is not str:
-                raise TypeError("obj must be str (name) or a Pyro object")
-            return PyroURI("PYROLOC:"+obj+"@"+self.locationStr)
+            if obj is not None:
+                name=self.objectsById[obj._pyroObjectId][0]
+            elif type(name) is not str:
+                raise TypeError("name must be str")
+            return PyroURI("PYROLOC:"+name+"@"+self.locationStr)
         else:
-            if isinstance(obj, ObjBase):
-                obj=obj._pyroObjectId
-            elif type(obj) is not str:
-                raise TypeError("obj must be str or a Pyro object")
-            return PyroURI("PYRO:"+obj+"@"+self.locationStr)
+            if obj is not None:
+                name=getattr(obj,"_pyroObjectId",None)
+                if name is None:
+                    raise DaemonError("object isn't registered")
+            elif type(name) is not str:
+                raise TypeError("name must be str")
+            return PyroURI("PYRO:"+name+"@"+self.locationStr)
     def resolve(self, objectName):
         """Get a PyroURI for the given object name known by this daemon."""
-        obj=self.objectsByName.get(objectName)
-        if obj:
-            return self.uriFor(obj)
+        objId=self.objectsByName.get(objectName)
+        if objId:
+            return self.uriFor(name=objId)
         else:
             log.debug("unknown object: %s",objectName)
             raise NamingError("unknown object")

@@ -5,12 +5,11 @@ import Pyro.core
 import Pyro.config
 import Pyro.errors
 
-class Thing(Pyro.core.ObjBase):
+class Thing(object):
     def __init__(self, arg):
-        super(Thing,self).__init__()
         self.arg=arg
     def __eq__(self,other):
-        return self.arg==other.arg and self._pyroObjectId==other._pyroObjectId
+        return self.arg==other.arg
 
 class CoreTests(unittest.TestCase):
 
@@ -98,20 +97,6 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(42, flags)
         self.assertEqual(5, dataLen)
 
-    def testSerializability(self):
-        ser=Pyro.util.Serializer()
-        uri=Pyro.core.PyroURI("PYRO:9999@host.com:4444")
-        p=ser.serialize(uri)
-        uri2=ser.deserialize(p)
-        self.assertEqual(uri, uri2)
-        
-        thing=Thing(42)
-        self.assertTrue(thing._pyroObjectId is not None)
-        p=ser.serialize(thing)
-        thing2=ser.deserialize(p)
-        self.assertEquals(thing2,thing)
-        self.assertEqual(thing2._pyroObjectId, thing._pyroObjectId)
-
     def testProxyOffline(self):
         # only offline stuff here.
         # online stuff needs a running daemon, so we do that in the naming test.
@@ -122,6 +107,16 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(p1._pyroConnection is None)
         p1._pyroRelease()
         p1._pyroRelease()
+        # try copying a not-connected proxy
+        import copy
+        p3=copy.copy(p1)
+        self.assertTrue(p3._pyroConnection is None)
+        self.assertTrue(p1._pyroConnection is None)
+        self.assertEqual(p3._pyroUri, p1._pyroUri)
+        self.assertFalse(p3._pyroUri is p1._pyroUri)
+        self.assertEqual(p3._pyroSerializer, p1._pyroSerializer)
+        self.assertFalse(p3._pyroSerializer is p1._pyroSerializer)
+
         
         
 if __name__ == "__main__":

@@ -142,9 +142,13 @@ class Serializer(object):
         import cPickle as pickle
     except ImportError:
         import pickle
-    def __init__(self, pickleProtocol=None):
-        self.pickleProtocol=pickleProtocol if pickleProtocol is not None else self.pickle.HIGHEST_PROTOCOL
+    if pickle.HIGHEST_PROTOCOL<2:
+        raise RuntimeError("pickle serializer needs to support protocol 2 or higher")
+    def __init__(self):
+        pass
     def serialize(self, data):
-        return self.pickle.dumps(data, self.pickleProtocol)
+        return self.pickle.dumps(data, self.pickle.HIGHEST_PROTOCOL)
     def deserialize(self, data):
         return self.pickle.loads(data)
+    def __eq__(self, other):
+        return type(other) is Serializer and vars(self)==vars(other)

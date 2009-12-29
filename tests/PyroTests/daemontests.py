@@ -20,7 +20,7 @@ class DaemonTests(unittest.TestCase):
         self.assertTrue(Pyro.constants.INTERNAL_DAEMON_GUID in d.objectsById)
         self.assertTrue(Pyro.constants.DAEMON_LOCALNAME in d.objectsByName)
         self.assertEqual(d.resolve(Pyro.constants.DAEMON_LOCALNAME).object, Pyro.constants.INTERNAL_DAEMON_GUID)
-        self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@"+defaultLocation, str(d.uriFor(Pyro.constants.INTERNAL_DAEMON_GUID)))
+        self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@"+defaultLocation, str(d.uriFor(name=Pyro.constants.INTERNAL_DAEMON_GUID)))
         
     def testRegisterEtc(self):
         d=self.daemon
@@ -28,13 +28,16 @@ class DaemonTests(unittest.TestCase):
         self.assertEquals(1, len(d.objectsById))
         self.assertEquals(1, len(d.registeredObjects()))
         
-        class MyObj(Pyro.core.ObjBase):
+        class MyObj(object):
+            def __init__(self, arg):
+                self.arg=arg
             def __eq__(self,other):
-                return self._pyroObjectId==other._pyroObjectId
+                return self.arg==other.arg
         
-        o1=MyObj()
-        o2=MyObj()
+        o1=MyObj("object1")
+        o2=MyObj("object2")
         d.register(o1, None)
+        self.assertRaises(DaemonError, d.register, o1, None)
         self.assertRaises(DaemonError, d.register, o1, "obj1a")
         d.register(o2, "obj2a")
         self.assertRaises(DaemonError, d.register, o2, "obj2b")
@@ -47,9 +50,9 @@ class DaemonTests(unittest.TestCase):
 
         # test uriFor
         u1=d.uriFor(o1)
-        u2=d.uriFor(o2._pyroObjectId)
-        u3=d.uriFor("unexisting_thingie",True)
-        u4=d.uriFor(o2,True)
+        u2=d.uriFor(name=o2._pyroObjectId)
+        u3=d.uriFor(name="unexisting_thingie",asPyroloc=True)
+        u4=d.uriFor(o2,asPyroloc=True)
         self.assertEquals(Pyro.core.PyroURI, type(u1))
         self.assertEquals("PYRO",u1.protocol)
         self.assertEquals("PYROLOC",u3.protocol)

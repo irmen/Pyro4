@@ -107,6 +107,38 @@ class OnlineTests(unittest.TestCase):
         self.assertEqual("PYRO",p1._pyroUri.protocol)
         self.assertEqual("PYROLOC",p2._pyroUri.protocol)
         
+    def testSerCoreOnline(self):
+        # online serialization tests
+        ser=Pyro.util.Serializer()
+        nsLocation="%s:%d" %("localhost", Pyro.config.DEFAULT_NS_PORT)
+        daemonUri="PYROLOC:"+Pyro.constants.DAEMON_LOCALNAME+"@"+nsLocation
+        proxy=Pyro.core.Proxy(daemonUri)
+        proxy._pyroBind()
+        self.assertFalse(proxy._pyroConnection is None)
+        p=ser.serialize(proxy)
+        proxy2=ser.deserialize(p)
+        self.assertTrue(proxy2._pyroConnection is None)
+        self.assertFalse(proxy._pyroConnection is None)
+        self.assertEqual(proxy2._pyroUri, proxy._pyroUri)
+        self.assertEqual(proxy2._pyroSerializer, proxy._pyroSerializer)
+        proxy2._pyroBind()
+        self.assertFalse(proxy2._pyroConnection is None)
+        self.assertFalse(proxy2._pyroConnection is proxy._pyroConnection)
+        proxy._pyroRelease()
+        proxy2._pyroRelease()
+        self.assertTrue(proxy._pyroConnection is None)
+        self.assertTrue(proxy2._pyroConnection is None)
+        proxy.ping()
+        proxy2.ping()
+        # try copying a connected proxy
+        import copy
+        proxy3=copy.copy(proxy)
+        self.assertTrue(proxy3._pyroConnection is None)
+        self.assertFalse(proxy._pyroConnection is None)
+        self.assertEqual(proxy3._pyroUri, proxy._pyroUri)
+        self.assertFalse(proxy3._pyroUri is proxy._pyroUri)
+        self.assertEqual(proxy3._pyroSerializer, proxy._pyroSerializer)
+
 
 class OfflineTests(unittest.TestCase):
     def testRegister(self):
