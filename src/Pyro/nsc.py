@@ -7,7 +7,7 @@ def handleCommand(ns, options, args):
             print "%s --> %s" % (name, uri)
         print "--------END LIST",title
     def cmd_ping():
-        ns.ping
+        ns.ping()
         print "Name server ping ok."
     def cmd_listprefix():
         if len(args)==1:
