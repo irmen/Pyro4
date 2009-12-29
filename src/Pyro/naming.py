@@ -16,10 +16,16 @@ class NameServer(object):
         log.info("nameserver initialized")
     def lookup(self,arg):
         try:
-            return self.namespace[arg]
+            return Pyro.core.PyroURI(self.namespace[arg])
         except KeyError:
             raise NamingError("unknown name")
     def register(self,name,uri):
+        if isinstance(uri, Pyro.core.PyroURI):
+            uri=str(uri)
+        elif type(uri) is not str:
+            raise TypeError("only PyroURIs or strings can be registered")
+        if type(name) is not str:
+            raise TypeError("name must be a str")
         if name in self.namespace:
             raise NamingError("name already registered")
         self.namespace[name]=uri
@@ -35,11 +41,15 @@ class NameServer(object):
             return result
         elif regex:
             result={}
-            regex=re.compile(regex)
-            for name,value in self.namespace.items():
-                if regex.match(name):
-                    result[name]=value
-            return result
+            try:
+                regex=re.compile(regex+"$")  # add end of string marker
+            except re.error,x:
+                raise NamingError("invalid regex: "+str(x))
+            else:
+                for name,value in self.namespace.items():
+                    if regex.match(name):
+                        result[name]=value
+                return result
         else:
             # just return everything
             return self.namespace
@@ -72,11 +82,16 @@ def startNS(host=None, port=None):
     print "NS shut down."
 
 
-def locateNS(location=None):
+def locateNS(host=None, port=None):
     """Get a proxy for a name server somewhere in the network."""
     uristring="PYRONAME:"+Pyro.constants.NAMESERVER_NAME
-    if location:
-        uristring+="@"+location
+    if port:
+        if host is None:
+            host=Pyro.config.DEFAULT_SERVERHOST
+    if host:
+        uristring+="@"+host
+    if port:
+        uristring+=":"+str(port)
     uri=Pyro.core.PyroURI(uristring)
     if uri.sockname or uri.pipename:
         uri.protocol="PYROLOC"
@@ -110,11 +125,20 @@ def resolve(uri):
         daemon=Pyro.core.Proxy(daemonuri)
         return daemon.resolve(uri.object)
     elif uri.protocol=="PYRONAME":
-        ns=locateNS(uri.location)
+        ns=locateNS(uri.host, uri.port)
         return ns.lookup(uri.object)
     else:
         raise PyroError("invalid uri protocol")
             
 
+def main(args):
+    from optparse import OptionParser
+    parser=OptionParser()
+    parser.add_option("-n","--host", dest="host", help="hostname to bind server on")
+    parser.add_option("-p","--port", dest="port", type="int", help="port to bind server on")
+    options,args = parser.parse_args(args)    
+    startNS(options.host,options.port)
+
 if __name__=="__main__":
-    startNS()
+    import sys
+    main(sys.argv[1:])

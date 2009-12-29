@@ -34,3 +34,15 @@ def _process(dictionary):
  
 _process(globals())
 del _process
+
+
+# easy config diagnostic with python -m
+if __name__=="__main__":
+    import Pyro.constants
+    import re
+    print "Pyro version:",Pyro.constants.VERSION
+    print "Active configuration settings:"
+    rx=re.compile(r"[A-Z_]+$")
+    for n,v in globals().items():
+        if rx.match(n):
+            print "%s=%s" % (n,v)
