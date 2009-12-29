@@ -7,13 +7,11 @@ import select
 import os
 from Pyro.errors import ConnectionClosedError, TimeoutError, PyroError
 
+ERRNO_RETRIES=[errno.EINTR, errno.EAGAIN, errno.EWOULDBLOCK]
+if hasattr(errno, "WSAEINTR"): ERRNO_RETRIES.append(errno.WSAEINTR)
+if hasattr(errno, "WSAEWOULDBLOCK"): ERRNO_RETRIES.append(errno.WSAEWOULDBLOCK)
+
 log=logging.getLogger("Pyro.socketutil")
-
-_selectfunction=select.select
-if os.name=="java":
-    # Jython needs a select wrapper. Should really use poll though.... 
-	from select import cpython_compatible_select as _selectfunction
-
 
 def getIpAddress(hostname=None):
     """returns the IP address for the current, or another, hostname"""
@@ -53,7 +51,8 @@ def receiveData(sock, size):
         except socket.timeout:
             raise TimeoutError("receiving: timeout")
         except socket.error,x:
-            if x.args[0] == errno.EINTR or (hasattr(errno, "WSAEINTR") and x.args[0] == errno.WSAEINTR):
+            err=getattr(x,"errno",x.args[0])
+            if err in ERRNO_RETRIES:
                 continue    # interrupted system call, just retry
             raise ConnectionClosedError("receiving: connection lost: "+str(x))
 
@@ -132,33 +131,80 @@ class SocketServer(object):
         if hasattr(self,"sock") and self.sock is not None:
             self.sock.close()
             self.sock=None
-    def requestLoop(self, loopCondition=lambda:True):
-        #@todo: implement poll-based loop for systems that have it
-        while loopCondition():
-            rlist=self.clients[:]
-            rlist.append(self.sock)
-            rlist,wlist,xlist=_selectfunction(rlist, [], [], 1)
-            if self.sock in rlist:
-                rlist.remove(self.sock)
-                self.handleConnection(self.sock)
-            for sock in rlist:
-                try:
-                    self.callback.handleRequest(sock)
-                except (socket.error,ConnectionClosedError),x:
-                    # client went away.
-                    sock.close()
-                    self.clients.remove(sock)
+    if hasattr(select,"poll"):
+        log.info("using poll loop")
+        def requestLoop(self, loopCondition=lambda:True):
+            try:
+                poll=select.poll()
+                fileno2connection={}  # map fd to original connection object
+                if os.name=="java":
+                    self.sock.setblocking(False) # jython/java requirement
+                poll.register(self.sock.fileno(), select.POLLIN | select.POLLPRI)
+                fileno2connection[self.sock.fileno()]=self.sock
+                while loopCondition():
+                    polls=poll.poll(1000)
+                    for (fd,mask) in polls:
+                        conn=fileno2connection[fd]
+                        if conn is self.sock:
+                            conn=self.handleConnection(self.sock)
+                            if conn:
+                                if os.name=="java":
+                                    conn.sock.setblocking(False)
+                                poll.register(conn.fileno(), select.POLLIN | select.POLLPRI)
+                                fileno2connection[conn.fileno()]=conn
+                        else:
+                            try:
+                                self.callback.handleRequest(conn)
+                            except (socket.error,ConnectionClosedError),x:
+                                # client went away.
+                                poll.unregister(conn.fileno())
+                                del fileno2connection[conn.fileno()]
+                                conn.close()
+            finally:
+                if hasattr(poll, "close"):
+                    poll.close()
+
+    else:
+        log.info("using select loop")
+        _selectfunction=select.select
+        if os.name=="java":
+            # Jython needs a select wrapper. Usually it will use the poll loop above though. 
+        	from select import cpython_compatible_select as _selectfunction
+        def requestLoop(self, loopCondition=lambda:True):
+            while loopCondition():
+                rlist=self.clients[:]
+                rlist.append(self.sock)
+                rlist,wlist,xlist=self._selectfunction(rlist, [], [], 1)
+                if self.sock in rlist:
+                    rlist.remove(self.sock)
+                    conn=self.handleConnection(self.sock)
+                    self.clients.append(conn)
+                for conn in rlist:
+                    try:
+                        self.callback.handleRequest(conn)
+                    except (socket.error,ConnectionClosedError),x:
+                        # client went away.
+                        conn.close()
+                        self.clients.remove(conn)
 
     def handleConnection(self, sock):
-        csock, caddr=sock.accept()
+        try:
+            csock, caddr=sock.accept()
+        except socket.error,x:
+            err=getattr(x,"errno",x.args[0])
+            print "ACCEPT FAILED ERRNO",err
+            if err in ERRNO_RETRIES:
+                # just ignore this error
+                return None
         log.debug("new connection from %s",caddr)
         try:
             conn=SocketConnection(csock)
             if self.callback.handshake(conn):
-                self.clients.append(conn)
+                return conn
         except (socket.error, PyroError), x:
             log.warn("error during connect: %s",x)
             csock.close()
+        return None
 
     def close(self): 
         if self.sock:
