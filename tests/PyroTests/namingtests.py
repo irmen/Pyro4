@@ -184,7 +184,7 @@ class OfflineTests(unittest.TestCase):
         self.assertEqual(0,len(objects))
         objects=ns.list(prefix="test.")
         self.assertEqual(6,len(objects))
-        objects=ns.list(regex=r".+other")
+        objects=ns.list(regex=r".+other..")
         self.assertEqual(3,len(objects))
         self.assertTrue("test.other.a" in objects)
         self.assertEqual("SOMETHINGA", objects["test.other.a"])
