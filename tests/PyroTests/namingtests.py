@@ -15,21 +15,26 @@ class NSDaemonThread(threading.Thread):
         try:
             self.nsdaemon.requestLoop()
         finally:
+            print "Close down NS Daemon Thread"
             self.nsdaemon.close()
-        
+            print "NS Daemon Thread exit."
+
 class OnlineTests(unittest.TestCase):
     # These tests actually use a running name server.
     # They also include a few tests that are not strictly name server tests,
     # but just tests of some stuff that requires a working Pyro server.
     
     def setUp(self):
+        print "Setup..."
         self.nsdaemon=Pyro.naming.NameServerDaemon(host="localhost")
         self.nsdaemonthread=NSDaemonThread(self.nsdaemon)
         self.nsdaemonthread.start()
         self.nsdaemonthread.started.wait()
 
     def tearDown(self):
+        print "Teardown..."
         self.nsdaemon.shutdown()
+        print "join wait..."
         self.nsdaemonthread.join()
 
     def testLookupAndRegister(self):

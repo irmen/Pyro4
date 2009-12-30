@@ -36,7 +36,6 @@ class TestSocketServer(unittest.TestCase):
         serv=SU.SocketServer(callback,"localhost",15555)
         self.assertEqual("localhost:15555", serv.locationStr)
         self.assertTrue(serv.sock is not None)
-        self.assertEqual(serv.callback, callback)
         conn=SU.SocketConnection(serv.sock, "12345")
         self.assertEqual("12345",conn.objectId)
         self.assertTrue(conn.sock is not None)
@@ -46,7 +45,6 @@ class TestSocketServer(unittest.TestCase):
         serv.close()
         serv.close()
         self.assertTrue(serv.sock is None)
-        self.assertTrue(serv.callback is None)
         
 
 if __name__ == "__main__":

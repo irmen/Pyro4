@@ -1,10 +1,9 @@
 """Pyro socket utilities."""
 
-import socket
-import errno
+import socket, select
+import os, errno
+import threading, Queue
 import logging
-import select
-import os
 from Pyro.errors import ConnectionClosedError, TimeoutError, PyroError
 
 ERRNO_RETRIES=[errno.EINTR, errno.EAGAIN, errno.EWOULDBLOCK]
@@ -118,8 +117,78 @@ class SocketConnection(object):
         return self.sock.fileno()
 
 
-class SocketServer(object):
-    """transport server for socket connections"""
+class SocketWorker(threading.Thread):
+    queue=Queue.Queue()     # connection queue
+    threads=set()           # worker threads
+    callback=None           # object that will handle the request
+    def run(self):
+        self.running=True
+        while self.running: # loop over all connections in the queue
+            self.csock,self.caddr = self.queue.get()
+            self.csock=SocketConnection(self.csock)
+            if self.handleConnection(self.csock):
+                while self.running:   # loop over all requests during a single connection
+                    try:
+                        self.callback.handleRequest(self.csock)
+                    except (socket.error,ConnectionClosedError),x:
+                        # client went away.
+                        self.csock.close()
+                        break
+
+    def handleConnection(self,conn):
+        try:
+            if self.callback.handshake(conn):
+                return True
+        except (socket.error, PyroError), x:
+            log.warn("error during connect: %s",x)
+            conn.close()
+        return False
+                    
+class SocketServer_Threadpool(object):
+    """transport server for socket connections, worker thread pool version."""
+    def __init__(self, callbackObject, host, port):
+        self.sock=createSocket(bind=(host,port))
+        SocketWorker.callback=callbackObject
+        if not host:
+            host=self.sock.getsockname()[0]
+        self.locationStr="%s:%d" % (host,port)
+        numthreads=5    # XXX configurable
+        for x in range(numthreads):
+            worker=SocketWorker()
+            worker.daemon=True
+            SocketWorker.threads.add(worker)
+            worker.start()
+        log.info("%d worker threads", len(SocketWorker.threads))
+    def __del__(self):
+        if hasattr(self,"sock") and self.sock is not None:
+            self.sock.close()
+            self.sock=None
+    def requestLoop(self, loopCondition=lambda:True):
+        while (self.sock is not None) and loopCondition():
+            print "before accept..."
+            csock, caddr=self.sock.accept()   # this doesn't break on windows...
+            print "after accept..."
+            log.debug("new connection from %s",caddr)
+            SocketWorker.queue.put((csock,caddr))
+    def close(self): 
+        if self.sock:
+            print "socketserver SHUTDOWN"
+            try:
+                self.sock.shutdown(socket.SHUT_RDWR)
+            except Exception:
+                pass
+            self.sock.close()
+        self.sock=None
+        for worker in SocketWorker.threads:
+            try:
+                worker.running=False
+                worker.csock.shutdown(socket.SHUT_RDWR)
+            except Exception:
+                pass
+
+
+class SocketServer_Select(object):
+    """transport server for socket connections, select/poll loop multiplex version."""
     def __init__(self, callbackObject, host, port):
         self.sock=createSocket(bind=(host,port))
         self.clients=[]
@@ -178,10 +247,12 @@ class SocketServer(object):
                 if self.sock in rlist:
                     rlist.remove(self.sock)
                     conn=self.handleConnection(self.sock)
-                    self.clients.append(conn)
+                    if conn:
+                        self.clients.append(conn)
                 for conn in rlist:
                     try:
-                        self.callback.handleRequest(conn)
+                        if self.callback:
+                            self.callback.handleRequest(conn)
                     except (socket.error,ConnectionClosedError),x:
                         # client went away.
                         conn.close()
@@ -192,7 +263,7 @@ class SocketServer(object):
             csock, caddr=sock.accept()
         except socket.error,x:
             err=getattr(x,"errno",x.args[0])
-            print "ACCEPT FAILED ERRNO",err
+            print "ACCEPT FAILED ERRNO",err  # XXX Jython issue
             if err in ERRNO_RETRIES:
                 # just ignore this error
                 return None
@@ -211,5 +282,11 @@ class SocketServer(object):
             self.sock.close()
         self.sock=None
         for c in self.clients:
-            c.close()
+            try:
+                c.close()
+            except:
+                pass
         self.callback=None
+
+
+SocketServer=SocketServer_Threadpool
