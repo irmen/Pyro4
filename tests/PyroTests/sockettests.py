@@ -31,9 +31,23 @@ class ServerCallback(object):
             raise TypeError("handleRequest expected SocketConnection parameter")
 
 class TestSocketServer(unittest.TestCase):
-    def testServer(self):
+    def testServer_thread(self):
         callback=ServerCallback()
-        serv=SU.SocketServer(callback,"localhost",15555)
+        serv=SU.SocketServer_Threadpool(callback,"localhost",15555)
+        self.assertEqual("localhost:15555", serv.locationStr)
+        self.assertTrue(serv.sock is not None)
+        conn=SU.SocketConnection(serv.sock, "12345")
+        self.assertEqual("12345",conn.objectId)
+        self.assertTrue(conn.sock is not None)
+        conn.close()
+        conn.close()
+        self.assertTrue(conn.sock is None)
+        serv.close()
+        serv.close()
+        self.assertTrue(serv.sock is None)
+    def testServer_select(self):
+        callback=ServerCallback()
+        serv=SU.SocketServer_Select(callback,"localhost",15555)
         self.assertEqual("localhost:15555", serv.locationStr)
         self.assertTrue(serv.sock is not None)
         conn=SU.SocketConnection(serv.sock, "12345")

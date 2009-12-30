@@ -256,7 +256,12 @@ class Daemon(object):
             host=Pyro.config.DEFAULT_SERVERHOST
         if not port:
             port=Pyro.config.DEFAULT_PORT
-        self.transportServer=Pyro.socketutil.SocketServer(self, host, port)
+        if Pyro.config.SERVERTYPE=="thread":
+            self.transportServer=Pyro.socketutil.SocketServer_Threadpool(self, host, port)
+        elif Pyro.config.SERVERTYPE=="select":
+            self.transportServer=Pyro.socketutil.SocketServer_Select(self, host, port)
+        else:
+            raise PyroError("invalid server type '%s'" % Pyro.config.SERVERTYPE)
         self.locationStr=self.transportServer.locationStr 
         self.serializer=Pyro.util.Serializer()
         self._pyroObjectId=Pyro.constants.INTERNAL_DAEMON_GUID
@@ -274,20 +279,15 @@ class Daemon(object):
         log.info("daemon %s entering requestloop", self.locationStr)
         try:
             self.loopstopped.clear()
-            print "entering transportserver requestloop"
             self.transportServer.requestLoop(loopCondition=lambda: not self.mustshutdown)
         finally:
             self.loopstopped.set()
-        print "daemon: exit requestloop"
         log.debug("daemon exits requestloop")
     def shutdown(self):
         """Cleanly terminate a deamon that is running in the requestloop."""
         log.debug("daemon shutting down")
         self.mustshutdown=True
-        #self.transportServer.close()
-        print "shutdown before wait"
         self.loopstopped.wait()
-        print "shutdown after wait"
         self.close()
         log.info("daemon %s shut down", self.locationStr)
     def handshake(self, conn):

@@ -118,13 +118,14 @@ class SocketConnection(object):
 
 
 class SocketWorker(threading.Thread):
+    """worker thread to process requests"""
     queue=Queue.Queue()     # connection queue
     threads=set()           # worker threads
     callback=None           # object that will handle the request
     def run(self):
         self.running=True
         while self.running: # loop over all connections in the queue
-            self.csock,self.caddr = self.queue.get()
+            self.csock,self.caddr = self.queue.get()   # XXX blocks, so thread can't be stopped automatically. Maybe put 'stop' sentinels in the queue object to stop all threads?
             self.csock=SocketConnection(self.csock)
             if self.handleConnection(self.csock):
                 while self.running:   # loop over all requests during a single connection
@@ -147,6 +148,7 @@ class SocketWorker(threading.Thread):
 class SocketServer_Threadpool(object):
     """transport server for socket connections, worker thread pool version."""
     def __init__(self, callbackObject, host, port):
+        log.info("starting thread pool socketserver")
         self.sock=createSocket(bind=(host,port))
         SocketWorker.callback=callbackObject
         if not host:
@@ -165,14 +167,11 @@ class SocketServer_Threadpool(object):
             self.sock=None
     def requestLoop(self, loopCondition=lambda:True):
         while (self.sock is not None) and loopCondition():
-            print "before accept..."
-            csock, caddr=self.sock.accept()   # this doesn't break on windows...
-            print "after accept..."
+            csock, caddr=self.sock.accept()   # XXX this doesn't break, so how can we abort this loop???
             log.debug("new connection from %s",caddr)
             SocketWorker.queue.put((csock,caddr))
     def close(self): 
         if self.sock:
-            print "socketserver SHUTDOWN"
             try:
                 self.sock.shutdown(socket.SHUT_RDWR)
             except Exception:
@@ -190,6 +189,7 @@ class SocketServer_Threadpool(object):
 class SocketServer_Select(object):
     """transport server for socket connections, select/poll loop multiplex version."""
     def __init__(self, callbackObject, host, port):
+        log.info("starting select/poll socketserver")
         self.sock=createSocket(bind=(host,port))
         self.clients=[]
         self.callback=callbackObject
@@ -201,8 +201,8 @@ class SocketServer_Select(object):
             self.sock.close()
             self.sock=None
     if hasattr(select,"poll"):
-        log.info("using poll loop")
         def requestLoop(self, loopCondition=lambda:True):
+            log.info("entering poll-based requestloop")
             try:
                 poll=select.poll()
                 fileno2connection={}  # map fd to original connection object
@@ -234,12 +234,12 @@ class SocketServer_Select(object):
                     poll.close()
 
     else:
-        log.info("using select loop")
         _selectfunction=select.select
         if os.name=="java":
             # Jython needs a select wrapper. Usually it will use the poll loop above though. 
         	from select import cpython_compatible_select as _selectfunction
         def requestLoop(self, loopCondition=lambda:True):
+            log.info("entering select-based requestloop")
             while loopCondition():
                 rlist=self.clients[:]
                 rlist.append(self.sock)
@@ -288,5 +288,4 @@ class SocketServer_Select(object):
                 pass
         self.callback=None
 
-
-SocketServer=SocketServer_Threadpool
+    

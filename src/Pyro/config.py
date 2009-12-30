@@ -6,6 +6,7 @@ DEFAULT_SERVERHOST  =   "localhost"
 DEFAULT_PORT        =   7766
 DEFAULT_NS_PORT     =   9090
 COMPRESSION         =   False   # XXX not used yet
+SERVERTYPE          =   "thread"
 
 
 def _process(dictionary):
