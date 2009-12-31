@@ -78,7 +78,7 @@ class BroadcastServer(threading.Thread):
     def __init__(self, nsUri, bchost=None, bcport=None):
         super(BroadcastServer,self).__init__()
         self.nsUri=str(nsUri)
-        self.running=True
+        self.running=threading.Event()
         bcport=bcport or Pyro.config.NS_BCPORT
         bchost=bchost or Pyro.config.NS_BCHOST
         self.sock=Pyro.socketutil.createBroadcastSocket((bchost,bcport))
@@ -89,9 +89,11 @@ class BroadcastServer(threading.Thread):
     def run(self):
         log.info("broadcast server listening")
         self.sock.settimeout(3)
-        while self.running:
+        self.running.set()
+        while self.running.isSet():
             try:
                 data,addr=self.sock.recvfrom(100)
+                print "BC REPLY: %s (%s)" % (data,addr)
                 if data=="GET_NSURI":
                     self.sock.sendto(self.nsUri, addr)
             except socket.timeout:
@@ -100,8 +102,9 @@ class BroadcastServer(threading.Thread):
                 log.info("broadcast server got an error: %s",x)
                 continue
         log.info("broadcast server exits")
+        self.running.clear()
     def close(self):
-        self.running=False
+        self.running.clear()
         self.sock.close()
 
 
@@ -130,6 +133,7 @@ def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None
 
 def locateNS(host=None, port=None):
     """Get a proxy for a name server somewhere in the network."""
+    print "Locate NS: %s:%s" % (host,port) 
     if host is None:
         # broadcast lookup
         if not port:
@@ -138,7 +142,8 @@ def locateNS(host=None, port=None):
         sock=Pyro.socketutil.createBroadcastSocket(timeout=0.7)
         for i in range(3):
             try:
-                sock.sendto("GET_NSURI",("<broadcast>",port))
+                #sock.sendto("GET_NSURI",("<broadcast>",port))
+                sock.sendto("GET_NSURI",("255.255.255.255",port))
                 data,addr=sock.recvfrom(100)
                 log.debug("located NS: %s",data)
                 return Pyro.core.Proxy(data)
@@ -157,6 +162,7 @@ def locateNS(host=None, port=None):
 
 def resolve(uri):
     """Resolve a 'magic' uri (PYRONAME, PYROLOC) into the direct PYRO uri."""
+    print "Resolve: ",uri
     if isinstance(uri, basestring):
         uri=Pyro.core.PyroURI(uri)
     elif not isinstance(uri, Pyro.core.PyroURI):
