@@ -40,12 +40,12 @@ class PyroURI(object):
         self.object=m.group("object")
         location=m.group("location")
         if self.protocol=="PYRONAME":
-            self._parseLocation(location, Pyro.config.DEFAULT_NS_PORT)
+            self._parseLocation(location, Pyro.config.NS_PORT)
             return
         if self.protocol in ("PYRO","PYROLOC"):
             if not location:
                 raise NamingError("invalid uri")
-            self._parseLocation(location, Pyro.config.DEFAULT_PORT)
+            self._parseLocation(location, Pyro.config.PORT)
         else:
             raise NamingError("invalid uri (protocol)")
     def _parseLocation(self,location,defaultPort):
@@ -253,9 +253,9 @@ class Daemon(object):
     def __init__(self, host=None, port=None):
         super(Daemon,self).__init__()
         if not host:
-            host=Pyro.config.DEFAULT_SERVERHOST
+            host=Pyro.config.SERVERHOST
         if not port:
-            port=Pyro.config.DEFAULT_PORT
+            port=Pyro.config.PORT
         if Pyro.config.SERVERTYPE=="thread":
             self.transportServer=Pyro.socketutil.SocketServer_Threadpool(self, host, port)
         elif Pyro.config.SERVERTYPE=="select":

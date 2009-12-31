@@ -2,7 +2,7 @@ import unittest
 import Pyro.config
 import Pyro.naming
 from Pyro.errors import *
-import threading
+import threading, socket
 
 class NSDaemonThread(threading.Thread):
     def __init__(self, nsdaemon):
@@ -23,28 +23,35 @@ class OnlineTests(unittest.TestCase):
     
     def setUp(self):
         Pyro.config.SERVERTYPE="select"   # threaded server cannot be aborted automatically at the moment
-        self.nsdaemon=Pyro.naming.NameServerDaemon(host="localhost")
+        self.hostname=socket.gethostname()
+        self.nsdaemon=Pyro.naming.NameServerDaemon(self.hostname)
         self.nsdaemonthread=NSDaemonThread(self.nsdaemon)
         self.nsdaemonthread.start()
         self.nsdaemonthread.started.wait()
+        nsUri=self.nsdaemon.uriFor(self.nsdaemon.ns)
+        self.bcserver=Pyro.naming.BroadcastServer(nsUri,bchost=self.hostname)
+        self.bcserver.daemon=True
+        self.bcserver.start()
 
     def tearDown(self):
+        self.bcserver.close()
         self.nsdaemon.shutdown()
         self.nsdaemonthread.join()
 
     def testLookupAndRegister(self):
-        self.assertRaises(NotImplementedError, Pyro.naming.locateNS)
-        ns=Pyro.naming.locateNS("localhost")
+        ns=Pyro.naming.locateNS() # broadcast lookup
+        self.assertTrue(isinstance(ns, Pyro.core.Proxy))
+        ns=Pyro.naming.locateNS(self.hostname) # normal lookup
         self.assertTrue(isinstance(ns, Pyro.core.Proxy))
         uri=ns._pyroUri
         self.assertEqual("PYRO",uri.protocol)
-        self.assertEqual("localhost",uri.host)
-        self.assertEqual(Pyro.config.DEFAULT_NS_PORT,uri.port)
-        ns=Pyro.naming.locateNS("localhost",Pyro.config.DEFAULT_NS_PORT)
+        self.assertEqual(self.hostname,uri.host)
+        self.assertEqual(Pyro.config.NS_PORT,uri.port)
+        ns=Pyro.naming.locateNS(self.hostname,Pyro.config.NS_PORT)
         uri=ns._pyroUri
         self.assertEqual("PYRO",uri.protocol)
-        self.assertEqual("localhost",uri.host)
-        self.assertEqual(Pyro.config.DEFAULT_NS_PORT,uri.port)
+        self.assertEqual(self.hostname,uri.host)
+        self.assertEqual(Pyro.config.NS_PORT,uri.port)
         
         # check that we cannot register a stupid type
         self.assertRaises(TypeError, ns.register, "test.object1", 5555)
@@ -66,30 +73,35 @@ class OnlineTests(unittest.TestCase):
         resolved2=Pyro.naming.resolve("PYRO:12345@host.com")
         self.assertTrue(type(resolved1) is Pyro.core.PyroURI)
         self.assertEqual(resolved1, resolved2)
-        self.assertEqual("PYRO:12345@host.com:"+str(Pyro.config.DEFAULT_PORT), str(resolved1))
+        self.assertEqual("PYRO:12345@host.com:"+str(Pyro.config.PORT), str(resolved1))
         
-        uri=Pyro.naming.resolve("PYROLOC:"+Pyro.constants.NAMESERVER_NAME+"@localhost:"+str(Pyro.config.DEFAULT_NS_PORT))
+        uri=Pyro.naming.resolve("PYROLOC:"+Pyro.constants.NAMESERVER_NAME+"@"+self.hostname+":"+str(Pyro.config.NS_PORT))
         self.assertEqual("PYRO",uri.protocol)
-        self.assertEqual("localhost",uri.host)
+        self.assertEqual(self.hostname,uri.host)
         self.assertNotEqual(Pyro.constants.NAMESERVER_NAME,uri.object)
         
-        ns=Pyro.naming.locateNS("localhost")
+        ns=Pyro.naming.locateNS(self.hostname)
         self.assertEqual(uri, ns._pyroUri)
         
-        uri=Pyro.naming.resolve("PYRONAME:"+Pyro.constants.NAMESERVER_NAME+"@localhost")
+        uri=Pyro.naming.resolve("PYRONAME:"+Pyro.constants.NAMESERVER_NAME+"@"+self.hostname)
         self.assertEqual("PYRO",uri.protocol)
-        self.assertEqual("localhost",uri.host)
+        self.assertEqual(self.hostname,uri.host)
         self.assertNotEqual(Pyro.constants.NAMESERVER_NAME,uri.object)
         self.assertEqual(uri, ns._pyroUri)
 
-        self.assertRaises(NamingError, Pyro.naming.resolve, "PYRONAME:unknown_object@localhost")
+        # broadcast lookup
+        self.assertRaises(NamingError, Pyro.naming.resolve, "PYRONAME:unknown_object")
+        uri=Pyro.naming.resolve("PYRONAME:"+Pyro.constants.NAMESERVER_NAME)
+        self.assertEquals(Pyro.core.PyroURI,type(uri))
+        self.assertEquals("PYRO",uri.protocol)
 
-        self.assertRaises(NotImplementedError, Pyro.naming.resolve, "PYRONAME:objectname" )
+        # test some errors
+        self.assertRaises(NamingError, Pyro.naming.resolve, "PYRONAME:unknown_object@"+self.hostname)
         self.assertRaises(TypeError, Pyro.naming.resolve, 999)  #wrong arg type
 
     def testOnlineStuff(self):
         # do a few proxy tests because they depend on a running daemon too
-        nsLocation="%s:%d" %("localhost", Pyro.config.DEFAULT_NS_PORT)
+        nsLocation="%s:%d" %(self.hostname, Pyro.config.NS_PORT)
         daemonUri="PYROLOC:"+Pyro.constants.DAEMON_LOCALNAME+"@"+nsLocation
         p1=Pyro.core.Proxy(daemonUri)
         p2=Pyro.core.Proxy(daemonUri)
@@ -119,7 +131,7 @@ class OnlineTests(unittest.TestCase):
     def testSerCoreOnline(self):
         # online serialization tests
         ser=Pyro.util.Serializer()
-        nsLocation="%s:%d" %("localhost", Pyro.config.DEFAULT_NS_PORT)
+        nsLocation="%s:%d" %(self.hostname, Pyro.config.NS_PORT)
         daemonUri="PYROLOC:"+Pyro.constants.DAEMON_LOCALNAME+"@"+nsLocation
         proxy=Pyro.core.Proxy(daemonUri)
         proxy._pyroBind()

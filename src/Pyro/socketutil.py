@@ -4,7 +4,7 @@ import socket, select
 import os, errno
 import threading, Queue
 import logging
-from Pyro.errors import ConnectionClosedError, TimeoutError, PyroError
+from Pyro.errors import *
 
 ERRNO_RETRIES=[errno.EINTR, errno.EAGAIN, errno.EWOULDBLOCK]
 if hasattr(errno, "WSAEINTR"): ERRNO_RETRIES.append(errno.WSAEINTR)
@@ -81,6 +81,29 @@ def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True):
         setKeepalive(sock)
     return sock
 
+def createBroadcastSocket(bind=None, reuseaddr=True, timeout=None):
+    """Create a udp broadcast socket."""
+    sock=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    if reuseaddr:
+        setReuseAddr(sock)
+    if bind:
+        if bind[0]:
+            hosts=[bind[0]]
+        else:
+            hosts=["<broadcast>", "", "255.255.255.255"]
+        for host in hosts:
+            try:
+                sock.bind((host, bind[1]))
+                return sock
+            except socket.error:
+                continue
+        sock.close()
+        raise CommunicationError("cannot bind broadcast socket")
+    if timeout is not None:
+        sock.settimeout(timeout)
+    return sock
+    
 def setReuseAddr(sock):
     """sets the SO_REUSEADDR option on the socket.""" 
     try:
@@ -263,7 +286,7 @@ class SocketServer_Select(object):
             csock, caddr=sock.accept()
         except socket.error,x:
             err=getattr(x,"errno",x.args[0])
-            print "ACCEPT FAILED ERRNO",err  # XXX Jython issue
+            print "ACCEPT FAILED ERRNO=",err  # XXX Jython issue
             if err in ERRNO_RETRIES:
                 # just ignore this error
                 return None

@@ -15,7 +15,7 @@ class DaemonTests(unittest.TestCase):
         
     def testDaemon(self):
         d=self.daemon
-        defaultLocation="%s:%d" %(Pyro.config.DEFAULT_SERVERHOST, Pyro.config.DEFAULT_PORT)
+        defaultLocation="%s:%d" %(Pyro.config.SERVERHOST, Pyro.config.PORT)
         self.assertEqual( defaultLocation, d.locationStr)
         self.assertTrue(Pyro.constants.INTERNAL_DAEMON_GUID in d.objectsById)
         self.assertTrue(Pyro.constants.DAEMON_LOCALNAME in d.objectsByName)
@@ -24,7 +24,7 @@ class DaemonTests(unittest.TestCase):
         
     def testRegisterEtc(self):
         d=self.daemon
-        defaultLocation="%s:%d" %(Pyro.config.DEFAULT_SERVERHOST, Pyro.config.DEFAULT_PORT)
+        defaultLocation="%s:%d" %(Pyro.config.SERVERHOST, Pyro.config.PORT)
         self.assertEquals(1, len(d.objectsById))
         self.assertEquals(1, len(d.registeredObjects()))
         

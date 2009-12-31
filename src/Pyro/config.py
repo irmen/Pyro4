@@ -2,11 +2,14 @@
 Pyro configuration settings.
 """
 
-DEFAULT_SERVERHOST  =   "localhost"
-DEFAULT_PORT        =   7766
-DEFAULT_NS_PORT     =   9090
-COMPRESSION         =   False   # XXX not used yet
-SERVERTYPE          =   "thread"
+SERVERHOST      =   "localhost"
+PORT            =   7766
+NS_HOST         =   SERVERHOST,
+NS_PORT         =   9090    # tcp
+NS_BCPORT       =   9090    # udp
+NS_BCHOST       =   None
+COMPRESSION     =   False   # XXX not used yet
+SERVERTYPE      =   "thread"
 
 
 def _process(dictionary):

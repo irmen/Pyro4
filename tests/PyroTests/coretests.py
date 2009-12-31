@@ -52,7 +52,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("host.com",p.host)
         self.assertEqual(None,p.pipename)
         self.assertEqual(None,p.sockname)
-        self.assertEqual(Pyro.config.DEFAULT_PORT,p.port)
+        self.assertEqual(Pyro.config.PORT,p.port)
         p=Pyro.core.PyroURI("PYRO:12345@host.com:9999")
         self.assertEqual("host.com",p.host)
         self.assertEqual(9999,p.port)

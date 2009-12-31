@@ -43,7 +43,7 @@ def main(args):
     usage = """usage: %prog [options] command [arguments]\nCommand is one of: register remove list listregex ping"""
     parser = OptionParser(usage=usage)
     parser.add_option("-n","--host", dest="host", help="hostname of the NS")
-    parser.add_option("-p","--port", dest="port", type="int", help="port of the NS")
+    parser.add_option("-p","--port", dest="port", type="int", help="port of the NS (or bc-port if host isn't specified)")
     parser.add_option("-v","--verbose", action="store_true", dest="verbose", help="verbose output")
     options,args = parser.parse_args(args)    
     if not args or args[0] not in ("register","remove","list","listprefix", "listregex", "ping"):

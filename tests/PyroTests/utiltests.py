@@ -73,26 +73,26 @@ class TestUtils(unittest.TestCase):
         import Pyro.config
         import os
         try:
-            self.assertEqual(7766, Pyro.config.DEFAULT_PORT)
-            self.assertEqual("localhost", Pyro.config.DEFAULT_SERVERHOST)
+            self.assertEqual(7766, Pyro.config.PORT)
+            self.assertEqual("localhost", Pyro.config.SERVERHOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
-            os.environ["DEFAULT_PORT"]="4444"
+            os.environ["PORT"]="4444"
             reload(Pyro.config)
-            self.assertEqual(7766, Pyro.config.DEFAULT_PORT)
-            os.environ["PYRO_DEFAULT_PORT"]="4444"
-            os.environ["PYRO_DEFAULT_SERVERHOST"]="something.com"
+            self.assertEqual(7766, Pyro.config.PORT)
+            os.environ["PYRO_PORT"]="4444"
+            os.environ["PYRO_SERVERHOST"]="something.com"
             os.environ["PYRO_COMPRESSION"]="OFF"
             reload(Pyro.config)
-            self.assertEqual(4444, Pyro.config.DEFAULT_PORT)
-            self.assertEqual("something.com", Pyro.config.DEFAULT_SERVERHOST)
+            self.assertEqual(4444, Pyro.config.PORT)
+            self.assertEqual("something.com", Pyro.config.SERVERHOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
         finally:
-            del os.environ["PYRO_DEFAULT_PORT"]
-            del os.environ["PYRO_DEFAULT_SERVERHOST"]
+            del os.environ["PYRO_PORT"]
+            del os.environ["PYRO_SERVERHOST"]
             del os.environ["PYRO_COMPRESSION"]
             reload(Pyro.config)
-            self.assertEqual(7766, Pyro.config.DEFAULT_PORT)
-            self.assertEqual("localhost", Pyro.config.DEFAULT_SERVERHOST)
+            self.assertEqual(7766, Pyro.config.PORT)
+            self.assertEqual("localhost", Pyro.config.SERVERHOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
         
 

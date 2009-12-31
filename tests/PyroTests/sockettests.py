@@ -20,7 +20,14 @@ class TestSocketutil(unittest.TestCase):
         a[0].close()
         ss.close()
         cs.close()
-
+    def testBroadcast(self):
+        ss=SU.createBroadcastSocket((None, 8888))
+        cs=SU.createBroadcastSocket()
+        cs.sendto("monkey",('<broadcast>',8888))
+        data,addr=ss.recvfrom(500)
+        self.assertEquals("monkey",data)
+        cs.close()
+        ss.close()
 
 class ServerCallback(object):
     def handshake(self, connection):

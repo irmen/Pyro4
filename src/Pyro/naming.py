@@ -3,9 +3,12 @@ Pyro name server and helper functions.
 """
 
 import re,logging
+import threading
+import socket
 import Pyro.core
 import Pyro.constants
-from Pyro.errors import PyroError, NamingError
+import Pyro.socketutil
+from Pyro.errors import PyroError, NamingError, TimeoutError
 
 log=logging.getLogger("Pyro.naming")
 
@@ -61,9 +64,9 @@ class NameServerDaemon(Pyro.core.Daemon):
     """Daemon that contains the Name Server."""
     def __init__(self, host=None, port=None):
         if not host:
-            host=Pyro.config.DEFAULT_SERVERHOST
+            host=Pyro.config.SERVERHOST
         if not port:
-            port=Pyro.config.DEFAULT_NS_PORT
+            port=Pyro.config.NS_PORT
         super(NameServerDaemon,self).__init__(host,port)
         self.ns=NameServer()
         self.register(self.ns, Pyro.constants.NAMESERVER_NAME)
@@ -71,43 +74,86 @@ class NameServerDaemon(Pyro.core.Daemon):
         log.info("nameserver daemon running on %s",self.locationStr)
 
 
-def startNS(host=None, port=None):
+class BroadcastServer(threading.Thread):
+    def __init__(self, nsUri, bchost=None, bcport=None):
+        super(BroadcastServer,self).__init__()
+        self.nsUri=str(nsUri)
+        self.running=True
+        bcport=bcport or Pyro.config.NS_BCPORT
+        bchost=bchost or Pyro.config.NS_BCHOST
+        self.sock=Pyro.socketutil.createBroadcastSocket((bchost,bcport))
+        if bchost:
+            self.locationStr="%s:%d" % (bchost, bcport)
+        else:
+            self.locationStr="%s:%d" % self.sock.getsockname()
+    def run(self):
+        log.info("broadcast server listening")
+        self.sock.settimeout(3)
+        while self.running:
+            try:
+                data,addr=self.sock.recvfrom(100)
+                if data=="GET_NSURI":
+                    self.sock.sendto(self.nsUri, addr)
+            except socket.timeout:
+                continue
+            except socket.error,x:
+                log.info("broadcast server got an error: %s",x)
+                continue
+        log.info("broadcast server exits")
+    def close(self):
+        self.running=False
+        self.sock.close()
+
+
+def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
     daemon=NameServerDaemon(host, port)
+    if daemon.locationStr.startswith("127.0.0.1:") or daemon.locationStr.startswith("localhost:"):
+        print "Not starting broadcast server for localhost."
+        enableBroadcast=False
+    nsUri=daemon.uriFor(daemon.ns)
+    bcserver=None
+    if enableBroadcast:
+        bcserver=BroadcastServer(nsUri,bchost,bcport)
+        bcserver.daemon=True
+        bcserver.start()
+        print "Broadcast server running on", bcserver.locationStr  
+    print "NS running on",daemon.locationStr
+    print "URI =",nsUri
     try:
-        print "NS running on",daemon.locationStr
-        print "URI =",daemon.uriFor(daemon.ns)
         daemon.requestLoop()
     finally:
         daemon.close()
+        if bcserver is not None:
+            bcserver.close()
     print "NS shut down."
 
 
 def locateNS(host=None, port=None):
     """Get a proxy for a name server somewhere in the network."""
-    uristring="PYRONAME:"+Pyro.constants.NAMESERVER_NAME
-    if port:
-        if host is None:
-            host=Pyro.config.DEFAULT_SERVERHOST
-    if host:
-        uristring+="@"+host
-    if port:
-        uristring+=":"+str(port)
+    if host is None:
+        # broadcast lookup
+        if not port:
+            port=Pyro.config.NS_BCPORT
+        log.debug("broadcast locate")
+        sock=Pyro.socketutil.createBroadcastSocket(timeout=0.7)
+        for i in range(3):
+            try:
+                sock.sendto("GET_NSURI",("<broadcast>",port))
+                data,addr=sock.recvfrom(100)
+                log.debug("located NS: %s",data)
+                return Pyro.core.Proxy(data)
+            except socket.timeout:
+                continue
+        raise TimeoutError("timeout locating name server")
+    # pyroloc lookup
+    if not port:
+        port=Pyro.config.NS_PORT
+    uristring="PYROLOC:%s@%s:%d" % (Pyro.constants.NAMESERVER_NAME,host,port)
     uri=Pyro.core.PyroURI(uristring)
-    if uri.sockname or uri.pipename:
-        uri.protocol="PYROLOC"
-        log.debug("locating the NS: %s",uri)
-        resolved=resolve(uri)
-        log.debug("located NS: %s",resolved)
-        return Pyro.core.Proxy(resolved)
-    else:
-        if not uri.host:
-            raise NotImplementedError("name server network discovery not yet implemented")
-        uri.protocol="PYROLOC"
-        log.debug("locating the NS: %s",uri)
-        resolved=resolve(uri)
-        log.debug("located NS: %s",resolved)
-        return Pyro.core.Proxy(resolved)
-
+    log.debug("locating the NS: %s",uri)
+    resolved=resolve(uri)
+    log.debug("located NS: %s",resolved)
+    return Pyro.core.Proxy(resolved)
 
 def resolve(uri):
     """Resolve a 'magic' uri (PYRONAME, PYROLOC) into the direct PYRO uri."""
@@ -136,8 +182,11 @@ def main(args):
     parser=OptionParser()
     parser.add_option("-n","--host", dest="host", help="hostname to bind server on")
     parser.add_option("-p","--port", dest="port", type="int", help="port to bind server on")
+    parser.add_option("","--bchost", dest="bchost", help="hostname to bind broadcast server on")
+    parser.add_option("","--bcport", dest="bcport", type="int", help="port to bind broadcast server on")
+    parser.add_option("-x","--nobc", dest="enablebc", action="store_false", default=True, help="don't start a broadcast server")
     options,args = parser.parse_args(args)    
-    startNS(options.host,options.port)
+    startNS(options.host,options.port,enableBroadcast=options.enablebc,bchost=options.bchost,bcport=options.bcport)
 
 if __name__=="__main__":
     import sys
