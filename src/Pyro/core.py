@@ -2,7 +2,7 @@
 Core Pyro logic (uri, daemon, proxy stuff).
 """
 
-import sys, re, struct
+import re, struct
 import logging, uuid, threading
 from Pyro.errors import *
 import Pyro.config
@@ -297,7 +297,7 @@ class Daemon(object):
         if msgType!=MessageFactory.MSG_CONNECT:
             raise ProtocolError("expected MSG_CONNECT message, got "+str(msgType))
         if dataLen>0:
-            data=conn.recv(dataLen)
+            data=conn.recv(dataLen) # read away any trailing data @UnusedVariable
         msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK,None,0)
         conn.send(msg)
         return True

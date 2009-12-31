@@ -204,11 +204,11 @@ class SocketServer_Select(object):
         def requestLoop(self, loopCondition=lambda:True):
             log.info("entering poll-based requestloop")
             try:
-                poll=select.poll()
+                poll=select.poll() #@UndefinedVariable (pydev)
                 fileno2connection={}  # map fd to original connection object
                 if os.name=="java":
                     self.sock.setblocking(False) # jython/java requirement
-                poll.register(self.sock.fileno(), select.POLLIN | select.POLLPRI)
+                poll.register(self.sock.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
                 fileno2connection[self.sock.fileno()]=self.sock
                 while loopCondition():
                     polls=poll.poll(1000)
@@ -219,7 +219,7 @@ class SocketServer_Select(object):
                             if conn:
                                 if os.name=="java":
                                     conn.sock.setblocking(False)
-                                poll.register(conn.fileno(), select.POLLIN | select.POLLPRI)
+                                poll.register(conn.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
                                 fileno2connection[conn.fileno()]=conn
                         else:
                             try:
@@ -237,7 +237,7 @@ class SocketServer_Select(object):
         _selectfunction=select.select
         if os.name=="java":
             # Jython needs a select wrapper. Usually it will use the poll loop above though. 
-        	from select import cpython_compatible_select as _selectfunction
+            from select import cpython_compatible_select as _selectfunction   #@UnresolvedImport (pydev)
         def requestLoop(self, loopCondition=lambda:True):
             log.info("entering select-based requestloop")
             while loopCondition():

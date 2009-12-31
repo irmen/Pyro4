@@ -1,5 +1,4 @@
 import unittest
-import time
 import Pyro.config
 import Pyro.naming
 from Pyro.errors import *

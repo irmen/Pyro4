@@ -1,6 +1,5 @@
 import unittest
 
-import Pyro.util
 import Pyro.core
 import Pyro.config
 import Pyro.errors
