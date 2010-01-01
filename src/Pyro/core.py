@@ -2,7 +2,7 @@
 Core Pyro logic (uri, daemon, proxy stuff).
 """
 
-import re, struct
+import re, struct, sys
 import logging, uuid, threading
 from Pyro.errors import *
 import Pyro.config
@@ -317,6 +317,10 @@ class Daemon(object):
             objId, method, vargs, kwargs=self.serializer.deserialize(data)
             obj=self.objectsById.get(objId)
             if obj is not None:
+                if kwargs and type(kwargs.iterkeys().next()) is unicode and sys.platform!="cli":
+                    # IronPython sends all strings as unicode, but apply() doesn't grok unicode keywords.
+                    # So we need to rebuild the keywords dict with str keys... 
+                    kwargs = dict((str(k),v) for k,v in kwargs.iteritems())
                 data=getattr(obj[1], method) (*vargs,**kwargs)   # this is the actual method call
             else:
                 raise DaemonError("unknown object")
