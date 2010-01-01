@@ -287,9 +287,12 @@ class Daemon(object):
         """Cleanly terminate a deamon that is running in the requestloop."""
         log.debug("daemon shutting down")
         self.mustshutdown=True
-        self.loopstopped.wait()
+        self.pingConnection()
         self.close()
         log.info("daemon %s shut down", self.locationStr)
+    def pingConnection(self):
+        """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
+        self.transportServer.pingConnection()
     def handshake(self, conn):
         """Perform connection handshake with new clients"""
         header=conn.recv(MessageFactory.HEADERSIZE)

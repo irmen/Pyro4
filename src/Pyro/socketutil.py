@@ -10,6 +10,10 @@ ERRNO_RETRIES=[errno.EINTR, errno.EAGAIN, errno.EWOULDBLOCK]
 if hasattr(errno, "WSAEINTR"): ERRNO_RETRIES.append(errno.WSAEINTR)
 if hasattr(errno, "WSAEWOULDBLOCK"): ERRNO_RETRIES.append(errno.WSAEWOULDBLOCK)
 
+ERRNO_BADF=[errno.EBADF]
+if hasattr(errno, "WSAEBADF"): ERRNO_BADF.append(errno.WSAEBADF)
+
+
 log=logging.getLogger("Pyro.socketutil")
 
 def getIpAddress(hostname=None):
@@ -87,6 +91,12 @@ def createBroadcastSocket(bind=None, reuseaddr=True, timeout=None):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     if reuseaddr:
         setReuseAddr(sock)
+    if timeout is not None:
+        if bind and os.name=="java":
+            # Jython has a problem with timeouts on udp sockets, see http://bugs.jython.org/issue1018
+            log.warn("not setting timeout on broadcast socket due to Jython issue 1018")
+        else:
+            sock.settimeout(timeout)
     if bind:
         if bind[0]:
             hosts=[bind[0]]
@@ -100,15 +110,12 @@ def createBroadcastSocket(bind=None, reuseaddr=True, timeout=None):
                 continue
         sock.close()
         raise CommunicationError("cannot bind broadcast socket")
-    if timeout is not None:
-        sock.settimeout(timeout)
     return sock
     
 def setReuseAddr(sock):
     """sets the SO_REUSEADDR option on the socket.""" 
     try:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,
-            sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR) | 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     except:
         log.info("cannot set SO_REUSEADDR")
 
@@ -142,23 +149,32 @@ class SocketConnection(object):
 
 class SocketWorker(threading.Thread):
     """worker thread to process requests"""
-    queue=Queue.Queue()     # connection queue
-    threads=set()           # worker threads
-    callback=None           # object that will handle the request
+    def __init__(self, workqueue, threadpool, callback):
+        super(SocketWorker,self).__init__()
+        self.setDaemon(True)
+        self.queue=workqueue
+        self.threadpool=threadpool
+        self.callback=callback
     def run(self):
         self.running=True
-        while self.running: # loop over all connections in the queue
-            self.csock,self.caddr = self.queue.get()   # XXX blocks, so thread can't be stopped automatically. Maybe put 'stop' sentinels in the queue object to stop all threads?
-            self.csock=SocketConnection(self.csock)
-            if self.handleConnection(self.csock):
-                while self.running:   # loop over all requests during a single connection
-                    try:
-                        self.callback.handleRequest(self.csock)
-                    except (socket.error,ConnectionClosedError),x:
-                        # client went away.
-                        self.csock.close()
-                        break
-
+        try:
+            while self.running: # loop over all connections in the queue
+                self.csock,self.caddr = self.queue.get()
+                if self.csock is None and self.caddr is None:
+                    # this was a 'stop' sentinel
+                    self.running=False
+                    break
+                self.csock=SocketConnection(self.csock)
+                if self.handleConnection(self.csock):
+                    while self.running:   # loop over all requests during a single connection
+                        try:
+                            self.callback.handleRequest(self.csock)
+                        except (socket.error,ConnectionClosedError),x:
+                            # client went away.
+                            self.csock.close()
+                            break
+        finally:
+            self.threadpool.remove(self)
     def handleConnection(self,conn):
         try:
             if self.callback.handshake(conn):
@@ -173,40 +189,47 @@ class SocketServer_Threadpool(object):
     def __init__(self, callbackObject, host, port):
         log.info("starting thread pool socketserver")
         self.sock=createSocket(bind=(host,port))
-        SocketWorker.callback=callbackObject
         if not host:
             host=self.sock.getsockname()[0]
         self.locationStr="%s:%d" % (host,port)
+        self._socketaddr=(host,port)
         numthreads=5    # XXX configurable
+        self.threadpool=set()
+        self.queue=Queue.Queue()
         for x in range(numthreads):
-            worker=SocketWorker()
-            worker.daemon=True
-            SocketWorker.threads.add(worker)
+            worker=SocketWorker(self.queue, self.threadpool, callbackObject)
+            self.threadpool.add(worker)
             worker.start()
-        log.info("%d worker threads", len(SocketWorker.threads))
+        log.info("%d worker threads", len(self.threadpool))
     def __del__(self):
         if hasattr(self,"sock") and self.sock is not None:
             self.sock.close()
             self.sock=None
     def requestLoop(self, loopCondition=lambda:True):
         while (self.sock is not None) and loopCondition():
-            csock, caddr=self.sock.accept()   # XXX this doesn't break, so how can we abort this loop???
+            csock, caddr=self.sock.accept()
             log.debug("new connection from %s",caddr)
-            SocketWorker.queue.put((csock,caddr))
+            self.queue.put((csock,caddr))
     def close(self): 
         if self.sock:
             try:
                 self.sock.shutdown(socket.SHUT_RDWR)
+                self.sock.close()
             except Exception:
                 pass
-            self.sock.close()
-        self.sock=None
-        for worker in SocketWorker.threads:
-            try:
-                worker.running=False
-                worker.csock.shutdown(socket.SHUT_RDWR)
-            except Exception:
-                pass
+            self.sock=None
+        for worker in list(self.threadpool):
+            worker.running=False
+            self.queue.put((None,None)) # put a 'stop' sentinel in the worker queue
+                
+    def pingConnection(self):
+        """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
+        try:
+            sock=createSocket(connect=self._socketaddr)
+            sendData(sock, "!!!!!!!!!!!!!!!!!!!!")
+            sock.close()
+        except Exception:
+            pass
 
 
 class SocketServer_Select(object):
@@ -238,10 +261,14 @@ class SocketServer_Select(object):
                     for (fd,mask) in polls:
                         conn=fileno2connection[fd]
                         if conn is self.sock:
-                            conn=self.handleConnection(self.sock)
+                            try:
+                                conn=self.handleConnection(self.sock)
+                            except ConnectionClosedError:
+                                log.info("server socket was closed, stopping requestloop")
+                                return
                             if conn:
                                 if os.name=="java":
-                                    conn.sock.setblocking(False)
+                                    conn.sock.setblocking(False) # jython/java requirement
                                 poll.register(conn.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
                                 fileno2connection[conn.fileno()]=conn
                         else:
@@ -269,9 +296,13 @@ class SocketServer_Select(object):
                 rlist,wlist,xlist=self._selectfunction(rlist, [], [], 1)
                 if self.sock in rlist:
                     rlist.remove(self.sock)
-                    conn=self.handleConnection(self.sock)
-                    if conn:
-                        self.clients.append(conn)
+                    try:
+                        conn=self.handleConnection(self.sock)
+                        if conn:
+                            self.clients.append(conn)
+                    except ConnectionClosedError:
+                        log.info("server socket was closed, stopping requestloop")
+                        return
                 for conn in rlist:
                     try:
                         if self.callback:
@@ -279,18 +310,23 @@ class SocketServer_Select(object):
                     except (socket.error,ConnectionClosedError),x:
                         # client went away.
                         conn.close()
-                        self.clients.remove(conn)
+                        if conn in self.clients:
+                            self.clients.remove(conn)
 
     def handleConnection(self, sock):
         try:
             csock, caddr=sock.accept()
+            log.debug("new connection from %s",caddr)
         except socket.error,x:
             err=getattr(x,"errno",x.args[0])
-            print "ACCEPT FAILED ERRNO=",err  # XXX Jython issue
             if err in ERRNO_RETRIES:
-                # just ignore this error
+                # just ignore this error for now
+                print "ACCEPT FAILED ERRNO=",err  # XXX Jython issue
                 return None
-        log.debug("new connection from %s",caddr)
+            if err in ERRNO_BADF:
+                # our server socket got destroyed
+                raise ConnectionClosedError("server socket closed")
+            raise
         try:
             conn=SocketConnection(csock)
             if self.callback.handshake(conn):
@@ -309,6 +345,13 @@ class SocketServer_Select(object):
                 c.close()
             except:
                 pass
+        self.clients=[]
         self.callback=None
 
+    def pingConnection(self):
+        """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
+        try:
+            sendData(self.sock, "!!!!!!!!!!!!!!!!!!!!")
+        except Exception:
+            pass
     

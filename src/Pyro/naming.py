@@ -77,23 +77,23 @@ class NameServerDaemon(Pyro.core.Daemon):
 class BroadcastServer(threading.Thread):
     def __init__(self, nsUri, bchost=None, bcport=None):
         super(BroadcastServer,self).__init__()
+        self.setDaemon(True)
         self.nsUri=str(nsUri)
         self.running=threading.Event()
         bcport=bcport or Pyro.config.NS_BCPORT
         bchost=bchost or Pyro.config.NS_BCHOST
-        self.sock=Pyro.socketutil.createBroadcastSocket((bchost,bcport))
+        self.sock=Pyro.socketutil.createBroadcastSocket((bchost,bcport), timeout=2.0)
         if bchost:
             self.locationStr="%s:%d" % (bchost, bcport)
         else:
             self.locationStr="%s:%d" % self.sock.getsockname()
+        self._sockaddr=self.sock.getsockname()
     def run(self):
         log.info("broadcast server listening")
-        self.sock.settimeout(3)
         self.running.set()
         while self.running.isSet():
             try:
                 data,addr=self.sock.recvfrom(100)
-                print "BC REPLY: %s (%s)" % (data,addr)
                 if data=="GET_NSURI":
                     self.sock.sendto(self.nsUri, addr)
             except socket.timeout:
@@ -105,8 +105,16 @@ class BroadcastServer(threading.Thread):
         self.running.clear()
     def close(self):
         self.running.clear()
+        self.pingConnection()
         self.sock.close()
-
+    def pingConnection(self):
+        """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
+        try:
+            sock=Pyro.socketutil.createBroadcastSocket(timeout=2.0)
+            sock.sendto("!!!!!!!!!!!!!!!!!!!!", self._sockaddr)
+            sock.close()
+        except Exception,x:
+            pass
 
 def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
     daemon=NameServerDaemon(host, port)
@@ -117,7 +125,6 @@ def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None
     bcserver=None
     if enableBroadcast:
         bcserver=BroadcastServer(nsUri,bchost,bcport)
-        bcserver.daemon=True
         bcserver.start()
         print "Broadcast server running on", bcserver.locationStr  
     print "NS running on",daemon.locationStr
@@ -133,7 +140,6 @@ def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None
 
 def locateNS(host=None, port=None):
     """Get a proxy for a name server somewhere in the network."""
-    print "Locate NS: %s:%s" % (host,port) 
     if host is None:
         # broadcast lookup
         if not port:
@@ -162,7 +168,6 @@ def locateNS(host=None, port=None):
 
 def resolve(uri):
     """Resolve a 'magic' uri (PYRONAME, PYROLOC) into the direct PYRO uri."""
-    print "Resolve: ",uri
     if isinstance(uri, basestring):
         uri=Pyro.core.PyroURI(uri)
     elif not isinstance(uri, Pyro.core.PyroURI):
@@ -175,7 +180,8 @@ def resolve(uri):
         daemonuri.protocol="PYRO"
         daemonuri.object=Pyro.constants.INTERNAL_DAEMON_GUID
         daemon=Pyro.core.Proxy(daemonuri)
-        return daemon.resolve(uri.object)
+        uri=daemon.resolve(uri.object)
+        return uri
     elif uri.protocol=="PYRONAME":
         ns=locateNS(uri.host, uri.port)
         return ns.lookup(uri.object)

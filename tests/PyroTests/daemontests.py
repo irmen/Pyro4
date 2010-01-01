@@ -7,9 +7,10 @@ from Pyro.errors import *
 class DaemonTests(unittest.TestCase):
     # We create a daemon, but notice that we are not actually running the requestloop
     # 'on-line' tests are all taking place in the NamingTests
-
+    
     def testDaemon(self):
         try:
+            Pyro.config.PORT+=1   # avoid double binding
             d=Pyro.core.Daemon()
             defaultLocation="%s:%d" %(Pyro.config.SERVERHOST, Pyro.config.PORT)
             self.assertEqual( defaultLocation, d.locationStr)
@@ -27,6 +28,7 @@ class DaemonTests(unittest.TestCase):
             def __eq__(self,other):
                 return self.arg==other.arg
         try:
+            Pyro.config.PORT+=1  # avoid double binding
             d=Pyro.core.Daemon()
             defaultLocation="%s:%d" %(Pyro.config.SERVERHOST, Pyro.config.PORT)
             self.assertEquals(1, len(d.objectsById))
@@ -68,9 +70,9 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(1, len(d.registeredObjects()))
             self.assertTrue(o1._pyroObjectId not in d.objectsById)
             self.assertTrue(o2._pyroObjectId not in d.objectsById)
-
         finally:
             d.shutdown()
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

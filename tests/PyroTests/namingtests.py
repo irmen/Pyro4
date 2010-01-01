@@ -4,11 +4,14 @@ import Pyro.naming
 from Pyro.errors import *
 import threading, socket
 
+# online name server tests
+
 class NSDaemonThread(threading.Thread):
     def __init__(self, nsdaemon):
         super(NSDaemonThread,self).__init__()
         self.nsdaemon=nsdaemon
         self.started=threading.Event()
+        self.setDaemon(True)
     def run(self):
         self.started.set()
         try:
@@ -25,8 +28,20 @@ class OnlineTests(unittest.TestCase):
     # but just tests of some stuff that requires a working Pyro server.
     
     def _createServers(self):
-        print "creating servers"
-        Pyro.config.SERVERTYPE="select"   # threaded server cannot be aborted automatically at the moment
+        #try:
+        #    ns=Pyro.naming.locateNS()
+        #except PyroError:
+        #    print "Can't find a name server"
+        #    self.fail("No name server found. You need to have a name server running (+broadcast server) on the default ports, to be able to run these tests")
+        #else:
+        #    self.hostname=ns._pyroUri.host
+        #    objs=ns.list(prefix="unittest.")
+        #    for name in objs:
+        #        ns.remove(name)
+        #return
+
+        #Pyro.config.SERVERTYPE="select"
+        Pyro.config.SERVERTYPE="thread"
         Pyro.config.NS_BCPORT+=1  # some systems don't like the broadcast server rebinding on the same port
         Pyro.config.NS_PORT+=1
         self.hostname=socket.gethostname()
@@ -35,31 +50,22 @@ class OnlineTests(unittest.TestCase):
         self.nsdaemonthread.start()
         self.nsdaemonthread.started.wait()
         nsUri=self.nsdaemon.uriFor(self.nsdaemon.ns)
-        print "NS URI=",nsUri
         self.bcserver=Pyro.naming.BroadcastServer(nsUri,bchost=self.hostname)
-        self.bcserver.daemon=True
+        self.bcserver.setDaemon(True)
         self.bcserver.start()
         self.bcserver.running.wait()
 
     def _stopServers(self):
-        print "stopping servers"
         try:
             self.bcserver.close()
+            self.bcserver.pingConnection()
+            self.bcserver.join()
             self.nsdaemonthread.shutdown()
             self.nsdaemonthread.join()
         except Exception,x:
             print "Error in _stopServers",x
 
-    def testServer(self):
-        try:
-            self._createServers()
-            print "HOSTNAME=",self.hostname
-            print "NSDAEMONTHREAD=",self.nsdaemonthread
-            print "BCSERVER=",self.bcserver
-        finally:
-            self._stopServers()
-
-            
+           
     def testLookupAndRegister(self):
         try:
             self._createServers()
@@ -78,12 +84,12 @@ class OnlineTests(unittest.TestCase):
             self.assertEqual(Pyro.config.NS_PORT,uri.port)
             
             # check that we cannot register a stupid type
-            self.assertRaises(TypeError, ns.register, "test.object1", 5555)
+            self.assertRaises(TypeError, ns.register, "unittest.object1", 5555)
             # we can register str or PyroURI, lookup always returns PyroURI        
-            ns.register("test.object2", "PYRO:55555@host.com")
-            self.assertEquals(Pyro.core.PyroURI("PYRO:55555@host.com"), ns.lookup("test.object2"))
-            ns.register("test.object3", Pyro.core.PyroURI("PYRO:66666@host.com"))
-            self.assertEquals(Pyro.core.PyroURI("PYRO:66666@host.com"), ns.lookup("test.object3"))
+            ns.register("unittest.object2", "PYRO:55555@host.com")
+            self.assertEquals(Pyro.core.PyroURI("PYRO:55555@host.com"), ns.lookup("unittest.object2"))
+            ns.register("unittest.object3", Pyro.core.PyroURI("PYRO:66666@host.com"))
+            self.assertEquals(Pyro.core.PyroURI("PYRO:66666@host.com"), ns.lookup("unittest.object3"))
             
             # check that the non-socket locations are not yet supported        
             self.assertRaises(NotImplementedError, Pyro.naming.locateNS, "./p:pipename")
@@ -198,48 +204,6 @@ class OnlineTests(unittest.TestCase):
         finally:
             self._stopServers()
 
-class OfflineTests(unittest.TestCase):
-    def testRegister(self):
-        ns=Pyro.naming.NameServer()
-        ns.ping()
-        ns.register("test.object1","PYRO:111111@host.com")  # can register string or PyroURI
-        ns.register("test.object2","PYRO:222222@host.com")
-        ns.register("test.object3","PYRO:333333@host.com")
-        ns.register("test.sub.objectA",Pyro.core.PyroURI("PYRO:AAAAAA@host.com"))
-        ns.register("test.sub.objectB",Pyro.core.PyroURI("PYRO:BBBBBB@host.com"))
-        
-        self.assertRaises(NamingError, ns.lookup, "unknown_object")
-        
-        uri=ns.lookup("test.object3")
-        self.assertEqual(Pyro.core.PyroURI("PYRO:333333@host.com"), uri)   # lookup always returns PyroURI
-        ns.remove("unknown_object")
-        ns.remove("test.object1")
-        ns.remove("test.object2")
-        ns.remove("test.object3")
-        all=ns.list()
-        self.assertEqual(2, len(all))  # 2 leftover objects
-    def testList(self):
-        ns=Pyro.naming.NameServer()
-        ns.register("test.objects.1","SOMETHING1")
-        ns.register("test.objects.2","SOMETHING2")
-        ns.register("test.objects.3","SOMETHING3")
-        ns.register("test.other.a","SOMETHINGA")
-        ns.register("test.other.b","SOMETHINGB")
-        ns.register("test.other.c","SOMETHINGC")
-        ns.register("entirely.else","MEH")
-        objects=ns.list()
-        self.assertEqual(7,len(objects))
-        objects=ns.list(prefix="nothing")
-        self.assertEqual(0,len(objects))
-        objects=ns.list(prefix="test.")
-        self.assertEqual(6,len(objects))
-        objects=ns.list(regex=r".+other..")
-        self.assertEqual(3,len(objects))
-        self.assertTrue("test.other.a" in objects)
-        self.assertEqual("SOMETHINGA", objects["test.other.a"])
-        objects=ns.list(regex=r"\d\d\d\d\d\d\d\d\d\d")
-        self.assertEqual(0,len(objects))
-        
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
