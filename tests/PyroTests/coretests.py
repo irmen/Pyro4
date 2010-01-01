@@ -117,7 +117,6 @@ class CoreTests(unittest.TestCase):
         self.assertFalse(p3._pyroSerializer is p1._pyroSerializer)
 
         
-        
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

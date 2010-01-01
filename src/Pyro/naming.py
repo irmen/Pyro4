@@ -25,13 +25,13 @@ class NameServer(object):
     def register(self,name,uri):
         if isinstance(uri, Pyro.core.PyroURI):
             uri=str(uri)
-        elif type(uri) is not str:
+        elif not isinstance(uri, basestring):
             raise TypeError("only PyroURIs or strings can be registered")
-        if type(name) is not str:
+        if not isinstance(name, basestring):
             raise TypeError("name must be a str")
         if name in self.namespace:
             raise NamingError("name already registered")
-        self.namespace[name]=uri
+        self.namespace[str(name)]=str(uri)
     def remove(self,name):
         if name in self.namespace:
             del self.namespace[name]
