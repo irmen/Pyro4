@@ -92,7 +92,7 @@ class TestUtils(unittest.TestCase):
 
     def testConfig(self):
         import Pyro.config
-        import os
+        import os,socket
         def clearEnv():
             if "PYRO_PORT" in os.environ: del os.environ["PYRO_PORT"]
             if "PYRO_HOST" in os.environ: del os.environ["PYRO_HOST"]
@@ -101,7 +101,7 @@ class TestUtils(unittest.TestCase):
         clearEnv()
         try:
             self.assertEqual(7766, Pyro.config.PORT)
-            self.assertEqual("localhost", Pyro.config.HOST)
+            self.assertEqual(socket.gethostname(), Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
             os.environ["PORT"]="4444"
             reload(Pyro.config)
@@ -116,7 +116,7 @@ class TestUtils(unittest.TestCase):
         finally:
             clearEnv()
             self.assertEqual(7766, Pyro.config.PORT)
-            self.assertEqual("localhost", Pyro.config.HOST)
+            self.assertEqual(socket.gethostname(), Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
         
 

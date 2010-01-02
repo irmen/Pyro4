@@ -63,9 +63,9 @@ class NameServer(object):
 class NameServerDaemon(Pyro.core.Daemon):
     """Daemon that contains the Name Server."""
     def __init__(self, host=None, port=None):
-        if not host:
+        if host is None:
             host=Pyro.config.HOST
-        if not port:
+        if port is None:
             port=Pyro.config.NS_PORT
         super(NameServerDaemon,self).__init__(host,port)
         self.ns=NameServer()
@@ -80,14 +80,15 @@ class BroadcastServer(threading.Thread):
         self.setDaemon(True)
         self.nsUri=str(nsUri)
         self.running=threading.Event()
-        bcport=bcport or Pyro.config.NS_BCPORT
-        bchost=bchost or Pyro.config.NS_BCHOST
+        if bcport is None:
+            bcport=Pyro.config.NS_BCPORT
+        if bchost is None:
+            bchost=Pyro.config.NS_BCHOST
         self.sock=Pyro.socketutil.createBroadcastSocket((bchost,bcport), timeout=2.0)
-        if bchost:
-            self.locationStr="%s:%d" % (bchost, bcport)
-        else:
-            self.locationStr="%s:%d" % self.sock.getsockname()
         self._sockaddr=self.sock.getsockname()
+        bchost=bchost or self._sockaddr[0]
+        bcport=bcport or self._sockaddr[1]
+        self.locationStr="%s:%d" % (bchost, bcport)
     def run(self):
         log.info("broadcast server listening")
         self.running.set()
@@ -118,7 +119,7 @@ class BroadcastServer(threading.Thread):
 
 def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
     daemon=NameServerDaemon(host, port)
-    if daemon.locationStr.startswith("127.0.0.1:") or daemon.locationStr.startswith("localhost:"):
+    if daemon.locationStr.startswith("127.0.0.1:") or daemon.locationStr.lower().startswith("localhost:"):
         print "Not starting broadcast server for localhost."
         enableBroadcast=False
     nsUri=daemon.uriFor(daemon.ns)
@@ -193,11 +194,13 @@ def main(args):
     from optparse import OptionParser
     parser=OptionParser()
     parser.add_option("-n","--host", dest="host", help="hostname to bind server on")
-    parser.add_option("-p","--port", dest="port", type="int", help="port to bind server on")
+    parser.add_option("-p","--port", dest="port", type="int", help="port to bind server on (0=random)")
     parser.add_option("","--bchost", dest="bchost", help="hostname to bind broadcast server on")
-    parser.add_option("","--bcport", dest="bcport", type="int", help="port to bind broadcast server on")
+    parser.add_option("","--bcport", dest="bcport", type="int", help="port to bind broadcast server on (0=random)")
     parser.add_option("-x","--nobc", dest="enablebc", action="store_false", default=True, help="don't start a broadcast server")
-    options,args = parser.parse_args(args)    
+    options,args = parser.parse_args(args)
+    if options.host is not None and options.bchost is None:
+        options.bchost=options.host   # bchost follows host if not explicitly set to something else
     startNS(options.host,options.port,enableBroadcast=options.enablebc,bchost=options.bchost,bcport=options.bcport)
 
 if __name__=="__main__":

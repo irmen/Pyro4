@@ -2,12 +2,14 @@
 Pyro configuration settings.
 """
 
-HOST            =   "localhost"
+import socket
+
+HOST            =   socket.gethostname()
 PORT            =   7766
-NS_HOST         =   HOST,
+NS_HOST         =   HOST
 NS_PORT         =   9090    # tcp
-NS_BCPORT       =   9090    # udp
-NS_BCHOST       =   None
+NS_BCPORT       =   9091    # udp
+NS_BCHOST       =   HOST
 COMPRESSION     =   False   # XXX not used yet
 SERVERTYPE      =   "thread"
 
@@ -38,6 +40,7 @@ def _process(dictionary):
  
 _process(globals())
 del _process
+del socket
 
 
 # easy config diagnostic with python -m

@@ -257,9 +257,9 @@ class Daemon(object):
     """Pyro daemon. Contains server side logic and dispatches incoming remote method calls to the appropriate objects."""
     def __init__(self, host=None, port=None):
         super(Daemon,self).__init__()
-        if not host:
+        if host is None:
             host=Pyro.config.HOST
-        if not port:
+        if port is None:
             port=Pyro.config.PORT
         if Pyro.config.SERVERTYPE=="thread":
             self.transportServer=Pyro.socketutil.SocketServer_Threadpool(self, host, port)

@@ -189,10 +189,10 @@ class SocketServer_Threadpool(object):
     def __init__(self, callbackObject, host, port):
         log.info("starting thread pool socketserver")
         self.sock=createSocket(bind=(host,port))
-        if not host:
-            host=self.sock.getsockname()[0]
+        self._socketaddr=self.sock.getsockname()
+        host=host or self._socketaddr[0]
+        port=port or self._socketaddr[1]
         self.locationStr="%s:%d" % (host,port)
-        self._socketaddr=(host,port)
         numthreads=5    # XXX configurable
         self.threadpool=set()
         self.queue=Queue.Queue()
@@ -239,8 +239,9 @@ class SocketServer_Select(object):
         self.sock=createSocket(bind=(host,port))
         self.clients=[]
         self.callback=callbackObject
-        if not host:
-            host=self.sock.getsockname()[0]
+        sockaddr=self.sock.getsockname()
+        host=host or sockaddr[0]
+        port=port or sockaddr[1]
         self.locationStr="%s:%d" % (host,port)
     def __del__(self):
         if hasattr(self,"sock") and self.sock is not None:
