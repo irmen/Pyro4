@@ -2,9 +2,9 @@
 Pyro configuration settings.
 """
 
-SERVERHOST      =   "localhost"
+HOST            =   "localhost"
 PORT            =   7766
-NS_HOST         =   SERVERHOST,
+NS_HOST         =   HOST,
 NS_PORT         =   9090    # tcp
 NS_BCPORT       =   9090    # udp
 NS_BCHOST       =   None

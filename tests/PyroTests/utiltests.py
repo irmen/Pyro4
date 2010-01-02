@@ -65,34 +65,58 @@ class TestUtils(unittest.TestCase):
     def testSerialize(self):
         ser=Pyro.util.Serializer()
         before=(42, ["a","b","c"], {"henry": 998877, "suzie": 776655})
-        pickle=ser.serialize(before)
-        after=ser.deserialize(pickle)
+        data,c=ser.serialize(before,compress=False)
+        after=ser.deserialize(data)
         self.assertEqual(before,after)
-        
+        self.assertEqual(bool,type(c))
+        data,c=ser.serialize(before,compress=True)
+        after=ser.deserialize(data,compressed=c)
+        self.assertEqual(before,after)
+        self.assertEqual(bool,type(c))
+
+    def testSerializeCompression(self):
+        smalldata=["wordwordword","blablabla","orangeorange"]
+        largedata=["wordwordword"+str(i) for i in range(30)]
+        ser=Pyro.util.Serializer()
+        data1,compressed=ser.serialize(smalldata,compress=False)
+        self.assertFalse(compressed)
+        data2,compressed=ser.serialize(smalldata,compress=True)
+        self.assertFalse(compressed, "small messages should not be compressed")
+        self.assertEquals(len(data1),len(data2))
+        data1,compressed=ser.serialize(largedata,compress=False)
+        self.assertFalse(compressed)
+        data2,compressed=ser.serialize(largedata,compress=True)
+        self.assertTrue(compressed, "large messages should be compressed")
+        self.assertTrue(len(data1)>len(data2))
+
+
     def testConfig(self):
         import Pyro.config
         import os
+        def clearEnv():
+            if "PYRO_PORT" in os.environ: del os.environ["PYRO_PORT"]
+            if "PYRO_HOST" in os.environ: del os.environ["PYRO_HOST"]
+            if "PYRO_COMPRESSION" in os.environ: del os.environ["PYRO_COMPRESSION"]
+            reload(Pyro.config)
+        clearEnv()
         try:
             self.assertEqual(7766, Pyro.config.PORT)
-            self.assertEqual("localhost", Pyro.config.SERVERHOST)
+            self.assertEqual("localhost", Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
             os.environ["PORT"]="4444"
             reload(Pyro.config)
             self.assertEqual(7766, Pyro.config.PORT)
             os.environ["PYRO_PORT"]="4444"
-            os.environ["PYRO_SERVERHOST"]="something.com"
+            os.environ["PYRO_HOST"]="something.com"
             os.environ["PYRO_COMPRESSION"]="OFF"
             reload(Pyro.config)
             self.assertEqual(4444, Pyro.config.PORT)
-            self.assertEqual("something.com", Pyro.config.SERVERHOST)
+            self.assertEqual("something.com", Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
         finally:
-            del os.environ["PYRO_PORT"]
-            del os.environ["PYRO_SERVERHOST"]
-            del os.environ["PYRO_COMPRESSION"]
-            reload(Pyro.config)
+            clearEnv()
             self.assertEqual(7766, Pyro.config.PORT)
-            self.assertEqual("localhost", Pyro.config.SERVERHOST)
+            self.assertEqual("localhost", Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
         
 

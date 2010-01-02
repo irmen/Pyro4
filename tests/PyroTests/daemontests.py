@@ -12,7 +12,7 @@ class DaemonTests(unittest.TestCase):
         try:
             Pyro.config.PORT+=1   # avoid double binding
             d=Pyro.core.Daemon()
-            defaultLocation="%s:%d" %(Pyro.config.SERVERHOST, Pyro.config.PORT)
+            defaultLocation="%s:%d" %(Pyro.config.HOST, Pyro.config.PORT)
             self.assertEqual( defaultLocation, d.locationStr)
             self.assertTrue(Pyro.constants.INTERNAL_DAEMON_GUID in d.objectsById)
             self.assertTrue(Pyro.constants.DAEMON_LOCALNAME in d.objectsByName)
@@ -30,7 +30,7 @@ class DaemonTests(unittest.TestCase):
         try:
             Pyro.config.PORT+=1  # avoid double binding
             d=Pyro.core.Daemon()
-            defaultLocation="%s:%d" %(Pyro.config.SERVERHOST, Pyro.config.PORT)
+            defaultLocation="%s:%d" %(Pyro.config.HOST, Pyro.config.PORT)
             self.assertEquals(1, len(d.objectsById))
             self.assertEquals(1, len(d.registeredObjects()))
            

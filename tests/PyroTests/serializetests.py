@@ -88,23 +88,7 @@ class SerializeTests(unittest.TestCase):
         self.assertFalse(proxy._pyroConnection is None)
         self.assertEqual(proxy3._pyroUri, proxy._pyroUri)
         self.assertFalse(proxy3._pyroUri is proxy._pyroUri)
-        self.assertEqual(proxy3._pyroSerializer, proxy._pyroSerializer)   
-
-    def testCompression(self):
-        smalldata=["wordwordword","blablabla","orangeorange"]
-        largedata=["wordwordword"+str(i) for i in range(30)]
-        ser=Pyro.util.Serializer()
-        data1,compressed=ser.serialize(smalldata,compress=False)
-        self.assertFalse(compressed)
-        data2,compressed=ser.serialize(smalldata,compress=True)
-        self.assertFalse(compressed, "small messages should not be compressed")
-        self.assertEquals(len(data1),len(data2))
-        data1,compressed=ser.serialize(largedata,compress=False)
-        self.assertFalse(compressed)
-        data2,compressed=ser.serialize(largedata,compress=True)
-        self.assertTrue(compressed, "large messages should be compressed")
-        self.assertTrue(len(data1)>len(data2))
-        
+        self.assertEqual(proxy3._pyroSerializer, proxy._pyroSerializer)        
         
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

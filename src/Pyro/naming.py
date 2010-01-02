@@ -64,7 +64,7 @@ class NameServerDaemon(Pyro.core.Daemon):
     """Daemon that contains the Name Server."""
     def __init__(self, host=None, port=None):
         if not host:
-            host=Pyro.config.SERVERHOST
+            host=Pyro.config.HOST
         if not port:
             port=Pyro.config.NS_PORT
         super(NameServerDaemon,self).__init__(host,port)

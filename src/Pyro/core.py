@@ -258,7 +258,7 @@ class Daemon(object):
     def __init__(self, host=None, port=None):
         super(Daemon,self).__init__()
         if not host:
-            host=Pyro.config.SERVERHOST
+            host=Pyro.config.HOST
         if not port:
             port=Pyro.config.PORT
         if Pyro.config.SERVERTYPE=="thread":
