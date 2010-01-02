@@ -13,7 +13,7 @@ import socket
 import Pyro.core
 import Pyro.constants
 import Pyro.socketutil
-from Pyro.errors import PyroError, NamingError, TimeoutError
+from Pyro.errors import PyroError, NamingError, TimeoutError, CommunicationError
 
 log=logging.getLogger("Pyro.naming")
 
@@ -123,17 +123,19 @@ class BroadcastServer(threading.Thread):
             pass
 
 def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
-    daemon=NameServerDaemon(host, port)
-    if daemon.locationStr.startswith("127.0.0.1:") or daemon.locationStr.lower().startswith("localhost:"):
+    hostip=Pyro.socketutil.getIpAddress(host)
+    if hostip.startswith("127."):
         print "Not starting broadcast server for localhost."
+        log.info("Not starting NS broadcast server because NS is bound to localhost")
         enableBroadcast=False
+    daemon=NameServerDaemon(host, port)
     nsUri=daemon.uriFor(daemon.ns)
     bcserver=None
     if enableBroadcast:
         bcserver=BroadcastServer(nsUri,bchost,bcport)
         bcserver.start()
         print "Broadcast server running on", bcserver.locationStr  
-    print "NS running on",daemon.locationStr
+    print "NS running on %s (%s)" %(daemon.locationStr,hostip)
     print "URI =",nsUri
     try:
         daemon.requestLoop()
@@ -162,7 +164,10 @@ def locateNS(host=None, port=None):
             except socket.timeout:
                 continue
         sock.close()
-        raise TimeoutError("timeout locating name server")
+        log.debug("broadcast locate failed, try direct connection on NS_HOST")
+        # broadcast failed, try PYROLOC on specific host
+        host=Pyro.config.NS_HOST
+        port=Pyro.config.NS_PORT
     # pyroloc lookup
     if not port:
         port=Pyro.config.NS_PORT

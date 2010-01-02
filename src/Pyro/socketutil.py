@@ -27,6 +27,18 @@ def getIpAddress(hostname=None):
     """returns the IP address for the current, or another, hostname"""
     return socket.gethostbyname(hostname or socket.gethostname())
 
+def getMyIpAddress(workaround127=False):
+    """returns our own IP address. If you enable the workaround,
+    it will use a little hack if the system reports our own ip address
+    as being localhost (this is often the case on Linux)"""
+    ip=getIpAddress()
+    if ip.startswith("127.") and workaround127:
+        s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("4.2.2.2",0))   # 'abuse' a level 3 DNS server
+        ip=s.getsockname()[0]
+        s.close()
+    return ip
+
 def receiveData(sock, size):
     """Retrieve a given number of bytes from a socket.
     It is expected the socket is able to supply that number of bytes.
@@ -201,6 +213,9 @@ class SocketServer_Threadpool(object):
         log.info("starting thread pool socketserver")
         self.sock=createSocket(bind=(host,port))
         self._socketaddr=self.sock.getsockname()
+        if self._socketaddr[0].startswith("127."):
+            if host is None or host.lower()!="localhost" and not host.startswith("127."):
+                log.warn("weird DNS setup: %s resolves to localhost (127.x.x.x)",host)
         host=host or self._socketaddr[0]
         port=port or self._socketaddr[1]
         self.locationStr="%s:%d" % (host,port)
@@ -251,6 +266,9 @@ class SocketServer_Select(object):
         self.clients=[]
         self.callback=callbackObject
         sockaddr=self.sock.getsockname()
+        if sockaddr[0].startswith("127."):
+            if host is None or host.lower()!="localhost" and not host.startswith("127."):
+                log.warn("weird DNS setup: %s resolves to localhost (127.x.x.x)",host)
         host=host or sockaddr[0]
         port=port or sockaddr[1]
         self.locationStr="%s:%d" % (host,port)

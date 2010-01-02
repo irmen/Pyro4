@@ -8,6 +8,7 @@
 ######################################################################
 
 import Pyro.naming
+import Pyro.errors
 
 def handleCommand(ns, options, args):
     def printListResult(resultdict, title=""):
@@ -59,7 +60,11 @@ def main(args):
         parser.error("invalid or missing command")
     if options.verbose:
         print "Locating name server..."
-    ns=Pyro.naming.locateNS(options.host,options.port)
+    try:
+        ns=Pyro.naming.locateNS(options.host,options.port)
+    except Pyro.errors.PyroError,x:
+        print "Failed to locate the name server."
+        return
     if options.verbose:
         print "Name server found:",ns._pyroUri
     handleCommand(ns, options, args)
