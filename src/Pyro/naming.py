@@ -43,9 +43,9 @@ class NameServer(object):
     def list(self, prefix=None, regex=None):
         if prefix:
             result={}
-            for name,value in self.namespace.items():
+            for name in self.namespace:
                 if name.startswith(prefix):
-                    result[name]=value
+                    result[name]=self.namespace[name]
             return result
         elif regex:
             result={}
@@ -54,9 +54,9 @@ class NameServer(object):
             except re.error,x:
                 raise NamingError("invalid regex: "+str(x))
             else:
-                for name,value in self.namespace.items():
+                for name in self.namespace:
                     if regex.match(name):
-                        result[name]=value
+                        result[name]=self.namespace[name]
                 return result
         else:
             # just return everything
