@@ -24,13 +24,12 @@ def _configLogging():
     logfilename=os.environ.get("PYRO_LOGFILE","pyro.log")
     if level is not None:
         levelvalue=getattr(logging,level)
-        print "CONFIG LOG",level
         if len(logging.root.handlers)==0:
             # configure the logging with some sensible defaults.
             try:
                 import tempfile
-                with tempfile.TemporaryFile(dir=".") as tempfile:
-                    pass
+                tempfile=tempfile.TemporaryFile(dir=".")
+                tempfile.close()
             except OSError:
                 # cannot write in current directory, use the default console logger
                 logging.basicConfig(level=levelvalue)

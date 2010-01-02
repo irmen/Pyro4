@@ -18,6 +18,9 @@ NS_BCHOST       =   HOST
 COMPRESSION     =   False   # XXX not used yet
 SERVERTYPE      =   "thread"
 
+# Btw, env vars only used at package import time (see __init__.py):
+# PYRO_LOGLEVEL   (enable Pyro log config and set level)
+# PYRO_LOGFILE    (the name of the logfile if you don't like the default)
 
 def _process(dictionary):
     """Process all config items and update them with environment var settings if available."""
