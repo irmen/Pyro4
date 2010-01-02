@@ -17,6 +17,8 @@ NS_BCPORT       =   9091    # udp
 NS_BCHOST       =   HOST
 COMPRESSION     =   False   # XXX not used yet
 SERVERTYPE      =   "thread"
+DOTTEDNAMES     =   False
+
 
 # Btw, env vars only used at package import time (see __init__.py):
 # PYRO_LOGLEVEL   (enable Pyro log config and set level)

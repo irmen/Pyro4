@@ -107,6 +107,8 @@ class _RemoteMethod(object):
     def __init__(self, send, name):
         self.__send = send
         self.__name = name
+    def __getattr__(self, name):
+        return _RemoteMethod(self.__send, "%s.%s" % (self.__name, name))
     def __call__(self, *args, **kwargs):
         return self.__send(self.__name, args, kwargs)
 
@@ -343,7 +345,8 @@ class Daemon(object):
                     # IronPython sends all strings as unicode, but apply() doesn't grok unicode keywords.
                     # So we need to rebuild the keywords dict with str keys... 
                     kwargs = dict((str(k),v) for k,v in kwargs.iteritems())
-                data=getattr(obj[1], method) (*vargs,**kwargs)   # this is the actual method call
+                obj=Pyro.util.resolveDottedAttribute(obj[1],method,Pyro.config.DOTTEDNAMES)
+                data=obj(*vargs,**kwargs)   # this is the actual method call to the Pyro object
             else:
                 raise DaemonError("unknown object")
             data,compressed=self.serializer.serialize(data,compress=Pyro.config.COMPRESSION)

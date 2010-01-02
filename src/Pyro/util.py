@@ -176,3 +176,23 @@ class Serializer(object):
         return self.pickle.loads(data)
     def __eq__(self, other):
         return type(other) is Serializer and vars(self)==vars(other)
+
+
+def resolveDottedAttribute(obj, attr, allowDotted):
+    """Resolves a dotted attribute name to an object.  Raises
+    an AttributeError if any attribute in the chain starts with a '_'.
+
+    If the optional allowDotted argument is false, dots are not
+    supported and this function operates similar to getattr(obj, attr).
+    """
+    if allowDotted:
+        attrs = attr.split('.')
+        for i in attrs:
+            if i.startswith('_'):
+                raise AttributeError('attempt to access private attribute "%s"' % i)
+            else:
+                obj = getattr(obj,i)
+        return obj
+    else:
+        return getattr(obj,attr)
+

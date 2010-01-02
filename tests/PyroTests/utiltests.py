@@ -118,7 +118,37 @@ class TestUtils(unittest.TestCase):
             self.assertEqual(7766, Pyro.config.PORT)
             self.assertEqual(socket.gethostname(), Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
-        
+
+    def testResolveAttr(self):
+        class Test(object):
+            def __init__(self,value):
+                self.value=value
+            def __str__(self):
+                return "<%s>" % self.value
+        obj=Test("obj")
+        obj.a=Test("a")
+        obj.a.b=Test("b")
+        obj.a.b.c=Test("c")
+        obj.a._p=Test("p1")
+        obj.a._p.q=Test("q1")
+        obj.a.__p=Test("p2")
+        obj.a.__p.q=Test("q2")
+        #check the method with dotted disabled 
+        self.assertEquals("<a>",str(Pyro.util.resolveDottedAttribute(obj,"a",False)))
+        self.assertRaises(AttributeError, Pyro.util.resolveDottedAttribute, obj, "a.b",False)
+        self.assertRaises(AttributeError, Pyro.util.resolveDottedAttribute, obj, "a.b.c",False)
+        self.assertRaises(AttributeError, Pyro.util.resolveDottedAttribute, obj, "a.b.c.d",False)
+        self.assertRaises(AttributeError, Pyro.util.resolveDottedAttribute, obj, "a._p",False)
+        self.assertRaises(AttributeError, Pyro.util.resolveDottedAttribute, obj, "a._p.q",False)
+        self.assertRaises(AttributeError, Pyro.util.resolveDottedAttribute, obj, "a.__p.q",False)
+        #now with dotted enabled
+        self.assertEquals("<a>",str(Pyro.util.resolveDottedAttribute(obj,"a",True)))
+        self.assertEquals("<b>",str(Pyro.util.resolveDottedAttribute(obj,"a.b",True)))
+        self.assertEquals("<c>",str(Pyro.util.resolveDottedAttribute(obj,"a.b.c",True)))
+        self.assertRaises(AttributeError,Pyro.util.resolveDottedAttribute, obj,"a.b.c.d",True)   # doesn't exist
+        self.assertRaises(AttributeError,Pyro.util.resolveDottedAttribute, obj,"a._p",True)    #private
+        self.assertRaises(AttributeError,Pyro.util.resolveDottedAttribute, obj,"a._p.q",True)    #private
+        self.assertRaises(AttributeError,Pyro.util.resolveDottedAttribute, obj,"a.__p.q",True)    #private
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
