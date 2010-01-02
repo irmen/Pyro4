@@ -213,8 +213,6 @@ def main(args):
     parser.add_option("","--bcport", dest="bcport", type="int", help="port to bind broadcast server on (0=random)")
     parser.add_option("-x","--nobc", dest="enablebc", action="store_false", default=True, help="don't start a broadcast server")
     options,args = parser.parse_args(args)
-    if options.host is not None and options.bchost is None:
-        options.bchost=options.host   # bchost follows host if not explicitly set to something else
     startNS(options.host,options.port,enableBroadcast=options.enablebc,bchost=options.bchost,bcport=options.bcport)
 
 if __name__=="__main__":
