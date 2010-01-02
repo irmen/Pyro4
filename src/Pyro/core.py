@@ -123,11 +123,12 @@ class Proxy(object):
         self._pyroUri=uri
         self._pyroConnection=None
         self._pyroSerializer=Pyro.util.Serializer()
+        self._pyroOneway=set()
     def __del__(self):
         if hasattr(self,"_pyroConnection"):
             self._pyroRelease()
     def __getattr__(self, name):
-        if name in ("__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri"):        # allows it to be safely pickled
+        if name in ("__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri","_pyroOneway"):        # allows it to be safely pickled
             raise AttributeError(name)
         return _RemoteMethod(self._pyroInvoke, name)
     def __repr__(self):
@@ -135,9 +136,9 @@ class Proxy(object):
     def __str__(self):
         return repr(self)
     def __getstate__(self):
-        return self._pyroUri,self._pyroSerializer    # skip the connection
+        return self._pyroUri,self._pyroOneway,self._pyroSerializer    # skip the connection
     def __setstate__(self, state):
-        self._pyroUri, self._pyroSerializer = state
+        self._pyroUri,self._pyroOneway,self._pyroSerializer = state
         self._pyroConnection=None
     def __copy__(self):
         uriCopy=PyroURI(self._pyroUri)
@@ -161,18 +162,23 @@ class Proxy(object):
         flags=0
         if compressed:
             flags |= MessageFactory.FLAGS_COMPRESSED
+        if methodname in self._pyroOneway:
+            flags |= MessageFactory.FLAGS_ONEWAY
         data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags)
         self._pyroConnection.send(data)
-        header=self._pyroConnection.recv(MessageFactory.HEADERSIZE)
-        msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
-        if msgType!=MessageFactory.MSG_RESULT:
-            raise ProtocolError("invalid msg type %d received" % msgType)
-        data=self._pyroConnection.recv(dataLen)
-        data=self._pyroSerializer.deserialize(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
-        if flags & MessageFactory.FLAGS_EXCEPTION:
-            raise data
+        if flags & MessageFactory.FLAGS_ONEWAY:
+            return None    # oneway call, no response data
         else:
-            return data
+            header=self._pyroConnection.recv(MessageFactory.HEADERSIZE)
+            msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
+            if msgType!=MessageFactory.MSG_RESULT:
+                raise ProtocolError("invalid msg type %d received" % msgType)
+            data=self._pyroConnection.recv(dataLen)
+            data=self._pyroSerializer.deserialize(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
+            if flags & MessageFactory.FLAGS_EXCEPTION:
+                raise data
+            else:
+                return data
     def _pyroCreateConnection(self, replaceUri=False):
         """Connects this proxy to the remote Pyro daemon. Does connection handshake."""
         import Pyro.naming # don't import globally because of cyclic dependancy 
@@ -234,8 +240,9 @@ class MessageFactory(object):
     MSG_CONNECTFAIL  = 3
     MSG_INVOKE       = 4
     MSG_RESULT       = 5
-    FLAGS_EXCEPTION  = 0x0001
-    FLAGS_COMPRESSED = 0x0002
+    FLAGS_EXCEPTION  = 1<<0
+    FLAGS_COMPRESSED = 1<<1
+    FLAGS_ONEWAY     = 1<<2
     MSGTYPES=dict.fromkeys((MSG_CONNECT, MSG_CONNECTOK, MSG_CONNECTFAIL, MSG_INVOKE, MSG_RESULT))
     @classmethod
     def createMessage(cls, msgType, data, flags=0):
@@ -349,13 +356,16 @@ class Daemon(object):
                 data=obj(*vargs,**kwargs)   # this is the actual method call to the Pyro object
             else:
                 raise DaemonError("unknown object")
-            data,compressed=self.serializer.serialize(data,compress=Pyro.config.COMPRESSION)
-            flags=0
-            if compressed:
-                flags |= MessageFactory.FLAGS_COMPRESSED
-            msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags)
-            del data
-            conn.send(msg)
+            if flags & MessageFactory.FLAGS_ONEWAY:
+                return   # oneway call, don't send a response
+            else:
+                data,compressed=self.serializer.serialize(data,compress=Pyro.config.COMPRESSION)
+                flags=0
+                if compressed:
+                    flags |= MessageFactory.FLAGS_COMPRESSED
+                msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags)
+                del data
+                conn.send(msg)
         except CommunicationError,x:
             # communication errors are not caught
             raise
