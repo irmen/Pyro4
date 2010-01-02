@@ -208,7 +208,7 @@ class Proxy(object):
                     raise ProtocolError("invalid msg type %d received" % msgType)
         else:
             raise NotImplementedError("non-socket uri connections not yet implemented")
-    def _pyroReconnect(self, tries=sys.maxint, wait=1):
+    def _pyroReconnect(self, tries=sys.maxint):
         import time
         self._pyroRelease()
         while tries:
@@ -218,8 +218,7 @@ class Proxy(object):
             except CommunicationError:
                 tries-=1
                 if tries:
-                    print "RECONNECT SLEEP",tries
-                    time.sleep(wait)
+                    time.sleep(2)
         raise ConnectionClosedError("failed to reconnect")
 
 
@@ -375,11 +374,13 @@ class Daemon(object):
         """Close down the server and release resources"""
         if hasattr(self,"transportServer"):
             self.transportServer.close()
-    def register(self, obj, name=None):
+    def register(self, obj, name=None, objectId=None):
         """Register a Pyro object under the given (local) name. Note that this object
         is now only known inside this daemon, it is not automatically available in a name server."""
+        if objectId:
+            obj._pyroObjectId=uuid.UUID(objectId).hex   # set given objectId
         if not hasattr(obj,"_pyroObjectId"):
-            obj._pyroObjectId=str(uuid.uuid4())
+            obj._pyroObjectId=uuid.uuid4().hex          # generate new objectId
         if obj._pyroObjectId in self.objectsById or name in self.objectsByName:
             raise DaemonError("object already registered")
         self.objectsById[obj._pyroObjectId]=(name,obj)
