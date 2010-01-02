@@ -24,6 +24,7 @@ class OfflineTests(unittest.TestCase):
         ns.remove("test.object3")
         all=ns.list()
         self.assertEqual(2, len(all))  # 2 leftover objects
+
     def testList(self):
         ns=Pyro.naming.NameServer()
         ns.register("test.objects.1","SOMETHING1")
@@ -45,7 +46,6 @@ class OfflineTests(unittest.TestCase):
         self.assertEqual("SOMETHINGA", objects["test.other.a"])
         objects=ns.list(regex=r"\d\d\d\d\d\d\d\d\d\d")
         self.assertEqual(0,len(objects))
-        
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

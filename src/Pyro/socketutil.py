@@ -69,7 +69,8 @@ def receiveData(sock, size):
 def sendData(sock, data):
     """Send some data over a socket."""
     try:
-        sock.sendall(data)
+        sock.send(data)
+        #sock.sendall(data)
     except socket.timeout:
         raise TimeoutError("sending: timeout")
     except socket.error,x:
@@ -156,32 +157,35 @@ class SocketConnection(object):
 
 class SocketWorker(threading.Thread):
     """worker thread to process requests"""
-    def __init__(self, workqueue, threadpool, callback):
+    numConnections=0
+    def __init__(self, server, callback):
         super(SocketWorker,self).__init__()
         self.setDaemon(True)
-        self.queue=workqueue
-        self.threadpool=threadpool
+        self.server=server
         self.callback=callback
     def run(self):
         self.running=True
         try:
             while self.running: # loop over all connections in the queue
-                self.csock,self.caddr = self.queue.get()
+                self.csock,self.caddr = self.server.workqueue.get()
                 if self.csock is None and self.caddr is None:
                     # this was a 'stop' sentinel
                     self.running=False
                     break
                 self.csock=SocketConnection(self.csock)
+                self.numConnections+=1
                 if self.handleConnection(self.csock):
                     while self.running:   # loop over all requests during a single connection
                         try:
                             self.callback.handleRequest(self.csock)
                         except (socket.error,ConnectionClosedError),x:
                             # client went away.
-                            self.csock.close()
                             break
+                    self.csock.close()
+                    del self.csock
+                self.numConnections-=1
         finally:
-            self.threadpool.remove(self)
+            self.server.threadpool.remove(self)
     def handleConnection(self,conn):
         try:
             if self.callback.handshake(conn):
@@ -200,11 +204,11 @@ class SocketServer_Threadpool(object):
         host=host or self._socketaddr[0]
         port=port or self._socketaddr[1]
         self.locationStr="%s:%d" % (host,port)
-        numthreads=5    # XXX configurable
+        numthreads=10    # XXX configurable, but 10 is absolute minimum otherwise the unittests fail
         self.threadpool=set()
-        self.queue=Queue.Queue()
+        self.workqueue=Queue.Queue()
         for x in range(numthreads):
-            worker=SocketWorker(self.queue, self.threadpool, callbackObject)
+            worker=SocketWorker(self, callbackObject)
             self.threadpool.add(worker)
             worker.start()
         log.info("%d worker threads", len(self.threadpool))
@@ -216,7 +220,7 @@ class SocketServer_Threadpool(object):
         while (self.sock is not None) and loopCondition():
             csock, caddr=self.sock.accept()
             log.debug("new connection from %s",caddr)
-            self.queue.put((csock,caddr))
+            self.workqueue.put((csock,caddr))
     def close(self): 
         if self.sock:
             try:
@@ -227,7 +231,7 @@ class SocketServer_Threadpool(object):
             self.sock=None
         for worker in list(self.threadpool):
             worker.running=False
-            self.queue.put((None,None)) # put a 'stop' sentinel in the worker queue
+            self.workqueue.put((None,None)) # put a 'stop' sentinel in the worker queue
                 
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""

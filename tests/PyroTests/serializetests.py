@@ -89,6 +89,9 @@ class SerializeTests(unittest.TestCase):
         self.assertEqual(proxy3._pyroUri, proxy._pyroUri)
         self.assertFalse(proxy3._pyroUri is proxy._pyroUri)
         self.assertEqual(proxy3._pyroSerializer, proxy._pyroSerializer)        
+        proxy._pyroRelease()
+        proxy2._pyroRelease()
+        proxy3._pyroRelease()
         
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

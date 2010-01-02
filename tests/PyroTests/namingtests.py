@@ -30,12 +30,14 @@ class OnlineTests(unittest.TestCase):
         self._assertNameServerRunning()
         ns=Pyro.naming.locateNS() # broadcast lookup
         self.assertTrue(isinstance(ns, Pyro.core.Proxy))
+        ns._pyroRelease()
         ns=Pyro.naming.locateNS(self.nshostname) # normal lookup
         self.assertTrue(isinstance(ns, Pyro.core.Proxy))
         uri=ns._pyroUri
         self.assertEqual("PYRO",uri.protocol)
         self.assertEqual(self.nshostname,uri.host)
         self.assertEqual(Pyro.config.NS_PORT,uri.port)
+        ns._pyroRelease()
         ns=Pyro.naming.locateNS(self.nshostname,Pyro.config.NS_PORT)
         uri=ns._pyroUri
         self.assertEqual("PYRO",uri.protocol)
@@ -56,7 +58,52 @@ class OnlineTests(unittest.TestCase):
         #uri=ns._pyroUri
         #self.assertEqual("PYRO",uri.protocol)
         #self.assertEqual("pipename",uri.pipename)
+        ns._pyroRelease()
 
+    def testMulti(self):
+        self._assertNameServerRunning()
+        nsLocation="%s:%d" %(self.nshostname, self.nsport)
+        daemonUri="PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@"+nsLocation
+        uri=Pyro.naming.resolve(daemonUri)
+        p=Pyro.core.Proxy(uri)
+        p._pyroBind()
+        p._pyroRelease()
+        uri=Pyro.naming.resolve(daemonUri)
+        p=Pyro.core.Proxy(uri)
+        p._pyroBind()
+        p._pyroRelease()
+        uri=Pyro.naming.resolve(daemonUri)
+        p=Pyro.core.Proxy(uri)
+        p._pyroBind()
+        p._pyroRelease()
+        uri=Pyro.naming.resolve(daemonUri)
+        p=Pyro.core.Proxy(uri)
+        p._pyroBind()
+        p._pyroRelease()
+        uri=Pyro.naming.resolve(daemonUri)
+        p=Pyro.core.Proxy(uri)
+        p._pyroBind()
+        p._pyroRelease()
+        uri=Pyro.naming.resolve(daemonUri)
+        p=Pyro.core.Proxy(uri)
+        p._pyroBind()
+        p._pyroRelease()
+        daemonUri="PYROLOC:"+Pyro.constants.DAEMON_LOCALNAME+"@"+nsLocation
+        uri=Pyro.naming.resolve(daemonUri)
+        uri=Pyro.naming.resolve(daemonUri)
+        uri=Pyro.naming.resolve(daemonUri)
+        uri=Pyro.naming.resolve(daemonUri)
+        uri=Pyro.naming.resolve(daemonUri)
+        uri=Pyro.naming.resolve(daemonUri)
+        uri=Pyro.naming.resolve(daemonUri)
+        uri=Pyro.naming.resolve("PYRONAME:"+Pyro.constants.NAMESERVER_NAME+"@"+self.nshostname)
+        uri=Pyro.naming.resolve("PYRONAME:"+Pyro.constants.NAMESERVER_NAME+"@"+self.nshostname)
+        uri=Pyro.naming.resolve("PYRONAME:"+Pyro.constants.NAMESERVER_NAME+"@"+self.nshostname)
+        uri=Pyro.naming.resolve("PYRONAME:"+Pyro.constants.NAMESERVER_NAME+"@"+self.nshostname)
+        uri=Pyro.naming.resolve("PYRONAME:"+Pyro.constants.NAMESERVER_NAME+"@"+self.nshostname)
+        uri=Pyro.naming.resolve("PYRONAME:"+Pyro.constants.NAMESERVER_NAME+"@"+self.nshostname)
+        uri=Pyro.naming.resolve("PYRONAME:"+Pyro.constants.NAMESERVER_NAME+"@"+self.nshostname)
+    
     def testResolve(self):
         self._assertNameServerRunning()
         resolved1=Pyro.naming.resolve(Pyro.core.PyroURI("PYRO:12345@host.com"))
@@ -78,6 +125,7 @@ class OnlineTests(unittest.TestCase):
         self.assertEqual(self.nshostname,uri.host)
         self.assertNotEqual(Pyro.constants.NAMESERVER_NAME,uri.object)
         self.assertEqual(uri, ns._pyroUri)
+        ns._pyroRelease()
 
         # broadcast lookup
         self.assertRaises(NamingError, Pyro.naming.resolve, "PYRONAME:unknown_object")
@@ -118,6 +166,8 @@ class OnlineTests(unittest.TestCase):
         self.assertNotEqual(p1._pyroUri, p2._pyroUri)
         self.assertEqual("PYRO",p1._pyroUri.protocol)
         self.assertEqual("PYROLOC",p2._pyroUri.protocol)
+        p1._pyroRelease()
+        p2._pyroRelease()
         
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

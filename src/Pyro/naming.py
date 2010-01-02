@@ -154,13 +154,14 @@ def locateNS(host=None, port=None):
         sock=Pyro.socketutil.createBroadcastSocket(timeout=0.7)
         for i in range(3):
             try:
-                #sock.sendto("GET_NSURI",("<broadcast>",port))
-                sock.sendto("GET_NSURI",("255.255.255.255",port))
+                sock.sendto("GET_NSURI",("<broadcast>",port))
                 data,addr=sock.recvfrom(100)
+                sock.close()
                 log.debug("located NS: %s",data)
                 return Pyro.core.Proxy(data)
             except socket.timeout:
                 continue
+        sock.close()
         raise TimeoutError("timeout locating name server")
     # pyroloc lookup
     if not port:
@@ -187,10 +188,13 @@ def resolve(uri):
         daemonuri.object=Pyro.constants.INTERNAL_DAEMON_GUID
         daemon=Pyro.core.Proxy(daemonuri)
         uri=daemon.resolve(uri.object)
+        daemon._pyroRelease()
         return uri
     elif uri.protocol=="PYRONAME":
         ns=locateNS(uri.host, uri.port)
-        return ns.lookup(uri.object)
+        uri=ns.lookup(uri.object)
+        ns._pyroRelease()
+        return uri
     else:
         raise PyroError("invalid uri protocol")
             
