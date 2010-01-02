@@ -89,11 +89,12 @@ class PyroURI(object):
     def __eq__(self,other):
         return (self.protocol, self.object, self.pipename, self.sockname, self.host, self.port) \
                 == (other.protocol, other.object, other.pipename, other.sockname, other.host, other.port)
-# note: getstate/setstate are not needed if we use pickle protocol 2
-#    def __getstate__(self):
-#        return (self.protocol, self.object, self.pipename, self.sockname, self.host, self.port)
-#    def __setstate__(self,state):
-#        self.protocol, self.object, self.pipename, self.sockname, self.host, self.port = state
+    # note: getstate/setstate are not needed if we use pickle protocol 2,
+    # but this way it helps pickle to make the representation smaller by omitting all attribute names.
+    def __getstate__(self):
+        return (self.protocol, self.object, self.pipename, self.sockname, self.host, self.port)
+    def __setstate__(self,state):
+        self.protocol, self.object, self.pipename, self.sockname, self.host, self.port = state
 
 
 class _RemoteMethod(object):
@@ -149,15 +150,18 @@ class Proxy(object):
         if not self._pyroConnection:
             # rebind here, don't do it from inside the invoke because deadlock will occur
             self._pyroCreateConnection()
-        data=self._pyroSerializer.serialize( (self._pyroConnection.objectId,methodname,vargs,kwargs) )
-        data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, 0)
+        data,compressed=self._pyroSerializer.serialize( (self._pyroConnection.objectId,methodname,vargs,kwargs), compress=Pyro.config.COMPRESSION )
+        flags=0
+        if compressed:
+            flags |= MessageFactory.FLAGS_COMPRESSED
+        data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags)
         self._pyroConnection.send(data)
         header=self._pyroConnection.recv(MessageFactory.HEADERSIZE)
         msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
         if msgType!=MessageFactory.MSG_RESULT:
             raise ProtocolError("invalid msg type %d received" % msgType)
         data=self._pyroConnection.recv(dataLen)
-        data=self._pyroSerializer.deserialize(data)
+        data=self._pyroSerializer.deserialize(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
         if flags & MessageFactory.FLAGS_EXCEPTION:
             raise data
         else:
@@ -206,12 +210,13 @@ class MessageFactory(object):
     headerFmt = '!4sHHHi'    # header (id, version, msgtype, flags, dataLen)
     version=40
     HEADERSIZE=struct.calcsize(headerFmt)
-    MSG_CONNECT     = 1
-    MSG_CONNECTOK   = 2
-    MSG_CONNECTFAIL = 3
-    MSG_INVOKE      = 4
-    MSG_RESULT      = 5
-    FLAGS_EXCEPTION = 0x0001
+    MSG_CONNECT      = 1
+    MSG_CONNECTOK    = 2
+    MSG_CONNECTFAIL  = 3
+    MSG_INVOKE       = 4
+    MSG_RESULT       = 5
+    FLAGS_EXCEPTION  = 0x0001
+    FLAGS_COMPRESSED = 0x0002
     MSGTYPES=dict.fromkeys((MSG_CONNECT, MSG_CONNECTOK, MSG_CONNECTFAIL, MSG_INVOKE, MSG_RESULT))
     @classmethod
     def createMessage(cls, msgType, data, flags=0):
@@ -314,7 +319,7 @@ class Daemon(object):
             if msgType!=MessageFactory.MSG_INVOKE:
                 raise ProtocolError("invalid msg type %d received" % msgType)
             data=conn.recv(dataLen)
-            objId, method, vargs, kwargs=self.serializer.deserialize(data)
+            objId, method, vargs, kwargs=self.serializer.deserialize(data,compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             obj=self.objectsById.get(objId)
             if obj is not None:
                 if kwargs and type(kwargs.iterkeys().next()) is unicode and sys.platform!="cli":
@@ -324,8 +329,11 @@ class Daemon(object):
                 data=getattr(obj[1], method) (*vargs,**kwargs)   # this is the actual method call
             else:
                 raise DaemonError("unknown object")
-            data=self.serializer.serialize(data)
-            msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, 0)
+            data,compressed=self.serializer.serialize(data,compress=Pyro.config.COMPRESSION)
+            flags=0
+            if compressed:
+                flags |= MessageFactory.FLAGS_COMPRESSED
+            msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags)
             del data
             conn.send(msg)
         except CommunicationError,x:
@@ -340,7 +348,7 @@ class Daemon(object):
     def sendExceptionResponse(self, connection, exc_value, tbinfo):
         """send an exception back including the local traceback info"""
         setattr(exc_value, Pyro.constants.TRACEBACK_ATTRIBUTE, tbinfo)
-        data=self.serializer.serialize(exc_value)
+        data,_=self.serializer.serialize(exc_value)
         msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, MessageFactory.FLAGS_EXCEPTION)
         del data
         connection.send(msg)

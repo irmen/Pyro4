@@ -12,7 +12,7 @@ class SerializeTests(unittest.TestCase):
         
     def testSerMisc(self):
         s=Pyro.util.Serializer()
-        p=self.ser.serialize(s)
+        p,_=self.ser.serialize(s)
         s2=self.ser.deserialize(p)
         self.assertEqual(s,s2)
 
@@ -20,22 +20,22 @@ class SerializeTests(unittest.TestCase):
         e1=Pyro.errors.NamingError("x")
         e2=Pyro.errors.PyroError("x")
         e3=Pyro.errors.ProtocolError("x")
-        p=self.ser.serialize(e1)
+        p,_=self.ser.serialize(e1)
         e=self.ser.deserialize(p)
         self.assertTrue(isinstance(e, Pyro.errors.NamingError))
         self.assertEqual(repr(e1), repr(e))
-        p=self.ser.serialize(e2)
+        p,_=self.ser.serialize(e2)
         e=self.ser.deserialize(p)
         self.assertTrue(isinstance(e, Pyro.errors.PyroError))
         self.assertEqual(repr(e2), repr(e))
-        p=self.ser.serialize(e3)
+        p,_=self.ser.serialize(e3)
         e=self.ser.deserialize(p)
         self.assertTrue(isinstance(e, Pyro.errors.ProtocolError))
         self.assertEqual(repr(e3), repr(e))
     
     def testSerCoreOffline(self):
         uri=Pyro.core.PyroURI("PYRO:9999@host.com:4444")
-        p=self.ser.serialize(uri)
+        p,_=self.ser.serialize(uri)
         uri2=self.ser.deserialize(p)
         self.assertEqual(uri, uri2)
         self.assertEqual("PYRO",uri2.protocol)
@@ -43,7 +43,7 @@ class SerializeTests(unittest.TestCase):
         self.assertEqual("host.com:4444",uri2.location)
         proxy=Pyro.core.Proxy("PYRO:9999@host.com:4444")
         self.assertTrue(proxy._pyroConnection is None)
-        p=self.ser.serialize(proxy)
+        p,_=self.ser.serialize(proxy)
         proxy2=self.ser.deserialize(p)
         self.assertTrue(proxy._pyroConnection is None)
         self.assertTrue(proxy2._pyroConnection is None)
@@ -66,7 +66,7 @@ class SerializeTests(unittest.TestCase):
         proxy=Pyro.core.Proxy(daemonUri)
         proxy._pyroBind()
         self.assertFalse(proxy._pyroConnection is None)
-        p=ser.serialize(proxy)
+        p,_=ser.serialize(proxy)
         proxy2=ser.deserialize(p)
         self.assertTrue(proxy2._pyroConnection is None)
         self.assertFalse(proxy._pyroConnection is None)
@@ -90,6 +90,22 @@ class SerializeTests(unittest.TestCase):
         self.assertFalse(proxy3._pyroUri is proxy._pyroUri)
         self.assertEqual(proxy3._pyroSerializer, proxy._pyroSerializer)   
 
+    def testCompression(self):
+        smalldata=["wordwordword","blablabla","orangeorange"]
+        largedata=["wordwordword"+str(i) for i in range(30)]
+        ser=Pyro.util.Serializer()
+        data1,compressed=ser.serialize(smalldata,compress=False)
+        self.assertFalse(compressed)
+        data2,compressed=ser.serialize(smalldata,compress=True)
+        self.assertFalse(compressed, "small messages should not be compressed")
+        self.assertEquals(len(data1),len(data2))
+        data1,compressed=ser.serialize(largedata,compress=False)
+        self.assertFalse(compressed)
+        data2,compressed=ser.serialize(largedata,compress=True)
+        self.assertTrue(compressed, "large messages should be compressed")
+        self.assertTrue(len(data1)>len(data2))
+        
+        
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
