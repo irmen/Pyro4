@@ -1,6 +1,11 @@
-"""
-Core Pyro logic (uri, daemon, proxy stuff).
-"""
+######################################################################
+#
+#  Core Pyro logic (uri, daemon, proxy stuff).
+#
+#  Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+#  irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+#
+######################################################################
 
 import re, struct, sys
 import logging, uuid, threading
@@ -203,6 +208,19 @@ class Proxy(object):
                     raise ProtocolError("invalid msg type %d received" % msgType)
         else:
             raise NotImplementedError("non-socket uri connections not yet implemented")
+    def _pyroReconnect(self, tries=sys.maxint, wait=1):
+        import time
+        self._pyroRelease()
+        while tries:
+            try:
+                self._pyroCreateConnection()
+                return
+            except CommunicationError:
+                tries-=1
+                if tries:
+                    print "RECONNECT SLEEP",tries
+                    time.sleep(wait)
+        raise ConnectionClosedError("failed to reconnect")
 
 
 class MessageFactory(object):

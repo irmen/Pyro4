@@ -1,6 +1,11 @@
-"""
-Pyro name server and helper functions.
-"""
+######################################################################
+#
+#  Pyro Name Server and helper functions.
+#
+#  Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+#  irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+#
+######################################################################
 
 import re,logging
 import threading
@@ -21,7 +26,7 @@ class NameServer(object):
         try:
             return Pyro.core.PyroURI(self.namespace[arg])
         except KeyError:
-            raise NamingError("unknown name")
+            raise NamingError("unknown name: "+arg)
     def register(self,name,uri):
         if isinstance(uri, Pyro.core.PyroURI):
             uri=str(uri)
@@ -30,7 +35,7 @@ class NameServer(object):
         if not isinstance(name, basestring):
             raise TypeError("name must be a str")
         if name in self.namespace:
-            raise NamingError("name already registered")
+            raise NamingError("name already registered: "+name)
         self.namespace[str(name)]=str(uri)
     def remove(self,name):
         if name in self.namespace:

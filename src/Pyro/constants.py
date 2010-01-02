@@ -1,6 +1,11 @@
-"""
-Fixed Pyro constants.
-"""
+######################################################################
+#
+#  Constants definitions.
+#
+#  Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+#  irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+#
+######################################################################
 
 # Pyro version
 VERSION = '4.0-svn'
