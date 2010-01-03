@@ -13,7 +13,7 @@ import socket
 import Pyro.core
 import Pyro.constants
 import Pyro.socketutil
-from Pyro.errors import PyroError, NamingError, TimeoutError, CommunicationError
+from Pyro.errors import PyroError, NamingError
 
 log=logging.getLogger("Pyro.naming")
 
@@ -73,9 +73,9 @@ class NameServerDaemon(Pyro.core.Daemon):
         if port is None:
             port=Pyro.config.NS_PORT
         super(NameServerDaemon,self).__init__(host,port)
-        self.ns=NameServer()
-        self.register(self.ns, Pyro.constants.NAMESERVER_NAME)
-        self.ns.register(Pyro.constants.NAMESERVER_NAME, self.uriFor(self.ns))
+        self.nameserver=NameServer()
+        self.register(self.nameserver, Pyro.constants.NAMESERVER_NAME)
+        self.nameserver.register(Pyro.constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
         log.info("nameserver daemon running on %s",self.locationStr)
 
 
@@ -119,7 +119,7 @@ class BroadcastServer(threading.Thread):
             sock=Pyro.socketutil.createBroadcastSocket(timeout=2.0)
             sock.sendto("!!!!!!!!!!!!!!!!!!!!", self._sockaddr)
             sock.close()
-        except Exception,x:
+        except Exception:
             pass
 
 def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
@@ -129,13 +129,13 @@ def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None
         log.info("Not starting NS broadcast server because NS is bound to localhost")
         enableBroadcast=False
     daemon=NameServerDaemon(host, port)
-    nsUri=daemon.uriFor(daemon.ns)
+    nsUri=daemon.uriFor(daemon.nameserver)
     bcserver=None
     if enableBroadcast:
         bcserver=BroadcastServer(nsUri,bchost,bcport)
         bcserver.start()
         print "Broadcast server running on", bcserver.locationStr  
-    print "NS running on %s (%s)" %(daemon.locationStr,hostip)
+    print "NS running on %s (%s)" % (daemon.locationStr,hostip)
     print "URI =",nsUri
     try:
         daemon.requestLoop()
@@ -196,9 +196,9 @@ def resolve(uri):
         daemon._pyroRelease()
         return uri
     elif uri.protocol=="PYRONAME":
-        ns=locateNS(uri.host, uri.port)
-        uri=ns.lookup(uri.object)
-        ns._pyroRelease()
+        nameserver=locateNS(uri.host, uri.port)
+        uri=nameserver.lookup(uri.object)
+        nameserver._pyroRelease()
         return uri
     else:
         raise PyroError("invalid uri protocol")
@@ -210,10 +210,13 @@ def main(args):
     parser.add_option("-n","--host", dest="host", help="hostname to bind server on")
     parser.add_option("-p","--port", dest="port", type="int", help="port to bind server on (0=random)")
     parser.add_option("","--bchost", dest="bchost", help="hostname to bind broadcast server on")
-    parser.add_option("","--bcport", dest="bcport", type="int", help="port to bind broadcast server on (0=random)")
-    parser.add_option("-x","--nobc", dest="enablebc", action="store_false", default=True, help="don't start a broadcast server")
+    parser.add_option("","--bcport", dest="bcport", type="int", 
+                      help="port to bind broadcast server on (0=random)")
+    parser.add_option("-x","--nobc", dest="enablebc", action="store_false", default=True,
+                      help="don't start a broadcast server")
     options,args = parser.parse_args(args)
-    startNS(options.host,options.port,enableBroadcast=options.enablebc,bchost=options.bchost,bcport=options.bcport)
+    startNS(options.host,options.port,enableBroadcast=options.enablebc,
+            bchost=options.bchost,bcport=options.bcport)
 
 if __name__=="__main__":
     import sys

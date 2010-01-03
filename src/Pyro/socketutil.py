@@ -11,14 +11,17 @@ import socket, select
 import os, errno
 import threading, Queue
 import logging
-from Pyro.errors import *
+from Pyro.errors import ConnectionClosedError,TimeoutError,CommunicationError,PyroError
 
 ERRNO_RETRIES=[errno.EINTR, errno.EAGAIN, errno.EWOULDBLOCK]
-if hasattr(errno, "WSAEINTR"): ERRNO_RETRIES.append(errno.WSAEINTR)
-if hasattr(errno, "WSAEWOULDBLOCK"): ERRNO_RETRIES.append(errno.WSAEWOULDBLOCK)
+if hasattr(errno, "WSAEINTR"):
+    ERRNO_RETRIES.append(errno.WSAEINTR)
+if hasattr(errno, "WSAEWOULDBLOCK"):
+    ERRNO_RETRIES.append(errno.WSAEWOULDBLOCK)
 
 ERRNO_BADF=[errno.EBADF]
-if hasattr(errno, "WSAEBADF"): ERRNO_BADF.append(errno.WSAEBADF)
+if hasattr(errno, "WSAEBADF"):
+    ERRNO_BADF.append(errno.WSAEBADF)
 
 
 log=logging.getLogger("Pyro.socketutil")
@@ -55,7 +58,8 @@ def receiveData(sock, size):
             msglen=0
             msglist=[]
             while msglen<size:
-                chunk=sock.recv(min(60000,size-msglen))  # 60k buffer limit avoids problems on certain OSes like VMS, Windows
+                # 60k buffer limit avoids problems on certain OSes like VMS, Windows
+                chunk=sock.recv(min(60000,size-msglen)) 
                 if not chunk:
                     break
                 msglist.append(chunk)
@@ -136,14 +140,14 @@ def setReuseAddr(sock):
     """sets the SO_REUSEADDR option on the socket.""" 
     try:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    except:
+    except Exception:
         log.info("cannot set SO_REUSEADDR")
 
 def setKeepalive(sock):
     """sets the SO_KEEPALIVE option on the socket."""
     try:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-    except:
+    except Exception:
         log.info("cannot set SO_KEEPALIVE")
 
 
@@ -190,7 +194,7 @@ class SocketWorker(threading.Thread):
                     while self.running:   # loop over all requests during a single connection
                         try:
                             self.callback.handleRequest(self.csock)
-                        except (socket.error,ConnectionClosedError),x:
+                        except (socket.error,ConnectionClosedError):
                             # client went away.
                             break
                     self.csock.close()
@@ -304,7 +308,7 @@ class SocketServer_Select(object):
                         else:
                             try:
                                 self.callback.handleRequest(conn)
-                            except (socket.error,ConnectionClosedError),x:
+                            except (socket.error,ConnectionClosedError):
                                 # client went away.
                                 poll.unregister(conn.fileno())
                                 del fileno2connection[conn.fileno()]
@@ -337,7 +341,7 @@ class SocketServer_Select(object):
                     try:
                         if self.callback:
                             self.callback.handleRequest(conn)
-                    except (socket.error,ConnectionClosedError),x:
+                    except (socket.error,ConnectionClosedError):
                         # client went away.
                         conn.close()
                         if conn in self.clients:
@@ -373,7 +377,7 @@ class SocketServer_Select(object):
         for c in self.clients:
             try:
                 c.close()
-            except:
+            except Exception:
                 pass
         self.clients=[]
         self.callback=None

@@ -9,10 +9,10 @@
 
 import re, struct, sys
 import logging, uuid, threading
-from Pyro.errors import *
 import Pyro.config
 import Pyro.socketutil
 import Pyro.util
+import Pyro.errors
 
 __all__=["PyroURI", "Proxy", "Daemon"]
 
@@ -38,32 +38,32 @@ class PyroURI(object):
     def __init__(self, uri):
         uri=str(uri)  # allow to pass an existing PyroURI object
         self.pipename=self.sockname=self.host=self.port=None
-        m=self.uriRegEx.match(uri)
-        if not m:
-            raise NamingError("invalid uri")
-        self.protocol=m.group("protocol")
-        self.object=m.group("object")
-        location=m.group("location")
+        match=self.uriRegEx.match(uri)
+        if not match:
+            raise Pyro.errors.PyroError("invalid uri")
+        self.protocol=match.group("protocol")
+        self.object=match.group("object")
+        location=match.group("location")
         if self.protocol=="PYRONAME":
             self._parseLocation(location, Pyro.config.NS_PORT)
             return
         if self.protocol in ("PYRO","PYROLOC"):
             if not location:
-                raise NamingError("invalid uri")
+                raise Pyro.errors.PyroError("invalid uri")
             self._parseLocation(location, Pyro.config.PORT)
         else:
-            raise NamingError("invalid uri (protocol)")
+            raise Pyro.errors.PyroError("invalid uri (protocol)")
     def _parseLocation(self,location,defaultPort):
         if not location:
             return
         if location.startswith("./p:"):
             self.pipename=location[4:]
             if not self.pipename:
-                raise NamingError("invalid uri (location)")
+                raise Pyro.errors.PyroError("invalid uri (location)")
         elif location.startswith("./u:"):
             self.sockname=location[4:]
             if not self.sockname:
-                raise NamingError("invalid uri (location)")
+                raise Pyro.errors.PyroError("invalid uri (location)")
         else:
             self.host,_,self.port=location.partition(":")
             if not self.port:
@@ -72,7 +72,7 @@ class PyroURI(object):
                 try:
                     self.port=int(self.port)
                 except ValueError:
-                    raise NamingError("invalid uri (port)")        
+                    raise Pyro.errors.PyroError("invalid uri (port)")        
     @property
     def location(self):
         if self.host:
@@ -84,11 +84,11 @@ class PyroURI(object):
         else:
             return None
     def __str__(self):
-        s=self.protocol+":"+self.object
+        result=self.protocol+":"+self.object
         location=self.location
         if location:
-            s+="@"+location
-        return s
+            result+="@"+location
+        return result
     def __repr__(self):
         return "<PyroURI '"+str(self)+"'>"
     def __eq__(self,other):
@@ -128,7 +128,8 @@ class Proxy(object):
         if hasattr(self,"_pyroConnection"):
             self._pyroRelease()
     def __getattr__(self, name):
-        if name in ("__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri","_pyroOneway"):        # allows it to be safely pickled
+        if name in ("__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri","_pyroOneway"):
+            # allows it to be safely pickled
             raise AttributeError(name)
         return _RemoteMethod(self._pyroInvoke, name)
     def __repr__(self):
@@ -158,7 +159,8 @@ class Proxy(object):
         if not self._pyroConnection:
             # rebind here, don't do it from inside the invoke because deadlock will occur
             self._pyroCreateConnection()
-        data,compressed=self._pyroSerializer.serialize( (self._pyroConnection.objectId,methodname,vargs,kwargs), compress=Pyro.config.COMPRESSION )
+        data,compressed=self._pyroSerializer.serialize( 
+            (self._pyroConnection.objectId,methodname,vargs,kwargs), compress=Pyro.config.COMPRESSION )
         flags=0
         if compressed:
             flags |= MessageFactory.FLAGS_COMPRESSED
@@ -172,7 +174,7 @@ class Proxy(object):
             header=self._pyroConnection.recv(MessageFactory.HEADERSIZE)
             msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
             if msgType!=MessageFactory.MSG_RESULT:
-                raise ProtocolError("invalid msg type %d received" % msgType)
+                raise Pyro.errors.ProtocolError("invalid msg type %d received" % msgType)
             data=self._pyroConnection.recv(dataLen)
             data=self._pyroSerializer.deserialize(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             if flags & MessageFactory.FLAGS_EXCEPTION:
@@ -198,14 +200,14 @@ class Proxy(object):
             except Exception,x:
                 if conn:
                     conn.close()
-                raise CommunicationError("cannot connect: %s" % x)
+                raise Pyro.errors.CommunicationError("cannot connect: %s" % x)
             else:
                 if msgType==MessageFactory.MSG_CONNECTFAIL:
                     error="connection rejected"
                     if dataLen>0:
                         error+=", reason: "+conn.recv(dataLen)
                     conn.close()
-                    raise CommunicationError(error)
+                    raise Pyro.errors.CommunicationError(error)
                 elif msgType==MessageFactory.MSG_CONNECTOK:
                     self._pyroConnection=conn
                     if replaceUri:
@@ -213,7 +215,7 @@ class Proxy(object):
                     log.debug("connected to %s",self._pyroUri)
                 else:
                     conn.close()
-                    raise ProtocolError("invalid msg type %d received" % msgType)
+                    raise Pyro.errors.ProtocolError("invalid msg type %d received" % msgType)
         else:
             raise NotImplementedError("non-socket uri connections not yet implemented")
     def _pyroReconnect(self, tries=sys.maxint):
@@ -223,11 +225,11 @@ class Proxy(object):
             try:
                 self._pyroCreateConnection()
                 return
-            except CommunicationError:
+            except Pyro.errors.CommunicationError:
                 tries-=1
                 if tries:
                     time.sleep(2)
-        raise ConnectionClosedError("failed to reconnect")
+        raise Pyro.errors.ConnectionClosedError("failed to reconnect")
 
 
 class MessageFactory(object):
@@ -249,7 +251,7 @@ class MessageFactory(object):
         """creates a message containing a header followed by the given data"""
         dataLen=len(data) if data else 0
         if msgType not in cls.MSGTYPES:
-            raise ProtocolError("unknown message type %d" % msgType)
+            raise Pyro.errors.ProtocolError("unknown message type %d" % msgType)
         msg=struct.pack(cls.headerFmt, "PYRO", cls.version, msgType, flags, dataLen)
         if data:
             msg+=data
@@ -258,12 +260,12 @@ class MessageFactory(object):
     def parseMessageHeader(cls, headerData):
         """Parses a message header. Returns a tuple of messagetype, messageflags, datalength.""" 
         if not headerData or len(headerData)!=cls.HEADERSIZE:
-            raise ProtocolError("header data size mismatch")
+            raise Pyro.errors.ProtocolError("header data size mismatch")
         tag,ver,msgType,flags,dataLen = struct.unpack(cls.headerFmt, headerData)
         if tag!="PYRO" or ver!=cls.version:
-            raise ProtocolError("invalid data or unsupported protocol version")
+            raise Pyro.errors.ProtocolError("invalid data or unsupported protocol version")
         if msgType not in cls.MSGTYPES:
-            raise ProtocolError("unknown message type %d" % msgType)
+            raise Pyro.errors.ProtocolError("unknown message type %d" % msgType)
         return msgType,flags,dataLen
 
 
@@ -280,7 +282,10 @@ class DaemonObject(object):
             
 
 class Daemon(object):
-    """Pyro daemon. Contains server side logic and dispatches incoming remote method calls to the appropriate objects."""
+    """
+    Pyro daemon. Contains server side logic and dispatches incoming remote method calls
+    to the appropriate objects.
+    """
     def __init__(self, host=None, port=None):
         super(Daemon,self).__init__()
         if host is None:
@@ -292,7 +297,7 @@ class Daemon(object):
         elif Pyro.config.SERVERTYPE=="select":
             self.transportServer=Pyro.socketutil.SocketServer_Select(self, host, port)
         else:
-            raise PyroError("invalid server type '%s'" % Pyro.config.SERVERTYPE)
+            raise Pyro.errors.PyroError("invalid server type '%s'" % Pyro.config.SERVERTYPE)
         self.locationStr=self.transportServer.locationStr 
         self.serializer=Pyro.util.Serializer()
         self._pyroObjectId=Pyro.constants.INTERNAL_DAEMON_GUID
@@ -305,7 +310,10 @@ class Daemon(object):
     def __del__(self):
         self.close()
     def requestLoop(self):
-        """Goes in a loop to service incoming requests, until someone breaks this or calls shutdown from another thread."""  
+        """
+        Goes in a loop to service incoming requests, until someone breaks this
+        or calls shutdown from another thread.
+        """  
         self.mustshutdown=False
         log.info("daemon %s entering requestloop", self.locationStr)
         try:
@@ -329,23 +337,26 @@ class Daemon(object):
         header=conn.recv(MessageFactory.HEADERSIZE)
         msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
         if msgType!=MessageFactory.MSG_CONNECT:
-            raise ProtocolError("expected MSG_CONNECT message, got "+str(msgType))
+            raise Pyro.errors.ProtocolError("expected MSG_CONNECT message, got "+str(msgType))
         if dataLen>0:
-            data=conn.recv(dataLen) # read away any trailing data @UnusedVariable
+            conn.recv(dataLen) # read away any trailing data (unused at the moment)
         msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK,None,0)
         conn.send(msg)
         return True
     def handleRequest(self, conn):
-        """Handle incoming Pyro request. Catches any exception that may occur and
+        """
+        Handle incoming Pyro request. Catches any exception that may occur and
         wraps it in a reply to the calling side, as to not make this server side loop
-        terminate due to exceptions caused by remote invocations."""
+        terminate due to exceptions caused by remote invocations.
+        """
         try:
             header=conn.recv(MessageFactory.HEADERSIZE)
             msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
             if msgType!=MessageFactory.MSG_INVOKE:
-                raise ProtocolError("invalid msg type %d received" % msgType)
+                raise Pyro.errors.ProtocolError("invalid msg type %d received" % msgType)
             data=conn.recv(dataLen)
-            objId, method, vargs, kwargs=self.serializer.deserialize(data,compressed=flags & MessageFactory.FLAGS_COMPRESSED)
+            objId, method, vargs, kwargs=self.serializer.deserialize(
+                                           data,compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             obj=self.objectsById.get(objId)
             if obj is not None:
                 if kwargs and type(kwargs.iterkeys().next()) is unicode and sys.platform!="cli":
@@ -355,7 +366,7 @@ class Daemon(object):
                 obj=Pyro.util.resolveDottedAttribute(obj[1],method,Pyro.config.DOTTEDNAMES)
                 data=obj(*vargs,**kwargs)   # this is the actual method call to the Pyro object
             else:
-                raise DaemonError("unknown object")
+                raise Pyro.errors.DaemonError("unknown object")
             if flags & MessageFactory.FLAGS_ONEWAY:
                 return   # oneway call, don't send a response
             else:
@@ -366,7 +377,7 @@ class Daemon(object):
                 msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags)
                 del data
                 conn.send(msg)
-        except CommunicationError,x:
+        except Pyro.errors.CommunicationError,x:
             # communication errors are not caught
             raise
         except Exception,x:
@@ -388,20 +399,24 @@ class Daemon(object):
         if hasattr(self,"transportServer"):
             self.transportServer.close()
     def register(self, obj, name=None, objectId=None):
-        """Register a Pyro object under the given (local) name. Note that this object
-        is now only known inside this daemon, it is not automatically available in a name server."""
+        """
+        Register a Pyro object under the given (local) name. Note that this object
+        is now only known inside this daemon, it is not automatically available in a name server.
+        """
         if objectId:
             obj._pyroObjectId=uuid.UUID(objectId).hex   # set given objectId
         if not hasattr(obj,"_pyroObjectId"):
             obj._pyroObjectId=uuid.uuid4().hex          # generate new objectId
         if obj._pyroObjectId in self.objectsById or name in self.objectsByName:
-            raise DaemonError("object already registered")
+            raise Pyro.errors.DaemonError("object already registered")
         self.objectsById[obj._pyroObjectId]=(name,obj)
         if name:
             self.objectsByName[name]=obj._pyroObjectId
     def unregister(self, objectIdOrName):
-        """Remove an object from the known objects inside this daemon.
-        You can unregister by objectId or by (local) object name."""
+        """
+        Remove an object from the known objects inside this daemon.
+        You can unregister by objectId or by (local) object name.
+        """
         if objectIdOrName in (Pyro.constants.INTERNAL_DAEMON_GUID, Pyro.constants.DAEMON_LOCALNAME):
             return
         obj=self.objectsById.get(objectIdOrName)
@@ -415,21 +430,23 @@ class Daemon(object):
                 del self.objectsByName[objectIdOrName]
                 del self.objectsById[obj]
     def uriFor(self, obj=None, name=None, pyroloc=False):
-        """Get a PyroURI for the given object (or object name) from this daemon.
-        Only a daemon can hand out proper uris because the access location is contained in them."""
+        """
+        Get a PyroURI for the given object (or object name) from this daemon.
+        Only a daemon can hand out proper uris because the access location is contained in them.
+        """
         if pyroloc:
             if obj is not None:
                 name=self.objectsById[obj._pyroObjectId][0]
             elif type(name) is not str:
                 raise TypeError("name must be str")
             if name is None:
-                raise DaemonError("object is not registered with a name")
+                raise Pyro.errors.DaemonError("object is not registered with a name")
             return PyroURI("PYROLOC:"+name+"@"+self.locationStr)
         else:
             if obj is not None:
                 name=getattr(obj,"_pyroObjectId",None)
                 if name is None:
-                    raise DaemonError("object isn't registered")
+                    raise Pyro.errors.DaemonError("object isn't registered")
             elif type(name) is not str:
                 raise TypeError("name must be str")
             return PyroURI("PYRO:"+name+"@"+self.locationStr)
@@ -440,7 +457,7 @@ class Daemon(object):
             return self.uriFor(name=objId)
         else:
             log.debug("unknown object: %s",objectName)
-            raise NamingError("unknown object")
+            raise Pyro.errors.NamingError("unknown object")
     def registeredObjects(self):
         """Cough up the dict of known object names and their instances."""
         return self.objectsByName

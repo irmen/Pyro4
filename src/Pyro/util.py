@@ -124,10 +124,10 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                             local_res="  %20s = " % key
                             try:
                                 local_res += repr(value)
-                            except:
+                            except Exception:
                                 try:
                                     local_res += str(value)
-                                except:
+                                except Exception:
                                     local_res += "<ERROR>"
                                     
                             res.append(local_res+"\n")
@@ -170,7 +170,7 @@ class Serializer(object):
                 return data,True
         return data,False
     def deserialize(self, data, compressed=False):
-        """Deserializes the given data. Set compressed to True to let this method decompress the data first."""
+        """Deserializes the given data. Set compressed to True to decompress the data first."""
         if compressed:
             data=zlib.decompress(data)
         return self.pickle.loads(data)
