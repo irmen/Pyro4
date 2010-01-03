@@ -18,6 +18,7 @@ def Pylint(path, modules):
         from pylint import lint
     except ImportError:
         print "PYLINT not installed. Skipping."
+	return
     args=["--rcfile=pylint.rc","--files-output=y"]
     for m in modules:
         m=m[:-3]
