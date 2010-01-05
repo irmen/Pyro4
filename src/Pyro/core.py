@@ -429,32 +429,28 @@ class Daemon(object):
             if obj:
                 del self.objectsByName[objectIdOrName]
                 del self.objectsById[obj]
-    def uriFor(self, obj=None, name=None, pyroloc=False):
+    def uriFor(self, objectOrName=None, pyroloc=False):
         """
         Get a PyroURI for the given object (or object name) from this daemon.
         Only a daemon can hand out proper uris because the access location is contained in them.
         """
         if pyroloc:
-            if obj is not None:
-                name=self.objectsById[obj._pyroObjectId][0]
-            elif type(name) is not str:
-                raise TypeError("name must be str")
-            if name is None:
-                raise Pyro.errors.DaemonError("object is not registered with a name")
-            return PyroURI("PYROLOC:"+name+"@"+self.locationStr)
+            if type(objectOrName) is not str:
+                objectOrName=self.objectsById[objectOrName._pyroObjectId][0]
+                if objectOrName is None:
+                    raise Pyro.errors.DaemonError("object is not registered with a name")
+            return PyroURI("PYROLOC:"+objectOrName+"@"+self.locationStr)
         else:
-            if obj is not None:
-                name=getattr(obj,"_pyroObjectId",None)
-                if name is None:
+            if type(objectOrName) is not str:
+                objectOrName=getattr(objectOrName,"_pyroObjectId",None)
+                if objectOrName is None:
                     raise Pyro.errors.DaemonError("object isn't registered")
-            elif type(name) is not str:
-                raise TypeError("name must be str")
-            return PyroURI("PYRO:"+name+"@"+self.locationStr)
+            return PyroURI("PYRO:"+objectOrName+"@"+self.locationStr)
     def resolve(self, objectName):
         """Get a PyroURI for the given object name known by this daemon."""
         objId=self.objectsByName.get(objectName)
         if objId:
-            return self.uriFor(name=objId)
+            return self.uriFor(objId)
         else:
             log.debug("unknown object: %s",objectName)
             raise Pyro.errors.NamingError("unknown object")

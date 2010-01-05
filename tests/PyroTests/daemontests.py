@@ -17,7 +17,7 @@ class DaemonTests(unittest.TestCase):
             self.assertTrue(Pyro.constants.INTERNAL_DAEMON_GUID in d.objectsById)
             self.assertTrue(Pyro.constants.DAEMON_LOCALNAME in d.objectsByName)
             self.assertEqual(d.resolve(Pyro.constants.DAEMON_LOCALNAME).object, Pyro.constants.INTERNAL_DAEMON_GUID)
-            self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@"+defaultLocation, str(d.uriFor(name=Pyro.constants.INTERNAL_DAEMON_GUID)))
+            self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@"+defaultLocation, str(d.uriFor(Pyro.constants.INTERNAL_DAEMON_GUID)))
         finally:
             d.shutdown()
             Pyro.config.PORT-=1
@@ -52,8 +52,8 @@ class DaemonTests(unittest.TestCase):
             # test uriFor
             u1=d.uriFor(o1)
             self.assertRaises(DaemonError, d.uriFor, o1, pyroloc=True)  #can't get a pyroloc for an object without name
-            u2=d.uriFor(name=o2._pyroObjectId)
-            u3=d.uriFor(name="unexisting_thingie",pyroloc=True)
+            u2=d.uriFor(o2._pyroObjectId)
+            u3=d.uriFor("unexisting_thingie",pyroloc=True)
             u4=d.uriFor(o2,pyroloc=True)
             self.assertEquals(Pyro.core.PyroURI, type(u1))
             self.assertEquals("PYRO",u1.protocol)
