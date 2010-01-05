@@ -20,6 +20,7 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@"+defaultLocation, str(d.uriFor(name=Pyro.constants.INTERNAL_DAEMON_GUID)))
         finally:
             d.shutdown()
+            Pyro.config.PORT-=1
         
     def testRegisterEtc(self):
         class MyObj(object):
@@ -72,6 +73,7 @@ class DaemonTests(unittest.TestCase):
             self.assertTrue(o2._pyroObjectId not in d.objectsById)
         finally:
             d.shutdown()
+            Pyro.config.PORT-=1
 
 
 if __name__ == "__main__":

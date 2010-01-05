@@ -23,6 +23,9 @@ ERRNO_BADF=[errno.EBADF]
 if hasattr(errno, "WSAEBADF"):
     ERRNO_BADF.append(errno.WSAEBADF)
 
+# Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
+# but it seems to me that all these signify an unrecoverable situation.
+# So I didn't include them in de list of retryable errors.
 
 log=logging.getLogger("Pyro.socketutil")
 
@@ -79,18 +82,25 @@ def receiveData(sock, size):
         except socket.error,x:
             err=getattr(x,"errno",x.args[0])
             if err in ERRNO_RETRIES:
-                continue    # interrupted system call, just retry
+                continue    # try again
             raise ConnectionClosedError("receiving: connection lost: "+str(x))
 
 def sendData(sock, data):
     """Send some data over a socket."""
-    try:
-        sock.send(data)
-        #sock.sendall(data)
-    except socket.timeout:
-        raise TimeoutError("sending: timeout")
-    except socket.error,x:
-        raise ConnectionClosedError("sending: connection lost: "+str(x))
+    while True:
+        try:
+            sock.sendall(data)
+            return
+        except socket.timeout:
+            raise TimeoutError("sending: timeout")
+        except socket.error,x:
+            err=getattr(x,"errno",x.args[0])
+            if err in ERRNO_RETRIES:
+                if sock.gettimeout() is None:
+                    continue     # try again, but only if socket is in blocking mode
+                else:
+                    raise CommunicationError("unexpected errno %d during send on non-blocking socket" % err)
+            raise ConnectionClosedError("sending: connection lost: "+str(x))
 
 
 def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True):
