@@ -81,27 +81,36 @@ def receiveData(sock, size):
             raise TimeoutError("receiving: timeout")
         except socket.error,x:
             err=getattr(x,"errno",x.args[0])
-            if err in ERRNO_RETRIES:
-                continue    # try again
-            raise ConnectionClosedError("receiving: connection lost: "+str(x))
+            if err not in ERRNO_RETRIES:
+                raise ConnectionClosedError("receiving: connection lost: "+str(x))
 
 def sendData(sock, data):
     """Send some data over a socket."""
-    while True:
-        try:
-            sock.sendall(data)
-            return
-        except socket.timeout:
-            raise TimeoutError("sending: timeout")
-        except socket.error,x:
-            err=getattr(x,"errno",x.args[0])
-            if err in ERRNO_RETRIES:
-                if sock.gettimeout() is None:
-                    continue     # try again, but only if socket is in blocking mode
-                else:
-                    raise CommunicationError("unexpected errno %d during send on non-blocking socket" % err)
-            raise ConnectionClosedError("sending: connection lost: "+str(x))
-
+    if sock.gettimeout() is None:
+        # socket is in blocking mode, we can use sendall normally.
+        while True:
+            try:
+                sock.sendall(data)
+                return
+            except socket.timeout:
+                raise TimeoutError("sending: timeout")
+            except socket.error,x:
+                raise ConnectionClosedError("sending: connection lost: "+str(x))
+    else:
+        # Socket is in non-blocking mode, some OS-es have problems with sendall now.
+        # For instance, Mac OS X seems to be happy to throw EAGAIN errors too often.
+        # We fall back to using a regular send loop.
+        while data: 
+            try: 
+                sent = sock.send(data) 
+                data = data[sent:] 
+            except socket.timeout:
+                raise TimeoutError("sending: timeout")
+            except socket.error, x:
+                err=getattr(x,"errno",x.args[0])
+                if err not in ERRNO_RETRIES:
+                    raise ConnectionClosedError("sending: connection lost: "+str(x))
+        
 
 def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True):
     """Create a socket. Default options are keepalives and reuseaddr."""
@@ -247,9 +256,12 @@ class SocketServer_Threadpool(object):
             self.sock=None
     def requestLoop(self, loopCondition=lambda:True):
         while (self.sock is not None) and loopCondition():
-            csock, caddr=self.sock.accept()
-            log.debug("new connection from %s",caddr)
-            self.workqueue.put((csock,caddr))
+            try:
+                csock, caddr=self.sock.accept()
+                log.debug("new connection from %s",caddr)
+                self.workqueue.put((csock,caddr))
+            except socket.timeout:
+                pass  # just continue the loop on a timeout on accept
     def close(self): 
         if self.sock:
             try:
@@ -335,27 +347,30 @@ class SocketServer_Select(object):
         def requestLoop(self, loopCondition=lambda:True):
             log.info("entering select-based requestloop")
             while loopCondition():
-                rlist=self.clients[:]
-                rlist.append(self.sock)
-                rlist,wlist,xlist=self._selectfunction(rlist, [], [], 1)
-                if self.sock in rlist:
-                    rlist.remove(self.sock)
-                    try:
-                        conn=self.handleConnection(self.sock)
-                        if conn:
-                            self.clients.append(conn)
-                    except ConnectionClosedError:
-                        log.info("server socket was closed, stopping requestloop")
-                        return
-                for conn in rlist:
-                    try:
-                        if self.callback:
-                            self.callback.handleRequest(conn)
-                    except (socket.error,ConnectionClosedError):
-                        # client went away.
-                        conn.close()
-                        if conn in self.clients:
-                            self.clients.remove(conn)
+                try:
+                    rlist=self.clients[:]
+                    rlist.append(self.sock)
+                    rlist,wlist,xlist=self._selectfunction(rlist, [], [], 1)
+                    if self.sock in rlist:
+                        rlist.remove(self.sock)
+                        try:
+                            conn=self.handleConnection(self.sock)
+                            if conn:
+                                self.clients.append(conn)
+                        except ConnectionClosedError:
+                            log.info("server socket was closed, stopping requestloop")
+                            return
+                    for conn in rlist:
+                        try:
+                            if self.callback:
+                                self.callback.handleRequest(conn)
+                        except (socket.error,ConnectionClosedError):
+                            # client went away.
+                            conn.close()
+                            if conn in self.clients:
+                                self.clients.remove(conn)
+                except socket.timeout:
+                    pass   # just continue the loop on a timeout
 
     def handleConnection(self, sock):
         try:
