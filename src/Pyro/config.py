@@ -18,6 +18,8 @@ NS_BCHOST       =   None
 COMPRESSION     =   False   # XXX not used yet
 SERVERTYPE      =   "thread"
 DOTTEDNAMES     =   False
+COMMTIMEOUT     =   None
+
 
 
 # Btw, env vars only used at package import time (see __init__.py):

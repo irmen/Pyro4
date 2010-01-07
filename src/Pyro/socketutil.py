@@ -12,6 +12,10 @@ import os, errno
 import threading, Queue
 import logging
 from Pyro.errors import ConnectionClosedError,TimeoutError,CommunicationError,PyroError
+_selectfunction=select.select
+if os.name=="java":
+    # Jython needs a select wrapper. Usually it will use the poll loop above though. 
+    from select import cpython_compatible_select as _selectfunction   #@UnresolvedImport (pydev)
 
 ERRNO_RETRIES=[errno.EINTR, errno.EAGAIN, errno.EWOULDBLOCK]
 if hasattr(errno, "WSAEINTR"):
@@ -52,40 +56,45 @@ def receiveData(sock, size):
     or a result that is smaller than what you asked for). The partial data that
     has been received however is stored in the 'partialData' attribute of
     the exception object."""
-
-    def receive(sock,size):
-        """use optimal receive call to get the data"""
+    try:
         if hasattr(socket,"MSG_WAITALL"):
+            # waitall is very convenient and if a socket error occurs,
+            # we can assume the receive has failed. No need for a loop.
             data=sock.recv(size, socket.MSG_WAITALL) #@UndefinedVariable (pydev)
-        else:
-            msglen=0
-            msglist=[]
-            while msglen<size:
-                # 60k buffer limit avoids problems on certain OSes like VMS, Windows
-                chunk=sock.recv(min(60000,size-msglen)) 
-                if not chunk:
-                    break
-                msglist.append(chunk)
-                msglen+=len(chunk)
-            data="".join(msglist)
-        if len(data)!=size:
-            err=ConnectionClosedError("receiving: not enough data")
-            err.partialData=data  # store the message that was received until now
-            raise err
-        return data
+            return data
+        # old fashioned recv loop, we gather chunks until the message is complete
+        msglen=0
+        chunks=[]
+        while True:
+            try:
+                while msglen<size:
+                    # 60k buffer limit avoids problems on certain OSes like VMS, Windows
+                    chunk=sock.recv(min(60000,size-msglen))
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+                    msglen+=len(chunk)
+                data="".join(chunks)
+                del chunks
+                if len(data)!=size:
+                    err=ConnectionClosedError("receiving: not enough data")
+                    err.partialData=data  # store the message that was received until now
+                    raise err
+                return data  # yay, complete
+            except socket.error,x:
+                err=getattr(x,"errno",x.args[0])
+                if err not in ERRNO_RETRIES:
+                    raise ConnectionClosedError("receiving: connection lost: "+str(x))
+                _selectfunction([sock],[],[],2) # delay until socket is ready
+    except socket.timeout:
+        raise TimeoutError("receiving: timeout")
     
-    while True:
-        try:
-            return receive(sock,size)
-        except socket.timeout:
-            raise TimeoutError("receiving: timeout")
-        except socket.error,x:
-            err=getattr(x,"errno",x.args[0])
-            if err not in ERRNO_RETRIES:
-                raise ConnectionClosedError("receiving: connection lost: "+str(x))
-
+            
 def sendData(sock, data):
     """Send some data over a socket."""
+    # Some OS-es have problems with sendall when the socket is in non-blocking mode.
+    # For instance, Mac OS X seems to be happy to throw EAGAIN errors too often.
+    # We fall back to using a regular send loop if needed.
     if sock.gettimeout() is None:
         # socket is in blocking mode, we can use sendall normally.
         while True:
@@ -97,9 +106,7 @@ def sendData(sock, data):
             except socket.error,x:
                 raise ConnectionClosedError("sending: connection lost: "+str(x))
     else:
-        # Socket is in non-blocking mode, some OS-es have problems with sendall now.
-        # For instance, Mac OS X seems to be happy to throw EAGAIN errors too often.
-        # We fall back to using a regular send loop.
+        # Socket is in non-blocking mode, use regular send loop.
         while data: 
             try: 
                 sent = sock.send(data) 
@@ -110,9 +117,10 @@ def sendData(sock, data):
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("sending: connection lost: "+str(x))
-        
+                _selectfunction([],[sock],[],2) # delay until socket is ready
 
-def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True):
+
+def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeout=None):
     """Create a socket. Default options are keepalives and reuseaddr."""
     if bind and connect:
         raise ValueError("bind and connect cannot both be specified at the same time")
@@ -126,6 +134,7 @@ def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True):
         setReuseAddr(sock)
     if keepalive:
         setKeepalive(sock)
+    sock.settimeout(timeout)
     return sock
 
 def createBroadcastSocket(bind=None, reuseaddr=True, timeout=None):
@@ -134,7 +143,9 @@ def createBroadcastSocket(bind=None, reuseaddr=True, timeout=None):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     if reuseaddr:
         setReuseAddr(sock)
-    if timeout is not None:
+    if timeout is None:
+        sock.settimeout(None)
+    else:
         if bind and os.name=="java":
             # Jython has a problem with timeouts on udp sockets, see http://bugs.jython.org/issue1018
             log.warn("not setting timeout on broadcast socket due to Jython issue 1018")
@@ -232,9 +243,9 @@ class SocketWorker(threading.Thread):
                     
 class SocketServer_Threadpool(object):
     """transport server for socket connections, worker thread pool version."""
-    def __init__(self, callbackObject, host, port):
+    def __init__(self, callbackObject, host, port, timeout=None):
         log.info("starting thread pool socketserver")
-        self.sock=createSocket(bind=(host,port))
+        self.sock=createSocket(bind=(host,port), timeout=timeout)
         self._socketaddr=self.sock.getsockname()
         if self._socketaddr[0].startswith("127."):
             if host is None or host.lower()!="localhost" and not host.startswith("127."):
@@ -245,7 +256,7 @@ class SocketServer_Threadpool(object):
         numthreads=10    # XXX configurable, but 10 is absolute minimum otherwise the unittests fail
         self.threadpool=set()
         self.workqueue=Queue.Queue()
-        for x in range(numthreads):
+        for _ in range(numthreads):
             worker=SocketWorker(self, callbackObject)
             self.threadpool.add(worker)
             worker.start()
@@ -286,9 +297,9 @@ class SocketServer_Threadpool(object):
 
 class SocketServer_Select(object):
     """transport server for socket connections, select/poll loop multiplex version."""
-    def __init__(self, callbackObject, host, port):
+    def __init__(self, callbackObject, host, port, timeout=None):
         log.info("starting select/poll socketserver")
-        self.sock=createSocket(bind=(host,port))
+        self.sock=createSocket(bind=(host,port), timeout=timeout)
         self.clients=[]
         self.callback=callbackObject
         sockaddr=self.sock.getsockname()
@@ -340,17 +351,13 @@ class SocketServer_Select(object):
                     poll.close()
 
     else:
-        _selectfunction=select.select
-        if os.name=="java":
-            # Jython needs a select wrapper. Usually it will use the poll loop above though. 
-            from select import cpython_compatible_select as _selectfunction   #@UnresolvedImport (pydev)
         def requestLoop(self, loopCondition=lambda:True):
             log.info("entering select-based requestloop")
             while loopCondition():
                 try:
                     rlist=self.clients[:]
                     rlist.append(self.sock)
-                    rlist,wlist,xlist=self._selectfunction(rlist, [], [], 1)
+                    rlist,wlist,xlist=_selectfunction(rlist, [], [], 1)
                     if self.sock in rlist:
                         rlist.remove(self.sock)
                         try:

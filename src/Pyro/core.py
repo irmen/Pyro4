@@ -190,13 +190,14 @@ class Proxy(object):
             log.debug("connecting to %s",uri)
             conn=None
             try:
-                sock=Pyro.socketutil.createSocket(connect=(uri.host, uri.port))
+                sock=Pyro.socketutil.createSocket(connect=(uri.host, uri.port), timeout=Pyro.config.COMMTIMEOUT)
                 conn=Pyro.socketutil.SocketConnection(sock, uri.object)
                 # handshake
                 data=MessageFactory.createMessage(MessageFactory.MSG_CONNECT, None, 0)
                 conn.send(data)
                 data=conn.recv(MessageFactory.HEADERSIZE)
                 msgType,flags,dataLen=MessageFactory.parseMessageHeader(data)
+                # any trailing data (dataLen>0) is an error message, if any
             except Exception,x:
                 if conn:
                     conn.close()
@@ -293,9 +294,9 @@ class Daemon(object):
         if port is None:
             port=Pyro.config.PORT
         if Pyro.config.SERVERTYPE=="thread":
-            self.transportServer=Pyro.socketutil.SocketServer_Threadpool(self, host, port)
+            self.transportServer=Pyro.socketutil.SocketServer_Threadpool(self, host, port, Pyro.config.COMMTIMEOUT)
         elif Pyro.config.SERVERTYPE=="select":
-            self.transportServer=Pyro.socketutil.SocketServer_Select(self, host, port)
+            self.transportServer=Pyro.socketutil.SocketServer_Select(self, host, port, Pyro.config.COMMTIMEOUT)
         else:
             raise Pyro.errors.PyroError("invalid server type '%s'" % Pyro.config.SERVERTYPE)
         self.locationStr=self.transportServer.locationStr 

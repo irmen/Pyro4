@@ -1,8 +1,7 @@
 import unittest
 import Pyro.config
 import Pyro.naming
-from Pyro.errors import *
-import threading, socket
+from Pyro.errors import NamingError
 
 # online name server tests
 

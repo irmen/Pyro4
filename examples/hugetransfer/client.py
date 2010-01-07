@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import sys, os, time
 import Pyro.core
-import socket
-socket.setdefaulttimeout(3)
+import Pyro.config
+
+Pyro.config.COMMTIMEOUT=2
 
 basesize = 500000
 data='A'*basesize

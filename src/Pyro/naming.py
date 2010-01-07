@@ -154,7 +154,7 @@ def locateNS(host=None, port=None):
             port=Pyro.config.NS_BCPORT
         log.debug("broadcast locate")
         sock=Pyro.socketutil.createBroadcastSocket(timeout=0.7)
-        for i in range(3):
+        for _ in range(3):
             try:
                 sock.sendto("GET_NSURI",("<broadcast>",port))
                 data,addr=sock.recvfrom(100)

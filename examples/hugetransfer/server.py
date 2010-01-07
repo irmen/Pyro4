@@ -2,14 +2,15 @@
 import sys, os
 import Pyro.core
 import Pyro.naming
-import socket
-socket.setdefaulttimeout(3)
+import Pyro.config
+
+Pyro.config.COMMTIMEOUT=2
+
 
 class Testclass(object):
 	def transfer(self,data):
 		print 'received',len(data),'bytes'
 		return len(data)
-
 
 daemon=Pyro.core.Daemon()
 obj=Testclass()

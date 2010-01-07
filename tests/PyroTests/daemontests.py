@@ -2,7 +2,7 @@ import unittest
 import Pyro.core
 import Pyro.constants
 import Pyro.config
-from Pyro.errors import *
+from Pyro.errors import DaemonError
 
 class DaemonTests(unittest.TestCase):
     # We create a daemon, but notice that we are not actually running the requestloop
