@@ -265,12 +265,25 @@ class SocketServer_Threadpool(object):
         if hasattr(self,"sock") and self.sock is not None:
             self.sock.close()
             self.sock=None
-    def requestLoop(self, loopCondition=lambda:True):
+    def requestLoop(self, loopCondition=lambda:True, others=None):
         while (self.sock is not None) and loopCondition():
             try:
-                csock, caddr=self.sock.accept()
-                log.debug("new connection from %s",caddr)
-                self.workqueue.put((csock,caddr))
+                ins=[self.sock]
+                if others:
+                    ins.extend(others[0])
+                    ins,_,_=select.select(ins,[],[],3)
+                    if not ins:
+                        continue
+                if self.sock in ins:
+                    ins.remove(self.sock)
+                    csock, caddr=self.sock.accept()
+                    log.debug("connection from %s",caddr)
+                    self.workqueue.put((csock,caddr))
+                if ins:
+                    try:
+                        others[1](ins)  # handle events from other sockets
+                    except socket.error,x:
+                        log.warn("there was an uncaught socket error for the other sockets: %s",x)
             except socket.timeout:
                 pass  # just continue the loop on a timeout on accept
     def close(self): 
@@ -314,7 +327,7 @@ class SocketServer_Select(object):
             self.sock.close()
             self.sock=None
     if hasattr(select,"poll"):
-        def requestLoop(self, loopCondition=lambda:True):
+        def requestLoop(self, loopCondition=lambda:True, others=None):
             log.info("entering poll-based requestloop")
             try:
                 poll=select.poll() #@UndefinedVariable (pydev)
@@ -323,8 +336,14 @@ class SocketServer_Select(object):
                     self.sock.setblocking(False) # jython/java requirement
                 poll.register(self.sock.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
                 fileno2connection[self.sock.fileno()]=self.sock
+                if others:
+                    for sock in others[0]:
+                        if os.name=="java":
+                            sock.setblocking(False) # jython/java requirement
+                        poll.register(sock.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
+                        fileno2connection[sock.fileno()]=sock
                 while loopCondition():
-                    polls=poll.poll(1000)
+                    polls=poll.poll(2000)
                     for (fd,mask) in polls:
                         conn=fileno2connection[fd]
                         if conn is self.sock:
@@ -339,24 +358,32 @@ class SocketServer_Select(object):
                                 poll.register(conn.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
                                 fileno2connection[conn.fileno()]=conn
                         else:
-                            try:
-                                self.callback.handleRequest(conn)
-                            except (socket.error,ConnectionClosedError):
-                                # client went away.
-                                poll.unregister(conn.fileno())
-                                del fileno2connection[conn.fileno()]
-                                conn.close()
+                            if others and conn in others[0]:
+                                try:
+                                    others[1]([conn])  # handle events from other socket
+                                except socket.error,x:
+                                    log.warn("there was an uncaught socket error for the other sockets: %s",x)
+                            else:
+                                try:
+                                    self.callback.handleRequest(conn)
+                                except (socket.error,ConnectionClosedError):
+                                    # client went away.
+                                    poll.unregister(conn.fileno())
+                                    del fileno2connection[conn.fileno()]
+                                    conn.close()
             finally:
                 if hasattr(poll, "close"):
                     poll.close()
 
     else:
-        def requestLoop(self, loopCondition=lambda:True):
+        def requestLoop(self, loopCondition=lambda:True, others=None):
             log.info("entering select-based requestloop")
             while loopCondition():
                 try:
                     rlist=self.clients[:]
                     rlist.append(self.sock)
+                    if others:
+                        rlist.extend(others[0])
                     rlist,wlist,xlist=_selectfunction(rlist, [], [], 1)
                     if self.sock in rlist:
                         rlist.remove(self.sock)
@@ -367,27 +394,35 @@ class SocketServer_Select(object):
                         except ConnectionClosedError:
                             log.info("server socket was closed, stopping requestloop")
                             return
-                    for conn in rlist:
+                    for conn in rlist[:]:
+                        if conn in self.clients:
+                            rlist.remove(conn)
+                            try:
+                                if self.callback:
+                                    self.callback.handleRequest(conn)
+                            except (socket.error,ConnectionClosedError):
+                                # client went away.
+                                conn.close()
+                                if conn in self.clients:
+                                    self.clients.remove(conn)
+                    if rlist:
                         try:
-                            if self.callback:
-                                self.callback.handleRequest(conn)
-                        except (socket.error,ConnectionClosedError):
-                            # client went away.
-                            conn.close()
-                            if conn in self.clients:
-                                self.clients.remove(conn)
+                            others[1](rlist)  # handle events from other sockets
+                        except socket.error,x:
+                            log.warn("there was an uncaught socket error for the other sockets: %s",x)
                 except socket.timeout:
                     pass   # just continue the loop on a timeout
 
     def handleConnection(self, sock):
         try:
             csock, caddr=sock.accept()
-            log.debug("new connection from %s",caddr)
+            log.debug("connection from %s",caddr)
         except socket.error,x:
             err=getattr(x,"errno",x.args[0])
             if err in ERRNO_RETRIES:
                 # just ignore this error for now
                 print "ACCEPT FAILED ERRNO=",err  # XXX Jython issue
+                log.warn("accept() failed errno=%d, shouldn't happen", err) # XXX this will spam the log...
                 return None
             if err in ERRNO_BADF:
                 # our server socket got destroyed

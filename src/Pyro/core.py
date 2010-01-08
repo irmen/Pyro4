@@ -310,16 +310,19 @@ class Daemon(object):
         self.loopstopped.set()
     def __del__(self):
         self.close()
-    def requestLoop(self):
+    def requestLoop(self, others=None):
         """
         Goes in a loop to service incoming requests, until someone breaks this
-        or calls shutdown from another thread.
+        or calls shutdown from another thread. 'others' is an optional tuple of
+        (socketlist,callback) for extra sockets to listen on + callback function
+        for them when they trigger.
         """  
         self.mustshutdown=False
         log.info("daemon %s entering requestloop", self.locationStr)
         try:
             self.loopstopped.clear()
-            self.transportServer.requestLoop(loopCondition=lambda: not self.mustshutdown)
+            self.transportServer.requestLoop(loopCondition=lambda: not self.mustshutdown,
+                                             others=others)
         finally:
             self.loopstopped.set()
         log.debug("daemon exits requestloop")
@@ -397,6 +400,7 @@ class Daemon(object):
 
     def close(self):
         """Close down the server and release resources"""
+        log.debug("daemon closing")
         if hasattr(self,"transportServer"):
             self.transportServer.close()
     def register(self, obj, name=None, objectId=None):

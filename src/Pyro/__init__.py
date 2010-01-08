@@ -18,10 +18,13 @@ def _configLogging():
     If you want to use your own logging config, make sure you do 
     that before any Pyro imports. Then Pyro will skip the autoconfig.
     Set the env var PYRO_LOGFILE to change the name of the autoconfigured
-    log file (default is pyro.log in the current dir)"""
+    log file (default is pyro.log in the current dir). Use '{stderr}' to
+    make the log go to the standard error output."""
     import os, logging
     level=os.environ.get("PYRO_LOGLEVEL")
     logfilename=os.environ.get("PYRO_LOGFILE","pyro.log")
+    if logfilename=="{stderr}":
+        logfilename=None
     if level is not None:
         levelvalue=getattr(logging,level)
         if len(logging.root.handlers)==0:
