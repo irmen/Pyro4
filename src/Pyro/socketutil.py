@@ -271,7 +271,7 @@ class SocketServer_Threadpool(object):
                 ins=[self.sock]
                 if others:
                     ins.extend(others[0])
-                    ins,_,_=select.select(ins,[],[],3)
+                    ins,_,_=_selectfunction(ins,[],[],3)
                     if not ins:
                         continue
                 if self.sock in ins:
