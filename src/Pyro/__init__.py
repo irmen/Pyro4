@@ -45,7 +45,7 @@ def _configLogging():
                     format="[%(asctime)s.%(msecs)03d,%(name)s,%(levelname)s] %(message)s"
                     )
             log=logging.getLogger("Pyro")
-            log.info("Pyro log configured using built-in defaults, level="+level)
+            log.info("Pyro log configured using built-in defaults, level=%s",level)
     else:
         # PYRO_LOGLEVEL is not set, disable Pyro logging. No message is printed about this fact.
         log=logging.getLogger("Pyro")

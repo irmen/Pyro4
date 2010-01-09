@@ -149,6 +149,7 @@ class Proxy(object):
         if self._pyroConnection:
             self._pyroConnection.close()
             self._pyroConnection=None
+            log.debug("connection released")
     def _pyroBind(self):
         """Bind this proxy to the exact object from the uri. That means that the proxy's uri
         will be updated with a direct PYRO uri, if it isn't one yet."""
@@ -174,7 +175,9 @@ class Proxy(object):
             header=self._pyroConnection.recv(MessageFactory.HEADERSIZE)
             msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
             if msgType!=MessageFactory.MSG_RESULT:
-                raise Pyro.errors.ProtocolError("invalid msg type %d received" % msgType)
+                err="invoke: invalid msg type %d received" % msgType
+                log.error(err)
+                raise Pyro.errors.ProtocolError(err)
             data=self._pyroConnection.recv(dataLen)
             data=self._pyroSerializer.deserialize(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             if flags & MessageFactory.FLAGS_EXCEPTION:
@@ -201,22 +204,28 @@ class Proxy(object):
             except Exception,x:
                 if conn:
                     conn.close()
-                raise Pyro.errors.CommunicationError("cannot connect: %s" % x)
+                err="cannot connect: %s" % x
+                log.error(err)
+                raise Pyro.errors.CommunicationError(err)
             else:
                 if msgType==MessageFactory.MSG_CONNECTFAIL:
                     error="connection rejected"
                     if dataLen>0:
                         error+=", reason: "+conn.recv(dataLen)
                     conn.close()
+                    log.error(error)
                     raise Pyro.errors.CommunicationError(error)
                 elif msgType==MessageFactory.MSG_CONNECTOK:
                     self._pyroConnection=conn
                     if replaceUri:
+                        log.debug("replacing uri with bound one")
                         self._pyroUri=uri
                     log.debug("connected to %s",self._pyroUri)
                 else:
                     conn.close()
-                    raise Pyro.errors.ProtocolError("invalid msg type %d received" % msgType)
+                    err="connect: invalid msg type %d received" % msgType
+                    log.error(err)
+                    raise Pyro.errors.ProtocolError(err)
         else:
             raise NotImplementedError("non-socket uri connections not yet implemented")
     def _pyroReconnect(self, tries=sys.maxint):
@@ -230,7 +239,9 @@ class Proxy(object):
                 tries-=1
                 if tries:
                     time.sleep(2)
-        raise Pyro.errors.ConnectionClosedError("failed to reconnect")
+        msg="failed to reconnect"
+        log.error(msg)
+        raise Pyro.errors.ConnectionClosedError(msg)
 
 
 class MessageFactory(object):
@@ -299,7 +310,8 @@ class Daemon(object):
             self.transportServer=Pyro.socketutil.SocketServer_Select(self, host, port, Pyro.config.COMMTIMEOUT)
         else:
             raise Pyro.errors.PyroError("invalid server type '%s'" % Pyro.config.SERVERTYPE)
-        self.locationStr=self.transportServer.locationStr 
+        self.locationStr=self.transportServer.locationStr
+        log.debug("created daemon on %s", self.locationStr) 
         self.serializer=Pyro.util.Serializer()
         self._pyroObjectId=Pyro.constants.INTERNAL_DAEMON_GUID
         pyroObject=DaemonObject(self)
@@ -341,7 +353,9 @@ class Daemon(object):
         header=conn.recv(MessageFactory.HEADERSIZE)
         msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
         if msgType!=MessageFactory.MSG_CONNECT:
-            raise Pyro.errors.ProtocolError("expected MSG_CONNECT message, got "+str(msgType))
+            err="expected MSG_CONNECT message, got %d" % msgType
+            log.warn(err)
+            raise Pyro.errors.ProtocolError(err)
         if dataLen>0:
             conn.recv(dataLen) # read away any trailing data (unused at the moment)
         msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK,None,0)
@@ -357,7 +371,9 @@ class Daemon(object):
             header=conn.recv(MessageFactory.HEADERSIZE)
             msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
             if msgType!=MessageFactory.MSG_INVOKE:
-                raise Pyro.errors.ProtocolError("invalid msg type %d received" % msgType)
+                err="handlerequest: invalid msg type %d received" % msgType
+                log.warn(err)
+                raise Pyro.errors.ProtocolError(err)
             data=conn.recv(dataLen)
             objId, method, vargs, kwargs=self.serializer.deserialize(
                                            data,compressed=flags & MessageFactory.FLAGS_COMPRESSED)
@@ -370,6 +386,7 @@ class Daemon(object):
                 obj=Pyro.util.resolveDottedAttribute(obj[1],method,Pyro.config.DOTTEDNAMES)
                 data=obj(*vargs,**kwargs)   # this is the actual method call to the Pyro object
             else:
+                log.debug("unknown object requested: %s",objId)
                 raise Pyro.errors.DaemonError("unknown object")
             if flags & MessageFactory.FLAGS_ONEWAY:
                 return   # oneway call, don't send a response

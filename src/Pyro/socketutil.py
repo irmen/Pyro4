@@ -203,7 +203,6 @@ class SocketConnection(object):
 
 class SocketWorker(threading.Thread):
     """worker thread to process requests"""
-    numConnections=0
     def __init__(self, server, callback):
         super(SocketWorker,self).__init__()
         self.setDaemon(True)
@@ -212,26 +211,28 @@ class SocketWorker(threading.Thread):
     def run(self):
         self.running=True
         try:
+            log.debug("worker %s waiting for work", self.getName())
             while self.running: # loop over all connections in the queue
                 self.csock,self.caddr = self.server.workqueue.get()
                 if self.csock is None and self.caddr is None:
                     # this was a 'stop' sentinel
                     self.running=False
                     break
+                log.debug("worker %s got a client connection %s", self.getName(), self.caddr)
                 self.csock=SocketConnection(self.csock)
-                self.numConnections+=1
                 if self.handleConnection(self.csock):
                     while self.running:   # loop over all requests during a single connection
                         try:
                             self.callback.handleRequest(self.csock)
                         except (socket.error,ConnectionClosedError):
                             # client went away.
+                            log.debug("worker %s client disconnected %s", self.getName(), self.caddr)
                             break
                     self.csock.close()
                     del self.csock
-                self.numConnections-=1
         finally:
             self.server.threadpool.remove(self)
+        log.debug("worker %s stopping", self.getName())
     def handleConnection(self,conn):
         try:
             if self.callback.handshake(conn):
@@ -260,12 +261,13 @@ class SocketServer_Threadpool(object):
             worker=SocketWorker(self, callbackObject)
             self.threadpool.add(worker)
             worker.start()
-        log.info("%d worker threads", len(self.threadpool))
+        log.info("%d worker threads started", len(self.threadpool))
     def __del__(self):
         if hasattr(self,"sock") and self.sock is not None:
             self.sock.close()
             self.sock=None
     def requestLoop(self, loopCondition=lambda:True, others=None):
+        log.debug("threadpool server requestloop")
         while (self.sock is not None) and loopCondition():
             try:
                 ins=[self.sock]
@@ -286,7 +288,9 @@ class SocketServer_Threadpool(object):
                         log.warn("there was an uncaught socket error for the other sockets: %s",x)
             except socket.timeout:
                 pass  # just continue the loop on a timeout on accept
+        log.debug("threadpool server exits requestloop")
     def close(self): 
+        log.debug("closing threadpool server")
         if self.sock:
             try:
                 self.sock.shutdown(socket.SHUT_RDWR)
@@ -328,7 +332,7 @@ class SocketServer_Select(object):
             self.sock=None
     if hasattr(select,"poll"):
         def requestLoop(self, loopCondition=lambda:True, others=None):
-            log.info("entering poll-based requestloop")
+            log.debug("enter poll-based requestloop")
             try:
                 poll=select.poll() #@UndefinedVariable (pydev)
                 fileno2connection={}  # map fd to original connection object
@@ -374,10 +378,11 @@ class SocketServer_Select(object):
             finally:
                 if hasattr(poll, "close"):
                     poll.close()
+            log.debug("exit poll-based requestloop")
 
     else:
         def requestLoop(self, loopCondition=lambda:True, others=None):
-            log.info("entering select-based requestloop")
+            log.debug("entering select-based requestloop")
             while loopCondition():
                 try:
                     rlist=self.clients[:]
@@ -412,6 +417,7 @@ class SocketServer_Select(object):
                             log.warn("there was an uncaught socket error for the other sockets: %s",x)
                 except socket.timeout:
                     pass   # just continue the loop on a timeout
+            log.debug("exit select-based requestloop")
 
     def handleConnection(self, sock):
         try:
@@ -438,6 +444,7 @@ class SocketServer_Select(object):
         return None
 
     def close(self): 
+        log.debug("closing socketserver")
         if self.sock:
             self.sock.close()
         self.sock=None

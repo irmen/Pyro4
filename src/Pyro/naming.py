@@ -74,7 +74,7 @@ class NameServerDaemon(Pyro.core.Daemon):
         self.nameserver=NameServer()
         self.register(self.nameserver, Pyro.constants.NAMESERVER_NAME)
         self.nameserver.register(Pyro.constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
-        log.info("nameserver daemon created on %s",self.locationStr)
+        log.info("nameserver daemon created")
 
 class BroadcastServer(object):
     def __init__(self, nsUri, bchost=None, bcport=None):
