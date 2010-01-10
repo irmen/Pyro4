@@ -7,7 +7,7 @@
 #
 ######################################################################
 
-import re, struct, sys
+import re, struct, sys, time
 import logging, uuid, threading
 import Pyro.config
 import Pyro.socketutil
@@ -229,7 +229,6 @@ class Proxy(object):
         else:
             raise NotImplementedError("non-socket uri connections not yet implemented")
     def _pyroReconnect(self, tries=sys.maxint):
-        import time
         self._pyroRelease()
         while tries:
             try:

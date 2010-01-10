@@ -66,6 +66,8 @@ class NameServer(object):
 class NameServerDaemon(Pyro.core.Daemon):
     """Daemon that contains the Name Server."""
     def __init__(self, host=None, port=None):
+        if Pyro.config.DOTTEDNAMES:
+            raise PyroError("Name server won't start with DOTTEDNAMES enabled because of security reasons")
         if host is None:
             host=Pyro.config.HOST
         if port is None:

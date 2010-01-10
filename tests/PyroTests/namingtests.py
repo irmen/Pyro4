@@ -167,7 +167,48 @@ class OnlineTests(unittest.TestCase):
         self.assertEqual("PYROLOC",p2._pyroUri.protocol)
         p1._pyroRelease()
         p2._pyroRelease()
+
+    def testReconnect(self):
+        self._assertNameServerRunning()
+        nsLocation="%s:%d" %(self.nshostname, self.nsport)
+        uri="PYRO:99999@"+nsLocation
+        p=Pyro.core.Proxy(uri)
+        self.assertTrue(p._pyroConnection is None)
+        p._pyroReconnect(tries=100)
+        self.assertTrue(p._pyroConnection is not None)
+        p._pyroRelease()
+    
+    def testOneway(self):
+        self._assertNameServerRunning()
+        ns=Pyro.naming.locateNS(self.nshostname, self.nsport)
+        try:
+            ns.register("test.oneway","PYRO:9999@host.com")
+        except NamingError:
+            pass
+        else:
+            self.assertTrue(ns.list() is not None)
+            ns._pyroOneway.add("list")
+            self.assertTrue(ns.list() is None)
+            ns._pyroOneway.remove("list")
+            self.assertTrue(ns.list() is not None)
+        finally:
+            ns.remove("test.oneway") 
+
+    def testNSC(self):
+        self._assertNameServerRunning()
+        import Pyro.nsc
+        self.assertRaises(SystemExit, Pyro.nsc.main, ["--invalidarg"])
+        args=["-n", self.nshostname, "-p" ,str(self.nsport), "ping"]
+        self.assertTrue(Pyro.nsc.main(args) is None)
         
+    def testDottedNames(self):
+        self._assertNameServerRunning()
+        ns=Pyro.naming.locateNS(self.nshostname, self.nsport)
+        # the name server should never have dotted names enabled
+        self.assertRaises(AttributeError, ns.namespace.keys)
+        ns._pyroRelease()
+        raise NotImplementedError("no server yet with dottednames enabled, create this and complete this testcase")
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

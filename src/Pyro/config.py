@@ -15,9 +15,9 @@ NS_HOST         =   HOST
 NS_PORT         =   9090    # tcp
 NS_BCPORT       =   9091    # udp
 NS_BCHOST       =   None
-COMPRESSION     =   False   # XXX not used yet
+COMPRESSION     =   False
 SERVERTYPE      =   "thread"
-DOTTEDNAMES     =   False
+DOTTEDNAMES     =   False   # server-side 
 COMMTIMEOUT     =   None
 
 
