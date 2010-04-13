@@ -389,7 +389,7 @@ class SocketServer_Select(object):
                     rlist.append(self.sock)
                     if others:
                         rlist.extend(others[0])
-                    rlist,wlist,xlist=_selectfunction(rlist, [], [], 1)
+                    rlist,_,_=_selectfunction(rlist, [], [], 1)
                     if self.sock in rlist:
                         rlist.remove(self.sock)
                         try:

@@ -13,10 +13,10 @@ obj=Pyro.core.Proxy("PYRONAME:test.hugetransfer")
 
 begin=time.time()
 for i in range(1,15):
-	print 'transferring',basesize*i,'bytes'
-	size=obj.transfer(data*i)
-	# print " reply=",size
-	totalsize=totalsize+basesize*i
+    print 'transferring',basesize*i,'bytes'
+    size=obj.transfer(data*i)
+    # print " reply=",size
+    totalsize=totalsize+basesize*i
 duration=time.time()-begin
 
 print 'It took',duration,'seconds to transfer',totalsize/1024,'kilobyte.'

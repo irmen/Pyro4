@@ -8,10 +8,10 @@ import Pyro.errors
 print "Autoreconnect using Name Server."
 
 class TestClass(object):
-	def method(self,arg):
-		print "Method called with",arg
-		print "You can now try to stop this server with ctrl-C/ctrl-Break"
-		time.sleep(1)
+    def method(self,arg):
+        print "Method called with",arg
+        print "You can now try to stop this server with ctrl-C/ctrl-Break"
+        time.sleep(1)
 
 obj=TestClass()
 daemon = Pyro.core.Daemon()

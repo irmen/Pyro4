@@ -11,12 +11,12 @@ print "Autoreconnect using PYROLOC uri."
 obj=Pyro.core.Proxy("PYROLOC:test.autoreconnect.pyroloc@"+Pyro.config.HOST)
 
 while True:
-	print "call..."
-	try:
-		obj.method(42)
-		print "Sleeping 1 second"
-		time.sleep(1)
-	except Pyro.errors.ConnectionClosedError,x:     # or possibly even ProtocolError
-		print "Connection lost. REBINDING..."
-		print "(restart the server now)"
-		obj._pyroReconnect()
+    print "call..."
+    try:
+        obj.method(42)
+        print "Sleeping 1 second"
+        time.sleep(1)
+    except Pyro.errors.ConnectionClosedError,x:     # or possibly even ProtocolError
+        print "Connection lost. REBINDING..."
+        print "(restart the server now)"
+        obj._pyroReconnect()

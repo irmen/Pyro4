@@ -14,12 +14,12 @@ uri=raw_input("Enter the uri that the server printed:")
 obj=Pyro.core.Proxy(uri)
 
 while True:
-	print "call..."
-	try:
-		obj.method(42)
-		print "Sleeping 1 second"
-		time.sleep(1)
-	except Pyro.errors.ConnectionClosedError,x:     # or possibly even ProtocolError
-		print "Connection lost. REBINDING..."
-		print "(restart the server now)"
-		obj._pyroReconnect()
+    print "call..."
+    try:
+        obj.method(42)
+        print "Sleeping 1 second"
+        time.sleep(1)
+    except Pyro.errors.ConnectionClosedError,x:     # or possibly even ProtocolError
+        print "Connection lost. REBINDING..."
+        print "(restart the server now)"
+        obj._pyroReconnect()

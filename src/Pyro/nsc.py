@@ -49,7 +49,6 @@ def handleCommand(nameserver, options, args):
     
 def main(args):
     from optparse import OptionParser
-    parser=OptionParser()
     usage = "usage: %prog [options] command [arguments]\nCommand is one of:" \
             "register remove list listregex ping"
     parser = OptionParser(usage=usage)
