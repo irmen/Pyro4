@@ -59,6 +59,8 @@ def receiveData(sock, size):
             # waitall is very convenient and if a socket error occurs,
             # we can assume the receive has failed. No need for a loop.
             data=sock.recv(size, socket.MSG_WAITALL) #@UndefinedVariable (pydev)
+            if len(data)!=size:
+                raise ConnectionClosedError("receiving: not enough data")
             return data
         # old fashioned recv loop, we gather chunks until the message is complete
         msglen=0

@@ -28,8 +28,16 @@ class TestSocketutil(unittest.TestCase):
     def testCreateUnboundSockets(self):
         s=SU.createSocket()
         bs=SU.createBroadcastSocket()
-        self.assertRaises(socket.error, s.getsockname)
-        self.assertRaises(socket.error, bs.getsockname)
+        try:
+            host,port=s.getsockname()
+            self.assertEqual(0, port)
+        except socket.error:
+            pass
+        try:
+            host,port=bs.getsockname()
+            self.assertEqual(0, port)
+        except socket.error:
+            pass
         s.close()
         bs.close()
     def testCreateBoundSockets(self):
