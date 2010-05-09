@@ -11,11 +11,12 @@ import socket, os, select, errno
 import logging
 from Pyro.errors import ConnectionClosedError,TimeoutError,CommunicationError
 
-selectfunction=select.select
 if os.name=="java":
-    # Jython needs a select wrapper. Usually it will use the poll loop above though. 
-    from select import cpython_compatible_select as selectfunction   #@UnresolvedImport (pydev)
-
+    # Jython needs a select wrapper.
+    selectfunction=select.cpython_compatible_select
+else:
+    selectfunction=select.select
+    
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.
 # So I didn't include them in de list of retryable errors.

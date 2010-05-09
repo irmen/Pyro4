@@ -9,7 +9,7 @@
 
 import select, os, socket
 import logging
-from Pyro.socketutil import SocketConnection, createSocket, sendData, selectfunction, ERRNO_RETRIES, ERRNO_BADF
+from Pyro.socketutil import SocketConnection, createSocket, sendData, ERRNO_RETRIES, ERRNO_BADF
 from Pyro.errors import ConnectionClosedError, PyroError
 
 log=logging.getLogger("Pyro.socketserver.select")
@@ -83,6 +83,11 @@ class SocketServer(object):
             log.debug("exit poll-based requestloop")
 
     else:
+        if os.name=="java":
+            # Jython needs a select wrapper.
+            selectfunction=select.cpython_compatible_select
+        else:
+            selectfunction=select.select
         def requestLoop(self, loopCondition=lambda:True, others=None):
             log.debug("entering select-based requestloop")
             while loopCondition():

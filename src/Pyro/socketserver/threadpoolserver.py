@@ -7,10 +7,17 @@
 #
 ######################################################################
 
-import threading, socket, Queue
+import os, Queue
+import threading, socket, select
 import logging
-from Pyro.socketutil import SocketConnection, createSocket, sendData, selectfunction
+from Pyro.socketutil import SocketConnection, createSocket, sendData
 from Pyro.errors import ConnectionClosedError, PyroError
+
+if os.name=="java":
+    # Jython needs a select wrapper.
+    selectfunction=select.cpython_compatible_select
+else:
+    selectfunction=select.select
 
 log=logging.getLogger("Pyro.socketserver.threadpool")
 
