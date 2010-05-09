@@ -46,10 +46,10 @@ class OnlineTests(unittest.TestCase):
         # check that we cannot register a stupid type
         self.assertRaises(TypeError, ns.register, "unittest.object1", 5555)
         # we can register str or PyroURI, lookup always returns PyroURI        
-        ns.register("unittest.object2", "PYRO:55555@host.com")
-        self.assertEquals(Pyro.core.PyroURI("PYRO:55555@host.com"), ns.lookup("unittest.object2"))
-        ns.register("unittest.object3", Pyro.core.PyroURI("PYRO:66666@host.com"))
-        self.assertEquals(Pyro.core.PyroURI("PYRO:66666@host.com"), ns.lookup("unittest.object3"))
+        ns.register("unittest.object2", "PYRO:55555@host.com:4444")
+        self.assertEquals(Pyro.core.PyroURI("PYRO:55555@host.com:4444"), ns.lookup("unittest.object2"))
+        ns.register("unittest.object3", Pyro.core.PyroURI("PYRO:66666@host.com:4444"))
+        self.assertEquals(Pyro.core.PyroURI("PYRO:66666@host.com:4444"), ns.lookup("unittest.object3"))
         
         # check that the non-socket locations are not yet supported        
         self.assertRaises(NotImplementedError, Pyro.naming.locateNS, "./p:pipename")
@@ -105,11 +105,11 @@ class OnlineTests(unittest.TestCase):
     
     def testResolve(self):
         self._assertNameServerRunning()
-        resolved1=Pyro.naming.resolve(Pyro.core.PyroURI("PYRO:12345@host.com"))
-        resolved2=Pyro.naming.resolve("PYRO:12345@host.com")
+        resolved1=Pyro.naming.resolve(Pyro.core.PyroURI("PYRO:12345@host.com:4444"))
+        resolved2=Pyro.naming.resolve("PYRO:12345@host.com:4444")
         self.assertTrue(type(resolved1) is Pyro.core.PyroURI)
         self.assertEqual(resolved1, resolved2)
-        self.assertEqual("PYRO:12345@host.com:"+str(Pyro.config.PORT), str(resolved1))
+        self.assertEqual("PYRO:12345@host.com:4444", str(resolved1))
         
         uri=Pyro.naming.resolve("PYROLOC:"+Pyro.constants.NAMESERVER_NAME+"@"+self.nshostname+":"+str(self.nsport))
         self.assertEqual("PYRO",uri.protocol)
@@ -197,9 +197,18 @@ class OnlineTests(unittest.TestCase):
     def testNSC(self):
         self._assertNameServerRunning()
         import Pyro.nsc
-        self.assertRaises(SystemExit, Pyro.nsc.main, ["--invalidarg"])
-        args=["-n", self.nshostname, "-p" ,str(self.nsport), "ping"]
-        self.assertTrue(Pyro.nsc.main(args) is None)
+        import sys,StringIO
+        oldstdout=sys.stdout
+        oldstderr=sys.stderr
+        try:
+            sys.stdout=StringIO.StringIO()
+            sys.stderr=StringIO.StringIO()
+            self.assertRaises(SystemExit, Pyro.nsc.main, ["--invalidarg"])
+            args=["-n", self.nshostname, "-p" ,str(self.nsport), "ping"]
+            self.assertTrue(Pyro.nsc.main(args) is None)
+        finally:
+            sys.stdout=oldstdout
+            sys.stderr=oldstderr
         
     def testDottedNames(self):
         self._assertNameServerRunning()

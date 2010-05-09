@@ -10,7 +10,6 @@
 import socket
 
 HOST            =   socket.gethostname()
-PORT            =   7766
 NS_HOST         =   HOST
 NS_PORT         =   9090    # tcp
 NS_BCPORT       =   9091    # udp

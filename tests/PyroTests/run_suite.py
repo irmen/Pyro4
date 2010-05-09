@@ -17,7 +17,7 @@ if __name__=="__main__":
 
     print
     print "RUNNING UNIT TESTS..."
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    unittest.TextTestRunner(verbosity=1).run(suite)
 
     print
     print "RUNNING PYFLAKE CODE CHECKS..."

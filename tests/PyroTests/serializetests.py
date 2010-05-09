@@ -1,5 +1,4 @@
 import unittest
-import socket
 import Pyro.util
 import Pyro.errors
 import Pyro.core

@@ -94,28 +94,28 @@ class TestUtils(unittest.TestCase):
         import Pyro.config
         import os,socket
         def clearEnv():
-            if "PYRO_PORT" in os.environ: del os.environ["PYRO_PORT"]
             if "PYRO_HOST" in os.environ: del os.environ["PYRO_HOST"]
+            if "PYRO_NS_PORT" in os.environ: del os.environ["PYRO_NS_PORT"]
             if "PYRO_COMPRESSION" in os.environ: del os.environ["PYRO_COMPRESSION"]
             reload(Pyro.config)
         clearEnv()
         try:
-            self.assertEqual(7766, Pyro.config.PORT)
+            self.assertEqual(9090, Pyro.config.NS_PORT)
             self.assertEqual(socket.gethostname(), Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
-            os.environ["PORT"]="4444"
+            os.environ["NS_PORT"]="4444"
             reload(Pyro.config)
-            self.assertEqual(7766, Pyro.config.PORT)
-            os.environ["PYRO_PORT"]="4444"
+            self.assertEqual(9090, Pyro.config.NS_PORT)
+            os.environ["PYRO_NS_PORT"]="4444"
             os.environ["PYRO_HOST"]="something.com"
             os.environ["PYRO_COMPRESSION"]="OFF"
             reload(Pyro.config)
-            self.assertEqual(4444, Pyro.config.PORT)
+            self.assertEqual(4444, Pyro.config.NS_PORT)
             self.assertEqual("something.com", Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
         finally:
             clearEnv()
-            self.assertEqual(7766, Pyro.config.PORT)
+            self.assertEqual(9090, Pyro.config.NS_PORT)
             self.assertEqual(socket.gethostname(), Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
 

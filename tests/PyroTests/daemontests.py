@@ -2,25 +2,25 @@ import unittest
 import Pyro.core
 import Pyro.constants
 import Pyro.config
+import Pyro.socketutil
 from Pyro.errors import DaemonError
 
 class DaemonTests(unittest.TestCase):
-    # We create a daemon, but notice that we are not actually running the requestloop
-    # 'on-line' tests are all taking place in the NamingTests
+    # We create a daemon, but notice that we are not actually running the requestloop.
+    # 'on-line' tests are all taking place in another test, to keep this one simple.
     
     def testDaemon(self):
         try:
-            Pyro.config.PORT+=1   # avoid double binding
-            d=Pyro.core.Daemon()
-            defaultLocation="%s:%d" %(Pyro.config.HOST, Pyro.config.PORT)
-            self.assertEqual( defaultLocation, d.locationStr)
+            freeport=Pyro.socketutil.findUnusedPort()
+            d=Pyro.core.Daemon(port=freeport)
+            locationstr="%s:%d" %(Pyro.config.HOST, freeport)
+            self.assertEqual( locationstr, d.locationStr)
             self.assertTrue(Pyro.constants.INTERNAL_DAEMON_GUID in d.objectsById)
             self.assertTrue(Pyro.constants.DAEMON_LOCALNAME in d.objectsByName)
             self.assertEqual(d.resolve(Pyro.constants.DAEMON_LOCALNAME).object, Pyro.constants.INTERNAL_DAEMON_GUID)
-            self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@"+defaultLocation, str(d.uriFor(Pyro.constants.INTERNAL_DAEMON_GUID)))
+            self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@"+locationstr, str(d.uriFor(Pyro.constants.INTERNAL_DAEMON_GUID)))
         finally:
-            d.shutdown()
-            Pyro.config.PORT-=1
+            d.close()
         
     def testRegisterEtc(self):
         class MyObj(object):
@@ -29,9 +29,8 @@ class DaemonTests(unittest.TestCase):
             def __eq__(self,other):
                 return self.arg==other.arg
         try:
-            Pyro.config.PORT+=1  # avoid double binding
-            d=Pyro.core.Daemon()
-            defaultLocation="%s:%d" %(Pyro.config.HOST, Pyro.config.PORT)
+            freeport=Pyro.socketutil.findUnusedPort()
+            d=Pyro.core.Daemon(port=freeport)
             self.assertEquals(1, len(d.objectsById))
             self.assertEquals(1, len(d.registeredObjects()))
            
@@ -49,19 +48,6 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual((None,o1), d.objectsById[o1._pyroObjectId])
             self.assertEqual(("obj2a",o2), d.objectsById[o2._pyroObjectId])
     
-            # test uriFor
-            u1=d.uriFor(o1)
-            self.assertRaises(DaemonError, d.uriFor, o1, pyroloc=True)  #can't get a pyroloc for an object without name
-            u2=d.uriFor(o2._pyroObjectId)
-            u3=d.uriFor("unexisting_thingie",pyroloc=True)
-            u4=d.uriFor(o2,pyroloc=True)
-            self.assertEquals(Pyro.core.PyroURI, type(u1))
-            self.assertEquals("PYRO",u1.protocol)
-            self.assertEquals("PYROLOC",u3.protocol)
-            self.assertEquals("PYROLOC",u4.protocol)
-            self.assertEquals("obj2a",u4.object)
-            self.assertEquals(Pyro.core.PyroURI("PYROLOC:unexisting_thingie@"+defaultLocation), u3)
-    
             # test unregister
             d.unregister("unexisting_thingie")
             d.unregister(None)
@@ -72,8 +58,54 @@ class DaemonTests(unittest.TestCase):
             self.assertTrue(o1._pyroObjectId not in d.objectsById)
             self.assertTrue(o2._pyroObjectId not in d.objectsById)
         finally:
-            d.shutdown()
-            Pyro.config.PORT-=1
+            d.close()
+
+    def testUriFor(self):
+        class MyObj(object):
+            def __init__(self, arg):
+                self.arg=arg
+            def __eq__(self,other):
+                return self.arg==other.arg
+        try:
+            freeport=Pyro.socketutil.findUnusedPort()
+            d=Pyro.core.Daemon(port=freeport)
+            locationstr="%s:%d" %(Pyro.config.HOST, freeport)
+            o1=MyObj("object1")
+            o2=MyObj("object2")
+            self.assertRaises(DaemonError, d.uriFor, o1)
+            self.assertRaises(DaemonError, d.uriFor, o2)
+            d.register(o1,None)
+            d.register(o2,"object_two")
+            self.assertRaises(DaemonError, d.uriFor, o1, pyroloc=True)  #can't get a pyroloc for an object without name
+            u1=d.uriFor(o1)
+            u2=d.uriFor(o2._pyroObjectId)
+            u3=d.uriFor("unexisting_thingie",pyroloc=True)
+            u4=d.uriFor(o2,pyroloc=True)
+            self.assertEquals(Pyro.core.PyroURI, type(u1))
+            self.assertEquals("PYRO",u1.protocol)
+            self.assertEquals("PYROLOC",u3.protocol)
+            self.assertEquals("PYROLOC",u4.protocol)
+            self.assertEquals("object_two",u4.object)
+            self.assertEquals(Pyro.core.PyroURI("PYROLOC:unexisting_thingie@"+locationstr), u3)
+        finally:
+            d.close()
+    
+    def testDaemonWithStmt(self):
+        d=Pyro.core.Daemon()
+        self.assertTrue(d.transportServer is not None)
+        d.close()   # closes the transportserver and sets it to None
+        self.assertTrue(d.transportServer is None)
+        with Pyro.core.Daemon() as d:
+            self.assertTrue(d.transportServer is not None)
+            pass
+        self.assertTrue(d.transportServer is None)
+        try:
+            with Pyro.core.Daemon() as d:
+                print 1/0 # cause an error
+            self.fail("expected error")
+        except ZeroDivisionError: 
+            pass
+        self.assertTrue(d.transportServer is None)
 
 
 if __name__ == "__main__":

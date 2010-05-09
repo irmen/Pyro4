@@ -1,15 +1,49 @@
 import unittest
 import socket
 import Pyro.socketutil as SU
+from Pyro.socketserver.selectserver import SocketServer as SocketServer_Select
+from Pyro.socketserver.threadpoolserver import SocketServer as SocketServer_Threadpool
 
 class TestSocketutil(unittest.TestCase):
     def testGetIP(self):
         localip=SU.getIpAddress()
         localhost=socket.getfqdn(localip)
         self.assertEqual(localip,SU.getIpAddress(localhost))
+    def testUnusedPort(self):
+        port1=SU.findUnusedPort()
+        port2=SU.findUnusedPort()
+        self.assertTrue(port1>0)
+        self.assertNotEqual(port1,port2)
+    def testBindUnusedPort(self):
+        sock1=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock2=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        port1=SU.bindOnUnusedPort(sock1)
+        port2=SU.bindOnUnusedPort(sock2)
+        self.assertTrue(port1>0)
+        self.assertNotEqual(port1,port2)
+        sockname=sock1.getsockname()
+        self.assertEquals(("127.0.0.1",port1), sockname)
+        sock1.close()
+        sock2.close()
+    def testCreateUnboundSockets(self):
+        s=SU.createSocket()
+        bs=SU.createBroadcastSocket()
+        self.assertRaises(socket.error, s.getsockname)
+        self.assertRaises(socket.error, bs.getsockname)
+        s.close()
+        bs.close()
+    def testCreateBoundSockets(self):
+        s=SU.createSocket(bind=('localhost',0))
+        bs=SU.createBroadcastSocket(bind=('localhost',0))
+        self.assertEqual('127.0.0.1',s.getsockname()[0])
+        self.assertEqual('127.0.0.1',bs.getsockname()[0])
+        s.close()
+        bs.close()
+            
     def testSend(self):
-        ss=SU.createSocket(bind=("localhost",9999))
-        cs=SU.createSocket(connect=("localhost",9999))
+        ss=SU.createSocket(bind=("localhost",0))
+        port=ss.getsockname()[1]
+        cs=SU.createSocket(connect=("localhost",port))
         SU.sendData(cs,"foobar!"*10)
         cs.shutdown(socket.SHUT_WR)
         a=ss.accept()
@@ -21,11 +55,12 @@ class TestSocketutil(unittest.TestCase):
         ss.close()
         cs.close()
     def testBroadcast(self):
-        ss=SU.createBroadcastSocket((None, 8888))
+        ss=SU.createBroadcastSocket((None, 0))
+        port=ss.getsockname()[1]
         cs=SU.createBroadcastSocket()
-        cs.sendto("monkey",('<broadcast>',8888))
+        cs.sendto("monkey",('<broadcast>',port))
         data,addr=ss.recvfrom(500)
-        self.assertEquals("monkey",data)
+        self.assertEqual("monkey",data)
         cs.close()
         ss.close()
 
@@ -40,11 +75,12 @@ class ServerCallback(object):
 class TestSocketServer(unittest.TestCase):
     def testServer_thread(self):
         callback=ServerCallback()
-        serv=SU.SocketServer_Threadpool(callback,"localhost",15555)
-        self.assertEqual("localhost:15555", serv.locationStr)
+        port=SU.findUnusedPort()
+        serv=SocketServer_Threadpool(callback,"localhost",port)
+        self.assertEqual("localhost:"+str(port), serv.locationStr)
         self.assertTrue(serv.sock is not None)
-        conn=SU.SocketConnection(serv.sock, "12345")
-        self.assertEqual("12345",conn.objectId)
+        conn=SU.SocketConnection(serv.sock, "ID12345")
+        self.assertEqual("ID12345",conn.objectId)
         self.assertTrue(conn.sock is not None)
         conn.close()
         conn.close()
@@ -54,11 +90,12 @@ class TestSocketServer(unittest.TestCase):
         self.assertTrue(serv.sock is None)
     def testServer_select(self):
         callback=ServerCallback()
-        serv=SU.SocketServer_Select(callback,"localhost",15555)
-        self.assertEqual("localhost:15555", serv.locationStr)
+        port=SU.findUnusedPort()
+        serv=SocketServer_Select(callback,"localhost",port)
+        self.assertEqual("localhost:"+str(port), serv.locationStr)
         self.assertTrue(serv.sock is not None)
-        conn=SU.SocketConnection(serv.sock, "12345")
-        self.assertEqual("12345",conn.objectId)
+        conn=SU.SocketConnection(serv.sock, "ID12345")
+        self.assertEqual("ID12345",conn.objectId)
         self.assertTrue(conn.sock is not None)
         conn.close()
         conn.close()

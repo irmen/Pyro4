@@ -22,13 +22,12 @@ class PyroURI(object):
     """Pyro object URI (universal resource identifier)
     PYRO uri format: PYRO:objectid@location
         where location is one of:
-          hostname       (tcp/ip socket on default port)
           hostname:port  (tcp/ip socket on given port)
           ./p:pipename   (named pipe on localhost)
           ./u:sockname   (unix domain socket on localhost)
     
     MAGIC URI formats:
-      PYRONAME:logicalobjectname[@location]  (optional name server location)
+      PYRONAME:logicalobjectname[@location]  (optional name server location, can also omit location port)
       PYROLOC:logicalobjectname@location
         where location is the same as above.
       (these are used to be resolved to a direct PYRO: uri).
@@ -50,7 +49,7 @@ class PyroURI(object):
         if self.protocol in ("PYRO","PYROLOC"):
             if not location:
                 raise Pyro.errors.PyroError("invalid uri")
-            self._parseLocation(location, Pyro.config.PORT)
+            self._parseLocation(location, None)
         else:
             raise Pyro.errors.PyroError("invalid uri (protocol)")
     def _parseLocation(self,location,defaultPort):
@@ -68,11 +67,10 @@ class PyroURI(object):
             self.host,_,self.port=location.partition(":")
             if not self.port:
                 self.port=defaultPort
-            else:
-                try:
-                    self.port=int(self.port)
-                except ValueError:
-                    raise Pyro.errors.PyroError("invalid uri (port)")        
+            try:
+                self.port=int(self.port)
+            except (ValueError, TypeError):
+                raise Pyro.errors.PyroError("invalid uri (port)")        
     @property
     def location(self):
         if self.host:
@@ -144,6 +142,10 @@ class Proxy(object):
     def __copy__(self):
         uriCopy=PyroURI(self._pyroUri)
         return Proxy(uriCopy)
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._pyroRelease()
     def _pyroRelease(self):
         """release the connection to the pyro daemon"""
         if self._pyroConnection:
@@ -290,23 +292,23 @@ class DaemonObject(object):
         return self.daemon.registeredObjects() 
     def ping(self):
         pass
-            
+
+from Pyro.socketserver.threadpoolserver import SocketServer as SocketServer_Threadpool
+from Pyro.socketserver.selectserver import SocketServer as SocketServer_Select
 
 class Daemon(object):
     """
     Pyro daemon. Contains server side logic and dispatches incoming remote method calls
     to the appropriate objects.
     """
-    def __init__(self, host=None, port=None):
+    def __init__(self, host=None, port=0):
         super(Daemon,self).__init__()
         if host is None:
             host=Pyro.config.HOST
-        if port is None:
-            port=Pyro.config.PORT
         if Pyro.config.SERVERTYPE=="thread":
-            self.transportServer=Pyro.socketutil.SocketServer_Threadpool(self, host, port, Pyro.config.COMMTIMEOUT)
+            self.transportServer=SocketServer_Threadpool(self, host, port, Pyro.config.COMMTIMEOUT)
         elif Pyro.config.SERVERTYPE=="select":
-            self.transportServer=Pyro.socketutil.SocketServer_Select(self, host, port, Pyro.config.COMMTIMEOUT)
+            self.transportServer=SocketServer_Select(self, host, port, Pyro.config.COMMTIMEOUT)
         else:
             raise Pyro.errors.PyroError("invalid server type '%s'" % Pyro.config.SERVERTYPE)
         self.locationStr=self.transportServer.locationStr
@@ -419,6 +421,8 @@ class Daemon(object):
         log.debug("daemon closing")
         if hasattr(self,"transportServer"):
             self.transportServer.close()
+            self.transportServer=None
+
     def register(self, obj, name=None, objectId=None):
         """
         Register a Pyro object under the given (local) name. Note that this object
@@ -480,4 +484,8 @@ class Daemon(object):
         return self.objectsByName
     def __str__(self):
         return "<Pyro Daemon on "+self.locationStr+">"
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 

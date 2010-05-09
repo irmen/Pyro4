@@ -30,6 +30,8 @@ class NameServer(object):
             uri=str(uri)
         elif not isinstance(uri, basestring):
             raise TypeError("only PyroURIs or strings can be registered")
+        else:
+            Pyro.core.PyroURI(uri)  # check if uri is valid
         if not isinstance(name, basestring):
             raise TypeError("name must be a str")
         if name in self.namespace:
@@ -77,7 +79,15 @@ class NameServerDaemon(Pyro.core.Daemon):
         self.register(self.nameserver, Pyro.constants.NAMESERVER_NAME)
         self.nameserver.register(Pyro.constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
         log.info("nameserver daemon created")
-
+    def close(self):
+        super(NameServerDaemon,self).close()
+        self.nameserver=None
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.nameserver=None
+        return super(NameServerDaemon,self).__exit__(exc_type, exc_value, traceback)
+        
 class BroadcastServer(object):
     def __init__(self, nsUri, bchost=None, bcport=None):
         self.nsUri=str(nsUri)
@@ -103,6 +113,10 @@ class BroadcastServer(object):
                     bcsocket.sendto(self.nsUri, addr)
             except socket.error:
                 pass
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
 def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
     hostip=Pyro.socketutil.getIpAddress(host)
