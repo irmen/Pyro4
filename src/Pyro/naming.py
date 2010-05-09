@@ -83,6 +83,8 @@ class NameServerDaemon(Pyro.core.Daemon):
         super(NameServerDaemon,self).close()
         self.nameserver=None
     def __enter__(self):
+        if not self.nameserver:
+            raise PyroError("cannot reuse this object")
         return self
     def __exit__(self, exc_type, exc_value, traceback):
         self.nameserver=None
@@ -118,7 +120,8 @@ class BroadcastServer(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
-def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
+def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
+    """utility function that starts a new Name server and enters its requestloop."""
     hostip=Pyro.socketutil.getIpAddress(host)
     if hostip.startswith("127."):
         print "Not starting broadcast server for localhost."
@@ -142,6 +145,19 @@ def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None
             bcserver.close()
     print "NS shut down."
 
+def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
+    """utility fuction to quickly get a Name server daemon to be used in your own event loops.
+    Returns (nameserverUri, nameserverDaemon, broadcastServer)."""
+    hostip=Pyro.socketutil.getIpAddress(host)
+    if hostip.startswith("127."):
+        # not starting broadcast server for localhost.
+        enableBroadcast=False
+    daemon=NameServerDaemon(host, port)
+    nsUri=daemon.uriFor(daemon.nameserver)
+    bcserver=None
+    if enableBroadcast:
+        bcserver=BroadcastServer(nsUri,bchost,bcport)
+    return nsUri, daemon, bcserver
 
 def locateNS(host=None, port=None):
     """Get a proxy for a name server somewhere in the network."""
@@ -212,7 +228,7 @@ def main(args):
     parser.add_option("-x","--nobc", dest="enablebc", action="store_false", default=True,
                       help="don't start a broadcast server")
     options,args = parser.parse_args(args)
-    startNS(options.host,options.port,enableBroadcast=options.enablebc,
+    startNSloop(options.host,options.port,enableBroadcast=options.enablebc,
             bchost=options.bchost,bcport=options.bcport)
 
 if __name__=="__main__":

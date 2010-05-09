@@ -61,11 +61,36 @@ class OfflineTests(unittest.TestCase):
         try:
             with Pyro.naming.NameServerDaemon(port=0) as ns:
                 self.assertFalse(ns.nameserver is None)
-                print 1/0 # cause an error
+                print 1//0 # cause an error
             self.fail("expected error")
         except ZeroDivisionError: 
             pass
         self.assertTrue(ns.nameserver is None)
+        ns=Pyro.naming.NameServerDaemon(port=0)
+        with ns:
+            pass
+        try:
+            with ns:
+                pass
+            self.fail("expected error")
+        except PyroError:
+            # you cannot re-use a name server object in multiple with statements
+            pass
+        ns.close()
+
+    def testStartNSfunc(self):
+        uri1,ns1,bc1=Pyro.naming.startNS(port=0, enableBroadcast=False)
+        uri2,ns2,bc2=Pyro.naming.startNS(port=0, enableBroadcast=True)
+        self.assertTrue(isinstance(uri1, Pyro.core.PyroURI))
+        self.assertTrue(isinstance(ns1, Pyro.naming.NameServerDaemon))
+        self.assertTrue(bc1 is None)
+        self.assertTrue(isinstance(bc2, Pyro.naming.BroadcastServer))
+        sock=bc2.sock
+        self.assertTrue(hasattr(sock,"fileno"))
+        func=bc2.processRequest
+        ns1.close()
+        ns2.close()
+        bc2.close()
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

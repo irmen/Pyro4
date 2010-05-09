@@ -176,7 +176,7 @@ class Serializer(object):
         return self.pickle.loads(data)
     def __eq__(self, other):
         return type(other) is Serializer and vars(self)==vars(other)
-
+    __hash__=object.__hash__
 
 def resolveDottedAttribute(obj, attr, allowDotted):
     """Resolves a dotted attribute name to an object.  Raises

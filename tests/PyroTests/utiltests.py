@@ -1,6 +1,6 @@
 import unittest
 
-import sys
+import sys, imp
 import Pyro.util
 
 def crash(arg=100):
@@ -9,8 +9,8 @@ def crash(arg=100):
     def nest(p1,p2):
         s="white"+pre1 #@UnusedVariable
         x=pre2 #@UnusedVariable
-        y=arg/2 #@UnusedVariable
-        p3=p1/p2
+        y=arg//2 #@UnusedVariable
+        p3=p1//p2
         return p3
     a=10
     b=0
@@ -25,7 +25,7 @@ class TestUtils(unittest.TestCase):
             crash()
         except:
             tb="".join(Pyro.util.formatTraceback(detailed=False))
-            self.assertTrue("p3=p1/p2" in tb)
+            self.assertTrue("p3=p1//p2" in tb)
             self.assertTrue("ZeroDivisionError" in tb)
             self.assertFalse(" a = 10" in tb)
             self.assertFalse(" s = 'whiteblack'" in tb)
@@ -37,7 +37,7 @@ class TestUtils(unittest.TestCase):
             crash()
         except:
             tb="".join(Pyro.util.formatTraceback(detailed=True))
-            self.assertTrue("p3=p1/p2" in tb)
+            self.assertTrue("p3=p1//p2" in tb)
             self.assertTrue("ZeroDivisionError" in tb)
             if " a = 10" not in tb:
                 self.failIfEqual("cli",sys.platform,"detailed tracebacks don't work in IronPython (ignore this fail)")
@@ -97,19 +97,19 @@ class TestUtils(unittest.TestCase):
             if "PYRO_HOST" in os.environ: del os.environ["PYRO_HOST"]
             if "PYRO_NS_PORT" in os.environ: del os.environ["PYRO_NS_PORT"]
             if "PYRO_COMPRESSION" in os.environ: del os.environ["PYRO_COMPRESSION"]
-            reload(Pyro.config)
+            imp.reload(Pyro.config)
         clearEnv()
         try:
             self.assertEqual(9090, Pyro.config.NS_PORT)
             self.assertEqual(socket.gethostname(), Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
             os.environ["NS_PORT"]="4444"
-            reload(Pyro.config)
+            imp.reload(Pyro.config)
             self.assertEqual(9090, Pyro.config.NS_PORT)
             os.environ["PYRO_NS_PORT"]="4444"
             os.environ["PYRO_HOST"]="something.com"
             os.environ["PYRO_COMPRESSION"]="OFF"
-            reload(Pyro.config)
+            imp.reload(Pyro.config)
             self.assertEqual(4444, Pyro.config.NS_PORT)
             self.assertEqual("something.com", Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)

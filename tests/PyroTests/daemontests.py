@@ -3,7 +3,7 @@ import Pyro.core
 import Pyro.constants
 import Pyro.config
 import Pyro.socketutil
-from Pyro.errors import DaemonError
+from Pyro.errors import DaemonError,PyroError
 
 class DaemonTests(unittest.TestCase):
     # We create a daemon, but notice that we are not actually running the requestloop.
@@ -28,6 +28,7 @@ class DaemonTests(unittest.TestCase):
                 self.arg=arg
             def __eq__(self,other):
                 return self.arg==other.arg
+            __hash__=object.__hash__
         try:
             freeport=Pyro.socketutil.findUnusedPort()
             d=Pyro.core.Daemon(port=freeport)
@@ -66,6 +67,7 @@ class DaemonTests(unittest.TestCase):
                 self.arg=arg
             def __eq__(self,other):
                 return self.arg==other.arg
+            __hash__=object.__hash__
         try:
             freeport=Pyro.socketutil.findUnusedPort()
             d=Pyro.core.Daemon(port=freeport)
@@ -101,12 +103,22 @@ class DaemonTests(unittest.TestCase):
         self.assertTrue(d.transportServer is None)
         try:
             with Pyro.core.Daemon() as d:
-                print 1/0 # cause an error
+                print 1//0 # cause an error
             self.fail("expected error")
         except ZeroDivisionError: 
             pass
         self.assertTrue(d.transportServer is None)
-
+        d=Pyro.core.Daemon()
+        with d:
+            pass
+        try:
+            with d:
+                pass
+            self.fail("expected error")
+        except PyroError:
+            # you cannot re-use a daemon object in multiple with statements
+            pass
+        d.close()
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

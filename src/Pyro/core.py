@@ -92,6 +92,7 @@ class PyroURI(object):
     def __eq__(self,other):
         return (self.protocol, self.object, self.pipename, self.sockname, self.host, self.port) \
                 == (other.protocol, other.object, other.pipename, other.sockname, other.host, other.port)
+    __hash__=object.__hash__
     # note: getstate/setstate are not needed if we use pickle protocol 2,
     # but this way it helps pickle to make the representation smaller by omitting all attribute names.
     def __getstate__(self):
@@ -302,7 +303,6 @@ class Daemon(object):
     to the appropriate objects.
     """
     def __init__(self, host=None, port=0):
-        super(Daemon,self).__init__()
         if host is None:
             host=Pyro.config.HOST
         if Pyro.config.SERVERTYPE=="thread":
@@ -419,7 +419,7 @@ class Daemon(object):
     def close(self):
         """Close down the server and release resources"""
         log.debug("daemon closing")
-        if hasattr(self,"transportServer"):
+        if hasattr(self,"transportServer") and self.transportServer:
             self.transportServer.close()
             self.transportServer=None
 
@@ -485,6 +485,8 @@ class Daemon(object):
     def __str__(self):
         return "<Pyro Daemon on "+self.locationStr+">"
     def __enter__(self):
+        if not self.transportServer:
+            raise Pyro.errors.PyroError("cannot reuse this object")
         return self
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()

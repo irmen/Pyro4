@@ -9,6 +9,7 @@ class Thing(object):
         self.arg=arg
     def __eq__(self,other):
         return self.arg==other.arg
+    __hash__=object.__hash__
 
 class CoreTests(unittest.TestCase):
 
@@ -198,12 +199,18 @@ class CoreTests(unittest.TestCase):
         try:
             with Pyro.core.Proxy("PYRO:9999@localhost:15555") as p:
                 p._pyroConnection=connMock
-                print 1/0  # cause an exception
+                print 1//0  # cause an error
             self.fail("expected error")
         except ZeroDivisionError:
             pass
         self.assertTrue(p._pyroConnection is None)
         self.assertTrue(connMock.closeCalled)
+        connMock=ConnectionMock()
+        p=Pyro.core.Proxy("PYRO:9999@localhost:15555")
+        with p:
+            self.assertTrue(p._pyroUri is not None)
+        with p:
+            self.assertTrue(p._pyroUri is not None)            
 
     def testRemoteMethod(self):
         class Proxy(object):
