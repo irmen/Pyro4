@@ -182,7 +182,7 @@ class OnlineTests(unittest.TestCase):
         self._assertNameServerRunning()
         ns=Pyro.naming.locateNS(self.nshostname, self.nsport)
         try:
-            ns.register("test.oneway","PYRO:9999@host.com")
+            ns.register("test.oneway","PYRO:9999@host.com:4444")
         except NamingError:
             pass
         else:
