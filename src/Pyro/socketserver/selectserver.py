@@ -131,7 +131,7 @@ class SocketServer(object):
                                 conn.close()
                                 if conn in self.clients:
                                     self.clients.remove(conn)
-                    if rlist:
+                    if rlist and others:
                         try:
                             others[1](rlist)  # handle events from other sockets
                         except socket.error,x:
