@@ -108,6 +108,13 @@ class SocketServer(object):
                         log.warn("there was an uncaught socket error for the other sockets: %s",x)
             except socket.timeout:
                 pass  # just continue the loop on a timeout on accept
+            except socket.error:
+                if not loopCondition():
+                    # swallow the socket error if loop terminates anyway
+                    # this can occur if we are asked to shutdown, socket can be invalid then
+                    break
+                else:
+                    raise
         log.debug("threadpool server exits requestloop")
     def close(self): 
         log.debug("closing threadpool server")
@@ -121,6 +128,8 @@ class SocketServer(object):
         for worker in list(self.threadpool):
             worker.running=False
             self.workqueue.put((None,None)) # put a 'stop' sentinel in the worker queue
+        for worker in list(self.threadpool):
+            worker.join()
                 
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""

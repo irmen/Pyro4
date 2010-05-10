@@ -80,9 +80,14 @@ class SocketServer(object):
                                     self.callback.handleRequest(conn)
                                 except (socket.error,ConnectionClosedError):
                                     # client went away.
-                                    poll.unregister(conn.fileno())
-                                    del fileno2connection[conn.fileno()]
-                                    conn.close()
+                                    try:
+                                    	fn=conn.fileno()
+                                    except socket.error:
+                                        pass  
+                                    else:
+                                        poll.unregister(fn)
+                                        del fileno2connection[fn]
+                                        conn.close()
             finally:
                 if hasattr(poll, "close"):
                     poll.close()
@@ -170,7 +175,6 @@ class SocketServer(object):
             except Exception:
                 pass
         self.clients=[]
-        self.callback=None
 
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""

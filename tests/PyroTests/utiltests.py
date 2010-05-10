@@ -104,7 +104,7 @@ class TestUtils(unittest.TestCase):
         clearEnv()
         try:
             self.assertEqual(9090, Pyro.config.NS_PORT)
-            self.assertEqual(socket.gethostname(), Pyro.config.HOST)
+            self.assertEqual(socket.getfqdn(), Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
             os.environ["NS_PORT"]="4444"
             imp.reload(Pyro.config)
@@ -119,7 +119,7 @@ class TestUtils(unittest.TestCase):
         finally:
             clearEnv()
             self.assertEqual(9090, Pyro.config.NS_PORT)
-            self.assertEqual(socket.gethostname(), Pyro.config.HOST)
+            self.assertEqual(socket.getfqdn(), Pyro.config.HOST)
             self.assertEqual(False, Pyro.config.COMPRESSION)
 
     def testResolveAttr(self):

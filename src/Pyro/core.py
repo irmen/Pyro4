@@ -345,6 +345,7 @@ class Daemon(object):
         log.debug("daemon shutting down")
         self.__mustshutdown=True
         self.pingConnection()
+        time.sleep(0.05)
         self.close()
         self.__loopstopped.wait()
         log.info("daemon %s shut down", self.locationStr)
