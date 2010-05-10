@@ -4,7 +4,7 @@ from Pyro.errors import NamingError,PyroError
 
 # offline name-server tests
 
-class OfflineTests(unittest.TestCase):
+class OfflineNameServerTests(unittest.TestCase):
     def testRegister(self):
         ns=Pyro.naming.NameServer()
         ns.ping()
@@ -49,6 +49,16 @@ class OfflineTests(unittest.TestCase):
         objects=ns.list(regex=r"\d\d\d\d\d\d\d\d\d\d")
         self.assertEqual(0,len(objects))
 
+    def testRefuseDotted(self):
+        try:
+            Pyro.config.DOTTEDNAMES=True
+            ns=Pyro.naming.NameServerDaemon(port=0)
+            self.fail("should refuse to create name server")
+        except PyroError:
+            pass
+        finally:
+            Pyro.config.DOTTEDNAMES=False
+        
     def testNameserverWithStmt(self):
         ns=Pyro.naming.NameServerDaemon(port=0)
         self.assertFalse(ns.nameserver is None)

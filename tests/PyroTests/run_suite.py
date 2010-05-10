@@ -5,7 +5,7 @@ sys.path.insert(0,"../../src")
 
 if __name__=="__main__":
     # add test modules here
-    modules=["sockettests", "utiltests", "coretests", "namingtests", "namingtests2", "daemontests", "serializetests"]
+    modules=["sockettests", "utiltests", "coretests", "namingtests", "namingtests2", "daemontests", "serializetests", "servertests"]
      
     print >>sys.stderr, "gathering testcases from",modules
      

@@ -318,9 +318,9 @@ class Daemon(object):
         pyroObject=DaemonObject(self)
         self.objectsById={self._pyroObjectId: (Pyro.constants.DAEMON_LOCALNAME, pyroObject)}
         self.objectsByName={Pyro.constants.DAEMON_LOCALNAME: self._pyroObjectId}
-        self.mustshutdown=False
-        self.loopstopped=threading.Event()
-        self.loopstopped.set()
+        self.__mustshutdown=False
+        self.__loopstopped=threading.Event()
+        self.__loopstopped.set()
     def __del__(self):
         self.close()
     def requestLoop(self, others=None):
@@ -330,21 +330,23 @@ class Daemon(object):
         (socketlist,callback) for extra sockets to listen on + callback function
         for them when they trigger.
         """  
-        self.mustshutdown=False
+        self.__mustshutdown=False
         log.info("daemon %s entering requestloop", self.locationStr)
         try:
-            self.loopstopped.clear()
-            self.transportServer.requestLoop(loopCondition=lambda: not self.mustshutdown,
+            self.__loopstopped.clear()
+            self.transportServer.requestLoop(loopCondition=lambda: not self.__mustshutdown,
                                              others=others)
         finally:
-            self.loopstopped.set()
+            self.__loopstopped.set()
         log.debug("daemon exits requestloop")
     def shutdown(self):
-        """Cleanly terminate a deamon that is running in the requestloop."""
+        """Cleanly terminate a deamon that is running in the requestloop. It must be running
+        in a different thread, or this method will deadlock."""
         log.debug("daemon shutting down")
-        self.mustshutdown=True
+        self.__mustshutdown=True
         self.pingConnection()
         self.close()
+        self.__loopstopped.wait()
         log.info("daemon %s shut down", self.locationStr)
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""

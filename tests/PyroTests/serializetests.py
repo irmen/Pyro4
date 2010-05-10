@@ -48,49 +48,6 @@ class SerializeTests(unittest.TestCase):
         self.assertTrue(proxy2._pyroConnection is None)
         self.assertEqual(proxy2._pyroUri, proxy._pyroUri)
         self.assertEqual(proxy2._pyroSerializer, proxy._pyroSerializer)
-
-    def _assertNameServerRunning(self):
-        try:
-            self.ns=Pyro.naming.locateNS()
-        except Pyro.errors.PyroError:
-            print "Can't find a name server"
-            self.fail("No name server found. You need to have a name server running (+broadcast server) to be able to run this tests")
-
-    def testSerCoreOnline(self):
-        self._assertNameServerRunning()
-        # online serialization tests
-        ser=Pyro.util.Serializer()
-        nsLocation="%s:%d" %(self.ns._pyroUri.host, self.ns._pyroUri.port)
-        daemonUri="PYROLOC:"+Pyro.constants.DAEMON_LOCALNAME+"@"+nsLocation
-        proxy=Pyro.core.Proxy(daemonUri)
-        proxy._pyroBind()
-        self.assertFalse(proxy._pyroConnection is None)
-        p,_=ser.serialize(proxy)
-        proxy2=ser.deserialize(p)
-        self.assertTrue(proxy2._pyroConnection is None)
-        self.assertFalse(proxy._pyroConnection is None)
-        self.assertEqual(proxy2._pyroUri, proxy._pyroUri)
-        self.assertEqual(proxy2._pyroSerializer, proxy._pyroSerializer)
-        proxy2._pyroBind()
-        self.assertFalse(proxy2._pyroConnection is None)
-        self.assertFalse(proxy2._pyroConnection is proxy._pyroConnection)
-        proxy._pyroRelease()
-        proxy2._pyroRelease()
-        self.assertTrue(proxy._pyroConnection is None)
-        self.assertTrue(proxy2._pyroConnection is None)
-        proxy.ping()
-        proxy2.ping()
-        # try copying a connected proxy
-        import copy
-        proxy3=copy.copy(proxy)
-        self.assertTrue(proxy3._pyroConnection is None)
-        self.assertFalse(proxy._pyroConnection is None)
-        self.assertEqual(proxy3._pyroUri, proxy._pyroUri)
-        self.assertFalse(proxy3._pyroUri is proxy._pyroUri)
-        self.assertEqual(proxy3._pyroSerializer, proxy._pyroSerializer)        
-        proxy._pyroRelease()
-        proxy2._pyroRelease()
-        proxy3._pyroRelease()
         
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

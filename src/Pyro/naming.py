@@ -106,6 +106,8 @@ class BroadcastServer(object):
     def close(self):
         log.debug("ns broadcast server closing")
         self.sock.close()
+    def getPort(self):
+        return self.sock.getsockname()[1]
     def processRequest(self, otherSockets):
         for bcsocket in otherSockets:
             try:
