@@ -72,7 +72,7 @@ class TestSocketutil(unittest.TestCase):
         port=ss.getsockname()[1]
         cs=SU.createBroadcastSocket()
         cs.sendto("monkey",('<broadcast>',port))
-        data,addr=ss.recvfrom(500)
+        data,_=ss.recvfrom(500)
         self.assertEqual("monkey",data)
         cs.close()
         ss.close()

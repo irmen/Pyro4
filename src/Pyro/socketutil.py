@@ -13,7 +13,7 @@ from Pyro.errors import ConnectionClosedError,TimeoutError,CommunicationError
 
 if os.name=="java":
     # Jython needs a select wrapper.
-    selectfunction=select.cpython_compatible_select
+    selectfunction=select.cpython_compatible_select #@UndefinedVariable (pydev)
 else:
     selectfunction=select.select
     

@@ -9,12 +9,12 @@
 
 import select, os, socket
 import logging
-from Pyro.socketutil import SocketConnection, createSocket, sendData, ERRNO_RETRIES, ERRNO_BADF
+from Pyro.socketutil import SocketConnection, createSocket, ERRNO_RETRIES, ERRNO_BADF
 from Pyro.errors import ConnectionClosedError, PyroError
 
 if os.name=="java":
     # Jython needs a select wrapper.
-    selectfunction=select.cpython_compatible_select
+    selectfunction=select.cpython_compatible_select #@UndefinedVariable (pydev)
 else:
     selectfunction=select.select
 
@@ -56,7 +56,7 @@ class SocketServer(object):
                         fileno2connection[sock.fileno()]=sock
                 while loopCondition():
                     polls=poll.poll(500)
-                    for (fd,mask) in polls:
+                    for (fd,mask) in polls: #@UnusedVariable (pydev)
                         conn=fileno2connection[fd]
                         if conn is self.sock:
                             try:
@@ -81,7 +81,7 @@ class SocketServer(object):
                                 except (socket.error,ConnectionClosedError):
                                     # client went away.
                                     try:
-                                    	fn=conn.fileno()
+                                        fn=conn.fileno()
                                     except socket.error:
                                         pass  
                                     else:

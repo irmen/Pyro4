@@ -202,7 +202,7 @@ class Proxy(object):
                 data=MessageFactory.createMessage(MessageFactory.MSG_CONNECT, None, 0)
                 conn.send(data)
                 data=conn.recv(MessageFactory.HEADERSIZE)
-                msgType,flags,dataLen=MessageFactory.parseMessageHeader(data)
+                msgType,flags,dataLen=MessageFactory.parseMessageHeader(data) #@UnusedVariable (pydev)
                 # any trailing data (dataLen>0) is an error message, if any
             except Exception,x:
                 if conn:
@@ -357,7 +357,7 @@ class Daemon(object):
     def handshake(self, conn):
         """Perform connection handshake with new clients"""
         header=conn.recv(MessageFactory.HEADERSIZE)
-        msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
+        msgType,flags,dataLen=MessageFactory.parseMessageHeader(header) #@UnusedVariable (pydev)
         if msgType!=MessageFactory.MSG_CONNECT:
             err="expected MSG_CONNECT message, got %d" % msgType
             log.warn(err)

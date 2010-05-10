@@ -10,12 +10,12 @@
 import os, Queue
 import threading, socket, select
 import logging
-from Pyro.socketutil import SocketConnection, createSocket, sendData
+from Pyro.socketutil import SocketConnection, createSocket
 from Pyro.errors import ConnectionClosedError, PyroError
 
 if os.name=="java":
     # Jython needs a select wrapper.
-    selectfunction=select.cpython_compatible_select
+    selectfunction=select.cpython_compatible_select #@UndefinedVariable (pydev)
 else:
     selectfunction=select.select
 

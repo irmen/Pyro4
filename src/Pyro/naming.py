@@ -174,7 +174,7 @@ def locateNS(host=None, port=None):
         for _ in range(3):
             try:
                 sock.sendto("GET_NSURI",("<broadcast>",port))
-                data,addr=sock.recvfrom(100)
+                data,_=sock.recvfrom(100)
                 sock.close()
                 log.debug("located NS: %s",data)
                 return Pyro.core.Proxy(data)
