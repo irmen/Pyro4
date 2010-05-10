@@ -19,7 +19,7 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual( locationstr, d.locationStr)
             self.assertTrue(Pyro.constants.INTERNAL_DAEMON_GUID in d.objectsById)
             self.assertTrue(Pyro.constants.DAEMON_LOCALNAME in d.objectsByName)
-            self.assertEqual(d.resolve(Pyro.constants.DAEMON_LOCALNAME).object, Pyro.constants.INTERNAL_DAEMON_GUID)
+            self.assertEqual(d.lookup(Pyro.constants.DAEMON_LOCALNAME).object, Pyro.constants.INTERNAL_DAEMON_GUID)
             self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@"+locationstr, str(d.uriFor(Pyro.constants.INTERNAL_DAEMON_GUID)))
             self.assertTrue(d.fileno() > 0)
         finally:
@@ -48,7 +48,7 @@ class DaemonTests(unittest.TestCase):
             
             self.assertEqual(3, len(d.objectsById))
             self.assertEqual(2, len(d.registeredObjects()))
-            self.assertEqual(o2._pyroObjectId, d.resolve("obj2a").object)
+            self.assertEqual(o2._pyroObjectId, d.lookup("obj2a").object)
             self.assertEqual((None,o1), d.objectsById[o1._pyroObjectId])
             self.assertEqual(("obj2a",o2), d.objectsById[o2._pyroObjectId])
     

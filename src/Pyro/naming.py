@@ -209,7 +209,7 @@ def resolve(uri):
         daemonuri.protocol="PYRO"
         daemonuri.object=Pyro.constants.INTERNAL_DAEMON_GUID
         daemon=Pyro.core.Proxy(daemonuri)
-        uri=daemon.resolve(uri.object)
+        uri=daemon.lookup(uri.object)
         daemon._pyroRelease()
         return uri
     elif uri.protocol=="PYRONAME":

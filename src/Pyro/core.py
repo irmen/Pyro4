@@ -287,8 +287,8 @@ class DaemonObject(object):
     """The part of the daemon that is exposed as a Pyro object."""
     def __init__(self, daemon):
         self.daemon=daemon
-    def resolve(self, objectName):
-        return self.daemon.resolve(objectName)
+    def lookup(self, objectName):
+        return self.daemon.lookup(objectName)
     def registered(self):
         return self.daemon.registeredObjects() 
     def ping(self):
@@ -476,7 +476,7 @@ class Daemon(object):
                 if objectOrName is None:
                     raise Pyro.errors.DaemonError("object isn't registered")
             return PyroURI("PYRO:"+objectOrName+"@"+self.locationStr)
-    def resolve(self, objectName):
+    def lookup(self, objectName):
         """Get a PyroURI for the given object name known by this daemon."""
         objId=self.objectsByName.get(objectName)
         if objId:
