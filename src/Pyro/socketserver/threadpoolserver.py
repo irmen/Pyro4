@@ -93,7 +93,7 @@ class SocketServer(object):
                 ins=[self.sock]
                 if others:
                     ins.extend(others[0])
-                    ins,_,_=selectfunction(ins,[],[],3)
+                    ins,_,_=selectfunction(ins,[],[],1)
                     if not ins:
                         continue
                 if self.sock in ins:
@@ -116,7 +116,7 @@ class SocketServer(object):
                 else:
                     raise
         log.debug("threadpool server exits requestloop")
-    def close(self): 
+    def close(self, joinWorkers=False): 
         log.debug("closing threadpool server")
         if self.sock:
             try:
@@ -128,8 +128,11 @@ class SocketServer(object):
         for worker in list(self.threadpool):
             worker.running=False
             self.workqueue.put((None,None)) # put a 'stop' sentinel in the worker queue
-        for worker in list(self.threadpool):
-            worker.join()
+        if joinWorkers:
+            for worker in list(self.threadpool):
+                worker.join()
+    def fileno(self):
+        return self.sock.fileno()
                 
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""

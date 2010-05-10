@@ -1,6 +1,7 @@
 from __future__ import with_statement
 import unittest
 import Pyro.naming
+import Pyro.socketutil
 from Pyro.errors import NamingError,PyroError
 
 # offline name-server tests
@@ -102,6 +103,12 @@ class OfflineNameServerTests(unittest.TestCase):
         ns1.close()
         ns2.close()
         bc2.close()
+    
+    def testOwnloopBasics(self):
+        uri1,ns1,bc1=Pyro.naming.startNS(port=0, enableBroadcast=True)
+        self.assertTrue(ns1.fileno() > 0)
+        self.assertTrue(bc1.fileno() > 0)
+        _,_,_=Pyro.socketutil.selectfunction([ns1, bc1],[],[],0.1)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

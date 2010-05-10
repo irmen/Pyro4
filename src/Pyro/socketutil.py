@@ -131,7 +131,10 @@ def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeou
             bindOnUnusedPort(sock, bind[0])
         else:
             sock.bind(bind)
-        sock.listen(200)   # rather arbitrary but not too large
+        try:
+            sock.listen(100)   # rather arbitrary but not too large
+        except:
+            pass  # jython sometimes raises errors here
     if connect:
         sock.connect(connect)
     if reuseaddr:
@@ -219,9 +222,14 @@ def findUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
 def bindOnUnusedPort(sock, host='localhost'):
     """Bind the socket to a free port and return the port number. 
     This code is based on the code in the stdlib's test.test_support module."""
-    if sock.family == socket.AF_INET and sock.type == socket.SOCK_STREAM:
-        if hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):
+    if os.name!="java" and sock.family == socket.AF_INET and sock.type == socket.SOCK_STREAM:
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
     sock.bind((host, 0))
+    if os.name=="java":
+        try:
+            sock.listen(100)  # otherwise jython always just returns 0 for the port
+        except:
+            pass  # jython sometimes throws errors here
     port = sock.getsockname()[1]
     return port

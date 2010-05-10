@@ -176,6 +176,9 @@ class SocketServer(object):
                 pass
         self.clients=[]
 
+    def fileno(self):
+        return self.sock.fileno()
+
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:

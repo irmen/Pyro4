@@ -323,6 +323,8 @@ class Daemon(object):
         self.__loopstopped.set()
     def __del__(self):
         self.close()
+    def fileno(self):
+        return self.transportServer.fileno()
     def requestLoop(self, others=None):
         """
         Goes in a loop to service incoming requests, until someone breaks this

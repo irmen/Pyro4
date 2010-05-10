@@ -108,6 +108,8 @@ class BroadcastServer(object):
         self.sock.close()
     def getPort(self):
         return self.sock.getsockname()[1]
+    def fileno(self):
+        return self.sock.fileno()
     def processRequest(self, otherSockets):
         for bcsocket in otherSockets:
             try:

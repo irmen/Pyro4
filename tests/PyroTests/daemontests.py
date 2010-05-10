@@ -21,6 +21,7 @@ class DaemonTests(unittest.TestCase):
             self.assertTrue(Pyro.constants.DAEMON_LOCALNAME in d.objectsByName)
             self.assertEqual(d.resolve(Pyro.constants.DAEMON_LOCALNAME).object, Pyro.constants.INTERNAL_DAEMON_GUID)
             self.assertEqual("PYRO:"+Pyro.constants.INTERNAL_DAEMON_GUID+"@"+locationstr, str(d.uriFor(Pyro.constants.INTERNAL_DAEMON_GUID)))
+            self.assertTrue(d.fileno() > 0)
         finally:
             d.close()
         

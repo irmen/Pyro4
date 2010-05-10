@@ -1,5 +1,5 @@
 import unittest
-import socket
+import socket, os
 import Pyro.socketutil as SU
 from Pyro.socketserver.selectserver import SocketServer as SocketServer_Select
 from Pyro.socketserver.threadpoolserver import SocketServer as SocketServer_Threadpool
@@ -12,6 +12,10 @@ class TestSocketutil(unittest.TestCase):
     def testUnusedPort(self):
         port1=SU.findUnusedPort()
         port2=SU.findUnusedPort()
+        self.assertTrue(port1>0)
+        self.assertNotEqual(port1,port2)
+        port1=SU.findUnusedPort(socktype=socket.SOCK_DGRAM)
+        port2=SU.findUnusedPort(socktype=socket.SOCK_DGRAM)
         self.assertTrue(port1>0)
         self.assertNotEqual(port1,port2)
     def testBindUnusedPort(self):
@@ -34,8 +38,9 @@ class TestSocketutil(unittest.TestCase):
         except socket.error:
             pass
         try:
-            host,port=bs.getsockname()
-            self.assertEqual(0, port)
+            if os.name!="java":
+                host,port=bs.getsockname()
+                self.assertEqual(0, port)
         except socket.error:
             pass
         s.close()
@@ -87,6 +92,7 @@ class TestSocketServer(unittest.TestCase):
         serv=SocketServer_Threadpool(callback,"localhost",port)
         self.assertEqual("localhost:"+str(port), serv.locationStr)
         self.assertTrue(serv.sock is not None)
+        self.assertTrue(serv.fileno() > 0)
         conn=SU.SocketConnection(serv.sock, "ID12345")
         self.assertEqual("ID12345",conn.objectId)
         self.assertTrue(conn.sock is not None)
@@ -102,6 +108,7 @@ class TestSocketServer(unittest.TestCase):
         serv=SocketServer_Select(callback,"localhost",port)
         self.assertEqual("localhost:"+str(port), serv.locationStr)
         self.assertTrue(serv.sock is not None)
+        self.assertTrue(serv.fileno() > 0)
         conn=SU.SocketConnection(serv.sock, "ID12345")
         self.assertEqual("ID12345",conn.objectId)
         self.assertTrue(conn.sock is not None)
