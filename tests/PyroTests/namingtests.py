@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import unittest
 import threading, time
 import Pyro.config
@@ -30,20 +31,13 @@ class NameServerTests(unittest.TestCase):
         Pyro.config.NS_PORT=self.nsUri.port
         Pyro.config.NS_BCPORT=self.bcserver.getPort()
     def tearDown(self):
-        time.sleep(0.1)
+        time.sleep(0.05)
         self.nameserver.shutdown()
         self.bcserver.close()
         self.daemonthread.join()
         Pyro.config.NS_PORT=self.old_nsPort
         Pyro.config.NS_BCPORT=self.old_bcPort
    
-    def testCreateTeardown1(self):
-        pass
-    def testCreateTeardown2(self):
-        pass
-    def testCreateTeardown3(self):
-        pass
-
     def testLookupAndRegister(self):
         ns=Pyro.naming.locateNS() # broadcast lookup
         self.assertTrue(isinstance(ns, Pyro.core.Proxy))

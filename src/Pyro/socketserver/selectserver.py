@@ -12,6 +12,12 @@ import logging
 from Pyro.socketutil import SocketConnection, createSocket, sendData, ERRNO_RETRIES, ERRNO_BADF
 from Pyro.errors import ConnectionClosedError, PyroError
 
+if os.name=="java":
+    # Jython needs a select wrapper.
+    selectfunction=select.cpython_compatible_select
+else:
+    selectfunction=select.select
+
 log=logging.getLogger("Pyro.socketserver.select")
 
 class SocketServer(object):
@@ -49,7 +55,7 @@ class SocketServer(object):
                         poll.register(sock.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
                         fileno2connection[sock.fileno()]=sock
                 while loopCondition():
-                    polls=poll.poll(2000)
+                    polls=poll.poll(500)
                     for (fd,mask) in polls:
                         conn=fileno2connection[fd]
                         if conn is self.sock:
@@ -83,11 +89,6 @@ class SocketServer(object):
             log.debug("exit poll-based requestloop")
 
     else:
-        if os.name=="java":
-            # Jython needs a select wrapper.
-            selectfunction=select.cpython_compatible_select
-        else:
-            selectfunction=select.select
         def requestLoop(self, loopCondition=lambda:True, others=None):
             log.debug("entering select-based requestloop")
             while loopCondition():
@@ -96,7 +97,15 @@ class SocketServer(object):
                     rlist.append(self.sock)
                     if others:
                         rlist.extend(others[0])
-                    rlist,_,_=selectfunction(rlist, [], [], 1)
+                    try:
+                        rlist,_,_=selectfunction(rlist, [], [], 0.5)
+                    except select.error:
+                        if loopCondition():
+                            raise
+                        else:
+                            # swallow the select error if the loopcondition is no longer true, and exit loop
+                            # this can occur if we are shutting down and the socket is no longer valid
+                            break
                     if self.sock in rlist:
                         rlist.remove(self.sock)
                         try:
@@ -166,6 +175,6 @@ class SocketServer(object):
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
-            sendData(self.sock, "!!!!!!!!!!!!!!!!!!!!")
-        except Exception:
+            self.sock.send("!!!!!!!!!!!!!!!!!!!!!!!")
+        except socket.error:
             pass

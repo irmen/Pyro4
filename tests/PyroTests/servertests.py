@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import unittest
 import Pyro.config
 import Pyro.core
@@ -37,7 +38,7 @@ class ServerTests(unittest.TestCase):
         self.daemonthread.start()
         self.daemonthread.running.wait()
     def tearDown(self):
-        time.sleep(0.1)
+        time.sleep(0.05)
         self.daemon.shutdown()
         self.daemonthread.join()
 

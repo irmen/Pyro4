@@ -1,5 +1,6 @@
-import unittest
+from __future__ import with_statement
 
+import unittest
 import Pyro.core
 import Pyro.config
 import Pyro.errors

@@ -86,7 +86,7 @@ def receiveData(sock, size):
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("receiving: connection lost: "+str(x))
-                selectfunction([sock],[],[],2) # delay until socket is ready
+                selectfunction([sock],[],[],1) # delay until socket is ready
     except socket.timeout:
         raise TimeoutError("receiving: timeout")
     

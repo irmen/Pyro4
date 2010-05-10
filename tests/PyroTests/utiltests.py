@@ -3,6 +3,9 @@ import unittest
 import sys, imp
 import Pyro.util
 
+if not hasattr(imp,"reload"):
+    imp.reload=reload   # python 2.5 doesn't have imp.reload
+
 def crash(arg=100):
     pre1="black"
     pre2=999

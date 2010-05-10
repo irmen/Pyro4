@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import unittest
 import Pyro.naming
 from Pyro.errors import NamingError,PyroError

@@ -126,8 +126,8 @@ class SocketServer(object):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
             sock=createSocket(connect=self._socketaddr)
-            sendData(sock, "!!!!!!!!!!!!!!!!!!!!")
+            sock.send("!!!!!!!!!!!!!!!!!!!!!")
             sock.close()
-        except Exception:
+        except socket.error:
             pass
 
