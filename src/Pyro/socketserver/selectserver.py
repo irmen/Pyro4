@@ -7,8 +7,7 @@
 #
 ######################################################################
 
-import select, os, socket
-import logging
+import select, os, socket, logging
 from Pyro.socketutil import SocketConnection, createSocket, ERRNO_RETRIES, ERRNO_BADF
 from Pyro.errors import ConnectionClosedError, PyroError
 

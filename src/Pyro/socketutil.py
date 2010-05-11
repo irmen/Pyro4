@@ -7,8 +7,7 @@
 #
 ######################################################################
 
-import socket, os, select, errno
-import logging
+import socket, os, select, errno, logging
 from Pyro.errors import ConnectionClosedError,TimeoutError,CommunicationError
 
 if os.name=="java":

@@ -7,8 +7,7 @@
 #
 ######################################################################
 
-import re,logging
-import socket
+import re, logging, socket
 import Pyro.core
 import Pyro.constants
 import Pyro.socketutil
@@ -182,21 +181,26 @@ def locateNS(host=None, port=None):
                 continue
         sock.close()
         log.debug("broadcast locate failed, try direct connection on NS_HOST")
-        # broadcast failed, try PYROLOC on specific host
+        # broadcast failed, try PYRO directly on specific host
         host=Pyro.config.NS_HOST
         port=Pyro.config.NS_PORT
-    # pyroloc lookup
+    # pyro direct lookup
     if not port:
         port=Pyro.config.NS_PORT
-    uristring="PYROLOC:%s@%s:%d" % (Pyro.constants.NAMESERVER_NAME,host,port)
+    if Pyro.core.PyroURI.isPipeOrUnixsockLocation(host):
+        uristring="PYRO:%s@%s" % (Pyro.constants.NAMESERVER_NAME,host)
+    else:
+        uristring="PYRO:%s@%s:%d" % (Pyro.constants.NAMESERVER_NAME,host,port)
     uri=Pyro.core.PyroURI(uristring)
     log.debug("locating the NS: %s",uri)
-    resolved=resolve(uri)
-    log.debug("located NS: %s",resolved)
-    return Pyro.core.Proxy(resolved)
+    proxy=Pyro.core.Proxy(uri)
+    proxy.ping()
+    log.debug("located NS")
+    return proxy
+    
 
 def resolve(uri):
-    """Resolve a 'magic' uri (PYRONAME, PYROLOC) into the direct PYRO uri."""
+    """Resolve a 'magic' uri (PYRONAME) into the direct PYRO uri."""
     if isinstance(uri, basestring):
         uri=Pyro.core.PyroURI(uri)
     elif not isinstance(uri, Pyro.core.PyroURI):
@@ -204,22 +208,13 @@ def resolve(uri):
     if uri.protocol=="PYRO":
         return uri
     log.debug("resolving %s",uri)
-    if uri.protocol=="PYROLOC":
-        daemonuri=Pyro.core.PyroURI(uri)
-        daemonuri.protocol="PYRO"
-        daemonuri.object=Pyro.constants.INTERNAL_DAEMON_GUID
-        daemon=Pyro.core.Proxy(daemonuri)
-        uri=daemon.lookup(uri.object)
-        daemon._pyroRelease()
-        return uri
-    elif uri.protocol=="PYRONAME":
+    if uri.protocol=="PYRONAME":
         nameserver=locateNS(uri.host, uri.port)
         uri=nameserver.lookup(uri.object)
         nameserver._pyroRelease()
         return uri
     else:
         raise PyroError("invalid uri protocol")
-            
 
 def main(args):
     from optparse import OptionParser

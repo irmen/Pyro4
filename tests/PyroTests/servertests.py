@@ -32,8 +32,7 @@ class ServerTests(unittest.TestCase):
         self.daemon=Pyro.core.Daemon(port=0)
         obj=MyThing()
         self.daemon.register(obj, "something")
-        self.objectUri1=self.daemon.uriFor(obj,pyroloc=False)
-        self.objectUri2=self.daemon.uriFor(obj,pyroloc=True)
+        self.objectUri=self.daemon.uriFor(obj)
         self.daemonthread=DaemonLoopThread(self.daemon)
         self.daemonthread.start()
         self.daemonthread.running.wait()
@@ -44,7 +43,7 @@ class ServerTests(unittest.TestCase):
 
     def testNoDottedNames(self):
         Pyro.config.DOTTEDNAMES=False
-        with Pyro.core.Proxy(self.objectUri1) as p:
+        with Pyro.core.Proxy(self.objectUri) as p:
             self.assertEqual(55,p.multiply(5,11))
             x=p.getDict()
             self.assertEqual({"number":42}, x)
@@ -58,7 +57,7 @@ class ServerTests(unittest.TestCase):
 
     def testDottedNames(self):
         Pyro.config.DOTTEDNAMES=True
-        with Pyro.core.Proxy(self.objectUri1) as p:
+        with Pyro.core.Proxy(self.objectUri) as p:
             self.assertEqual(55,p.multiply(5,11))
             x=p.getDict()
             self.assertEqual({"number":42}, x)
@@ -68,8 +67,8 @@ class ServerTests(unittest.TestCase):
         Pyro.config.DOTTEDNAMES=False
 
     def testConnectionStuff(self):
-        p1=Pyro.core.Proxy(self.objectUri1)
-        p2=Pyro.core.Proxy(self.objectUri2)
+        p1=Pyro.core.Proxy(self.objectUri)
+        p2=Pyro.core.Proxy(self.objectUri)
         self.assertTrue(p1._pyroConnection is None)
         self.assertTrue(p2._pyroConnection is None)
         p1.ping()
@@ -90,20 +89,19 @@ class ServerTests(unittest.TestCase):
         self.assertTrue(p1._pyroConnection is not None)
         self.assertTrue(p2._pyroConnection is not None)
         self.assertEqual("PYRO",p1._pyroUri.protocol)
-        self.assertEqual("PYROLOC",p2._pyroUri.protocol)
-        self.assertNotEqual(p1._pyroUri, p2._pyroUri)
+        self.assertEqual("PYRO",p2._pyroUri.protocol)
         p1._pyroRelease()
         p2._pyroRelease()
 
     def testReconnect(self):
-        with Pyro.core.Proxy(self.objectUri1) as p:
+        with Pyro.core.Proxy(self.objectUri) as p:
             self.assertTrue(p._pyroConnection is None)
             p._pyroReconnect(tries=100)
             self.assertTrue(p._pyroConnection is not None)
         self.assertTrue(p._pyroConnection is None)
     
     def testOneway(self):
-        with Pyro.core.Proxy(self.objectUri1) as p:
+        with Pyro.core.Proxy(self.objectUri) as p:
             self.assertEquals(55, p.multiply(5,11))
             p._pyroOneway.add("multiply")
             self.assertEquals(None, p.multiply(5,11))
@@ -113,7 +111,7 @@ class ServerTests(unittest.TestCase):
     def testSerializeConnected(self):
         # online serialization tests
         ser=Pyro.util.Serializer()
-        proxy=Pyro.core.Proxy(self.objectUri1)
+        proxy=Pyro.core.Proxy(self.objectUri)
         proxy._pyroBind()
         self.assertFalse(proxy._pyroConnection is None)
         p,_=ser.serialize(proxy)

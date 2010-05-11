@@ -26,14 +26,12 @@ class PyroURI(object):
           ./p:pipename   (named pipe on localhost)
           ./u:sockname   (unix domain socket on localhost)
     
-    MAGIC URI formats:
-      PYRONAME:logicalobjectname[@location]  (optional name server location, can also omit location port)
-      PYROLOC:logicalobjectname@location
-        where location is the same as above.
-      (these are used to be resolved to a direct PYRO: uri).
+    MAGIC URI format for simple name resolution using Name server:
+      PYRONAME:objectname[@location]  (optional name server location, can also omit location port)
     """
-    uriRegEx=re.compile(r"(?P<protocol>PYRO|PYRONAME|PYROLOC):(?P<object>\S+?)(@(?P<location>\S+))?$")
+    uriRegEx=re.compile(r"(?P<protocol>PYRO|PYRONAME):(?P<object>\S+?)(@(?P<location>\S+))?$")
     __slots__=("protocol","object","pipename","sockname","host","port","object")
+
     def __init__(self, uri):
         uri=str(uri)  # allow to pass an existing PyroURI object
         self.pipename=self.sockname=self.host=self.port=None
@@ -46,22 +44,23 @@ class PyroURI(object):
         if self.protocol=="PYRONAME":
             self._parseLocation(location, Pyro.config.NS_PORT)
             return
-        if self.protocol in ("PYRO","PYROLOC"):
+        if self.protocol=="PYRO":
             if not location:
                 raise Pyro.errors.PyroError("invalid uri")
             self._parseLocation(location, None)
         else:
             raise Pyro.errors.PyroError("invalid uri (protocol)")
+
     def _parseLocation(self,location,defaultPort):
         if not location:
             return
         if location.startswith("./p:"):
             self.pipename=location[4:]
-            if not self.pipename:
+            if (not self.pipename) or ':' in self.pipename or '/' in self.pipename:
                 raise Pyro.errors.PyroError("invalid uri (location)")
         elif location.startswith("./u:"):
             self.sockname=location[4:]
-            if not self.sockname:
+            if (not self.sockname) or ':' in self.sockname or '/' in self.sockname:
                 raise Pyro.errors.PyroError("invalid uri (location)")
         else:
             self.host,_,self.port=location.partition(":")
@@ -71,6 +70,9 @@ class PyroURI(object):
                 self.port=int(self.port)
             except (ValueError, TypeError):
                 raise Pyro.errors.PyroError("invalid uri (port)")        
+    @staticmethod
+    def isPipeOrUnixsockLocation(location):
+        return location.startswith("./p:") or location.startswith("./u:")
     @property
     def location(self):
         if self.host:
@@ -81,6 +83,7 @@ class PyroURI(object):
             return "./p:"+self.pipename
         else:
             return None
+
     def __str__(self):
         result=self.protocol+":"+self.object
         location=self.location
@@ -147,17 +150,20 @@ class Proxy(object):
         return self
     def __exit__(self, exc_type, exc_value, traceback):
         self._pyroRelease()
+
     def _pyroRelease(self):
         """release the connection to the pyro daemon"""
         if self._pyroConnection:
             self._pyroConnection.close()
             self._pyroConnection=None
             log.debug("connection released")
+
     def _pyroBind(self):
         """Bind this proxy to the exact object from the uri. That means that the proxy's uri
         will be updated with a direct PYRO uri, if it isn't one yet."""
         self._pyroRelease()
         self._pyroCreateConnection(True)
+
     def _pyroInvoke(self, methodname, vargs, kwargs):
         """perform the remote method call communication"""
         if not self._pyroConnection:
@@ -187,6 +193,7 @@ class Proxy(object):
                 raise data
             else:
                 return data
+
     def _pyroCreateConnection(self, replaceUri=False):
         """Connects this proxy to the remote Pyro daemon. Does connection handshake."""
         import Pyro.naming # don't import globally because of cyclic dependancy 
@@ -231,6 +238,7 @@ class Proxy(object):
                     raise Pyro.errors.ProtocolError(err)
         else:
             raise NotImplementedError("non-socket uri connections not yet implemented")
+
     def _pyroReconnect(self, tries=sys.maxint):
         self._pyroRelease()
         while tries:
@@ -260,6 +268,7 @@ class MessageFactory(object):
     FLAGS_COMPRESSED = 1<<1
     FLAGS_ONEWAY     = 1<<2
     MSGTYPES=dict.fromkeys((MSG_CONNECT, MSG_CONNECTOK, MSG_CONNECTFAIL, MSG_INVOKE, MSG_RESULT))
+
     @classmethod
     def createMessage(cls, msgType, data, flags=0):
         """creates a message containing a header followed by the given data"""
@@ -270,6 +279,7 @@ class MessageFactory(object):
         if data:
             msg+=data
         return msg
+
     @classmethod
     def parseMessageHeader(cls, headerData):
         """Parses a message header. Returns a tuple of messagetype, messageflags, datalength.""" 
@@ -287,10 +297,8 @@ class DaemonObject(object):
     """The part of the daemon that is exposed as a Pyro object."""
     def __init__(self, daemon):
         self.daemon=daemon
-    def lookup(self, objectName):
-        return self.daemon.lookup(objectName)
     def registered(self):
-        return self.daemon.registeredObjects() 
+        return self.daemon.objectsById.keys() 
     def ping(self):
         pass
 
@@ -314,17 +322,16 @@ class Daemon(object):
         self.locationStr=self.transportServer.locationStr
         log.debug("created daemon on %s", self.locationStr) 
         self.serializer=Pyro.util.Serializer()
-        self._pyroObjectId=Pyro.constants.INTERNAL_DAEMON_GUID
+        self._pyroObjectId=Pyro.constants.DAEMON_NAME
         pyroObject=DaemonObject(self)
-        self.objectsById={self._pyroObjectId: (Pyro.constants.DAEMON_LOCALNAME, pyroObject)}
-        self.objectsByName={Pyro.constants.DAEMON_LOCALNAME: self._pyroObjectId}
+        self.objectsById={self._pyroObjectId: pyroObject}
         self.__mustshutdown=False
         self.__loopstopped=threading.Event()
         self.__loopstopped.set()
-    def __del__(self):
-        self.close()
+
     def fileno(self):
         return self.transportServer.fileno()
+
     def requestLoop(self, others=None):
         """
         Goes in a loop to service incoming requests, until someone breaks this
@@ -341,6 +348,7 @@ class Daemon(object):
         finally:
             self.__loopstopped.set()
         log.debug("daemon exits requestloop")
+
     def shutdown(self):
         """Cleanly terminate a deamon that is running in the requestloop. It must be running
         in a different thread, or this method will deadlock."""
@@ -351,9 +359,11 @@ class Daemon(object):
         self.close()
         self.__loopstopped.wait()
         log.info("daemon %s shut down", self.locationStr)
+
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         self.transportServer.pingConnection()
+
     def handshake(self, conn):
         """Perform connection handshake with new clients"""
         header=conn.recv(MessageFactory.HEADERSIZE)
@@ -367,6 +377,7 @@ class Daemon(object):
         msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK,None,0)
         conn.send(msg)
         return True
+
     def handleRequest(self, conn):
         """
         Handle incoming Pyro request. Catches any exception that may occur and
@@ -389,7 +400,7 @@ class Daemon(object):
                     # IronPython sends all strings as unicode, but apply() doesn't grok unicode keywords.
                     # So we need to rebuild the keywords dict with str keys... 
                     kwargs = dict((str(k),v) for k,v in kwargs.iteritems())
-                obj=Pyro.util.resolveDottedAttribute(obj[1],method,Pyro.config.DOTTEDNAMES)
+                obj=Pyro.util.resolveDottedAttribute(obj,method,Pyro.config.DOTTEDNAMES)
                 data=obj(*vargs,**kwargs)   # this is the actual method call to the Pyro object
             else:
                 log.debug("unknown object requested: %s",objId)
@@ -412,7 +423,7 @@ class Daemon(object):
             log.debug("Exception occurred while handling request: %s",x)
             tblines=Pyro.util.formatTraceback()
             self.sendExceptionResponse(conn, x, tblines)
-            
+
     def sendExceptionResponse(self, connection, exc_value, tbinfo):
         """send an exception back including the local traceback info"""
         setattr(exc_value, Pyro.constants.TRACEBACK_ATTRIBUTE, tbinfo)
@@ -421,6 +432,47 @@ class Daemon(object):
         del data
         connection.send(msg)
 
+    def register(self, obj, objectId=None):
+        """
+        Register a Pyro object under the given id. Note that this object is now only 
+        known inside this daemon, it is not automatically available in a name server.
+        """
+        if objectId:
+            if type(objectId) is not str:
+                raise TypeError("objectId must be a str or None")
+        else:
+            objectId="obj_"+uuid.uuid4().hex   # generate a new objectId
+        if hasattr(obj,"_pyroObjectId"):
+            raise Pyro.errors.DaemonError("object already has a Pyro id")
+        if objectId in self.objectsById:
+            raise Pyro.errors.DaemonError("object already registered")
+        obj._pyroObjectId=objectId
+        self.objectsById[obj._pyroObjectId]=obj
+
+    def unregister(self, objectId):
+        """
+        Remove an object from the known objects inside this daemon.
+        You can unregister by objectId or by (local) object name.
+        """
+        if objectId==Pyro.constants.DAEMON_NAME:
+            return
+        if objectId in self.objectsById:
+            del self.objectsById[objectId]
+
+    def uriFor(self, objectOrId=None):
+        """
+        Get a PyroURI for the given object (or object id) from this daemon.
+        Only a daemon can hand out proper uris because the access location is
+        contained in them.
+        Note that unregistered objects cannot be given an uri, but unregistered
+        object names can (it's just a string we're creating in that case)
+        """
+        if type(objectOrId) is not str:
+            objectOrId=getattr(objectOrId,"_pyroObjectId",None)
+            if objectOrId is None:
+                raise Pyro.errors.DaemonError("object isn't registered")
+        return PyroURI("PYRO:"+objectOrId+"@"+self.locationStr)
+
     def close(self):
         """Close down the server and release resources"""
         log.debug("daemon closing")
@@ -428,65 +480,8 @@ class Daemon(object):
             self.transportServer.close()
             self.transportServer=None
 
-    def register(self, obj, name=None, objectId=None):
-        """
-        Register a Pyro object under the given (local) name. Note that this object
-        is now only known inside this daemon, it is not automatically available in a name server.
-        """
-        if objectId:
-            obj._pyroObjectId=uuid.UUID(objectId).hex   # set given objectId
-        if not hasattr(obj,"_pyroObjectId"):
-            obj._pyroObjectId=uuid.uuid4().hex          # generate new objectId
-        if obj._pyroObjectId in self.objectsById or name in self.objectsByName:
-            raise Pyro.errors.DaemonError("object already registered")
-        self.objectsById[obj._pyroObjectId]=(name,obj)
-        if name:
-            self.objectsByName[name]=obj._pyroObjectId
-    def unregister(self, objectIdOrName):
-        """
-        Remove an object from the known objects inside this daemon.
-        You can unregister by objectId or by (local) object name.
-        """
-        if objectIdOrName in (Pyro.constants.INTERNAL_DAEMON_GUID, Pyro.constants.DAEMON_LOCALNAME):
-            return
-        obj=self.objectsById.get(objectIdOrName)
-        if obj:
-            del self.objectsById[objectIdOrName]
-            if obj[0]:
-                del self.objectsByName[obj[0]]
-        else:
-            obj=self.objectsByName.get(objectIdOrName)
-            if obj:
-                del self.objectsByName[objectIdOrName]
-                del self.objectsById[obj]
-    def uriFor(self, objectOrName=None, pyroloc=False):
-        """
-        Get a PyroURI for the given object (or object name) from this daemon.
-        Only a daemon can hand out proper uris because the access location is contained in them.
-        """
-        if pyroloc:
-            if type(objectOrName) is not str:
-                objectOrName=self.objectsById[objectOrName._pyroObjectId][0]
-                if objectOrName is None:
-                    raise Pyro.errors.DaemonError("object is not registered with a name")
-            return PyroURI("PYROLOC:"+objectOrName+"@"+self.locationStr)
-        else:
-            if type(objectOrName) is not str:
-                objectOrName=getattr(objectOrName,"_pyroObjectId",None)
-                if objectOrName is None:
-                    raise Pyro.errors.DaemonError("object isn't registered")
-            return PyroURI("PYRO:"+objectOrName+"@"+self.locationStr)
-    def lookup(self, objectName):
-        """Get a PyroURI for the given object name known by this daemon."""
-        objId=self.objectsByName.get(objectName)
-        if objId:
-            return self.uriFor(objId)
-        else:
-            log.debug("unknown object: %s",objectName)
-            raise Pyro.errors.NamingError("unknown object")
-    def registeredObjects(self):
-        """Cough up the dict of known object names and their instances."""
-        return self.objectsByName
+    def __del__(self):
+        self.close()
     def __str__(self):
         return "<Pyro Daemon on "+self.locationStr+">"
     def __enter__(self):
@@ -495,4 +490,3 @@ class Daemon(object):
         return self
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
-

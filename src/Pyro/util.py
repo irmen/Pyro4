@@ -7,11 +7,8 @@
 #
 ######################################################################
 
-import sys
-import zlib
-import traceback
-import linecache
-import logging
+import sys, zlib, logging
+import traceback, linecache
 import Pyro.constants
 
 log=logging.getLogger("Pyro.util")

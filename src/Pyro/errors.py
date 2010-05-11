@@ -9,7 +9,6 @@
 
 class PyroError(Exception):
     pass
-
 class CommunicationError(PyroError):
     pass
 class ConnectionClosedError(CommunicationError):

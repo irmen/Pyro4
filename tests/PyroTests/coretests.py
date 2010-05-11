@@ -80,13 +80,6 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("nameserverhost",p.host)
         self.assertEqual(4444,p.port)
 
-    def testUriParsingPyroloc(self):
-        p=Pyro.core.PyroURI("PYROLOC:objectname@hostname:4444")
-        self.assertEqual("PYROLOC",p.protocol)
-        self.assertEqual("objectname",p.object)
-        self.assertEqual("hostname",p.host)
-        self.assertEqual(4444,p.port)
-
     def testInvalidUris(self):
         self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, None)
         self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "")
@@ -102,12 +95,17 @@ class CoreTests(unittest.TestCase):
         self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:objid@hostname:7766:bogus")
         self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYROLOC:objname")
         self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYROLOC:objname@host")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYROLOC:objectname@hostname:4444")
         self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRONAME:")
         self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRONAME:objname@nameserver:bogus")
         self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRONAME:objname@nameserver:7766:bogus")
         self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "FOOBAR:")
         self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "FOOBAR:objid@hostname:7766")
-    
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:12345@./p:pipename/slash")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:12345@./u:sockname/slash")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:12345@./p:pipename:9999")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:12345@./u:sockname:9999")
+
     def testUriUnicode(self):
         uri="PYRO:12345@hostname:9999"
         p=Pyro.core.PyroURI(uri)

@@ -7,9 +7,7 @@
 #
 ######################################################################
 
-import os, Queue
-import threading, socket, select
-import logging
+import os, threading, socket, select, logging, Queue
 from Pyro.socketutil import SocketConnection, createSocket
 from Pyro.errors import ConnectionClosedError, PyroError
 
@@ -74,7 +72,7 @@ class SocketServer(object):
         host=host or self._socketaddr[0]
         port=port or self._socketaddr[1]
         self.locationStr="%s:%d" % (host,port)
-        numthreads=10    # XXX configurable, but 10 is absolute minimum otherwise the unittests fail
+        numthreads=10    #  configurable, but 10 is absolute minimum otherwise the unittests fail
         self.threadpool=set()
         self.workqueue=Queue.Queue()
         for _ in range(numthreads):

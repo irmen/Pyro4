@@ -74,7 +74,7 @@ class NameServerTests(unittest.TestCase):
         ns.register("unittest.object3", Pyro.core.PyroURI("PYRO:66666@host.com:4444"))
         self.assertEquals(Pyro.core.PyroURI("PYRO:66666@host.com:4444"), ns.lookup("unittest.object3"))
         
-        # check that the non-socket locations are not yet supported        
+        # check that the non-socket locations are not yet supported  
         self.assertRaises(NotImplementedError, Pyro.naming.locateNS, "./p:pipename")
         #ns=Pyro.naming.locateNS("./p:pipename")
         #uri=ns._pyroUri
@@ -107,7 +107,7 @@ class NameServerTests(unittest.TestCase):
         p=Pyro.core.Proxy(uri)
         p._pyroBind()
         p._pyroRelease()
-        daemonUri="PYROLOC:"+Pyro.constants.DAEMON_LOCALNAME+"@"+uri.location
+        daemonUri="PYRO:"+Pyro.constants.DAEMON_NAME+"@"+uri.location
         uri=Pyro.naming.resolve(daemonUri)
         uri=Pyro.naming.resolve(daemonUri)
         uri=Pyro.naming.resolve(daemonUri)
@@ -134,7 +134,7 @@ class NameServerTests(unittest.TestCase):
         uri=Pyro.naming.resolve("PYRONAME:"+Pyro.constants.NAMESERVER_NAME+"@"+self.nsUri.host+":"+str(self.nsUri.port))
         self.assertEqual("PYRO",uri.protocol)
         self.assertEqual(self.nsUri.host,uri.host)
-        self.assertNotEqual(Pyro.constants.NAMESERVER_NAME,uri.object)
+        self.assertEqual(Pyro.constants.NAMESERVER_NAME,uri.object)
         self.assertEqual(uri, ns._pyroUri)
         ns._pyroRelease()
 
