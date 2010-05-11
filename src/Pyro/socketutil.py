@@ -36,11 +36,11 @@ def getIpAddress(hostname=None):
     """returns the IP address for the current, or another, hostname"""
     return socket.gethostbyname(hostname or socket.gethostname())
 
-def getMyIpAddress(workaround127=False):
+def getMyIpAddress(hostname=None, workaround127=False):
     """returns our own IP address. If you enable the workaround,
     it will use a little hack if the system reports our own ip address
     as being localhost (this is often the case on Linux)"""
-    ip=getIpAddress()
+    ip=getIpAddress(hostname)
     if ip.startswith("127.") and workaround127:
         s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("4.2.2.2",0))   # 'abuse' a level 3 DNS server
