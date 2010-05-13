@@ -10,6 +10,9 @@ data='A'*basesize
 totalsize=0
 
 obj=Pyro.core.Proxy("PYRONAME:test.hugetransfer")
+print "binding"
+obj._pyroBind()
+print "done"
 
 begin=time.time()
 for i in range(1,15):
