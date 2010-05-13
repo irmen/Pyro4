@@ -10,6 +10,7 @@
 import os, threading, socket, select, logging, Queue
 from Pyro.socketutil import SocketConnection, createSocket
 from Pyro.errors import ConnectionClosedError, PyroError
+import Pyro.config
 
 if os.name=="java":
     # Jython needs a select wrapper.
@@ -75,10 +76,9 @@ class SocketServer(object):
         host=host or self._socketaddr[0]
         port=port or self._socketaddr[1]
         self.locationStr="%s:%d" % (host,port)
-        numthreads=10    #  configurable, but 10 is absolute minimum otherwise the unittests fail
         self.threadpool=set()
         self.workqueue=Queue.Queue()
-        for _ in range(numthreads):
+        for _ in range(Pyro.config.WORKER_THREADS):  #  XXX should be dynamic
             worker=SocketWorker(self, callbackObject)
             self.threadpool.add(worker)
             worker.start()
@@ -117,7 +117,7 @@ class SocketServer(object):
                 else:
                     raise
         log.debug("threadpool server exits requestloop")
-    def close(self): 
+    def close(self, joinWorkers=False): 
         log.debug("closing threadpool server")
         if self.sock:
             try:
@@ -131,7 +131,7 @@ class SocketServer(object):
             csock=getattr(worker,"csock",None)
             if csock:
                 csock.close()    # terminate socket that the worker might be listening on
-        while True:
+        while joinWorkers:
             try:
                 worker=self.threadpool.pop()
             except KeyError:

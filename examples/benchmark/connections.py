@@ -5,8 +5,10 @@ import time
 ns_uri=Pyro.naming.resolve("PYRONAME:Pyro.NameServer")
 print "Name server location:",repr(ns_uri)
 
-print "Timing raw rebind (connect) speed..."
-proxies=[Pyro.core.Proxy(ns_uri) for i in range(10)]
+NUM_PROXIES=10  # 
+
+print "Timing raw rebind (connect) speed...",NUM_PROXIES,"proxies"
+proxies=[Pyro.core.Proxy(ns_uri) for i in range(NUM_PROXIES)]
 for p in proxies:
     p.ping()
 begin=time.time()

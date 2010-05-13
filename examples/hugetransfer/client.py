@@ -19,6 +19,7 @@ for i in range(1,15):
     totalsize=totalsize+basesize*i
 duration=time.time()-begin
 
+totalsize=float(totalsize)
 print 'It took',duration,'seconds to transfer',totalsize/1024,'kilobyte.'
 print 'That is',totalsize/1024/duration,'k/sec. = ',totalsize/1024/1024/duration,'mb/sec.'
 

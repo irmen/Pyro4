@@ -42,7 +42,7 @@ def getMyIpAddress(hostname=None, workaround127=False):
     ip=getIpAddress(hostname)
     if ip.startswith("127.") and workaround127:
         s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("4.2.2.2",socket.getservbyname("domain")))   # 'abuse' a level 3 DNS server
+        s.connect(("4.2.2.2",53))   # 'abuse' a level 3 DNS server
         ip=s.getsockname()[0]
         s.close()
     return ip

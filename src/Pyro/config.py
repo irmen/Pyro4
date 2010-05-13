@@ -18,6 +18,7 @@ COMPRESSION     =   False
 SERVERTYPE      =   "thread"
 DOTTEDNAMES     =   False   # server-side 
 COMMTIMEOUT     =   None
+WORKER_THREADS  =   20       # 5 should be minimum
 
 
 
