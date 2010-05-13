@@ -11,5 +11,5 @@ print "ns found at",ns._pyroUri
 daemon.register(obj)
 ns.remove("test.benchmark")
 ns.register("test.benchmark", daemon.uriFor(obj))
-print "server starting"
+print "Server running."
 daemon.requestLoop()

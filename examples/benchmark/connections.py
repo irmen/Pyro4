@@ -3,7 +3,7 @@ import Pyro.naming
 import time
 
 ns_uri=Pyro.naming.resolve("PYRONAME:Pyro.NameServer")
-print "Name server location:",repr(ns_uri)
+print "Name server location:",ns_uri
 
 NUM_PROXIES=10  # 
 
