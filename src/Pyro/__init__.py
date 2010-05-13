@@ -52,3 +52,4 @@ def _configLogging():
         log.setLevel(9999)
 
 _configLogging()
+del _configLogging

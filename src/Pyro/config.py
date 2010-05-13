@@ -19,7 +19,7 @@ SERVERTYPE      =   "thread"
 DOTTEDNAMES     =   False   # server-side 
 COMMTIMEOUT     =   None
 WORKER_THREADS  =   20       # 5 should be minimum
-
+POLL_TIMEOUT    =   2        # seconds
 
 
 # Btw, env vars only used at package import time (see __init__.py):

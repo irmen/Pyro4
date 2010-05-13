@@ -7,6 +7,8 @@ import Pyro.config
 import Pyro.socketutil
 from Pyro.errors import DaemonError,PyroError
 
+Pyro.config.POLL_TIMEOUT=0.1
+
 class MyObj(object):
     def __init__(self, arg):
         self.arg=arg

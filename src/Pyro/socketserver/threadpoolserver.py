@@ -94,7 +94,7 @@ class SocketServer(object):
                 ins=[self.sock]
                 if others:
                     ins.extend(others[0])
-                    ins,_,_=selectfunction(ins,[],[],1)
+                    ins,_,_=selectfunction(ins,[],[],Pyro.config.POLL_TIMEOUT)
                     if not ins:
                         continue
                 if self.sock in ins:

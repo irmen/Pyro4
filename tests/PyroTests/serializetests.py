@@ -2,7 +2,6 @@ import unittest
 import Pyro.util
 import Pyro.errors
 import Pyro.core
-import Pyro.naming
 
 class SerializeTests(unittest.TestCase):
     
