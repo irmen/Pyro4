@@ -26,7 +26,7 @@ class NameServer(object):
             raise NamingError("unknown name: "+arg)
     def register(self,name,uri):
         if isinstance(uri, Pyro.core.PyroURI):
-            uri=str(uri)
+            uri=uri.asString()
         elif not isinstance(uri, basestring):
             raise TypeError("only PyroURIs or strings can be registered")
         else:
@@ -35,7 +35,7 @@ class NameServer(object):
             raise TypeError("name must be a str")
         if name in self.namespace:
             raise NamingError("name already registered: "+name)
-        self.namespace[str(name)]=str(uri)
+        self.namespace[name]=uri
     def remove(self,name):
         if name in self.namespace:
             del self.namespace[name]

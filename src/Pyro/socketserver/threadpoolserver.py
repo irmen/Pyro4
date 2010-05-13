@@ -49,7 +49,10 @@ class SocketWorker(threading.Thread):
                     self.csock.close()
                     del self.csock
         finally:
-            self.server.threadpool.remove(self)
+            try:
+                self.server.threadpool.remove(self)
+            except KeyError:
+                pass
         log.debug("worker %s stopping", self.getName())
     def handleConnection(self,conn):
         try:
@@ -114,21 +117,28 @@ class SocketServer(object):
                 else:
                     raise
         log.debug("threadpool server exits requestloop")
-    def close(self, joinWorkers=False): 
+    def close(self): 
         log.debug("closing threadpool server")
         if self.sock:
             try:
-                self.sock.shutdown(socket.SHUT_RDWR)
                 self.sock.close()
             except Exception:
                 pass
             self.sock=None
-        for worker in list(self.threadpool):
+        for worker in self.threadpool.copy():
             worker.running=False
             self.workqueue.put((None,None)) # put a 'stop' sentinel in the worker queue
-        if joinWorkers:
-            for worker in list(self.threadpool):
+            csock=getattr(worker,"csock",None)
+            if csock:
+                csock.close()    # terminate socket that the worker might be listening on
+        while True:
+            try:
+                worker=self.threadpool.pop()
+            except KeyError:
+                break
+            else:
                 worker.join()
+            
     def fileno(self):
         return self.sock.fileno()
                 

@@ -42,12 +42,11 @@ class TestUtils(unittest.TestCase):
             tb="".join(Pyro.util.formatTraceback(detailed=True))
             self.assertTrue("p3=p1//p2" in tb)
             self.assertTrue("ZeroDivisionError" in tb)
-            if " a = 10" not in tb:
-                self.failIfEqual("cli",sys.platform,"detailed tracebacks don't work in IronPython (ignore this fail)")
-            self.assertTrue(" a = 10" in tb)
-            self.assertTrue(" s = 'whiteblack'" in tb)
-            self.assertTrue(" pre2 = 999" in tb)
-            self.assertTrue(" x = 999" in tb)
+            if sys.platform!="cli":
+                self.assertTrue(" a = 10" in tb)
+                self.assertTrue(" s = 'whiteblack'" in tb)
+                self.assertTrue(" pre2 = 999" in tb)
+                self.assertTrue(" x = 999" in tb)
 
 
     def testPyroTraceback(self):
@@ -55,15 +54,23 @@ class TestUtils(unittest.TestCase):
             crash()
         except:
             pyro_tb=Pyro.util.formatTraceback(detailed=True)
+            if sys.platform!="cli":
+                self.assertTrue(" Extended stacktrace follows (most recent call last)\n" in pyro_tb)
         try:
             crash("stringvalue")
         except Exception,x: 
             setattr(x, Pyro.constants.TRACEBACK_ATTRIBUTE, pyro_tb)
             pyrotb="".join(Pyro.util.getPyroTraceback())
+            self.assertTrue("Remote traceback" in pyrotb)
             self.assertTrue("crash(\"stringvalue\")" in pyrotb)
             self.assertTrue("TypeError:" in pyrotb)
-            self.assertTrue("Remote traceback" in pyrotb)
             self.assertTrue("ZeroDivisionError" in pyrotb)
+            delattr(x, Pyro.constants.TRACEBACK_ATTRIBUTE)
+            pyrotb="".join(Pyro.util.getPyroTraceback())
+            self.assertFalse("Remote traceback" in pyrotb)
+            self.assertFalse("ZeroDivisionError" in pyrotb)
+            self.assertTrue("crash(\"stringvalue\")" in pyrotb)
+            self.assertTrue("TypeError:" in pyrotb)
 
     def testSerialize(self):
         ser=Pyro.util.Serializer()

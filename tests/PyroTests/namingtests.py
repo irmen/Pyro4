@@ -148,21 +148,7 @@ class NameServerTests(unittest.TestCase):
         self.assertRaises(NamingError, Pyro.naming.resolve, "PYRONAME:unknown_object@"+self.nsUri.host)
         self.assertRaises(TypeError, Pyro.naming.resolve, 999)  #wrong arg type
 
-    def testNSC(self):
-        import Pyro.nsc
-        import sys,StringIO
-        oldstdout=sys.stdout
-        oldstderr=sys.stderr
-        try:
-            sys.stdout=StringIO.StringIO()
-            sys.stderr=StringIO.StringIO()
-            self.assertRaises(SystemExit, Pyro.nsc.main, ["--invalidarg"])
-            args=["-n", self.nsUri.host, "-p" ,str(self.nsUri.port), "ping"]
-            self.assertTrue(Pyro.nsc.main(args) is None)
-        finally:
-            sys.stdout=oldstdout
-            sys.stderr=oldstderr
-        
+
     def testRefuseDottedNames(self):
         with Pyro.naming.locateNS(self.nsUri.host, self.nsUri.port) as ns:
             # the name server should never have dotted names enabled

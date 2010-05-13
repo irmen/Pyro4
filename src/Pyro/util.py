@@ -59,7 +59,7 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
     
         res = ['-'*50+ "\n",
                " <%s> RAISED : %s\n" % (str(ex_type), str(ex_value)),
-               " Extended Stacktrace follows (most recent call last)\n",
+               " Extended stacktrace follows (most recent call last)\n",
                '-'*50+'\n' ]
      
         try:

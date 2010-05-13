@@ -18,3 +18,6 @@ NAMESERVER_NAME = "Pyro.NameServer"
 
 # exception attribute for remote stacktrace info
 TRACEBACK_ATTRIBUTE = "_pyroTraceback"
+
+# wire protocol version
+PROTOCOL_VERSION = 40

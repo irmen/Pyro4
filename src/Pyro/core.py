@@ -29,11 +29,16 @@ class PyroURI(object):
     MAGIC URI format for simple name resolution using Name server:
       PYRONAME:objectname[@location]  (optional name server location, can also omit location port)
     """
-    uriRegEx=re.compile(r"(?P<protocol>PYRO|PYRONAME):(?P<object>\S+?)(@(?P<location>\S+))?$")
+    uriRegEx=re.compile(r"(?P<protocol>PYRO[A-Z]*):(?P<object>\S+?)(@(?P<location>\S+))?$")
     __slots__=("protocol","object","pipename","sockname","host","port","object")
 
     def __init__(self, uri):
-        uri=str(uri)  # allow to pass an existing PyroURI object
+        if isinstance(uri, PyroURI):
+            state=uri.__getstate__()
+            self.__setstate__(state)
+            return
+        if not isinstance(uri, basestring):
+            raise TypeError("uri parameter object is of wrong type")
         self.pipename=self.sockname=self.host=self.port=None
         match=self.uriRegEx.match(uri)
         if not match:
@@ -83,15 +88,14 @@ class PyroURI(object):
             return "./p:"+self.pipename
         else:
             return None
-
-    def __str__(self):
+    def asString(self):
         result=self.protocol+":"+self.object
         location=self.location
         if location:
             result+="@"+location
         return result
-    def __repr__(self):
-        return "<PyroURI '"+str(self)+"'>"
+    def __str__(self):
+        return self.asString()
     def __eq__(self,other):
         return (self.protocol, self.object, self.pipename, self.sockname, self.host, self.port) \
                 == (other.protocol, other.object, other.pipename, other.sockname, other.host, other.port)
@@ -134,10 +138,8 @@ class Proxy(object):
             # allows it to be safely pickled
             raise AttributeError(name)
         return _RemoteMethod(self._pyroInvoke, name)
-    def __repr__(self):
-        return "<Pyro Proxy for "+str(self._pyroUri)+">"
     def __str__(self):
-        return repr(self)
+        return "<Pyro Proxy for "+str(self._pyroUri)+">"
     def __getstate__(self):
         return self._pyroUri,self._pyroOneway,self._pyroSerializer    # skip the connection
     def __setstate__(self, state):
@@ -257,7 +259,6 @@ class Proxy(object):
 class MessageFactory(object):
     """internal helper class to construct Pyro protocol messages"""
     headerFmt = '!4sHHHi'    # header (id, version, msgtype, flags, dataLen)
-    version=40
     HEADERSIZE=struct.calcsize(headerFmt)
     MSG_CONNECT      = 1
     MSG_CONNECTOK    = 2
@@ -267,18 +268,13 @@ class MessageFactory(object):
     FLAGS_EXCEPTION  = 1<<0
     FLAGS_COMPRESSED = 1<<1
     FLAGS_ONEWAY     = 1<<2
-    MSGTYPES=dict.fromkeys((MSG_CONNECT, MSG_CONNECTOK, MSG_CONNECTFAIL, MSG_INVOKE, MSG_RESULT))
 
     @classmethod
     def createMessage(cls, msgType, data, flags=0):
         """creates a message containing a header followed by the given data"""
-        dataLen=len(data) if data else 0
-        if msgType not in cls.MSGTYPES:
-            raise Pyro.errors.ProtocolError("unknown message type %d" % msgType)
-        msg=struct.pack(cls.headerFmt, "PYRO", cls.version, msgType, flags, dataLen)
-        if data:
-            msg+=data
-        return msg
+        data=data or ""
+        msg=struct.pack(cls.headerFmt, "PYRO", Pyro.constants.PROTOCOL_VERSION, msgType, flags, len(data))
+        return msg+data
 
     @classmethod
     def parseMessageHeader(cls, headerData):
@@ -286,10 +282,8 @@ class MessageFactory(object):
         if not headerData or len(headerData)!=cls.HEADERSIZE:
             raise Pyro.errors.ProtocolError("header data size mismatch")
         tag,ver,msgType,flags,dataLen = struct.unpack(cls.headerFmt, headerData)
-        if tag!="PYRO" or ver!=cls.version:
+        if tag!="PYRO" or ver!=Pyro.constants.PROTOCOL_VERSION:
             raise Pyro.errors.ProtocolError("invalid data or unsupported protocol version")
-        if msgType not in cls.MSGTYPES:
-            raise Pyro.errors.ProtocolError("unknown message type %d" % msgType)
         return msgType,flags,dataLen
 
 
@@ -322,9 +316,9 @@ class Daemon(object):
         self.locationStr=self.transportServer.locationStr
         log.debug("created daemon on %s", self.locationStr) 
         self.serializer=Pyro.util.Serializer()
-        self._pyroObjectId=Pyro.constants.DAEMON_NAME
         pyroObject=DaemonObject(self)
-        self.objectsById={self._pyroObjectId: pyroObject}
+        pyroObject._pyroObjectId=Pyro.constants.DAEMON_NAME
+        self.objectsById={pyroObject._pyroObjectId: pyroObject}
         self.__mustshutdown=False
         self.__loopstopped=threading.Event()
         self.__loopstopped.set()
@@ -438,8 +432,8 @@ class Daemon(object):
         known inside this daemon, it is not automatically available in a name server.
         """
         if objectId:
-            if type(objectId) is not str:
-                raise TypeError("objectId must be a str or None")
+            if not isinstance(objectId, basestring):
+                raise TypeError("objectId must be a string or None")
         else:
             objectId="obj_"+uuid.uuid4().hex   # generate a new objectId
         if hasattr(obj,"_pyroObjectId"):
@@ -467,7 +461,7 @@ class Daemon(object):
         Note that unregistered objects cannot be given an uri, but unregistered
         object names can (it's just a string we're creating in that case)
         """
-        if type(objectOrId) is not str:
+        if not isinstance(objectOrId, basestring):
             objectOrId=getattr(objectOrId,"_pyroObjectId",None)
             if objectOrId is None:
                 raise Pyro.errors.DaemonError("object isn't registered")

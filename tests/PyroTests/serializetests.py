@@ -9,11 +9,25 @@ class SerializeTests(unittest.TestCase):
     def setUp(self):
         self.ser=Pyro.util.Serializer()
         
-    def testSerMisc(self):
+    def testSerItself(self):
         s=Pyro.util.Serializer()
         p,_=self.ser.serialize(s)
         s2=self.ser.deserialize(p)
         self.assertEqual(s,s2)
+
+    def testSerCompression(self):
+        d1,c1=self.ser.serialize("small data", compress=True)
+        d2,c2=self.ser.serialize("small data", compress=False)
+        self.assertFalse(c1)
+        self.assertEqual(d1,d2)
+        bigdata="x"*1000
+        d1,c1=self.ser.serialize(bigdata, compress=False)
+        d2,c2=self.ser.serialize(bigdata, compress=True)
+        self.assertFalse(c1)
+        self.assertTrue(c2)
+        self.assertTrue(len(d2) < len(d1))
+        self.assertEqual(bigdata, self.ser.deserialize(d1, compressed=False))
+        self.assertEqual(bigdata, self.ser.deserialize(d2, compressed=True))
 
     def testSerErrors(self):
         e1=Pyro.errors.NamingError("x")

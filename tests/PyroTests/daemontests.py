@@ -19,17 +19,32 @@ class DaemonTests(unittest.TestCase):
     # 'on-line' tests are all taking place in another test, to keep this one simple.
 
     def testDaemon(self):
-        try:
-            freeport=Pyro.socketutil.findUnusedPort()
-            d=Pyro.core.Daemon(port=freeport)
+        freeport=Pyro.socketutil.findUnusedPort()
+        with Pyro.core.Daemon(port=freeport) as d:
             locationstr="%s:%d" %(Pyro.config.HOST, freeport)
             self.assertEqual( locationstr, d.locationStr)
             self.assertTrue(Pyro.constants.DAEMON_NAME in d.objectsById)
             self.assertEqual("PYRO:"+Pyro.constants.DAEMON_NAME+"@"+locationstr, str(d.uriFor(Pyro.constants.DAEMON_NAME)))
             self.assertTrue(d.fileno() > 0)
+            # check the string representations
+            self.assertEqual("<Pyro Daemon on "+locationstr+">",str(d))
+            self.assertEqual("<Pyro Daemon on "+locationstr+">",unicode(d))
+            self.assertTrue("Daemon object at" in repr(d))
+
+    def testServetypes(self):
+        old_servertype=Pyro.config.SERVERTYPE
+        Pyro.config.SERVERTYPE="thread"
+        with Pyro.core.Daemon(port=0) as d:
+            self.assertTrue(d.fileno()>0)
+        Pyro.config.SERVERTYPE="select"
+        with Pyro.core.Daemon() as d:
+            self.assertTrue(d.fileno()>0)
+        try:
+            Pyro.config.SERVERTYPE="foobar"
+            self.assertRaises(PyroError, Pyro.core.Daemon)
         finally:
-            d.close()
-        
+            Pyro.config.SERVERTYPE=old_servertype
+
     def testRegisterEtc(self):
         try:
             freeport=Pyro.socketutil.findUnusedPort()
@@ -56,8 +71,41 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(1, len(d.objectsById))
             self.assertTrue(o1._pyroObjectId not in d.objectsById)
             self.assertTrue(o2._pyroObjectId not in d.objectsById)
+            
+            # test unregister daemon name
+            d.unregister(Pyro.constants.DAEMON_NAME)
+            self.assertTrue(Pyro.constants.DAEMON_NAME in d.objectsById)
+            
+            # weird args
+            w=MyObj("weird")
+            self.assertRaises(AttributeError, d.register, None)
+            self.assertRaises(AttributeError, d.register, 4444)
+            self.assertRaises(TypeError, d.register, w, 666)
+
         finally:
             d.close()
+
+    def testRegisterUnicode(self):
+        with Pyro.core.Daemon(port=0) as d:
+            myobj1=MyObj("hello1")
+            myobj2=MyObj("hello2")
+            myobj3=MyObj("hello3")
+            d.register(myobj1, "str_name")
+            d.register(myobj2, u"unicode_name")
+            d.register(myobj3, u"unicode_\u20ac")
+            self.assertEqual(4, len(d.objectsById))
+            uri=d.uriFor(myobj1)
+            p=Pyro.core.Proxy(uri)
+            uri=d.uriFor(myobj2)
+            p=Pyro.core.Proxy(uri)
+            uri=d.uriFor(myobj3)
+            p=Pyro.core.Proxy(uri)
+            uri=d.uriFor("str_name")
+            p=Pyro.core.Proxy(uri)
+            uri=d.uriFor(u"unicode_name")
+            p=Pyro.core.Proxy(uri)
+            uri=d.uriFor(u"unicode_\u20ac")
+            p=Pyro.core.Proxy(uri)
 
     def testDaemonObject(self):
         with Pyro.core.Daemon(port=0) as d:

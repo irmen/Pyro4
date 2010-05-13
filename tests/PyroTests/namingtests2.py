@@ -1,6 +1,8 @@
 from __future__ import with_statement
 import unittest
+import sys, StringIO
 import Pyro.naming
+import Pyro.nsc
 import Pyro.socketutil
 from Pyro.errors import NamingError,PyroError
 
@@ -15,7 +17,13 @@ class OfflineNameServerTests(unittest.TestCase):
         ns.register("test.object3","PYRO:333333@host.com:4444")
         ns.register("test.sub.objectA",Pyro.core.PyroURI("PYRO:AAAAAA@host.com:4444"))
         ns.register("test.sub.objectB",Pyro.core.PyroURI("PYRO:BBBBBB@host.com:4444"))
-        
+
+        self.assertRaises(NamingError, ns.register, "test.object1", "PYRO:X@Y:5555")
+        self.assertRaises(TypeError, ns.register, None, None)
+        self.assertRaises(TypeError, ns.register, 4444, 4444)
+        self.assertRaises(TypeError, ns.register, "test.wrongtype", 4444)
+        self.assertRaises(TypeError, ns.register, 4444, "PYRO:X@Y:5555")
+
         self.assertRaises(NamingError, ns.lookup, "unknown_object")
         
         uri=ns.lookup("test.object3")
@@ -28,6 +36,13 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertEqual(2, len(all))  # 2 leftover objects
 
         self.assertRaises(PyroError, ns.register, "test.nonurivalue", "THISVALUEISNOTANURI")
+
+    def testUnicodeNames(self):
+        ns=Pyro.naming.NameServer()
+        uri=Pyro.core.PyroURI(u"PYRO:unicode\u20ac@host:5555")
+        ns.register(u"unicodename\u20ac", uri)
+        x=ns.lookup(u"unicodename\u20ac")
+        self.assertEqual(uri, x)
 
     def testList(self):
         ns=Pyro.naming.NameServer()
@@ -50,6 +65,7 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertEqual("PYRONAME:somethingA", objects["test.other.a"])
         objects=ns.list(regex=r"\d\d\d\d\d\d\d\d\d\d")
         self.assertEqual(0,len(objects))
+        self.assertRaises(NamingError, ns.list, regex="((((((broken")
 
     def testRefuseDotted(self):
         try:
@@ -109,6 +125,39 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertTrue(ns1.fileno() > 0)
         self.assertTrue(bc1.fileno() > 0)
         _,_,_=Pyro.socketutil.selectfunction([ns1, bc1],[],[],0.1)
+
+    def testNSmain(self):
+        oldstdout=sys.stdout
+        oldstderr=sys.stderr
+        try:
+            sys.stdout=StringIO.StringIO()
+            sys.stderr=StringIO.StringIO()
+            self.assertRaises(SystemExit, Pyro.naming.main, ["--invalidarg"])
+            self.assertTrue("no such option" in sys.stderr.getvalue())
+            sys.stderr.truncate(0)
+            sys.stdout.truncate(0)
+            self.assertRaises(SystemExit, Pyro.naming.main, ["-h"])
+            self.assertTrue("show this help message" in sys.stdout.getvalue())
+        finally:
+            sys.stdout=oldstdout
+            sys.stderr=oldstderr
+
+    def testNSCmain(self):
+        oldstdout=sys.stdout
+        oldstderr=sys.stderr
+        try:
+            sys.stdout=StringIO.StringIO()
+            sys.stderr=StringIO.StringIO()
+            self.assertRaises(SystemExit, Pyro.nsc.main, ["--invalidarg"])
+            self.assertTrue("no such option" in sys.stderr.getvalue())
+            sys.stderr.truncate(0)
+            sys.stdout.truncate(0)
+            self.assertRaises(SystemExit, Pyro.nsc.main, ["-h"])
+            self.assertTrue("show this help message" in sys.stdout.getvalue())
+        finally:
+            sys.stdout=oldstdout
+            sys.stderr=oldstderr
+            
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

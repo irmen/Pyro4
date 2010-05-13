@@ -9,6 +9,14 @@ class TestSocketutil(unittest.TestCase):
         localip=SU.getIpAddress()
         localhost=socket.getfqdn(localip)
         self.assertEqual(localip,SU.getIpAddress(localhost))
+        myip=SU.getMyIpAddress()
+        self.assertTrue(len(myip)>4)
+        myip=SU.getMyIpAddress(workaround127=True)
+        self.assertTrue(len(myip)>4)
+        self.assertFalse(myip.startswith("127."))
+        self.assertEqual("127.0.0.1", SU.getMyIpAddress("127.0.0.1",workaround127=False))
+        self.assertNotEqual("127.0.0.1", SU.getMyIpAddress("127.0.0.1",workaround127=True))
+        
     def testUnusedPort(self):
         port1=SU.findUnusedPort()
         port2=SU.findUnusedPort()
@@ -52,6 +60,7 @@ class TestSocketutil(unittest.TestCase):
         self.assertEqual('127.0.0.1',bs.getsockname()[0])
         s.close()
         bs.close()
+        self.assertRaises(ValueError, SU.createSocket, bind=('localhost',12345), connect=('localhost',1234))
             
     def testSend(self):
         ss=SU.createSocket(bind=("localhost",0))
