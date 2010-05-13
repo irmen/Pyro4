@@ -6,6 +6,7 @@ import bench
 
 object = Pyro.core.Proxy("PYRONAME:test.benchmark")
 object._pyroOneway.add('oneway')
+object._pyroBind()
 
 def f1(): void=object.length('Irmen de Jong')
 def f2(): void=object.timestwo(21)
