@@ -3,7 +3,7 @@
 import time
 import Pyro.core
 
-serv = Pyro.core.Proxy("PYRONAME:test.oneway")
+serv = Pyro.core.Proxy("PYRONAME:example.oneway")
 serv._pyroOneway.add("start")
 serv._pyroOneway.add("nothing")
 serv._pyroOneway.add("nonexisting")

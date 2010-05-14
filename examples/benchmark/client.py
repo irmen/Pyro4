@@ -4,7 +4,7 @@ import Pyro.core
 
 import bench
 
-object = Pyro.core.Proxy("PYRONAME:test.benchmark")
+object = Pyro.core.Proxy("PYRONAME:example.benchmark")
 object._pyroOneway.add('oneway')
 object._pyroBind()
 

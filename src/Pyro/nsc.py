@@ -63,8 +63,8 @@ def main(args):
         print "Locating name server..."
     try:
         nameserver=Pyro.naming.locateNS(options.host,options.port)
-    except Pyro.errors.PyroError:
-        print "Failed to locate the name server."
+    except Pyro.errors.PyroError,x:
+        print "Failed to locate the name server:",x
         return
     if options.verbose:
         print "Name server found:",nameserver._pyroUri

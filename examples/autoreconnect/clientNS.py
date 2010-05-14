@@ -8,7 +8,7 @@ print "Autoreconnect using Name Server."
 # We create a proxy with a PYRONAME uri.
 # That allows Pyro to look up the object again in the NS when
 # it needs to reconnect later.
-obj=Pyro.core.Proxy("PYRONAME:test.autoreconnect")
+obj=Pyro.core.Proxy("PYRONAME:example.autoreconnect")
 
 while True:
     print "call..."

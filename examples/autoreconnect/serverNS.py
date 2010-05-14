@@ -20,7 +20,7 @@ obj=TestClass()
 
 ns=Pyro.naming.locateNS()
 try:
-    existing=ns.lookup("test.autoreconnect")
+    existing=ns.lookup("example.autoreconnect")
     print "Object still exists in Name Server with id:",existing.object
     print "Previous daemon socket port:",existing.port
     # start the daemon on the previous port
@@ -33,6 +33,9 @@ except Pyro.errors.NamingError:
     # register the object in the daemon and let it get a new objectId
     # also need to register in name server because it's not there yet.
     uri = daemon.register(obj)
-    ns.register("test.autoreconnect", uri)
+    ns.register("example.autoreconnect", uri)
 print "Server started."
 daemon.requestLoop()
+
+# note: we are not removing the name server registration!
+    

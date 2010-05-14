@@ -9,7 +9,7 @@ basesize = 500000
 data='A'*basesize
 totalsize=0
 
-obj=Pyro.core.Proxy("PYRONAME:test.hugetransfer")
+obj=Pyro.core.Proxy("PYRONAME:example.hugetransfer")
 print "binding"
 obj._pyroBind()
 print "done"

@@ -17,8 +17,8 @@ obj=Testclass()
 uri = daemon.register(obj)
 ns=Pyro.naming.locateNS()
 print "ns found at",ns._pyroUri
-ns.remove("test.hugetransfer")
-ns.register("test.hugetransfer", uri)
+ns.remove("example.hugetransfer")
+ns.register("example.hugetransfer", uri)
 print "Server running."
 daemon.requestLoop()
 

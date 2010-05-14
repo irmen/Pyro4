@@ -165,6 +165,17 @@ def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None
 def locateNS(host=None, port=None):
     """Get a proxy for a name server somewhere in the network."""
     if host is None:
+        # first try localhost if we have a good chance of finding it there
+        if Pyro.config.NS_HOST=="localhost" or Pyro.config.NS_HOST.startswith("127."):
+            uristring="PYRO:%s@%s:%d" % (Pyro.constants.NAMESERVER_NAME, Pyro.config.NS_HOST, port or Pyro.config.NS_PORT)
+            log.debug("locating the NS: %s",uristring)
+            proxy=Pyro.core.Proxy(uristring)
+            try:
+                proxy.ping()
+                log.debug("located NS")
+                return proxy
+            except PyroError:
+                pass
         # broadcast lookup
         if not port:
             port=Pyro.config.NS_BCPORT
