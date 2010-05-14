@@ -1,17 +1,22 @@
 #!/usr/bin/env python
 import Pyro.core
 import Pyro.naming
+import Pyro.config
 import time
+
+# set the oneway behavior to run inside a new thread, otherwise the client stalls.
+# this is the default, but I've added it here just for clarification.
+Pyro.config.ONEWAYTHREAD=True
 
 class Server(object):
     def __init__(self):
         self.busy=False
-    def start(self):
+    def start(self, duration):
         print "start request received. Starting work..."
         self.busy=True
-        for i in range(10):
+        for i in range(duration):
             time.sleep(1)
-            print 10-i
+            print duration-i
         print "work is done!"
         self.busy=False
     def ready(self):
@@ -20,7 +25,7 @@ class Server(object):
     def result(self):
         return "The result :)"
     def nothing(self):
-        return "nothing got called, doing nothing"
+        print "nothing got called, doing nothing"
       
 
 ######## main program

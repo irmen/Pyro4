@@ -125,13 +125,13 @@ class BroadcastServer(object):
 
 def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
     """utility function that starts a new Name server and enters its requestloop."""
-    hostip=Pyro.socketutil.getIpAddress(host)
+    daemon=NameServerDaemon(host, port)
+    hostip=daemon.getSocket().getsockname()[0]
+    nsUri=daemon.uriFor(daemon.nameserver)
     if hostip.startswith("127."):
         print "Not starting broadcast server for localhost."
         log.info("Not starting NS broadcast server because NS is bound to localhost")
         enableBroadcast=False
-    daemon=NameServerDaemon(host, port)
-    nsUri=daemon.uriFor(daemon.nameserver)
     bcserver=None
     others=None
     if enableBroadcast:

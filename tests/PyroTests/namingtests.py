@@ -5,7 +5,7 @@ import Pyro.config
 import Pyro.naming
 from Pyro.errors import NamingError
 
-Pyro.config.POLL_TIMEOUT=0.1
+Pyro.config.POLLTIMEOUT=0.1
 
 # online name server tests
 

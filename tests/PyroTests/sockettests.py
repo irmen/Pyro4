@@ -5,7 +5,7 @@ import Pyro.config
 from Pyro.socketserver.selectserver import SocketServer as SocketServer_Select
 from Pyro.socketserver.threadpoolserver import SocketServer as SocketServer_Threadpool
 
-Pyro.config.POLL_TIMEOUT=0.1
+Pyro.config.POLLTIMEOUT=0.1
 
 class TestSocketutil(unittest.TestCase):
     def testGetIP(self):

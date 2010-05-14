@@ -7,7 +7,7 @@ import Pyro.config
 import Pyro.socketutil
 from Pyro.errors import DaemonError,PyroError
 
-Pyro.config.POLL_TIMEOUT=0.1
+Pyro.config.POLLTIMEOUT=0.1
 
 class MyObj(object):
     def __init__(self, arg):
@@ -32,6 +32,8 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual("<Pyro Daemon on "+locationstr+">",str(d))
             self.assertEqual("<Pyro Daemon on "+locationstr+">",unicode(d))
             self.assertTrue("Daemon object at" in repr(d))
+            sockname=d.getSocket().getsockname()
+            self.assertEqual(freeport, sockname[1])
 
     def testServetypes(self):
         old_servertype=Pyro.config.SERVERTYPE

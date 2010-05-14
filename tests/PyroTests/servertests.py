@@ -15,6 +15,9 @@ class MyThing(object):
         return x*y
     def ping(self):
         pass
+    def delay(self, delay):
+        time.sleep(delay)
+        return "done"
 
 class DaemonLoopThread(threading.Thread):
     def __init__(self, pyrodaemon):
@@ -105,8 +108,38 @@ class ServerTests(unittest.TestCase):
             self.assertEquals(55, p.multiply(5,11))
             p._pyroOneway.add("multiply")
             self.assertEquals(None, p.multiply(5,11))
+            self.assertEquals(None, p.multiply(5,11))
+            self.assertEquals(None, p.multiply(5,11))
             p._pyroOneway.remove("multiply")
             self.assertEquals(55, p.multiply(5,11))
+            self.assertEquals(55, p.multiply(5,11))
+            self.assertEquals(55, p.multiply(5,11))
+            # check nonexisting method behavoir
+            self.assertRaises(AttributeError, p.nonexisting)
+            p._pyroOneway.add("nonexisting")
+            # now it shouldn't fail because of oneway semantics
+            p.nonexisting()
+            
+    def testOnewayDelayed(self):
+        with Pyro.core.Proxy(self.objectUri) as p:
+            Pyro.config.ONEWAYTHREAD=True   # the default
+            p._pyroOneway.add("delay")
+            now=time.time()
+            p.delay(1)  # oneway so we should continue right away
+            self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
+            now=time.time()
+            self.assertEquals(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
+            self.assertTrue(time.time()-now < 0.2, "delay should be running in its own thread")
+            # make oneway calls run in the server thread
+            # we can change the config here and the server will pick it up on the fly
+            Pyro.config.ONEWAYTHREAD=False   
+            now=time.time()
+            p.delay(1)  # oneway so we should continue right away
+            self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
+            now=time.time()
+            self.assertEquals(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
+            self.assertFalse(time.time()-now < 0.2, "delay should be running in the server thread")
+            Pyro.config.ONEWAYTHREAD=True   # back to normal
 
     def testOnewayOnClass(self):
         class ProxyWithOneway(Pyro.core.Proxy):

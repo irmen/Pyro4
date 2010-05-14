@@ -9,20 +9,17 @@ serv._pyroOneway.add("nothing")
 serv._pyroOneway.add("nonexisting")
 
 print "starting server using a oneway call"
-serv.start()
+serv.start(6)
 print "doing some more oneway calls inbetween"
 serv.nothing()
 serv.nothing()
 serv.nothing()
-try:
-    serv.nonexisting()
-    print "huh? this should fail because of an unexisting method"
-except AttributeError:
-    pass
+print "calling a non existing method, but since it is flagged oneway, we won't find out"
+serv.nonexisting()
 
-print "doing some stuff..."
-time.sleep(4)
-print "now contacting the server to see if it's done."
+time.sleep(2)
+print
+print "Now contacting the server to see if it's done."
 print "we are faster, so you should see a few attempts,"
 print "until the server is finished."
 while True:

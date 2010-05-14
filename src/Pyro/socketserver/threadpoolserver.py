@@ -78,7 +78,7 @@ class SocketServer(object):
         self.locationStr="%s:%d" % (host,port)
         self.threadpool=set()
         self.workqueue=Queue.Queue()
-        for _ in range(Pyro.config.WORKER_THREADS):  #  XXX should be dynamic
+        for _ in range(Pyro.config.WORKERTHREADS):  #  XXX should be dynamic
             worker=SocketWorker(self, callbackObject)
             self.threadpool.add(worker)
             worker.start()
@@ -94,7 +94,7 @@ class SocketServer(object):
                 ins=[self.sock]
                 if others:
                     ins.extend(others[0])
-                    ins,_,_=selectfunction(ins,[],[],Pyro.config.POLL_TIMEOUT)
+                    ins,_,_=selectfunction(ins,[],[],Pyro.config.POLLTIMEOUT)
                     if not ins:
                         continue
                 if self.sock in ins:

@@ -7,19 +7,18 @@
 #
 ######################################################################
 
-import socket
-
-HOST            =   socket.getfqdn()
-NS_HOST         =   HOST
-NS_PORT         =   9090    # tcp
-NS_BCPORT       =   9091    # udp
-NS_BCHOST       =   None
-COMPRESSION     =   False
-SERVERTYPE      =   "thread"
-DOTTEDNAMES     =   False   # server-side 
-COMMTIMEOUT     =   None
-WORKER_THREADS  =   20       # 5 should be minimum
-POLL_TIMEOUT    =   2        # seconds
+HOST            =  "localhost"     # don't expose us to the outside world by default
+NS_HOST         =  HOST
+NS_PORT         =  9090     # tcp
+NS_BCPORT       =  9091     # udp
+NS_BCHOST       =  None
+COMPRESSION     =  False
+SERVERTYPE      =  "thread"
+DOTTEDNAMES     =  False    # server-side 
+COMMTIMEOUT     =  None
+WORKERTHREADS   =  20       # 5 should be minimum
+POLLTIMEOUT     =  2        # seconds
+ONEWAYTHREAD    =  True     # oneway calls run in their own thread
 
 
 # Btw, env vars only used at package import time (see __init__.py):
@@ -52,7 +51,6 @@ def _process(dictionary):
  
 _process(globals())
 del _process
-del socket
 
 
 # easy config diagnostic with python -m

@@ -55,7 +55,7 @@ class SocketServer(object):
                         poll.register(sock.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
                         fileno2connection[sock.fileno()]=sock
                 while loopCondition():
-                    polls=poll.poll(1000*Pyro.config.POLL_TIMEOUT)
+                    polls=poll.poll(1000*Pyro.config.POLLTIMEOUT)
                     for (fd,mask) in polls: #@UnusedVariable (pydev)
                         conn=fileno2connection[fd]
                         if conn is self.sock:
@@ -103,7 +103,7 @@ class SocketServer(object):
                     if others:
                         rlist.extend(others[0])
                     try:
-                        rlist,_,_=selectfunction(rlist, [], [], Pyro.config.POLL_TIMEOUT)
+                        rlist,_,_=selectfunction(rlist, [], [], Pyro.config.POLLTIMEOUT)
                     except select.error:
                         if loopCondition():
                             raise

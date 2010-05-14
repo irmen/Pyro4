@@ -33,6 +33,7 @@ if __name__=="__main__":
     unittest.TextTestRunner(verbosity=1).run(suite)
 
     coverage.stop()
+    print 
     coverage.report(show_missing=False, omit_prefixes=["PyroTests"])
     
     print

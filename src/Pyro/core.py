@@ -327,6 +327,8 @@ class Daemon(object):
 
     def fileno(self):
         return self.transportServer.fileno()
+    def getSocket(self):
+        return self.transportServer.sock
 
     def requestLoop(self, others=None):
         """
@@ -380,6 +382,7 @@ class Daemon(object):
         wraps it in a reply to the calling side, as to not make this server side loop
         terminate due to exceptions caused by remote invocations.
         """
+        flags=0
         try:
             header=conn.recv(MessageFactory.HEADERSIZE)
             msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
@@ -396,8 +399,15 @@ class Daemon(object):
                     # IronPython sends all strings as unicode, but apply() doesn't grok unicode keywords.
                     # So we need to rebuild the keywords dict with str keys... 
                     kwargs = dict((str(k),v) for k,v in kwargs.iteritems())
+                log.debug("calling %s.%s",obj.__class__.__name__,method)
                 obj=Pyro.util.resolveDottedAttribute(obj,method,Pyro.config.DOTTEDNAMES)
-                data=obj(*vargs,**kwargs)   # this is the actual method call to the Pyro object
+                if flags & MessageFactory.FLAGS_ONEWAY and Pyro.config.ONEWAYTHREAD:
+                    # oneway call to be run inside its own thread
+                    thread=threading.Thread(target=obj, args=vargs, kwargs=kwargs)
+                    thread.daemon=True
+                    thread.start()
+                else:
+                    data=obj(*vargs,**kwargs)   # this is the actual method call to the Pyro object
             else:
                 log.debug("unknown object requested: %s",objId)
                 raise Pyro.errors.DaemonError("unknown object")
@@ -417,8 +427,10 @@ class Daemon(object):
         except Exception,x:
             # all other errors are caught
             log.debug("Exception occurred while handling request: %s",x)
-            tblines=Pyro.util.formatTraceback()
-            self.sendExceptionResponse(conn, x, tblines)
+            if not flags & MessageFactory.FLAGS_ONEWAY:
+                # only return the error to the client if it wasn't a oneway call
+                tblines=Pyro.util.formatTraceback()
+                self.sendExceptionResponse(conn, x, tblines)
 
     def sendExceptionResponse(self, connection, exc_value, tbinfo):
         """send an exception back including the local traceback info"""
