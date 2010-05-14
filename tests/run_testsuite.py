@@ -25,7 +25,7 @@ if __name__=="__main__":
     unittest.TextTestRunner(verbosity=1).run(suite)
 
     coverage.stop()
-    coverage.report(show_missing=False, omit_prefixes=["pyrotests"])
+    coverage.report(show_missing=False, omit_prefixes=["PyroTests"])
     
     print
     print "RUNNING PYFLAKE CODE CHECKS..."
