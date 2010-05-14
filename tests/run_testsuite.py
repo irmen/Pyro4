@@ -1,6 +1,14 @@
 import unittest
 import sys, os
-import coverage
+try:
+    import coverage
+except ImportError:
+    class CoverageDummy(object):
+        def start(self): pass
+        def stop(self): pass
+        def report(self, *args, **kwargs): pass
+    coverage=CoverageDummy()
+    print "No coverage info available"
 
 sys.path.insert(0,"../src")    # add Pyro source directory
     

@@ -225,13 +225,21 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(p3._pyroUri, p1._pyroUri)
         self.assertFalse(p3._pyroUri is p1._pyroUri)
         self.assertEqual(p3._pyroSerializer, p1._pyroSerializer)
-        self.assertFalse(p3._pyroSerializer is p1._pyroSerializer)
+        self.assertTrue(p3._pyroSerializer is p1._pyroSerializer)
 
     def testProxyStr(self):
         p=Pyro.core.Proxy("PYRO:9999@localhost:15555")
         self.assertEqual("<Pyro Proxy for PYRO:9999@localhost:15555>", str(p))
         self.assertEqual(u"<Pyro Proxy for PYRO:9999@localhost:15555>", unicode(p))
         self.assertTrue("Proxy object at" in repr(p))
+        
+    def testProxySettings(self):
+        p1=Pyro.core.Proxy("PYRO:9999@localhost:15555")
+        p2=Pyro.core.Proxy("PYRO:9999@localhost:15555")
+        p1._pyroOneway.add("method")
+        self.assertTrue("method" in p1._pyroOneway, "p1 should have oneway method")
+        self.assertFalse("method" in p2._pyroOneway, "p2 should not have the same oneway method")
+        self.assertFalse(p1._pyroOneway is p2._pyroOneway, "p1 and p2 should have different oneway tables")
         
     def testProxyWithStmt(self):
         class ConnectionMock(object):

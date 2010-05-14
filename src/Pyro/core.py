@@ -121,6 +121,8 @@ class _RemoteMethod(object):
 
 class Proxy(object):
     """Pyro proxy for a remote object. Intercepts method calls and dispatches them to the remote object."""
+    _pyroSerializer=Pyro.util.Serializer()
+    __pyroAttributes=frozenset(["__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri","_pyroOneway"])
     def __init__(self, uri):
         if isinstance(uri, basestring):
             uri=Pyro.core.PyroURI(uri)
@@ -128,13 +130,12 @@ class Proxy(object):
             raise TypeError("expected Pyro URI")
         self._pyroUri=uri
         self._pyroConnection=None
-        self._pyroSerializer=Pyro.util.Serializer()
         self._pyroOneway=set()
     def __del__(self):
         if hasattr(self,"_pyroConnection"):
             self._pyroRelease()
     def __getattr__(self, name):
-        if name in ("__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri","_pyroOneway"):
+        if name in Proxy.__pyroAttributes: 
             # allows it to be safely pickled
             raise AttributeError(name)
         return _RemoteMethod(self._pyroInvoke, name)
@@ -431,6 +432,7 @@ class Daemon(object):
         """
         Register a Pyro object under the given id. Note that this object is now only 
         known inside this daemon, it is not automatically available in a name server.
+        This method returns a PyroURI for the registered object.
         """
         if objectId:
             if not isinstance(objectId, basestring):
@@ -443,6 +445,7 @@ class Daemon(object):
             raise Pyro.errors.DaemonError("object already registered")
         obj._pyroObjectId=objectId
         self.objectsById[obj._pyroObjectId]=obj
+        return self.uriFor(objectId)
 
     def unregister(self, objectId):
         """

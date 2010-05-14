@@ -8,8 +8,8 @@ obj=bench.bench()
 daemon=Pyro.core.Daemon()
 ns=Pyro.naming.locateNS()
 print "ns found at",ns._pyroUri
-daemon.register(obj)
+uri = daemon.register(obj)
 ns.remove("test.benchmark")
-ns.register("test.benchmark", daemon.uriFor(obj))
+ns.register("test.benchmark", uri)
 print "Server running."
 daemon.requestLoop()

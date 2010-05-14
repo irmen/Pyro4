@@ -83,6 +83,12 @@ class DaemonTests(unittest.TestCase):
             self.assertRaises(AttributeError, d.register, None)
             self.assertRaises(AttributeError, d.register, 4444)
             self.assertRaises(TypeError, d.register, w, 666)
+            
+            # uri return value from register
+            uri=d.register(MyObj("xyz"))
+            self.assertTrue(isinstance(uri, Pyro.core.PyroURI))
+            uri=d.register(MyObj("xyz"), "test.register")
+            self.assertTrue("test.register", uri.object)
 
         finally:
             d.close()
@@ -92,21 +98,27 @@ class DaemonTests(unittest.TestCase):
             myobj1=MyObj("hello1")
             myobj2=MyObj("hello2")
             myobj3=MyObj("hello3")
-            d.register(myobj1, "str_name")
-            d.register(myobj2, u"unicode_name")
-            d.register(myobj3, u"unicode_\u20ac")
+            uri1=d.register(myobj1, "str_name")
+            uri2=d.register(myobj2, u"unicode_name")
+            uri3=d.register(myobj3, u"unicode_\u20ac")
             self.assertEqual(4, len(d.objectsById))
             uri=d.uriFor(myobj1)
+            self.assertEqual(uri1,uri)
             p=Pyro.core.Proxy(uri)
             uri=d.uriFor(myobj2)
+            self.assertEqual(uri2,uri)
             p=Pyro.core.Proxy(uri)
             uri=d.uriFor(myobj3)
+            self.assertEqual(uri3,uri)
             p=Pyro.core.Proxy(uri)
             uri=d.uriFor("str_name")
+            self.assertEqual(uri1,uri)
             p=Pyro.core.Proxy(uri)
             uri=d.uriFor(u"unicode_name")
+            self.assertEqual(uri2,uri)
             p=Pyro.core.Proxy(uri)
             uri=d.uriFor(u"unicode_\u20ac")
+            self.assertEqual(uri3,uri)
             p=Pyro.core.Proxy(uri)
 
     def testDaemonObject(self):

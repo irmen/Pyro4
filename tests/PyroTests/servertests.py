@@ -31,8 +31,8 @@ class ServerTests(unittest.TestCase):
     def setUp(self):
         self.daemon=Pyro.core.Daemon(port=0)
         obj=MyThing()
-        self.daemon.register(obj, "something")
-        self.objectUri=self.daemon.uriFor(obj)
+        uri=self.daemon.register(obj, "something")
+        self.objectUri=uri
         self.daemonthread=DaemonLoopThread(self.daemon)
         self.daemonthread.start()
         self.daemonthread.running.wait()
@@ -106,6 +106,16 @@ class ServerTests(unittest.TestCase):
             p._pyroOneway.add("multiply")
             self.assertEquals(None, p.multiply(5,11))
             p._pyroOneway.remove("multiply")
+            self.assertEquals(55, p.multiply(5,11))
+
+    def testOnewayOnClass(self):
+        class ProxyWithOneway(Pyro.core.Proxy):
+            def __init__(self, arg):
+                super(ProxyWithOneway,self).__init__(arg)
+                self._pyroOneway=["multiply"]   # set is faster but don't care for this test
+        with ProxyWithOneway(self.objectUri) as p:
+            self.assertEquals(None, p.multiply(5,11))
+            p._pyroOneway=[]   # empty set is better but don't care in this test
             self.assertEquals(55, p.multiply(5,11))
 
     def testSerializeConnected(self):

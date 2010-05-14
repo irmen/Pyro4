@@ -147,15 +147,13 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
 
 class Serializer(object):
     """(de)serializer that wraps a certain serialization protocol.
-    Currently it only supports standard pickle."""
+    Currently it only supports standard pickle. It should be threadsafe."""
     try:
         import cPickle as pickle
     except ImportError:
         import pickle
     if pickle.HIGHEST_PROTOCOL<2:
         raise RuntimeError("pickle serializer needs to support protocol 2 or higher")
-    def __init__(self):
-        pass
     def serialize(self, data, compress=False):
         """Serialize the given data object, try to compress if told so.
         Returns a tuple of the serialized data and a bool indicating if it is compressed or not."""
@@ -172,6 +170,7 @@ class Serializer(object):
             data=zlib.decompress(data)
         return self.pickle.loads(data)
     def __eq__(self, other):
+        """this is only for the unit tests. It is not required."""
         return type(other) is Serializer and vars(self)==vars(other)
     __hash__=object.__hash__
 

@@ -14,11 +14,11 @@ class Testclass(object):
 
 daemon=Pyro.core.Daemon()
 obj=Testclass()
-daemon.register(obj)
+uri = daemon.register(obj)
 ns=Pyro.naming.locateNS()
 print "ns found at",ns._pyroUri
 ns.remove("test.hugetransfer")
-ns.register("test.hugetransfer", daemon.uriFor(obj))
+ns.register("test.hugetransfer", uri)
 print "Server running."
 daemon.requestLoop()
 

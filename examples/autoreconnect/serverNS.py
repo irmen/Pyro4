@@ -32,7 +32,7 @@ except Pyro.errors.NamingError:
     daemon = Pyro.core.Daemon()
     # register the object in the daemon and let it get a new objectId
     # also need to register in name server because it's not there yet.
-    daemon.register(obj)
-    ns.register("test.autoreconnect", daemon.uriFor(obj))
+    uri = daemon.register(obj)
+    ns.register("test.autoreconnect", uri)
 print "Server started."
 daemon.requestLoop()
