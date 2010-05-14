@@ -122,7 +122,7 @@ class ServerTests(unittest.TestCase):
             
     def testOnewayDelayed(self):
         with Pyro.core.Proxy(self.objectUri) as p:
-            Pyro.config.ONEWAYTHREAD=True   # the default
+            Pyro.config.ONEWAY_THREADED=True   # the default
             p._pyroOneway.add("delay")
             now=time.time()
             p.delay(1)  # oneway so we should continue right away
@@ -132,14 +132,14 @@ class ServerTests(unittest.TestCase):
             self.assertTrue(time.time()-now < 0.2, "delay should be running in its own thread")
             # make oneway calls run in the server thread
             # we can change the config here and the server will pick it up on the fly
-            Pyro.config.ONEWAYTHREAD=False   
+            Pyro.config.ONEWAY_THREADED=False   
             now=time.time()
             p.delay(1)  # oneway so we should continue right away
             self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
             now=time.time()
             self.assertEquals(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
             self.assertFalse(time.time()-now < 0.2, "delay should be running in the server thread")
-            Pyro.config.ONEWAYTHREAD=True   # back to normal
+            Pyro.config.ONEWAY_THREADED=True   # back to normal
 
     def testOnewayOnClass(self):
         class ProxyWithOneway(Pyro.core.Proxy):

@@ -71,6 +71,23 @@ class TestUtils(unittest.TestCase):
             self.assertFalse("ZeroDivisionError" in pyrotb)
             self.assertTrue("crash(\"stringvalue\")" in pyrotb)
             self.assertTrue("TypeError:" in pyrotb)
+            
+    def testPyroTracebackArgs(self):
+        try:
+            crash()
+        except Exception,x:
+            ex_type, ex_value, ex_tb = sys.exc_info()
+            tb1=Pyro.util.getPyroTraceback()
+            tb2=Pyro.util.getPyroTraceback(ex_type, ex_value, ex_tb)
+            self.assertEqual(tb1, tb2)
+            tb1=Pyro.util.formatTraceback()
+            tb2=Pyro.util.formatTraceback(ex_type, ex_value, ex_tb)
+            self.assertEqual(tb1, tb2)
+            tb2=Pyro.util.formatTraceback(detailed=True)
+            self.assertNotEqual(tb1, tb2)
+            # old call syntax, should get an error now:
+            self.assertRaises(TypeError, Pyro.util.getPyroTraceback, x)
+            self.assertRaises(TypeError, Pyro.util.formatTraceback, x)
 
     def testSerialize(self):
         ser=Pyro.util.Serializer()

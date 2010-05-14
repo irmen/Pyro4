@@ -401,7 +401,7 @@ class Daemon(object):
                     kwargs = dict((str(k),v) for k,v in kwargs.iteritems())
                 log.debug("calling %s.%s",obj.__class__.__name__,method)
                 obj=Pyro.util.resolveDottedAttribute(obj,method,Pyro.config.DOTTEDNAMES)
-                if flags & MessageFactory.FLAGS_ONEWAY and Pyro.config.ONEWAYTHREAD:
+                if flags & MessageFactory.FLAGS_ONEWAY and Pyro.config.ONEWAY_THREADED:
                     # oneway call to be run inside its own thread
                     thread=threading.Thread(target=obj, args=vargs, kwargs=kwargs)
                     thread.daemon=True
@@ -429,7 +429,7 @@ class Daemon(object):
             log.debug("Exception occurred while handling request: %s",x)
             if not flags & MessageFactory.FLAGS_ONEWAY:
                 # only return the error to the client if it wasn't a oneway call
-                tblines=Pyro.util.formatTraceback()
+                tblines=Pyro.util.formatTraceback(detailed=Pyro.config.DETAILED_TRACEBACK)
                 self.sendExceptionResponse(conn, x, tblines)
 
     def sendExceptionResponse(self, connection, exc_value, tbinfo):

@@ -6,7 +6,7 @@ import time
 
 # set the oneway behavior to run inside a new thread, otherwise the client stalls.
 # this is the default, but I've added it here just for clarification.
-Pyro.config.ONEWAYTHREAD=True
+Pyro.config.ONEWAY_THREADED=True
 
 class Server(object):
     def __init__(self):

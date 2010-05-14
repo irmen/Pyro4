@@ -18,7 +18,8 @@ DOTTEDNAMES     =  False    # server-side
 COMMTIMEOUT     =  None
 WORKERTHREADS   =  20       # 5 should be minimum
 POLLTIMEOUT     =  2        # seconds
-ONEWAYTHREAD    =  True     # oneway calls run in their own thread
+ONEWAY_THREADED    =  True     # oneway calls run in their own thread
+DETAILED_TRACEBACK =  False
 
 
 # Btw, env vars only used at package import time (see __init__.py):
