@@ -276,9 +276,14 @@ class CoreTests(unittest.TestCase):
             def __getattr__(self, name):
                 return Pyro.core._RemoteMethod(self.invoke, name)
         o=Proxy()
-        self.assertEqual("INVOKED name=foo args=(1,) kwargs={}", o.foo(1))
-        self.assertEqual("INVOKED name=foo.bar args=(1,) kwargs={}", o.foo.bar(1))
+        self.assertEqual("INVOKED name=foo args=(1,) kwargs={}", o.foo(1)) #normal
+        self.assertEqual("INVOKED name=foo.bar args=(1,) kwargs={}", o.foo.bar(1)) #dotted
         self.assertEqual("INVOKED name=foo.bar args=(1, 'hello') kwargs={'a': True}", o.foo.bar(1,"hello",a=True))
+        p=Pyro.core.Proxy("PYRO:obj@host:666")
+        a=p.someattribute
+        self.assertTrue(isinstance(a, Pyro.core._RemoteMethod), "attribute access should just be a RemoteMethod")
+        a2=a.nestedattribute
+        self.assertTrue(isinstance(a2, Pyro.core._RemoteMethod), "nested attribute should just be another RemoteMethod")
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
