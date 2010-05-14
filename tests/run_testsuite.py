@@ -1,17 +1,22 @@
 import unittest
-import sys
-sys.path.insert(0,"../../src")
+import sys, os
+import coverage
+
+sys.path.insert(0,"../src")    # add Pyro source directory
     
 
 if __name__=="__main__":
     # add test modules here
-    modules=["sockettests", "utiltests", "coretests", "namingtests", "namingtests2", "daemontests", "serializetests", "servertests"]
+    modules=[module[:-3] for module in os.listdir("PyroTests") if module.endswith(".py") and not module.startswith("__")]
      
     print >>sys.stderr, "gathering testcases from",modules
+
+    coverage.start()
      
     suite=unittest.TestSuite()
     for module in modules:
-        m=__import__(module)
+        m=__import__("PyroTests."+module)
+        m=getattr(m,module)
         testcases = unittest.defaultTestLoader.loadTestsFromModule(m)
         suite.addTest(testcases)
 
@@ -19,6 +24,9 @@ if __name__=="__main__":
     print "RUNNING UNIT TESTS..."
     unittest.TextTestRunner(verbosity=1).run(suite)
 
+    coverage.stop()
+    coverage.report(show_missing=False, omit_prefixes=["pyrotests"])
+    
     print
     print "RUNNING PYFLAKE CODE CHECKS..."
     import run_syntaxcheck

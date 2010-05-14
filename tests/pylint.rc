@@ -51,10 +51,10 @@ load-plugins=
 disable-msg-cat=I
 
 # Enable the message(s) with the given id(s).
-#enable-msg=
+#enable=
 
 # Disable the message(s) with the given id(s).
-disable-msg=W0704,C0111,C0322,C0324
+disable=W0704,C0111,C0322,C0324
 
 
 [REPORTS]

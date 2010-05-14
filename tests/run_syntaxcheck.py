@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.insert(0,"../../src")
+sys.path.insert(0,"../src")
 
 def Pyflakes(path, modules):
     try:
@@ -31,7 +31,7 @@ def Pylint(path, modules):
         print "Lint done. Check the output files (pylint_*.txt)"
 
 def main(args):
-    pyropath="../../src/Pyro"
+    pyropath="../src/Pyro"
     pyromodules=[module for module in os.listdir(pyropath) if module.endswith(".py")]
     checkers=args or ["flakes","lint"]
     if "flakes" in checkers:

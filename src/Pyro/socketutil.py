@@ -132,7 +132,7 @@ def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeou
             sock.bind(bind)
         try:
             sock.listen(100)   # rather arbitrary but not too large
-        except:
+        except Exception:
             pass  # jython sometimes raises errors here
     if connect:
         sock.connect(connect)
@@ -228,7 +228,7 @@ def bindOnUnusedPort(sock, host='localhost'):
     if os.name=="java":
         try:
             sock.listen(100)  # otherwise jython always just returns 0 for the port
-        except:
+        except Exception:
             pass  # jython sometimes throws errors here
     port = sock.getsockname()[1]
     return port

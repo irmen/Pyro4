@@ -205,7 +205,8 @@ class Proxy(object):
             log.debug("connecting to %s",uri)
             conn=None
             try:
-                sock=Pyro.socketutil.createSocket(connect=(uri.host, uri.port), timeout=Pyro.config.COMMTIMEOUT)
+                sock=Pyro.socketutil.createSocket(connect=(uri.host, uri.port),
+                                                  timeout=Pyro.config.COMMTIMEOUT)
                 conn=Pyro.socketutil.SocketConnection(sock, uri.object)
                 # handshake
                 data=MessageFactory.createMessage(MessageFactory.MSG_CONNECT, None, 0)
