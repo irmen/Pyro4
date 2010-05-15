@@ -7,15 +7,9 @@
 #
 ######################################################################
 
-import socket, os, select, errno, logging
+import socket, os, errno, logging, select
 from Pyro.errors import ConnectionClosedError,TimeoutError,CommunicationError
 
-if os.name=="java":
-    # Jython needs a select wrapper.
-    selectfunction=select.cpython_compatible_select #@UndefinedVariable (pydev)
-else:
-    selectfunction=select.select
-    
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.
 # So I didn't include them in de list of retryable errors.
@@ -85,7 +79,7 @@ def receiveData(sock, size):
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("receiving: connection lost: "+str(x))
-                selectfunction([sock],[],[],1) # delay until socket is ready
+                select.select([sock],[],[],1) # delay until socket is ready
     except socket.timeout:
         raise TimeoutError("receiving: timeout")
     
@@ -117,7 +111,7 @@ def sendData(sock, data):
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("sending: connection lost: "+str(x))
-                selectfunction([],[sock],[],1) # delay until socket is ready
+                select.select([],[sock],[],1) # delay until socket is ready
 
 
 def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeout=None):

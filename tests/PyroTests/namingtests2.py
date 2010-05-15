@@ -1,9 +1,8 @@
 from __future__ import with_statement
 import unittest
-import sys, StringIO
+import sys, StringIO, select, os
 import Pyro.naming
 import Pyro.nsc
-import Pyro.socketutil
 from Pyro.errors import NamingError,PyroError
 
 # offline name-server tests
@@ -140,7 +139,22 @@ class OfflineNameServerTests(unittest.TestCase):
         uri1,ns1,bc1=Pyro.naming.startNS(port=0, enableBroadcast=True)
         self.assertTrue(ns1.fileno() > 0)
         self.assertTrue(bc1.fileno() > 0)
-        _,_,_=Pyro.socketutil.selectfunction([ns1, bc1],[],[],0.1)
+        if hasattr(select, "poll"):
+            print "WE HAVE POLL!" # XXX
+            p=select.poll()
+            if os.name=="java":
+                # jython requires nonblocking sockets for poll
+                ns1.sock.setblocking(False)
+                bc1.sock.setblocking(False)
+            p.register(ns1.fileno(), select.POLLIN)  #@UndefinedVariable (pydev)
+            p.register(bc1.fileno(), select.POLLIN)  #@UndefinedVariable (pydev)
+            p.poll(100)
+            print "POLL DONE!" # XXX
+            p.close()
+        else:
+            _,_,_=select.select([ns1, bc1],[],[],0.1)
+        ns1.close()
+        bc1.close()
 
     def testNSmain(self):
         oldstdout=sys.stdout

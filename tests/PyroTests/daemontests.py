@@ -33,7 +33,7 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual("<Pyro Daemon on "+locationstr+">",str(d))
             self.assertEqual("<Pyro Daemon on "+locationstr+">",unicode(d))
             self.assertTrue("Daemon object at" in repr(d))
-            sockname=d.getSocket().getsockname()
+            sockname=d.sock.getsockname()
             self.assertEqual(freeport, sockname[1])
 
     def testServertypeThread(self):

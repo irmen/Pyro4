@@ -329,7 +329,8 @@ class Daemon(object):
 
     def fileno(self):
         return self.transportServer.fileno()
-    def getSocket(self):
+    @property
+    def sock(self):
         return self.transportServer.sock
 
     def requestLoop(self, others=None):

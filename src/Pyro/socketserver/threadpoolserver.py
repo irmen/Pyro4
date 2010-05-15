@@ -12,12 +12,6 @@ from Pyro.socketutil import SocketConnection, createSocket
 from Pyro.errors import ConnectionClosedError, PyroError
 import Pyro.config
 
-if os.name=="java":
-    #selectfunction=select.cpython_compatible_select #@UndefinedVariable (pydev)
-    selectfunction=None  # Jython's select wrapper doesn't work properly... :-(
-else:
-    selectfunction=select.select
-
 log=logging.getLogger("Pyro.socketserver.threadpool")
 
 class SocketWorker(threading.Thread):
@@ -94,7 +88,7 @@ class SocketServer(object):
                 ins=[self.sock]
                 if others:
                     ins.extend(others[0])
-                    ins,_,_=selectfunction(ins,[],[],Pyro.config.POLLTIMEOUT)
+                    ins,_,_=select.select(ins,[],[],Pyro.config.POLLTIMEOUT)
                     if not ins:
                         continue
                 if self.sock in ins:

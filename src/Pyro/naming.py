@@ -164,7 +164,7 @@ class BroadcastServer(object):
 def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
     """utility function that starts a new Name server and enters its requestloop."""
     daemon=NameServerDaemon(host, port)
-    hostip=daemon.getSocket().getsockname()[0]
+    hostip=daemon.sock.getsockname()[0]
     nsUri=daemon.uriFor(daemon.nameserver)
     if hostip.startswith("127."):
         print "Not starting broadcast server for localhost."
