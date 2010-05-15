@@ -22,7 +22,7 @@ class MyThing(object):
 class DaemonLoopThread(threading.Thread):
     def __init__(self, pyrodaemon):
         super(DaemonLoopThread,self).__init__()
-        self.daemon=True
+        self.setDaemon(True)
         self.pyrodaemon=pyrodaemon
         self.running=threading.Event()
         self.running.clear()

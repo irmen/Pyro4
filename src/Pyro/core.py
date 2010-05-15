@@ -404,7 +404,7 @@ class Daemon(object):
                 if flags & MessageFactory.FLAGS_ONEWAY and Pyro.config.ONEWAY_THREADED:
                     # oneway call to be run inside its own thread
                     thread=threading.Thread(target=obj, args=vargs, kwargs=kwargs)
-                    thread.daemon=True
+                    thread.setDaemon(True)
                     thread.start()
                 else:
                     data=obj(*vargs,**kwargs)   # this is the actual method call to the Pyro object

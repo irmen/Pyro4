@@ -7,6 +7,7 @@
 #
 ######################################################################
 
+from __future__ import with_statement
 import re, logging, socket
 from threading import RLock
 import Pyro.core

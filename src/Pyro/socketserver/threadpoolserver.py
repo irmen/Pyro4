@@ -24,7 +24,7 @@ class SocketWorker(threading.Thread):
     """worker thread to process requests"""
     def __init__(self, server, callback):
         super(SocketWorker,self).__init__()
-        self.daemon=True
+        self.setDaemon(True)
         self.server=server
         self.callback=callback
     def run(self):

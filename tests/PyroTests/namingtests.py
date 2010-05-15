@@ -12,7 +12,7 @@ Pyro.config.POLLTIMEOUT=0.1
 class NSLoopThread(threading.Thread):
     def __init__(self, nameserver, others):
         super(NSLoopThread,self).__init__()
-        self.daemon=True
+        self.setDaemon(True)
         self.nameserver=nameserver
         self.others=others
         self.running=threading.Event()
