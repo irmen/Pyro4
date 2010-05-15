@@ -7,7 +7,7 @@
 #
 ######################################################################
 
-import socket, os, errno, logging, select
+import socket, os, errno, logging, time
 from Pyro.errors import ConnectionClosedError,TimeoutError,CommunicationError
 
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
@@ -59,6 +59,7 @@ def receiveData(sock, size):
         # old fashioned recv loop, we gather chunks until the message is complete
         msglen=0
         chunks=[]
+        retrydelay=0.02
         while True:
             try:
                 while msglen<size:
@@ -79,7 +80,9 @@ def receiveData(sock, size):
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("receiving: connection lost: "+str(x))
-                select.select([sock],[],[],1) # delay until socket is ready
+                print "RECV: RETRYABLE ERROR OCCURRED",err # XXX remove debug print
+                time.sleep(retrydelay)  # a slight delay to wait before retrying
+                retrydelay+=0.1
     except socket.timeout:
         raise TimeoutError("receiving: timeout")
     
@@ -101,17 +104,20 @@ def sendData(sock, data):
                 raise ConnectionClosedError("sending: connection lost: "+str(x))
     else:
         # Socket is in non-blocking mode, use regular send loop.
+        retrydelay=0.02
         while data: 
             try: 
                 sent = sock.send(data) 
-                data = data[sent:] 
+                data = data[sent:]
             except socket.timeout:
                 raise TimeoutError("sending: timeout")
             except socket.error, x:
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("sending: connection lost: "+str(x))
-                select.select([],[sock],[],1) # delay until socket is ready
+                print "SEND: RETRYABLE ERROR OCCURRED",err # XXX remove debug print
+                time.sleep(retrydelay)  # a slight delay to wait before retrying
+                retrydelay+=0.1 
 
 
 def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeout=None):
@@ -125,7 +131,7 @@ def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeou
         else:
             sock.bind(bind)
         try:
-            sock.listen(100)   # rather arbitrary but not too large
+            sock.listen(100)
         except Exception:
             pass  # jython sometimes raises errors here
     if connect:
