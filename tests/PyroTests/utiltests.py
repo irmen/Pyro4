@@ -84,7 +84,8 @@ class TestUtils(unittest.TestCase):
             tb2=Pyro.util.formatTraceback(ex_type, ex_value, ex_tb)
             self.assertEqual(tb1, tb2)
             tb2=Pyro.util.formatTraceback(detailed=True)
-            self.assertNotEqual(tb1, tb2)
+            if sys.platform!="cli":
+                self.assertNotEqual(tb1, tb2)
             # old call syntax, should get an error now:
             self.assertRaises(TypeError, Pyro.util.getPyroTraceback, x)
             self.assertRaises(TypeError, Pyro.util.formatTraceback, x)

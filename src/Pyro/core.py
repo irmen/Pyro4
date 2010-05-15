@@ -141,6 +141,8 @@ class Proxy(object):
         return _RemoteMethod(self._pyroInvoke, name)
     def __str__(self):
         return "<Pyro Proxy for "+str(self._pyroUri)+">"
+    def __unicode__(self):
+        return str(self)
     def __getstate__(self):
         return self._pyroUri,self._pyroOneway,self._pyroSerializer    # skip the connection
     def __setstate__(self, state):
