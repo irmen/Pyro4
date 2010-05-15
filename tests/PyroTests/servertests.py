@@ -2,6 +2,7 @@ from __future__ import with_statement
 import unittest
 import Pyro.config
 import Pyro.core
+import Pyro.errors
 import threading, time
 
 # tests that require a running Pyro server (daemon)
@@ -17,7 +18,7 @@ class MyThing(object):
         pass
     def delay(self, delay):
         time.sleep(delay)
-        return "done"
+        return "slept %d seconds" % delay
 
 class DaemonLoopThread(threading.Thread):
     def __init__(self, pyrodaemon):
@@ -183,6 +184,46 @@ class ServerTests(unittest.TestCase):
         proxy._pyroRelease()
         proxy2._pyroRelease()
         proxy3._pyroRelease()
+
+    def testTimeoutCall(self):
+        Pyro.config.COMMTIMEOUT=None
+        with Pyro.core.Proxy(self.objectUri) as p:
+            p.ping()
+            start=time.time()
+            p.delay(1)
+            duration=time.time()-start
+            self.assertAlmostEqual(1.0, duration, 1)
+            p._pyroTimeout=0.5
+            start=time.time()
+            self.assertRaises(Pyro.errors.TimeoutError, p.delay, 2)
+            duration=time.time()-start
+            self.assertTrue(duration<2.0)
+        Pyro.config.COMMTIMEOUT=0.5
+        with Pyro.core.Proxy(self.objectUri) as p:
+            p.ping()
+            start=time.time()
+            self.assertRaises(Pyro.errors.TimeoutError, p.delay, 2)
+            duration=time.time()-start
+            self.assertTrue(duration<2.0)
+            p._pyroTimeout=None
+            start=time.time()
+            p.delay(1)
+            duration=time.time()-start
+            self.assertTrue(0.9<duration<1.9)
+        Pyro.config.COMMTIMEOUT=None
+    
+    def testTimeoutConnect(self):
+        # set up a unresponsive daemon
+        with Pyro.core.Daemon(port=0) as d:
+            obj=MyThing()
+            uri=d.register(obj)
+            # we're not going to start the daemon's event loop
+            p=Pyro.core.Proxy(uri)
+            p._pyroTimeout=0.2
+            start=time.time()
+            self.assertRaises(Pyro.errors.TimeoutError, p.ping)
+            duration=time.time()-start
+            self.assertTrue(duration<3.0)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

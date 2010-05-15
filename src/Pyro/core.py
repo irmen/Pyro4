@@ -122,7 +122,7 @@ class _RemoteMethod(object):
 class Proxy(object):
     """Pyro proxy for a remote object. Intercepts method calls and dispatches them to the remote object."""
     _pyroSerializer=Pyro.util.Serializer()
-    __pyroAttributes=frozenset(["__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri","_pyroOneway"])
+    __pyroAttributes=frozenset(["__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri","_pyroOneway","_pyroTimeout"])
     def __init__(self, uri):
         if isinstance(uri, basestring):
             uri=Pyro.core.PyroURI(uri)
@@ -131,6 +131,7 @@ class Proxy(object):
         self._pyroUri=uri
         self._pyroConnection=None
         self._pyroOneway=set()
+        self.__pyroTimeout=Pyro.config.COMMTIMEOUT
     def __del__(self):
         if hasattr(self,"_pyroConnection"):
             self._pyroRelease()
@@ -144,9 +145,9 @@ class Proxy(object):
     def __unicode__(self):
         return str(self)
     def __getstate__(self):
-        return self._pyroUri,self._pyroOneway,self._pyroSerializer    # skip the connection
+        return self._pyroUri,self._pyroOneway,self._pyroSerializer,self.__pyroTimeout    # skip the connection
     def __setstate__(self, state):
-        self._pyroUri,self._pyroOneway,self._pyroSerializer = state
+        self._pyroUri,self._pyroOneway,self._pyroSerializer,self.__pyroTimeout = state
         self._pyroConnection=None
     def __copy__(self):
         uriCopy=PyroURI(self._pyroUri)
@@ -169,6 +170,14 @@ class Proxy(object):
         self._pyroRelease()
         self._pyroCreateConnection(True)
 
+    def __pyroGetTimeout(self):
+        return self.__pyroTimeout
+    def __pyroSetTimeout(self, timeout):
+        self.__pyroTimeout=timeout
+        if self._pyroConnection:
+            self._pyroConnection.timeout=timeout
+    _pyroTimeout=property(__pyroGetTimeout, __pyroSetTimeout)
+
     def _pyroInvoke(self, methodname, vargs, kwargs):
         """perform the remote method call communication"""
         if not self._pyroConnection:
@@ -182,22 +191,28 @@ class Proxy(object):
         if methodname in self._pyroOneway:
             flags |= MessageFactory.FLAGS_ONEWAY
         data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags)
-        self._pyroConnection.send(data)
-        if flags & MessageFactory.FLAGS_ONEWAY:
-            return None    # oneway call, no response data
-        else:
-            header=self._pyroConnection.recv(MessageFactory.HEADERSIZE)
-            msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
-            if msgType!=MessageFactory.MSG_RESULT:
-                err="invoke: invalid msg type %d received" % msgType
-                log.error(err)
-                raise Pyro.errors.ProtocolError(err)
-            data=self._pyroConnection.recv(dataLen)
-            data=self._pyroSerializer.deserialize(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
-            if flags & MessageFactory.FLAGS_EXCEPTION:
-                raise data
+        try:
+            self._pyroConnection.send(data)
+            if flags & MessageFactory.FLAGS_ONEWAY:
+                return None    # oneway call, no response data
             else:
-                return data
+                header=self._pyroConnection.recv(MessageFactory.HEADERSIZE)
+                msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
+                if msgType!=MessageFactory.MSG_RESULT:
+                    err="invoke: invalid msg type %d received" % msgType
+                    log.error(err)
+                    raise Pyro.errors.ProtocolError(err)
+                data=self._pyroConnection.recv(dataLen)
+                data=self._pyroSerializer.deserialize(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
+                if flags & MessageFactory.FLAGS_EXCEPTION:
+                    raise data
+                else:
+                    return data
+        except Pyro.errors.CommunicationError:
+            # Communication error during read. To avoid corrupt transfers, we close the connection.
+            # Otherwise we might receive the previous reply as a result of a new methodcall! 
+            self._pyroRelease()
+            raise
 
     def _pyroCreateConnection(self, replaceUri=False):
         """Connects this proxy to the remote Pyro daemon. Does connection handshake."""
@@ -208,8 +223,7 @@ class Proxy(object):
             log.debug("connecting to %s",uri)
             conn=None
             try:
-                sock=Pyro.socketutil.createSocket(connect=(uri.host, uri.port),
-                                                  timeout=Pyro.config.COMMTIMEOUT)
+                sock=Pyro.socketutil.createSocket(connect=(uri.host, uri.port), timeout=self.__pyroTimeout)
                 conn=Pyro.socketutil.SocketConnection(sock, uri.object)
                 # handshake
                 data=MessageFactory.createMessage(MessageFactory.MSG_CONNECT, None, 0)
@@ -222,7 +236,10 @@ class Proxy(object):
                     conn.close()
                 err="cannot connect: %s" % x
                 log.error(err)
-                raise Pyro.errors.CommunicationError(err)
+                if isinstance(x, Pyro.errors.CommunicationError):
+                    raise
+                else:
+                    raise Pyro.errors.CommunicationError(err)
             else:
                 if msgType==MessageFactory.MSG_CONNECTFAIL:
                     error="connection rejected"
@@ -425,7 +442,7 @@ class Daemon(object):
                 del data
                 conn.send(msg)
         except Pyro.errors.CommunicationError,x:
-            # communication errors are not caught
+            # communication errors are not handled here (including TimeoutError)
             raise
         except Exception,x:
             # all other errors are caught

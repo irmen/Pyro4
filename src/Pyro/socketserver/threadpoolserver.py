@@ -61,6 +61,7 @@ class SocketServer(object):
     """transport server for socket connections, worker thread pool version."""
     def __init__(self, callbackObject, host, port, timeout=None):
         log.info("starting thread pool socketserver")
+        self.sock=None
         self.sock=createSocket(bind=(host,port), timeout=timeout)
         self._socketaddr=self.sock.getsockname()
         if self._socketaddr[0].startswith("127."):

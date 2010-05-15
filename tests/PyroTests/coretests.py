@@ -293,6 +293,33 @@ class CoreTests(unittest.TestCase):
         a2=a.nestedattribute
         self.assertTrue(isinstance(a2, Pyro.core._RemoteMethod), "nested attribute should just be another RemoteMethod")
 
+    def testTimeoutGetSet(self):
+        class ConnectionMock(object):
+            def __init__(self):
+                self.timeout=Pyro.config.COMMTIMEOUT
+            def close(self):
+                pass
+        Pyro.config.COMMTIMEOUT=None
+        p=Pyro.core.Proxy("PYRO:obj@host:555")
+        self.assertEqual(None, p._pyroTimeout)
+        p._pyroTimeout=5
+        self.assertEqual(5, p._pyroTimeout)
+        p=Pyro.core.Proxy("PYRO:obj@host:555")
+        p._pyroConnection=ConnectionMock()
+        self.assertEqual(None, p._pyroTimeout)
+        p._pyroTimeout=5
+        self.assertEqual(5, p._pyroTimeout)
+        self.assertEqual(5, p._pyroConnection.timeout)
+        Pyro.config.COMMTIMEOUT=2
+        p=Pyro.core.Proxy("PYRO:obj@host:555")
+        p._pyroConnection=ConnectionMock()
+        self.assertEqual(2, p._pyroTimeout)
+        self.assertEqual(2, p._pyroConnection.timeout)
+        p._pyroTimeout=None
+        self.assertEqual(None, p._pyroTimeout)
+        self.assertEqual(None, p._pyroConnection.timeout)
+        Pyro.config.COMMTIMEOUT=None
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

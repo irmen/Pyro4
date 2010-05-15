@@ -22,6 +22,7 @@ class SocketServer(object):
         if os.name=="java":
             raise NotImplementedError("select-based server is not supported for Jython, use the threadpool server instead")
         log.info("starting select/poll socketserver")
+        self.sock=None
         self.sock=createSocket(bind=(host,port), timeout=timeout)
         self.clients=[]
         self.callback=callbackObject
@@ -33,7 +34,7 @@ class SocketServer(object):
         port=port or sockaddr[1]
         self.locationStr="%s:%d" % (host,port)
     def __del__(self):
-        if hasattr(self,"sock") and self.sock is not None:
+        if self.sock is not None:
             self.sock.close()
             self.sock=None
     if hasattr(select,"poll"):

@@ -76,6 +76,8 @@ def receiveData(sock, size):
                     err.partialData=data  # store the message that was received until now
                     raise err
                 return data  # yay, complete
+            except socket.timeout:
+                raise TimeoutError("receiving: timeout")
             except socket.error,x:
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
@@ -203,12 +205,15 @@ class SocketConnection(object):
     def recv(self, size):
         return receiveData(self.sock, size)
     def close(self):
-        if hasattr(self,"sock") and self.sock is not None:
-            self.sock.close()
-        self.sock=None
+        self.sock.close()
     def fileno(self):
         return self.sock.fileno()
-    
+    def setTimeout(self, timeout):
+        self.sock.settimeout(timeout)
+    def getTimeout(self):
+        return self.sock.gettimeout()
+    timeout=property(getTimeout,setTimeout)
+
 def findUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
     """Returns an unused port that should be suitable for binding. 
     This code is copied from the stdlib's test.test_support module."""

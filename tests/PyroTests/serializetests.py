@@ -54,6 +54,7 @@ class SerializeTests(unittest.TestCase):
         self.assertEqual("9999",uri2.object)
         self.assertEqual("host.com:4444",uri2.location)
         proxy=Pyro.core.Proxy("PYRO:9999@host.com:4444")
+        proxy._pyroTimeout=42
         self.assertTrue(proxy._pyroConnection is None)
         p,_=self.ser.serialize(proxy)
         proxy2=self.ser.deserialize(p)
@@ -61,6 +62,7 @@ class SerializeTests(unittest.TestCase):
         self.assertTrue(proxy2._pyroConnection is None)
         self.assertEqual(proxy2._pyroUri, proxy._pyroUri)
         self.assertEqual(proxy2._pyroSerializer, proxy._pyroSerializer)
+        self.assertEqual(42, proxy2._pyroTimeout)
         
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
