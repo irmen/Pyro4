@@ -117,6 +117,10 @@ class TestSocketServer(unittest.TestCase):
     def testServer_select(self):
         callback=ServerCallback()
         port=SU.findUnusedPort()
+        if os.name=="java":
+            # select-based server is not available in Jython
+            self.assertRaises(NotImplementedError, SocketServer_Select, callback, "localhost", port)
+            return
         serv=SocketServer_Select(callback,"localhost",port)
         self.assertEqual("localhost:"+str(port), serv.locationStr)
         self.assertTrue(serv.sock is not None)

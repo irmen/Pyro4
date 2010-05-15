@@ -52,10 +52,14 @@ class DaemonTests(unittest.TestCase):
     def testServertypeSelect(self):
         old_servertype=Pyro.config.SERVERTYPE
         Pyro.config.SERVERTYPE="select"
-        with Pyro.core.Daemon(port=0) as d:
-            self.assertTrue(d.fileno()>0)
-            # must accept 'others' parameter (but we supply a wrong type on purpose)
-            self.assertRaises(TypeError, d.requestLoop, others=42)
+        # this type is not supported in Jython
+        if os.name=="java":
+            self.assertRaises(NotImplementedError, Pyro.core.Daemon, port=0)
+        else:
+            with Pyro.core.Daemon(port=0) as d:
+                self.assertTrue(d.fileno()>0)
+                # must accept 'others' parameter (but we supply a wrong type on purpose)
+                self.assertRaises(TypeError, d.requestLoop, others=42)
         Pyro.config.SERVERTYPE=old_servertype
                 
     def testServertypeFoobar(self):
