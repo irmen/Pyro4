@@ -489,7 +489,8 @@ class Daemon(object):
         self.__del__()
 
     def __del__(self):
-        if self.transportServer is not None:
+        ts=getattr(self,"transportServer",None)
+        if ts is not None:
             self.transportServer.close()
             self.transportServer=None
     def __str__(self):
