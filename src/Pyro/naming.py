@@ -8,6 +8,7 @@
 ######################################################################
 
 import re, logging, socket
+from threading import RLock
 import Pyro.core
 import Pyro.constants
 import Pyro.socketutil
@@ -19,6 +20,7 @@ class NameServer(object):
     """Pyro name server. Provides a simple flat name space to map logical object names to Pyro URIs."""
     def __init__(self):
         self.namespace={}
+        self.lock=RLock()
     def lookup(self,arg):
         try:
             return Pyro.core.PyroURI(self.namespace[arg])
@@ -35,31 +37,53 @@ class NameServer(object):
             raise TypeError("name must be a str")
         if name in self.namespace:
             raise NamingError("name already registered: "+name)
-        self.namespace[name]=uri
-    def remove(self,name):
-        if name in self.namespace:
-            del self.namespace[name]
-    def list(self, prefix=None, regex=None):
+        with self.lock:
+            self.namespace[name]=uri
+    def remove(self, name=None, prefix=None, regex=None):
+        if name and name in self.namespace and name!=Pyro.constants.NAMESERVER_NAME:
+            with self.lock:
+                del self.namespace[name]
+            return 1
         if prefix:
-            result={}
-            for name in self.namespace:
-                if name.startswith(prefix):
-                    result[name]=self.namespace[name]
-            return result
-        elif regex:
-            result={}
-            try:
-                regex=re.compile(regex+"$")  # add end of string marker
-            except re.error,x:
-                raise NamingError("invalid regex: "+str(x))
-            else:
+            with self.lock:
+                items=self.list(prefix=prefix).keys()
+                if Pyro.constants.NAMESERVER_NAME in items:
+                    items.remove(Pyro.constants.NAMESERVER_NAME)
+                for item in items:
+                    del self.namespace[item]
+                return len(items)
+        if regex:
+            with self.lock:
+                items=self.list(regex=regex).keys()
+                if Pyro.constants.NAMESERVER_NAME in items:
+                    items.remove(Pyro.constants.NAMESERVER_NAME)
+                for item in items:
+                    del self.namespace[item]
+                return len(items)
+        return 0
+
+    def list(self, prefix=None, regex=None):
+        with self.lock:
+            if prefix:
+                result={}
                 for name in self.namespace:
-                    if regex.match(name):
+                    if name.startswith(prefix):
                         result[name]=self.namespace[name]
                 return result
-        else:
-            # just return everything
-            return self.namespace
+            elif regex:
+                result={}
+                try:
+                    regex=re.compile(regex+"$")  # add end of string marker
+                except re.error,x:
+                    raise NamingError("invalid regex: "+str(x))
+                else:
+                    for name in self.namespace:
+                        if regex.match(name):
+                            result[name]=self.namespace[name]
+                    return result
+            else:
+                # just return everything
+                return self.namespace
     def ping(self):
         pass
 

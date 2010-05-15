@@ -32,15 +32,24 @@ def handleCommand(nameserver, options, args):
         nameserver.register(args[1], args[2])
         print "Registered",args[1]
     def cmd_remove():
-        nameserver.remove(args[1])
-        print "Removed",args[1]
-        
+        count=nameserver.remove(args[1])
+        if count>0:
+            print "Removed",args[1]
+        else:
+            print "Nothing removed"
+    def cmd_removeregex():
+        sure=raw_input("Potentially removing lots of items from the Name server. Are you sure (y/n)?")
+        if sure in ('y','Y'):
+            count=nameserver.remove(regex=args[1])
+            print count,"items removed."
+
     commands={
         "ping": cmd_ping,
         "list": cmd_listprefix,
-        "listregex": cmd_listregex,
+        "listmatching": cmd_listregex,
         "register": cmd_register,
-        "remove": cmd_remove        
+        "remove": cmd_remove,
+        "removematching": cmd_removeregex        
     }
     try:
         commands[args[0]]()
@@ -50,14 +59,14 @@ def handleCommand(nameserver, options, args):
 def main(args):
     from optparse import OptionParser
     usage = "usage: %prog [options] command [arguments]\nCommand is one of: " \
-            "register remove list listregex ping"
+            "register remove removematching list listmatching ping"
     parser = OptionParser(usage=usage)
     parser.add_option("-n","--host", dest="host", help="hostname of the NS")
     parser.add_option("-p","--port", dest="port", type="int", 
                       help="port of the NS (or bc-port if host isn't specified)")
     parser.add_option("-v","--verbose", action="store_true", dest="verbose", help="verbose output")
     options,args = parser.parse_args(args)    
-    if not args or args[0] not in ("register","remove","list","listprefix", "listregex", "ping"):
+    if not args or args[0] not in ("register","remove","removematching","list", "listmatching", "ping"):
         parser.error("invalid or missing command")
     if options.verbose:
         print "Locating name server..."

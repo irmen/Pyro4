@@ -37,6 +37,22 @@ class OfflineNameServerTests(unittest.TestCase):
 
         self.assertRaises(PyroError, ns.register, "test.nonurivalue", "THISVALUEISNOTANURI")
 
+    def testRemove(self):
+        ns=Pyro.naming.NameServer()
+        ns.register(Pyro.constants.NAMESERVER_NAME, "PYRO:nameserver@host:555")
+        for i in range(20):
+            ns.register("test.%d" % i, "PYRO:obj@host:555")
+        self.assertEqual(21, len(ns.list()))
+        self.assertEqual(0, ns.remove(Pyro.constants.NAMESERVER_NAME))
+        self.assertEqual(0, ns.remove("wrong"))
+        self.assertEqual(0, ns.remove(prefix="wrong"))
+        self.assertEqual(0, ns.remove(regex="wrong.*"))
+        self.assertEqual(1, ns.remove("test.0"))
+        self.assertEqual(20, len(ns.list()))
+        self.assertEqual(11, ns.remove(prefix="test.1"))  # 1, 10-19
+        self.assertEqual(8, ns.remove(regex=r"test\.."))  # 2-9
+        self.assertEqual(1, len(ns.list()))
+            
     def testUnicodeNames(self):
         ns=Pyro.naming.NameServer()
         uri=Pyro.core.PyroURI(u"PYRO:unicode\u20ac@host:5555")
