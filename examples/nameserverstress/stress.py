@@ -5,8 +5,6 @@ import random, time
 from threading import Thread
 from Pyro.errors import NamingError
 
-mustStop=False
-
 def randomname():
 	def partname():
 		return str(random.random())[-2:]
@@ -22,6 +20,7 @@ class NamingTrasher(Thread):
 		self.daemon=True
 		self.number=number
 		self.ns=Pyro.core.Proxy(nsuri)
+		self.mustStop=False
 
 	def list(self):
 		items=self.ns.list()
@@ -44,17 +43,17 @@ class NamingTrasher(Thread):
 		entries=self.ns.list(regex=r"stresstest\.??\.41.*")
 	def run(self):	
 		print 'Name Server trasher running.'
-		while not mustStop:
+		while not self.mustStop:
 			random.choice((self.list, self.register, self.remove, self.lookup, self.listregex, self.listprefix)) ()
-			print self.number,'called'
-			time.sleep(random.random()/10)
+			print self.number,
+			time.sleep(0.01)
 		print 'Trasher exiting.'	
 
 def main():
 	threads=[]
 	ns=Pyro.naming.locateNS()
 	ns.remove(prefix="stresstest.")
-	for i in range(10):
+	for i in range(5):
 		nt=NamingTrasher(ns._pyroUri,i)
 		nt.start()
 		threads.append(nt)
@@ -65,11 +64,12 @@ def main():
 	except KeyboardInterrupt:
 		pass
 
-	mustStop=True
 	print 'Break-- waiting for threads to stop.'
 	for nt in threads:
+		nt.mustStop=True
 		nt.join()
-	ns.remove(prefix="stresstest.")
+	count=ns.remove(prefix="stresstest.")
+	print "cleaned up",count,"names."
 
 if __name__=='__main__':
 	main()
