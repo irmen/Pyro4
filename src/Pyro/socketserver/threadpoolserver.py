@@ -13,8 +13,8 @@ from Pyro.errors import ConnectionClosedError, PyroError
 import Pyro.config
 
 if os.name=="java":
-    # Jython needs a select wrapper.
-    selectfunction=select.cpython_compatible_select #@UndefinedVariable (pydev)
+    #selectfunction=select.cpython_compatible_select #@UndefinedVariable (pydev)
+    selectfunction=None  # Jython's select wrapper doesn't work properly... :-(
 else:
     selectfunction=select.select
 
@@ -87,6 +87,8 @@ class SocketServer(object):
             self.sock.close()
     def requestLoop(self, loopCondition=lambda:True, others=None):
         log.debug("threadpool server requestloop")
+        if os.name=="java" and others:
+            raise RuntimeError("currently Jython doesn't seem to have a reliable select() implementation required for multiplexing multiple sockets, so you cannot provide 'others'")
         while (self.sock is not None) and loopCondition():
             try:
                 ins=[self.sock]

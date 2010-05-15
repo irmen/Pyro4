@@ -8,8 +8,8 @@
 ######################################################################
 
 from __future__ import with_statement
-import re, logging, socket
-from threading import RLock
+import os, re, logging, socket
+from threading import RLock, Thread
 import Pyro.core
 import Pyro.constants
 import Pyro.socketutil
@@ -127,13 +127,26 @@ class BroadcastServer(object):
         bcport=bcport or self._sockaddr[1]
         self.locationStr="%s:%d" % (bchost, bcport)
         log.info("ns broadcast server created on %s",self.locationStr)
+        self.running=True
     def close(self):
         log.debug("ns broadcast server closing")
+        self.running=False
         self.sock.close()
     def getPort(self):
         return self.sock.getsockname()[1]
     def fileno(self):
         return self.sock.fileno()
+    def runInThread(self):
+        """Run the broadcast server loop in its own thread. This is mainly for Jython,
+        which has problems with multiplexing it using select() with the Name server itself."""
+        thread=Thread(target=self.__requestLoop)
+        thread.setDaemon(True)
+        thread.start()
+        log.debug("broadcast server loop running in own thread")
+    def __requestLoop(self):
+        while self.running:
+            self.processRequest([self.sock])
+        log.debug("broadcast server loop terminating")
     def processRequest(self, otherSockets):
         for bcsocket in otherSockets:
             try:
@@ -162,7 +175,10 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
     if enableBroadcast:
         bcserver=BroadcastServer(nsUri,bchost,bcport)
         print "Broadcast server running on", bcserver.locationStr
-        others=([bcserver.sock], bcserver.processRequest)  
+        if os.name!="java":
+            others=([bcserver.sock], bcserver.processRequest)
+        else:
+            bcserver.runInThread()  
     print "NS running on %s (%s)" % (daemon.locationStr,hostip)
     print "URI =",nsUri
     try:

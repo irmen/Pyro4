@@ -1,6 +1,6 @@
 from __future__ import with_statement
 import unittest
-import threading, time
+import os, threading, time
 import Pyro.config
 import Pyro.naming
 from Pyro.errors import NamingError
@@ -35,7 +35,12 @@ class NameServerTests(unittest.TestCase):
     def setUp(self):
         self.nsUri, self.nameserver, self.bcserver = Pyro.naming.startNS(port=0, bcport=0)
         self.assertTrue(self.bcserver is not None,"expected a BC server to be running")
-        others=([self.bcserver.sock], self.bcserver.processRequest)
+        if os.name!="java":
+            others=([self.bcserver.sock], self.bcserver.processRequest)
+        else:
+            # jython doesn't support 'others' so start the bc server in a separate thread
+            others=None
+            self.bcserver.runInThread()
         self.daemonthread=NSLoopThread(self.nameserver, others)
         self.daemonthread.start()
         self.daemonthread.running.wait()
