@@ -88,6 +88,9 @@ class SocketServer(object):
                                         poll.unregister(fn)
                                         del fileno2connection[fn]
                                         conn.close()
+            except KeyboardInterrupt:
+                log.debug("stopping on break signal")
+                pass
             finally:
                 if hasattr(poll, "close"):
                     poll.close()
@@ -138,6 +141,9 @@ class SocketServer(object):
                             log.warn("there was an uncaught socket error for the other sockets: %s",x)
                 except socket.timeout:
                     pass   # just continue the loop on a timeout
+                except KeyboardInterrupt:
+                    log.debug("stopping on break signal")
+                    break
             log.debug("exit select-based requestloop")
 
     def handleConnection(self, sock):

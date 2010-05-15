@@ -486,12 +486,12 @@ class Daemon(object):
     def close(self):
         """Close down the server and release resources"""
         log.debug("daemon closing")
-        if hasattr(self,"transportServer") and self.transportServer:
-            self.transportServer.close()
-            self.transportServer=None
+        self.__del__()
 
     def __del__(self):
-        self.close()
+        if self.transportServer is not None:
+            self.transportServer.close()
+            self.transportServer=None
     def __str__(self):
         return "<Pyro Daemon on "+self.locationStr+">"
     def __enter__(self):

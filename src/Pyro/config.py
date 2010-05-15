@@ -61,6 +61,6 @@ if __name__=="__main__":
     print "Pyro version:",Pyro.constants.VERSION
     print "Active configuration settings:"
     rx=re.compile(r"[A-Z_]+$")
-    for n,v in globals().items():
+    for n,v in sorted(globals().items()):
         if rx.match(n):
             print "%s=%s" % (n,v)

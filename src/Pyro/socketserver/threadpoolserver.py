@@ -24,7 +24,7 @@ class SocketWorker(threading.Thread):
     """worker thread to process requests"""
     def __init__(self, server, callback):
         super(SocketWorker,self).__init__()
-        self.setDaemon(True)
+        self.daemon=True
         self.server=server
         self.callback=callback
     def run(self):
@@ -48,7 +48,6 @@ class SocketWorker(threading.Thread):
                             log.debug("worker %s client disconnected %s", self.getName(), self.caddr)
                             break
                     self.csock.close()
-                    del self.csock
         finally:
             try:
                 self.server.threadpool.remove(self)
@@ -84,9 +83,8 @@ class SocketServer(object):
             worker.start()
         log.info("%d worker threads started", len(self.threadpool))
     def __del__(self):
-        if hasattr(self,"sock") and self.sock is not None:
+        if self.sock is not None:
             self.sock.close()
-            self.sock=None
     def requestLoop(self, loopCondition=lambda:True, others=None):
         log.debug("threadpool server requestloop")
         while (self.sock is not None) and loopCondition():
@@ -116,8 +114,11 @@ class SocketServer(object):
                     break
                 else:
                     raise
+            except KeyboardInterrupt:
+                log.debug("stopping on break signal")
+                break
         log.debug("threadpool server exits requestloop")
-    def close(self, joinWorkers=False): 
+    def close(self, joinWorkers=True): 
         log.debug("closing threadpool server")
         if self.sock:
             try:
@@ -127,7 +128,8 @@ class SocketServer(object):
             self.sock=None
         for worker in self.threadpool.copy():
             worker.running=False
-            self.workqueue.put((None,None)) # put a 'stop' sentinel in the worker queue
+            if self.workqueue is not None:
+                self.workqueue.put((None,None)) # put a 'stop' sentinel in the worker queue
             csock=getattr(worker,"csock",None)
             if csock:
                 csock.close()    # terminate socket that the worker might be listening on
