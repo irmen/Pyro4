@@ -1,5 +1,6 @@
 from __future__ import with_statement
 
+import os
 import unittest
 import Pyro.core
 import Pyro.constants
@@ -35,19 +36,33 @@ class DaemonTests(unittest.TestCase):
             sockname=d.getSocket().getsockname()
             self.assertEqual(freeport, sockname[1])
 
-    def testServetypes(self):
+    def testServertypeThread(self):
         old_servertype=Pyro.config.SERVERTYPE
         Pyro.config.SERVERTYPE="thread"
         with Pyro.core.Daemon(port=0) as d:
             self.assertTrue(d.fileno()>0)
+            if os.name=="java":
+                # if we are Jython, it must not accept 'others'
+                self.assertRaises(RuntimeError, d.requestLoop, others=42)
+            else:
+                # must accept 'others' parameter (but we supply a wrong type on purpose)
+                self.assertRaises(TypeError, d.requestLoop, others=42)
+        Pyro.config.SERVERTYPE=old_servertype
+
+    def testServertypeSelect(self):
+        old_servertype=Pyro.config.SERVERTYPE
         Pyro.config.SERVERTYPE="select"
-        with Pyro.core.Daemon() as d:
+        with Pyro.core.Daemon(port=0) as d:
             self.assertTrue(d.fileno()>0)
-        try:
-            Pyro.config.SERVERTYPE="foobar"
-            self.assertRaises(PyroError, Pyro.core.Daemon)
-        finally:
-            Pyro.config.SERVERTYPE=old_servertype
+            # must accept 'others' parameter (but we supply a wrong type on purpose)
+            self.assertRaises(TypeError, d.requestLoop, others=42)
+        Pyro.config.SERVERTYPE=old_servertype
+                
+    def testServertypeFoobar(self):
+        old_servertype=Pyro.config.SERVERTYPE
+        Pyro.config.SERVERTYPE="foobar"
+        self.assertRaises(PyroError, Pyro.core.Daemon)
+        Pyro.config.SERVERTYPE=old_servertype
 
     def testRegisterEtc(self):
         try:
