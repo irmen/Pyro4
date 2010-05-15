@@ -83,8 +83,8 @@ class NameServer(object):
                             result[name]=self.namespace[name]
                     return result
             else:
-                # just return everything
-                return self.namespace
+                # just return (a copy of) everything
+                return self.namespace.copy()
     def ping(self):
         pass
 
