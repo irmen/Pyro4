@@ -140,7 +140,6 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertTrue(ns1.fileno() > 0)
         self.assertTrue(bc1.fileno() > 0)
         if hasattr(select, "poll"):
-            print "WE HAVE POLL!" # XXX
             p=select.poll()
             if os.name=="java":
                 # jython requires nonblocking sockets for poll
@@ -149,8 +148,8 @@ class OfflineNameServerTests(unittest.TestCase):
             p.register(ns1.fileno(), select.POLLIN)  #@UndefinedVariable (pydev)
             p.register(bc1.fileno(), select.POLLIN)  #@UndefinedVariable (pydev)
             p.poll(100)
-            print "POLL DONE!" # XXX
-            p.close()
+            if hasattr(p,"close"):
+                p.close()
         else:
             _,_,_=select.select([ns1, bc1],[],[],0.1)
         ns1.close()
