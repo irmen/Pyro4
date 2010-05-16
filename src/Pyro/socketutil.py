@@ -41,6 +41,15 @@ def getMyIpAddress(hostname=None, workaround127=False):
         s.close()
     return ip
 
+def __nextRetrydelay(delay):
+    # first try a few very short delays,
+    # if that doesn't work, increase by 0.1 sec every time
+    if delay==0.0:
+        return 0.001
+    if delay==0.001:
+        return 0.01
+    return delay+0.1
+
 def receiveData(sock, size):
     """Retrieve a given number of bytes from a socket.
     It is expected the socket is able to supply that number of bytes.
@@ -49,7 +58,7 @@ def receiveData(sock, size):
     has been received however is stored in the 'partialData' attribute of
     the exception object."""
     try:
-        retrydelay=0.0001
+        retrydelay=0.0
         if hasattr(socket,"MSG_WAITALL"):
             # waitall is very convenient and if a socket error occurs,
             # we can assume the receive has failed. No need for a loop,
@@ -66,8 +75,8 @@ def receiveData(sock, size):
                     err=getattr(x,"errno",x.args[0])
                     if err not in ERRNO_RETRIES:
                         raise ConnectionClosedError("receiving: connection lost: "+str(x))
-                    time.sleep(retrydelay)  # a slight delay to wait before retrying
-                    retrydelay+=0.1                
+                    time.sleep(0.00001+retrydelay)  # a slight delay to wait before retrying
+                    retrydelay=__nextRetrydelay(retrydelay)                
         # old fashioned recv loop, we gather chunks until the message is complete
         msglen=0
         chunks=[]
@@ -93,8 +102,8 @@ def receiveData(sock, size):
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("receiving: connection lost: "+str(x))
-                time.sleep(retrydelay)  # a slight delay to wait before retrying
-                retrydelay+=0.1
+                time.sleep(0.00001+retrydelay)  # a slight delay to wait before retrying
+                retrydelay=__nextRetrydelay(retrydelay)                
     except socket.timeout:
         raise TimeoutError("receiving: timeout")
     
@@ -116,7 +125,7 @@ def sendData(sock, data):
                 raise ConnectionClosedError("sending: connection lost: "+str(x))
     else:
         # Socket is in non-blocking mode, use regular send loop.
-        retrydelay=0.02
+        retrydelay=0.0
         while data: 
             try: 
                 sent = sock.send(data) 
@@ -127,12 +136,14 @@ def sendData(sock, data):
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("sending: connection lost: "+str(x))
-                time.sleep(retrydelay)  # a slight delay to wait before retrying
-                retrydelay+=0.1 
+                time.sleep(0.00001+retrydelay)  # a slight delay to wait before retrying
+                retrydelay=__nextRetrydelay(retrydelay)                
 
 
 def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeout=None):
     """Create a socket. Default options are keepalives and reuseaddr."""
+    if timeout==0:
+        timeout=None
     if bind and connect:
         raise ValueError("bind and connect cannot both be specified at the same time")
     sock=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -156,6 +167,8 @@ def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeou
 
 def createBroadcastSocket(bind=None, reuseaddr=True, timeout=None):
     """Create a udp broadcast socket."""
+    if timeout==0:
+        timeout=None
     sock=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     if reuseaddr:

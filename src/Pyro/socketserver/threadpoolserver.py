@@ -96,6 +96,8 @@ class SocketServer(object):
                     ins.remove(self.sock)
                     csock, caddr=self.sock.accept()
                     log.debug("connection from %s",caddr)
+                    if Pyro.config.COMMTIMEOUT:
+                        csock.settimeout(Pyro.config.COMMTIMEOUT)
                     self.workqueue.put((csock,caddr))
                 if ins:
                     try:

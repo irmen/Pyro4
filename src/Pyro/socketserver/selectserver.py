@@ -143,6 +143,8 @@ class SocketServer(object):
         try:
             csock, caddr=sock.accept()
             log.debug("connection from %s",caddr)
+            if Pyro.config.COMMTIMEOUT:
+                csock.settimeout(Pyro.config.COMMTIMEOUT)
         except socket.error,x:
             err=getattr(x,"errno",x.args[0])
             if err in ERRNO_RETRIES:

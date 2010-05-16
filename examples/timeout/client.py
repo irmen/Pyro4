@@ -10,7 +10,7 @@ def approxEqual(x,y):
     return abs(x-y) < 0.2
 
 # disable timeout globally 
-Pyro.config.COMMTIMEOUT=None
+Pyro.config.COMMTIMEOUT=0
 
 obj=Pyro.core.Proxy("PYRONAME:example.timeout")
 obj._pyroBind()

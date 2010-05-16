@@ -9,7 +9,7 @@ class TimeoutServer(object):
         print "done."
         return "slept %d seconds" % amount
 
-Pyro.config.COMMTIMEOUT=None        # the server won't be using timeouts
+Pyro.config.COMMTIMEOUT=0        # the server won't be using timeouts
 
 ns=Pyro.naming.locateNS()
 daemon=Pyro.core.Daemon()
