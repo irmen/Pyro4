@@ -224,6 +224,35 @@ class ServerTests(unittest.TestCase):
             self.assertRaises(Pyro.errors.TimeoutError, p.ping)
             duration=time.time()-start
             self.assertTrue(duration<3.0)
+            
+    def testProxySharing(self):
+        class SharedProxyThread(threading.Thread):
+            def __init__(self, proxy):
+                super(SharedProxyThread,self).__init__()
+                self.proxy=proxy
+                self.terminate=False
+                self.error=False
+                self.setDaemon(True)
+            def run(self):
+                while not self.terminate:
+                    try:
+                        reply=self.proxy.multiply(5,11)
+                        assert reply==55
+                    except Exception:
+                        self.error=True
+                        self.terminate=True
+        with Pyro.core.Proxy(self.objectUri) as p:
+            threads=[]
+            for i in range(5):
+                t=SharedProxyThread(p)
+                threads.append(t)
+                t.start()
+            time.sleep(1)
+            for t in threads:
+                t.terminate=True
+                t.join()
+            for t in threads:
+                self.assertFalse(t.error, "all threads should report no errors") 
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
