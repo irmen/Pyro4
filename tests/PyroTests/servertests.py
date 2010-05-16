@@ -244,6 +244,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                     while not self.terminate:
                         reply=self.proxy.multiply(5,11)
                         assert reply==55
+                        time.sleep(0.001)
                     self.error=False
                 except:
                     print "Something went wrong in the thread:"

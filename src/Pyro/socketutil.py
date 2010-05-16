@@ -49,17 +49,28 @@ def receiveData(sock, size):
     has been received however is stored in the 'partialData' attribute of
     the exception object."""
     try:
+        retrydelay=0.0001
         if hasattr(socket,"MSG_WAITALL"):
             # waitall is very convenient and if a socket error occurs,
-            # we can assume the receive has failed. No need for a loop.
-            data=sock.recv(size, socket.MSG_WAITALL) #@UndefinedVariable (pydev)
-            if len(data)!=size:
-                raise ConnectionClosedError("receiving: not enough data")
-            return data
+            # we can assume the receive has failed. No need for a loop,
+            # unless it is a retryable error.
+            while True:
+                try:
+                    data=sock.recv(size, socket.MSG_WAITALL) #@UndefinedVariable (pydev)
+                    if len(data)!=size:
+                        raise ConnectionClosedError("receiving: not enough data")
+                    return data
+                except socket.timeout:
+                    raise TimeoutError("receiving: timeout")
+                except socket.error,x:
+                    err=getattr(x,"errno",x.args[0])
+                    if err not in ERRNO_RETRIES:
+                        raise ConnectionClosedError("receiving: connection lost: "+str(x))
+                    time.sleep(retrydelay)  # a slight delay to wait before retrying
+                    retrydelay+=0.1                
         # old fashioned recv loop, we gather chunks until the message is complete
         msglen=0
         chunks=[]
-        retrydelay=0.02
         while True:
             try:
                 while msglen<size:
