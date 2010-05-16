@@ -1,6 +1,10 @@
 import Pyro.core
-import time
+import time,sys
 from Pyro.errors import TimeoutError
+
+
+# NOTE: the timer in IronPython seems to be wacky.
+# So we use wider margins for that, to check if the delays are ok.
 
 def approxEqual(x,y):
     return abs(x-y) < 0.1
@@ -14,7 +18,10 @@ start=time.time()
 result=obj.delay(2)
 assert result=="slept 2 seconds"
 duration=time.time()-start
-assert approxEqual(duration,2), "expected 2 seconds duration"
+if sys.platform!="cli":
+    assert approxEqual(duration,2), "expected 2 seconds duration"
+else:
+    assert 1.0<duration<3.0, "expected about 2 seconds duration"
 
 # override timeout for this object
 obj._pyroTimeout=1
@@ -26,7 +33,10 @@ try:
 except TimeoutError:
     print "Timeouterror! As expected!"
     duration=time.time()-start
-    assert approxEqual(duration,1), "expected 1 seconds duration"
+    if sys.platform!="cli":
+        assert approxEqual(duration,1), "expected 1 seconds duration"
+    else:
+        assert 0.9<duration<1.9, "expected about 1 second duration"
 
 # set timeout globally
 Pyro.config.COMMTIMEOUT=1
@@ -40,7 +50,10 @@ try:
 except TimeoutError:
     print "Timeouterror! As expected!"
     duration=time.time()-start
-    assert approxEqual(duration,1), "expected 1 seconds duration"
+    if sys.platform!="cli":
+        assert approxEqual(duration,1), "expected 1 seconds duration"
+    else:
+        assert 0.9<duration<1.9, "expected about 1 second duration"
 
 # override again for this object
 obj._pyroTimeout=None
@@ -49,7 +62,10 @@ start=time.time()
 result=obj.delay(3)
 assert result=="slept 3 seconds"
 duration=time.time()-start
-assert approxEqual(duration,3), "expected 3 seconds duration"
+if sys.platform!="cli":
+    assert approxEqual(duration,3), "expected 3 seconds duration"
+else:
+    assert 2.5<duration<3.5, "expected about 3 second duration"
 
 print 
 print "Trying to connect to the frozen daemon."
@@ -63,7 +79,11 @@ try:
 except TimeoutError:    
     print "Timeouterror! As expected!"
     duration=time.time()-start
-    assert approxEqual(duration,1), "expected 1 seconds duration"
+    if sys.platform!="cli":
+        assert approxEqual(duration,1), "expected 1 seconds duration"
+    else:
+        assert 0.9<duration<1.9, "expected about 1 second duration"
+
 print "Disabling timeout and trying to connect again. This may take forever now."
 print "Feel free to abort with ctrl-c or ctrl-break."
 obj._pyroTimeout=None
