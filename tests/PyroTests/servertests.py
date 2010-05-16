@@ -3,7 +3,7 @@ import unittest
 import Pyro.config
 import Pyro.core
 import Pyro.errors
-import threading, time, os
+import threading, time, os, sys
 
 # tests that require a running Pyro server (daemon)
 # the server part here is not using a timeout setting.
@@ -212,7 +212,11 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             start=time.time()
             self.assertRaises(Pyro.errors.TimeoutError, p.delay, 1)
             duration=time.time()-start
-            self.assertAlmostEqual(0.1, duration, 1)
+            if sys.platform!="cli":
+                self.assertAlmostEqual(0.1, duration, 1)
+            else:
+                # ironpython's time is wonky
+                self.assertTrue(0.0<duration<0.7)
 
     def testTimeoutConnect(self):
         # set up a unresponsive daemon
@@ -236,10 +240,14 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 self.error=True
                 self.setDaemon(True)
             def run(self):
-                while not self.terminate:
-                    reply=self.proxy.multiply(5,11)
-                    assert reply==55
-                self.error=False
+                try:
+                    while not self.terminate:
+                        reply=self.proxy.multiply(5,11)
+                        assert reply==55
+                    self.error=False
+                except:
+                    print "Something went wrong in the thread:"
+                    print "".join(Pyro.util.getPyroTraceback())
         with Pyro.core.Proxy(self.objectUri) as p:
             threads=[]
             for i in range(5):
