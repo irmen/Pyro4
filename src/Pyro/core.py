@@ -7,6 +7,7 @@
 #
 ######################################################################
 
+from __future__ import with_statement
 import re, struct, sys, time
 import logging, uuid, threading
 import Pyro.config
