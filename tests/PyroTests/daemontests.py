@@ -3,6 +3,7 @@ from __future__ import with_statement
 import os
 import unittest
 import Pyro.core
+import Pyro.core2
 import Pyro.constants
 import Pyro.config
 import Pyro.socketutil
@@ -144,7 +145,7 @@ class DaemonTests(unittest.TestCase):
 
     def testDaemonObject(self):
         with Pyro.core.Daemon(port=0) as d:
-            daemon=Pyro.core.DaemonObject(d)
+            daemon=Pyro.core2.DaemonObject(d)
             obj1=MyObj("object1")
             obj2=MyObj("object2")
             obj3=MyObj("object2")

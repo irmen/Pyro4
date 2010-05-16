@@ -10,7 +10,7 @@
 from __future__ import with_statement
 import os, re, logging, socket
 from threading import RLock, Thread
-import Pyro.core
+import Pyro.core2        # not Pyro.core, to avoid circular import
 import Pyro.constants
 import Pyro.socketutil
 from Pyro.errors import PyroError, NamingError
@@ -24,16 +24,16 @@ class NameServer(object):
         self.lock=RLock()
     def lookup(self,arg):
         try:
-            return Pyro.core.PyroURI(self.namespace[arg])
+            return Pyro.core2.PyroURI(self.namespace[arg])
         except KeyError:
             raise NamingError("unknown name: "+arg)
     def register(self,name,uri):
-        if isinstance(uri, Pyro.core.PyroURI):
+        if isinstance(uri, Pyro.core2.PyroURI):
             uri=uri.asString()
         elif not isinstance(uri, basestring):
             raise TypeError("only PyroURIs or strings can be registered")
         else:
-            Pyro.core.PyroURI(uri)  # check if uri is valid
+            Pyro.core2.PyroURI(uri)  # check if uri is valid
         if not isinstance(name, basestring):
             raise TypeError("name must be a str")
         if name in self.namespace:
@@ -89,7 +89,7 @@ class NameServer(object):
         pass
 
 
-class NameServerDaemon(Pyro.core.Daemon):
+class NameServerDaemon(Pyro.core2.Daemon):
     """Daemon that contains the Name Server."""
     def __init__(self, host=None, port=None):
         if Pyro.config.DOTTEDNAMES:
@@ -210,7 +210,7 @@ def locateNS(host=None, port=None):
         if Pyro.config.NS_HOST=="localhost" or Pyro.config.NS_HOST.startswith("127."):
             uristring="PYRO:%s@%s:%d" % (Pyro.constants.NAMESERVER_NAME, Pyro.config.NS_HOST, port or Pyro.config.NS_PORT)
             log.debug("locating the NS: %s",uristring)
-            proxy=Pyro.core.Proxy(uristring)
+            proxy=Pyro.core2.Proxy(uristring)
             try:
                 proxy.ping()
                 log.debug("located NS")
@@ -228,7 +228,7 @@ def locateNS(host=None, port=None):
                 data,_=sock.recvfrom(100)
                 sock.close()
                 log.debug("located NS: %s",data)
-                return Pyro.core.Proxy(data)
+                return Pyro.core2.Proxy(data)
             except socket.timeout:
                 continue
         sock.close()
@@ -239,13 +239,13 @@ def locateNS(host=None, port=None):
     # pyro direct lookup
     if not port:
         port=Pyro.config.NS_PORT
-    if Pyro.core.PyroURI.isPipeOrUnixsockLocation(host):
+    if Pyro.core2.PyroURI.isPipeOrUnixsockLocation(host):
         uristring="PYRO:%s@%s" % (Pyro.constants.NAMESERVER_NAME,host)
     else:
         uristring="PYRO:%s@%s:%d" % (Pyro.constants.NAMESERVER_NAME,host,port)
-    uri=Pyro.core.PyroURI(uristring)
+    uri=Pyro.core2.PyroURI(uristring)
     log.debug("locating the NS: %s",uri)
-    proxy=Pyro.core.Proxy(uri)
+    proxy=Pyro.core2.Proxy(uri)
     try:
         proxy.ping()
         log.debug("located NS")
@@ -258,8 +258,8 @@ def locateNS(host=None, port=None):
 def resolve(uri):
     """Resolve a 'magic' uri (PYRONAME) into the direct PYRO uri."""
     if isinstance(uri, basestring):
-        uri=Pyro.core.PyroURI(uri)
-    elif not isinstance(uri, Pyro.core.PyroURI):
+        uri=Pyro.core2.PyroURI(uri)
+    elif not isinstance(uri, Pyro.core2.PyroURI):
         raise TypeError("can only resolve Pyro URIs")
     if uri.protocol=="PYRO":
         return uri

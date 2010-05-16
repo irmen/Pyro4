@@ -1,6 +1,7 @@
 ######################################################################
 #
 #  Core Pyro logic (uri, daemon, proxy stuff).
+#  Not directly in Pyro.core, to avoid circular imports.
 #
 #  Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 #  irmen@razorvine.net - http://www.razorvine.net/python/Pyro

@@ -3,6 +3,7 @@ from __future__ import with_statement
 import unittest
 import copy
 import Pyro.core
+import Pyro.core2
 import Pyro.config
 import Pyro.errors
 
@@ -178,7 +179,7 @@ class CoreTests(unittest.TestCase):
         self.assertFalse(Pyro.core.PyroURI.isPipeOrUnixsockLocation("foobar"))
 
     def testMsgFactory(self):
-        MF=Pyro.core.MessageFactory
+        MF=Pyro.core2.MessageFactory
         MF.createMessage(99, None) # doesn't check msg type here
         self.assertRaises(Pyro.errors.ProtocolError, MF.parseMessageHeader, "FOOBAR")
         hdr=MF.createMessage(MF.MSG_CONNECT, "hello")[:-5]
@@ -282,16 +283,16 @@ class CoreTests(unittest.TestCase):
             def invoke(self, name, args, kwargs):
                 return "INVOKED name=%s args=%s kwargs=%s" % (name,args,kwargs)
             def __getattr__(self, name):
-                return Pyro.core._RemoteMethod(self.invoke, name)
+                return Pyro.core2._RemoteMethod(self.invoke, name)
         o=Proxy()
         self.assertEqual("INVOKED name=foo args=(1,) kwargs={}", o.foo(1)) #normal
         self.assertEqual("INVOKED name=foo.bar args=(1,) kwargs={}", o.foo.bar(1)) #dotted
         self.assertEqual("INVOKED name=foo.bar args=(1, 'hello') kwargs={'a': True}", o.foo.bar(1,"hello",a=True))
         p=Pyro.core.Proxy("PYRO:obj@host:666")
         a=p.someattribute
-        self.assertTrue(isinstance(a, Pyro.core._RemoteMethod), "attribute access should just be a RemoteMethod")
+        self.assertTrue(isinstance(a, Pyro.core2._RemoteMethod), "attribute access should just be a RemoteMethod")
         a2=a.nestedattribute
-        self.assertTrue(isinstance(a2, Pyro.core._RemoteMethod), "nested attribute should just be another RemoteMethod")
+        self.assertTrue(isinstance(a2, Pyro.core2._RemoteMethod), "nested attribute should just be another RemoteMethod")
 
     def testTimeoutGetSet(self):
         class ConnectionMock(object):
