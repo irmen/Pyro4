@@ -2,10 +2,9 @@ from __future__ import with_statement
 import unittest
 import os, threading, time
 import Pyro.config
+import Pyro.core
 import Pyro.naming
 from Pyro.errors import NamingError
-
-Pyro.config.POLLTIMEOUT=0.1
 
 # online name server tests
 
@@ -33,6 +32,7 @@ class BCSetupTests(unittest.TestCase):
 
 class NameServerTests(unittest.TestCase):
     def setUp(self):
+        Pyro.config.POLLTIMEOUT=0.1
         self.nsUri, self.nameserver, self.bcserver = Pyro.naming.startNS(port=0, bcport=0)
         self.assertTrue(self.bcserver is not None,"expected a BC server to be running")
         if os.name!="java":

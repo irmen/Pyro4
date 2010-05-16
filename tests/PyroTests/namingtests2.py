@@ -1,6 +1,7 @@
 from __future__ import with_statement
 import unittest
 import sys, StringIO, select, os
+import Pyro.core
 import Pyro.naming
 import Pyro.nsc
 from Pyro.errors import NamingError,PyroError

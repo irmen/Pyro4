@@ -1,7 +1,8 @@
 import unittest
 
-import sys, imp
+import sys, imp, os
 import Pyro.util
+import Pyro.config
 
 if not hasattr(imp,"reload"):
     imp.reload=reload   # python 2.5 doesn't have imp.reload
@@ -119,8 +120,6 @@ class TestUtils(unittest.TestCase):
 
 
     def testConfig(self):
-        import Pyro.config
-        import os,socket
         def clearEnv():
             if "PYRO_HOST" in os.environ: del os.environ["PYRO_HOST"]
             if "PYRO_NS_PORT" in os.environ: del os.environ["PYRO_NS_PORT"]

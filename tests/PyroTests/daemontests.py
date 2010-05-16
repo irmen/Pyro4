@@ -9,8 +9,6 @@ import Pyro.config
 import Pyro.socketutil
 from Pyro.errors import DaemonError,PyroError
 
-Pyro.config.POLLTIMEOUT=0.1
-
 class MyObj(object):
     def __init__(self, arg):
         self.arg=arg
@@ -21,6 +19,9 @@ class MyObj(object):
 class DaemonTests(unittest.TestCase):
     # We create a daemon, but notice that we are not actually running the requestloop.
     # 'on-line' tests are all taking place in another test, to keep this one simple.
+
+    def setUp(self):
+        Pyro.config.POLLTIMEOUT=0.1
 
     def testDaemon(self):
         freeport=Pyro.socketutil.findUnusedPort()

@@ -8,5 +8,5 @@
 #
 ######################################################################
 
-from Pyro.core2 import PyroURI, Proxy, Daemon
-import Pyro.naming
+from Pyro.core2 import *     #@UnusedWildImport (pydev)
+import Pyro.naming           #@UnusedImport (pydev)

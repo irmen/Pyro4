@@ -5,9 +5,11 @@ import Pyro.config
 from Pyro.socketserver.selectserver import SocketServer as SocketServer_Select
 from Pyro.socketserver.threadpoolserver import SocketServer as SocketServer_Threadpool
 
-Pyro.config.POLLTIMEOUT=0.1
 
 class TestSocketutil(unittest.TestCase):
+    def setUp(self):
+        Pyro.config.POLLTIMEOUT=0.1
+        
     def testGetIP(self):
         localip=SU.getIpAddress()
         localhost=socket.getfqdn(localip)

@@ -39,6 +39,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
     SERVERTYPE="thread"
     COMMTIMEOUT=None
     def setUp(self):
+        Pyro.config.POLLTIMEOUT=0.1
         Pyro.config.SERVERTYPE=self.SERVERTYPE
         Pyro.config.COMMTIMEOUT=self.COMMTIMEOUT
         self.daemon=Pyro.core.Daemon(port=0)
@@ -200,33 +201,18 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         proxy3._pyroRelease()
 
     def testTimeoutCall(self):
-        try:
-            Pyro.config.COMMTIMEOUT=None
-            with Pyro.core.Proxy(self.objectUri) as p:
-                p.ping()
-                start=time.time()
-                p.delay(1)
-                duration=time.time()-start
-                self.assertAlmostEqual(1.0, duration, 1)
-                p._pyroTimeout=0.5
-                start=time.time()
-                self.assertRaises(Pyro.errors.TimeoutError, p.delay, 2)
-                duration=time.time()-start
-                self.assertTrue(duration<2.0)
-            Pyro.config.COMMTIMEOUT=0.5
-            with Pyro.core.Proxy(self.objectUri) as p:
-                p.ping()
-                start=time.time()
-                self.assertRaises(Pyro.errors.TimeoutError, p.delay, 2)
-                duration=time.time()-start
-                self.assertTrue(duration<2.0)
-                p._pyroTimeout=None
-                start=time.time()
-                p.delay(1)
-                duration=time.time()-start
-                self.assertTrue(0.9<duration<1.9)
-        finally:
-            Pyro.config.COMMTIMEOUT=None
+        Pyro.config.COMMTIMEOUT=None
+        with Pyro.core.Proxy(self.objectUri) as p:
+            p.ping()
+            start=time.time()
+            p.delay(0.5)
+            duration=time.time()-start
+            self.assertAlmostEqual(0.5, duration, 1)
+            p._pyroTimeout=0.1
+            start=time.time()
+            self.assertRaises(Pyro.errors.TimeoutError, p.delay, 1)
+            duration=time.time()-start
+            self.assertAlmostEqual(0.1, duration, 1)
 
     def testTimeoutConnect(self):
         # set up a unresponsive daemon
@@ -239,7 +225,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             start=time.time()
             self.assertRaises(Pyro.errors.TimeoutError, p.ping)
             duration=time.time()-start
-            self.assertTrue(duration<3.0)
+            self.assertTrue(duration<2.0)
             
     def testProxySharing(self):
         class SharedProxyThread(threading.Thread):
