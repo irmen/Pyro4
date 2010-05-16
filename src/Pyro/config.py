@@ -53,14 +53,20 @@ def _process(dictionary):
 _process(globals())
 del _process
 
-
+def asDict():
+    """returns the current config as a regular dictionary"""
+    import re
+    rx=re.compile(r"[A-Z_]+$")
+    result={}
+    for n,v in globals().items():
+        if rx.match(n):
+            result[n]=v
+    return result
+    
 # easy config diagnostic with python -m
 if __name__=="__main__":
     import Pyro.constants
-    import re
     print "Pyro version:",Pyro.constants.VERSION
     print "Active configuration settings:"
-    rx=re.compile(r"[A-Z_]+$")
-    for n,v in sorted(globals().items()):
-        if rx.match(n):
-            print "%s=%s" % (n,v)
+    for n,v in sorted(asDict().items()):
+        print "%s=%s" % (n,v) 

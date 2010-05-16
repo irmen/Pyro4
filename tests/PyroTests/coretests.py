@@ -15,6 +15,13 @@ class Thing(object):
     __hash__=object.__hash__
 
 class CoreTests(unittest.TestCase):
+    def testConfig(self):
+        self.assertTrue(type(Pyro.config.COMPRESSION) is bool)
+        self.assertTrue(type(Pyro.config.NS_PORT) is int)
+        config=Pyro.config.asDict()
+        self.assertTrue(type(config) is dict)
+        self.assertTrue("COMPRESSION" in config)
+        self.assertEqual(Pyro.config.COMPRESSION, config["COMPRESSION"])
 
     def testUriStrAndRepr(self):
         uri="PYRONAME:some_obj_name"
