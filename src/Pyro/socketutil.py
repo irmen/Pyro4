@@ -82,7 +82,6 @@ def receiveData(sock, size):
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("receiving: connection lost: "+str(x))
-                print "RECV: RETRYABLE ERROR OCCURRED",err # XXX remove debug print
                 time.sleep(retrydelay)  # a slight delay to wait before retrying
                 retrydelay+=0.1
     except socket.timeout:
@@ -117,7 +116,6 @@ def sendData(sock, data):
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("sending: connection lost: "+str(x))
-                print "SEND: RETRYABLE ERROR OCCURRED",err # XXX remove debug print
                 time.sleep(retrydelay)  # a slight delay to wait before retrying
                 retrydelay+=0.1 
 

@@ -3,9 +3,10 @@ import unittest
 import Pyro.config
 import Pyro.core
 import Pyro.errors
-import threading, time
+import threading, time, os
 
 # tests that require a running Pyro server (daemon)
+# the server part here is not using a timeout setting.
 
 class MyThing(object):
     def __init__(self):
@@ -31,8 +32,12 @@ class DaemonLoopThread(threading.Thread):
         self.running.set()
         self.pyrodaemon.requestLoop()
         
-class ServerTests(unittest.TestCase):
+class ServerTestsThreadNoTimeout(unittest.TestCase):
+    SERVERTYPE="thread"
+    COMMTIMEOUT=None
     def setUp(self):
+        Pyro.config.SERVERTYPE=self.SERVERTYPE
+        Pyro.config.COMMTIMEOUT=self.COMMTIMEOUT
         self.daemon=Pyro.core.Daemon(port=0)
         obj=MyThing()
         uri=self.daemon.register(obj, "something")
@@ -44,6 +49,8 @@ class ServerTests(unittest.TestCase):
         time.sleep(0.05)
         self.daemon.shutdown()
         self.daemonthread.join()
+        Pyro.config.SERVERTYPE="thread"
+        Pyro.config.COMMTIMEOUT=None
 
     def testNoDottedNames(self):
         Pyro.config.DOTTEDNAMES=False
@@ -60,15 +67,17 @@ class ServerTests(unittest.TestCase):
             self.assertEqual({"number":42}, x)
 
     def testDottedNames(self):
-        Pyro.config.DOTTEDNAMES=True
-        with Pyro.core.Proxy(self.objectUri) as p:
-            self.assertEqual(55,p.multiply(5,11))
-            x=p.getDict()
-            self.assertEqual({"number":42}, x)
-            p.dictionary.update({"more":666})    # updating it remotely should work with DOTTEDNAMES=True
-            x=p.getDict()
-            self.assertEqual({"number":42, "more":666}, x)  # eek, it got updated!
-        Pyro.config.DOTTEDNAMES=False
+        try:
+            Pyro.config.DOTTEDNAMES=True
+            with Pyro.core.Proxy(self.objectUri) as p:
+                self.assertEqual(55,p.multiply(5,11))
+                x=p.getDict()
+                self.assertEqual({"number":42}, x)
+                p.dictionary.update({"more":666})    # updating it remotely should work with DOTTEDNAMES=True
+                x=p.getDict()
+                self.assertEqual({"number":42, "more":666}, x)  # eek, it got updated!
+        finally:
+            Pyro.config.DOTTEDNAMES=False
 
     def testConnectionStuff(self):
         p1=Pyro.core.Proxy(self.objectUri)
@@ -122,24 +131,26 @@ class ServerTests(unittest.TestCase):
             p.nonexisting()
             
     def testOnewayDelayed(self):
-        with Pyro.core.Proxy(self.objectUri) as p:
-            Pyro.config.ONEWAY_THREADED=True   # the default
-            p._pyroOneway.add("delay")
-            now=time.time()
-            p.delay(1)  # oneway so we should continue right away
-            self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
-            now=time.time()
-            self.assertEquals(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
-            self.assertTrue(time.time()-now < 0.2, "delay should be running in its own thread")
-            # make oneway calls run in the server thread
-            # we can change the config here and the server will pick it up on the fly
-            Pyro.config.ONEWAY_THREADED=False   
-            now=time.time()
-            p.delay(1)  # oneway so we should continue right away
-            self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
-            now=time.time()
-            self.assertEquals(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
-            self.assertFalse(time.time()-now < 0.2, "delay should be running in the server thread")
+        try:
+            with Pyro.core.Proxy(self.objectUri) as p:
+                Pyro.config.ONEWAY_THREADED=True   # the default
+                p._pyroOneway.add("delay")
+                now=time.time()
+                p.delay(1)  # oneway so we should continue right away
+                self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
+                now=time.time()
+                self.assertEquals(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
+                self.assertTrue(time.time()-now < 0.2, "delay should be running in its own thread")
+                # make oneway calls run in the server thread
+                # we can change the config here and the server will pick it up on the fly
+                Pyro.config.ONEWAY_THREADED=False   
+                now=time.time()
+                p.delay(1)  # oneway so we should continue right away
+                self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
+                now=time.time()
+                self.assertEquals(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
+                self.assertFalse(time.time()-now < 0.2, "delay should be running in the server thread")
+        finally:
             Pyro.config.ONEWAY_THREADED=True   # back to normal
 
     def testOnewayOnClass(self):
@@ -186,32 +197,34 @@ class ServerTests(unittest.TestCase):
         proxy3._pyroRelease()
 
     def testTimeoutCall(self):
-        Pyro.config.COMMTIMEOUT=None
-        with Pyro.core.Proxy(self.objectUri) as p:
-            p.ping()
-            start=time.time()
-            p.delay(1)
-            duration=time.time()-start
-            self.assertAlmostEqual(1.0, duration, 1)
-            p._pyroTimeout=0.5
-            start=time.time()
-            self.assertRaises(Pyro.errors.TimeoutError, p.delay, 2)
-            duration=time.time()-start
-            self.assertTrue(duration<2.0)
-        Pyro.config.COMMTIMEOUT=0.5
-        with Pyro.core.Proxy(self.objectUri) as p:
-            p.ping()
-            start=time.time()
-            self.assertRaises(Pyro.errors.TimeoutError, p.delay, 2)
-            duration=time.time()-start
-            self.assertTrue(duration<2.0)
-            p._pyroTimeout=None
-            start=time.time()
-            p.delay(1)
-            duration=time.time()-start
-            self.assertTrue(0.9<duration<1.9)
-        Pyro.config.COMMTIMEOUT=None
-    
+        try:
+            Pyro.config.COMMTIMEOUT=None
+            with Pyro.core.Proxy(self.objectUri) as p:
+                p.ping()
+                start=time.time()
+                p.delay(1)
+                duration=time.time()-start
+                self.assertAlmostEqual(1.0, duration, 1)
+                p._pyroTimeout=0.5
+                start=time.time()
+                self.assertRaises(Pyro.errors.TimeoutError, p.delay, 2)
+                duration=time.time()-start
+                self.assertTrue(duration<2.0)
+            Pyro.config.COMMTIMEOUT=0.5
+            with Pyro.core.Proxy(self.objectUri) as p:
+                p.ping()
+                start=time.time()
+                self.assertRaises(Pyro.errors.TimeoutError, p.delay, 2)
+                duration=time.time()-start
+                self.assertTrue(duration<2.0)
+                p._pyroTimeout=None
+                start=time.time()
+                p.delay(1)
+                duration=time.time()-start
+                self.assertTrue(0.9<duration<1.9)
+        finally:
+            Pyro.config.COMMTIMEOUT=None
+
     def testTimeoutConnect(self):
         # set up a unresponsive daemon
         with Pyro.core.Daemon(port=0) as d:
@@ -253,6 +266,11 @@ class ServerTests(unittest.TestCase):
                 t.join()
             for t in threads:
                 self.assertFalse(t.error, "all threads should report no errors") 
+
+if os.name!="java":
+    class ServerTestsSelectNoTimeout(ServerTestsThreadNoTimeout):
+        SERVERTYPE="select"
+        COMMTIMEOUT=None
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
