@@ -20,6 +20,9 @@ class MyThing(object):
     def delay(self, delay):
         time.sleep(delay)
         return "slept %d seconds" % delay
+    def delayAndId(self, delay, id):
+        time.sleep(delay)
+        return "slept for "+str(id)
 
 class DaemonLoopThread(threading.Thread):
     def __init__(self, pyrodaemon):
@@ -244,16 +247,13 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 super(SharedProxyThread,self).__init__()
                 self.proxy=proxy
                 self.terminate=False
-                self.error=False
+                self.error=True
                 self.setDaemon(True)
             def run(self):
                 while not self.terminate:
-                    try:
-                        reply=self.proxy.multiply(5,11)
-                        assert reply==55
-                    except Exception:
-                        self.error=True
-                        self.terminate=True
+                    reply=self.proxy.multiply(5,11)
+                    assert reply==55
+                self.error=False
         with Pyro.core.Proxy(self.objectUri) as p:
             threads=[]
             for i in range(5):
@@ -266,6 +266,42 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 t.join()
             for t in threads:
                 self.assertFalse(t.error, "all threads should report no errors") 
+
+    def testServerParallelism(self):
+        class ClientThread(threading.Thread):
+            def __init__(self, uri, name):
+                super(ClientThread,self).__init__()
+                self.setDaemon(True)
+                self.proxy=Pyro.core.Proxy(uri)
+                self.name=name
+                self.error=True
+            def run(self):
+                try:
+                    reply=self.proxy.delayAndId(0.5, self.name)
+                    assert reply=="slept for "+self.name
+                    self.error=False
+                finally:
+                    self.proxy._pyroRelease()
+        threads=[]
+        start=time.time()
+        for i in range(6):
+            t=ClientThread(self.objectUri,"t%d" % i)
+            threads.append(t)
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+            self.assertFalse(t.error, "all threads should report no errors")
+        del threads
+        duration=time.time()-start
+        if Pyro.config.SERVERTYPE=="select":
+            # select based server doesn't execute calls in parallel,
+            # so 6 threads times 0.5 seconds =~ 3 seconds
+            self.assertTrue(2.5<duration<3.5)
+        else:
+            # thread based server does execute calls in parallel,
+            # so 6 threads taking 0.5 seconds =~ 0.5 seconds passed
+            self.assertTrue(0.3<duration<0.7)
 
 if os.name!="java":
     class ServerTestsSelectNoTimeout(ServerTestsThreadNoTimeout):
