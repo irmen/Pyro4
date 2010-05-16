@@ -7,12 +7,13 @@ from Pyro.errors import TimeoutError
 # So we use wider margins for that, to check if the delays are ok.
 
 def approxEqual(x,y):
-    return abs(x-y) < 0.1
+    return abs(x-y) < 0.2
 
 # disable timeout globally 
 Pyro.config.COMMTIMEOUT=None
 
 obj=Pyro.core.Proxy("PYRONAME:example.timeout")
+obj._pyroBind()
 print "No timeout is configured. Calling delay with 2 seconds."
 start=time.time()
 result=obj.delay(2)
