@@ -37,6 +37,14 @@ class DaemonTests(unittest.TestCase):
             self.assertTrue("Daemon object at" in repr(d))
             sockname=d.sock.getsockname()
             self.assertEqual(freeport, sockname[1])
+            daemonobj=d.objectsById[Pyro.constants.DAEMON_NAME]
+            daemonobj.ping()
+            daemonobj.registered()
+            try:
+                daemonobj.shutdown()
+                self.fail("should not succeed to call unexposed method")
+            except AttributeError:
+                pass
 
     def testServertypeThread(self):
         old_servertype=Pyro.config.SERVERTYPE
@@ -160,6 +168,11 @@ class DaemonTests(unittest.TestCase):
             self.assertTrue("obj1" in registered)
             self.assertTrue("obj2" in registered)
             self.assertTrue(obj3._pyroObjectId in registered)
+            try:
+                daemon.shutdown()
+                self.fail("should not succeed to call unexposed method")
+            except AttributeError:
+                pass
         
     def testUriFor(self):
         try:

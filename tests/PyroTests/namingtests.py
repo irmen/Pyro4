@@ -89,6 +89,18 @@ class NameServerTests(unittest.TestCase):
         #self.assertEqual("pipename",uri.pipename)
         ns._pyroRelease()
 
+    def testDaemonPyroObj(self):
+        uri=self.nsUri
+        uri.object=Pyro.constants.DAEMON_NAME
+        with Pyro.core.Proxy(uri) as daemonobj:
+            daemonobj.ping()
+            daemonobj.registered()
+            try:
+                daemonobj.shutdown()
+                self.fail("should not succeed to call unexposed method on daemon")
+            except AttributeError:
+                pass
+        
     def testMulti(self):
         uristr=str(self.nsUri)
         p=Pyro.core.Proxy(uristr)
