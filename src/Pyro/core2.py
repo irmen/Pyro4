@@ -482,13 +482,13 @@ class Daemon(object):
         if objectId in self.objectsById:
             raise Pyro.errors.DaemonError("object already registered")
         obj._pyroObjectId=objectId
+        obj._pyroDaemon=self
         self.objectsById[obj._pyroObjectId]=obj
         return self.uriFor(objectId)
 
     def unregister(self, objectId):
         """
         Remove an object from the known objects inside this daemon.
-        You can unregister by objectId or by (local) object name.
         """
         if objectId==Pyro.constants.DAEMON_NAME:
             return
