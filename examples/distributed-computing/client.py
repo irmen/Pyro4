@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-import Pyro.core
 import Queue
 import random
+import Pyro
 from workitem import Workitem
 
 NUMBER_OF_ITEMS = 40

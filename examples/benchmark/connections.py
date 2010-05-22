@@ -1,6 +1,6 @@
-import Pyro.core
-import Pyro.naming
+#!/usr/bin/env python
 import time
+import Pyro
 
 ns_uri=Pyro.naming.resolve("PYRONAME:Pyro.NameServer")
 print "Name server location:",ns_uri

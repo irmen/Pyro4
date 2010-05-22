@@ -3,7 +3,7 @@
 # The server that doesn't use the Name Server.
 
 import os
-import Pyro.core
+import Pyro
 
 class QuoteGen(object):
 	def quote(self):

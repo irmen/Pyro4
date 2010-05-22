@@ -1,9 +1,6 @@
-# autoreconnect PYRO version
-
+#!/usr/bin/env python
 import time
-import Pyro.core
-import Pyro.errors
-import Pyro.config
+import Pyro
 
 print "Autoreconnect using PYRO uri."
 

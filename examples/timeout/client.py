@@ -1,6 +1,6 @@
-import Pyro.core
+#!/usr/bin/env python
 import time,sys
-from Pyro.errors import TimeoutError
+import Pyro
 
 
 # NOTE: the timer in IronPython seems to be wacky.
@@ -31,7 +31,7 @@ start=time.time()
 try:
     result=obj.delay(2)
     print "!?should have raised TimeoutError!?"
-except TimeoutError:
+except Pyro.errors.TimeoutError:
     print "Timeouterror! As expected!"
     duration=time.time()-start
     if sys.platform!="cli":
@@ -48,7 +48,7 @@ start=time.time()
 try:
     result=obj.delay(2)
     print "!?should have raised TimeoutError!?"
-except TimeoutError:
+except Pyro.errors.TimeoutError:
     print "Timeouterror! As expected!"
     duration=time.time()-start
     if sys.platform!="cli":
@@ -77,7 +77,7 @@ start=time.time()
 try:
     result=obj.delay(5)
     print "!?should have raised TimeoutError!?"
-except TimeoutError:    
+except Pyro.errors.TimeoutError:    
     print "Timeouterror! As expected!"
     duration=time.time()-start
     if sys.platform!="cli":

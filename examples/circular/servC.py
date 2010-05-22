@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-import Pyro.naming
-import Pyro.core
+import Pyro
 import chain
 
 this = "C"

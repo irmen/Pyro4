@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import time, threading
-import Pyro.core
+import Pyro
 
 serv = Pyro.core.Proxy("PYRONAME:example.servertypes")
 serv._pyroOneway.add("onewaydelay")

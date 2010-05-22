@@ -8,8 +8,7 @@
 #
 
 import sys
-import Pyro.naming, Pyro.core, Pyro.errors
-
+import Pyro
 from banks import BankError
 
 # A bank client.

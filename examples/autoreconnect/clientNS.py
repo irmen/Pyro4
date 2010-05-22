@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import time
-import Pyro.core
-import Pyro.errors
+import Pyro
 
 print "Autoreconnect using Name Server."
 

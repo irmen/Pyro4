@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-import Pyro.naming
 import random, time
 from threading import Thread
-from Pyro.errors import NamingError
+import Pyro
 
 def randomname():
     def partname():
@@ -28,14 +27,14 @@ class NamingTrasher(Thread):
         for i in range(4):
             try:
                 self.ns.register(randomname(),'PYRO:objname@host:555')
-            except NamingError:
+            except Pyro.errors.NamingError:
                 pass
     def remove(self):
         self.ns.remove(randomname())
     def lookup(self):
         try:
             uri=self.ns.lookup(randomname())
-        except NamingError:
+        except Pyro.errors.NamingError:
             pass
     def listprefix(self):
         entries=self.ns.list(prefix="stresstest.51")

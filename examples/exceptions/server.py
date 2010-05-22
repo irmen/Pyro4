@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-import Pyro.core
-import Pyro.naming
+import Pyro
 import excep
 
 ns=Pyro.naming.locateNS()

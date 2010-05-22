@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import time
-import Pyro.core
+import Pyro
 
 serv = Pyro.core.Proxy("PYRONAME:example.oneway")
 serv._pyroOneway.add("start")

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import os,socket,sys
-import Pyro.core
-import Queue
-from workitem import Workitem
 from math import sqrt
+import Queue
+import Pyro
+from workitem import Workitem
 
 WORKERNAME = "Worker_%d@%s" % (os.getpid(), socket.gethostname())
 

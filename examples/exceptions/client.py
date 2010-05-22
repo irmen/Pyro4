@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-import Pyro.core
-import Pyro.util
-
+import Pyro
 from excep import MyError
 
 test = Pyro.core.Proxy("PYRONAME:example.exceptions")

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-import Pyro.core
-import Pyro.naming
 import time
+import Pyro
 
 class RemoteObject(object):
 	def __init__(self):

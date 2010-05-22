@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-import Pyro.core
-import Pyro.naming
 from Queue import Queue
+import Pyro
 
 class DispatcherQueue(object):
 	def __init__(self):

@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-import Pyro.core
-import Pyro.util
 import random
+import Pyro
 
 shop = Pyro.core.Proxy("PYRONAME:example.shop")
 

@@ -1,6 +1,6 @@
+#!/usr/bin/env python
 import time
-import Pyro.core
-import Pyro.naming
+import Pyro
 
 class TimeoutServer(object):
     def delay(self, amount):

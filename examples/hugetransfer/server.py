@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import sys, os
-import Pyro.core
-import Pyro.naming
-import Pyro.config
+import Pyro
 
 Pyro.config.COMMTIMEOUT=2
 

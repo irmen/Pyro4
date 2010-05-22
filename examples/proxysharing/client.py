@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-
-import Pyro.core, Pyro.naming
 import threading
 import time
+import Pyro
 
 stop=False
 

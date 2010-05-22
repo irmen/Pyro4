@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-import Pyro.core
-import Pyro.naming
-import Pyro.config
 import time
+import Pyro
 
 # set the oneway behavior to run inside a new thread, otherwise the client stalls.
 # this is the default, but I've added it here just for clarification.

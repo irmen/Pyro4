@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-import Pyro.core
-import Pyro.naming
-import Pyro.config
 import time, threading
+import Pyro
 
 class Server(object):
     def __init__(self):

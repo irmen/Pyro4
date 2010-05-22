@@ -5,8 +5,7 @@
 #
 
 import sys
-import Pyro.naming
-import Pyro.core
+import Pyro
 import banks
 
 ns=Pyro.naming.locateNS()

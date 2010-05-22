@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import sys,os,time
-import Pyro.core
-
+import Pyro
 import bench
 
 object = Pyro.core.Proxy("PYRONAME:example.benchmark")

@@ -1,4 +1,4 @@
-import Pyro.core
+import Pyro
 
 # a Chain member. Passes messages to the next link,
 # until the message went full-circle: then it exits.
