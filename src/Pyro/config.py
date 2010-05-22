@@ -20,6 +20,7 @@ WORKERTHREADS   =  20       # 5 should be minimum
 POLLTIMEOUT     =  2        # seconds
 ONEWAY_THREADED    =  True     # oneway calls run in their own thread
 DETAILED_TRACEBACK =  False
+CONNECTHANDSHAKE = True     # should a connection handshake be done?
 
 
 # Btw, env vars only used at package import time (see __init__.py):

@@ -231,12 +231,15 @@ class Proxy(object):
                 with self.__pyroLock:
                     sock=Pyro.socketutil.createSocket(connect=(uri.host, uri.port), timeout=self.__pyroTimeout)
                     conn=Pyro.socketutil.SocketConnection(sock, uri.object)
-                    # handshake
-                    data=MessageFactory.createMessage(MessageFactory.MSG_CONNECT, None, 0)
-                    conn.send(data)
-                    data=conn.recv(MessageFactory.HEADERSIZE)
-                    msgType,flags,dataLen=MessageFactory.parseMessageHeader(data) #@UnusedVariable (pydev)
-                    # any trailing data (dataLen>0) is an error message, if any
+                    if Pyro.config.CONNECTHANDSHAKE:
+                        # handshake
+                        data=MessageFactory.createMessage(MessageFactory.MSG_CONNECT, None, 0)
+                        conn.send(data)
+                        data=conn.recv(MessageFactory.HEADERSIZE)
+                        msgType,flags,dataLen=MessageFactory.parseMessageHeader(data) #@UnusedVariable (pydev)
+                        # any trailing data (dataLen>0) is an error message, if any
+                    else:
+                        msgType=MessageFactory.MSG_CONNECTOK
             except Exception,x:
                 if conn:
                     conn.close()
@@ -389,6 +392,8 @@ class Daemon(object):
         self.transportServer.pingConnection()
 
     def handshake(self, conn):
+        if not Pyro.config.CONNECTHANDSHAKE:
+            return True
         """Perform connection handshake with new clients"""
         header=conn.recv(MessageFactory.HEADERSIZE)
         msgType,flags,dataLen=MessageFactory.parseMessageHeader(header) #@UnusedVariable (pydev)
