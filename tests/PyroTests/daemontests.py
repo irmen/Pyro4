@@ -1,6 +1,6 @@
 from __future__ import with_statement
 
-import os
+import os, time
 import unittest
 import Pyro.core
 import Pyro.constants
@@ -94,15 +94,30 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(3, len(d.objectsById))
             self.assertEquals(o1, d.objectsById[o1._pyroObjectId])
             self.assertEquals(o2, d.objectsById["obj2a"])
+            self.assertEquals("obj2a", o2._pyroObjectId)
+            self.assertEquals(d, o2._pyroDaemon)
     
             # test unregister
             d.unregister("unexisting_thingie")
-            d.unregister(None)
+            self.assertRaises(ValueError, d.unregister, None)
             d.unregister("obj2a")
             d.unregister(o1._pyroObjectId)
             self.assertEqual(1, len(d.objectsById))
             self.assertTrue(o1._pyroObjectId not in d.objectsById)
             self.assertTrue(o2._pyroObjectId not in d.objectsById)
+            
+            # test unregister objects
+            del o2._pyroObjectId
+            d.register(o2)
+            objectid = o2._pyroObjectId
+            self.assertTrue(objectid in d.objectsById)
+            self.assertEqual(2, len(d.objectsById))
+            d.unregister(o2)
+            self.assertFalse(hasattr(o2, "_pyroObjectId"))
+            self.assertFalse(hasattr(o2, "_pyroDaemon"))
+            self.assertEqual(1, len(d.objectsById))
+            self.assertFalse(objectid in d.objectsById)
+            self.assertRaises(DaemonError, d.unregister, [1,2,3])
             
             # test unregister daemon name
             d.unregister(Pyro.constants.DAEMON_NAME)
@@ -227,6 +242,15 @@ class DaemonTests(unittest.TestCase):
             # you cannot re-use a daemon object in multiple with statements
             pass
         d.close()
+        
+    def testRequestloopCondition(self):
+        with Pyro.core.Daemon(port=0) as d:
+            condition=lambda:False
+            start=time.time()
+            d.requestLoop(loopCondition=condition)   #this should return almost immediately
+            duration=time.time()-start
+            self.assertAlmostEqual(0.0, duration, places=1)
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

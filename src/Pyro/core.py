@@ -359,7 +359,7 @@ class Daemon(object):
     def sock(self):
         return self.transportServer.sock
 
-    def requestLoop(self, others=None):
+    def requestLoop(self, loopCondition=lambda:True, others=None):
         """
         Goes in a loop to service incoming requests, until someone breaks this
         or calls shutdown from another thread. 'others' is an optional tuple of
@@ -370,8 +370,8 @@ class Daemon(object):
         log.info("daemon %s entering requestloop", self.locationStr)
         try:
             self.__loopstopped.clear()
-            self.transportServer.requestLoop(loopCondition=lambda: not self.__mustshutdown,
-                                             others=others)
+            condition=lambda: not self.__mustshutdown and loopCondition()
+            self.transportServer.requestLoop(loopCondition=condition, others=others)
         finally:
             self.__loopstopped.set()
         log.debug("daemon exits requestloop")
@@ -491,14 +491,27 @@ class Daemon(object):
         self.objectsById[obj._pyroObjectId]=obj
         return self.uriFor(objectId)
 
-    def unregister(self, objectId):
+    def unregister(self, objectOrId):
         """
         Remove an object from the known objects inside this daemon.
+        You can unregister an object directly or with its id.
         """
+        if objectOrId is None:
+            raise ValueError("object or objectid argument expected")
+        if not isinstance(objectOrId, basestring):
+            objectId=getattr(objectOrId,"_pyroObjectId",None)
+            if objectId is None:
+                raise Pyro.errors.DaemonError("object isn't registered")
+        else:
+            objectId=objectOrId
+            objectOrId=None
         if objectId==Pyro.constants.DAEMON_NAME:
             return
         if objectId in self.objectsById:
             del self.objectsById[objectId]
+            if objectOrId is not None:
+                del objectOrId._pyroObjectId
+                del objectOrId._pyroDaemon
 
     def uriFor(self, objectOrId=None):
         """
