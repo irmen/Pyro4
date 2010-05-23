@@ -92,28 +92,28 @@ class DaemonTests(unittest.TestCase):
             self.assertRaises(DaemonError, d.register, o2, "obj2b")
             
             self.assertEqual(3, len(d.objectsById))
-            self.assertEquals(o1, d.objectsById[o1._pyroObjectId])
+            self.assertEquals(o1, d.objectsById[o1._pyroId])
             self.assertEquals(o2, d.objectsById["obj2a"])
-            self.assertEquals("obj2a", o2._pyroObjectId)
+            self.assertEquals("obj2a", o2._pyroId)
             self.assertEquals(d, o2._pyroDaemon)
     
             # test unregister
             d.unregister("unexisting_thingie")
             self.assertRaises(ValueError, d.unregister, None)
             d.unregister("obj2a")
-            d.unregister(o1._pyroObjectId)
+            d.unregister(o1._pyroId)
             self.assertEqual(1, len(d.objectsById))
-            self.assertTrue(o1._pyroObjectId not in d.objectsById)
-            self.assertTrue(o2._pyroObjectId not in d.objectsById)
+            self.assertTrue(o1._pyroId not in d.objectsById)
+            self.assertTrue(o2._pyroId not in d.objectsById)
             
             # test unregister objects
-            del o2._pyroObjectId
+            del o2._pyroId
             d.register(o2)
-            objectid = o2._pyroObjectId
+            objectid = o2._pyroId
             self.assertTrue(objectid in d.objectsById)
             self.assertEqual(2, len(d.objectsById))
             d.unregister(o2)
-            self.assertFalse(hasattr(o2, "_pyroObjectId"))
+            self.assertFalse(hasattr(o2, "_pyroId"))
             self.assertFalse(hasattr(o2, "_pyroDaemon"))
             self.assertEqual(1, len(d.objectsById))
             self.assertFalse(objectid in d.objectsById)
@@ -181,7 +181,7 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(4, len(registered))
             self.assertTrue("obj1" in registered)
             self.assertTrue("obj2" in registered)
-            self.assertTrue(obj3._pyroObjectId in registered)
+            self.assertTrue(obj3._pyroId in registered)
             try:
                 daemon.shutdown()
                 self.fail("should not succeed to call unexposed method")
@@ -202,7 +202,7 @@ class DaemonTests(unittest.TestCase):
             o3=MyObj("object3")
             self.assertRaises(DaemonError, d.uriFor, o3)  #can't get an uri for an unregistered object (note: unregistered name is allright)
             u1=d.uriFor(o1)
-            u2=d.uriFor(o2._pyroObjectId)
+            u2=d.uriFor(o2._pyroId)
             u3=d.uriFor("unexisting_thingie")  # unregistered name is no problem, it's just an uri we're requesting
             u4=d.uriFor(o2)
             self.assertEquals(Pyro.core.PyroURI, type(u1))

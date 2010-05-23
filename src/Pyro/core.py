@@ -347,8 +347,8 @@ class Daemon(object):
         log.debug("created daemon on %s", self.locationStr) 
         self.serializer=Pyro.util.Serializer()
         pyroObject=DaemonObject(self)
-        pyroObject._pyroObjectId=Pyro.constants.DAEMON_NAME
-        self.objectsById={pyroObject._pyroObjectId: pyroObject}
+        pyroObject._pyroId=Pyro.constants.DAEMON_NAME
+        self.objectsById={pyroObject._pyroId: pyroObject}
         self.__mustshutdown=False
         self.__loopstopped=threading.Event()
         self.__loopstopped.set()
@@ -482,13 +482,13 @@ class Daemon(object):
                 raise TypeError("objectId must be a string or None")
         else:
             objectId="obj_"+uuid.uuid4().hex   # generate a new objectId
-        if hasattr(obj,"_pyroObjectId"):
+        if hasattr(obj,"_pyroId"):
             raise Pyro.errors.DaemonError("object already has a Pyro id")
         if objectId in self.objectsById:
             raise Pyro.errors.DaemonError("object already registered")
-        obj._pyroObjectId=objectId
+        obj._pyroId=objectId
         obj._pyroDaemon=self
-        self.objectsById[obj._pyroObjectId]=obj
+        self.objectsById[obj._pyroId]=obj
         return self.uriFor(objectId)
 
     def unregister(self, objectOrId):
@@ -499,7 +499,7 @@ class Daemon(object):
         if objectOrId is None:
             raise ValueError("object or objectid argument expected")
         if not isinstance(objectOrId, basestring):
-            objectId=getattr(objectOrId,"_pyroObjectId",None)
+            objectId=getattr(objectOrId,"_pyroId",None)
             if objectId is None:
                 raise Pyro.errors.DaemonError("object isn't registered")
         else:
@@ -510,7 +510,7 @@ class Daemon(object):
         if objectId in self.objectsById:
             del self.objectsById[objectId]
             if objectOrId is not None:
-                del objectOrId._pyroObjectId
+                del objectOrId._pyroId
                 del objectOrId._pyroDaemon
 
     def uriFor(self, objectOrId=None):
@@ -522,7 +522,7 @@ class Daemon(object):
         object names can (it's just a string we're creating in that case)
         """
         if not isinstance(objectOrId, basestring):
-            objectOrId=getattr(objectOrId,"_pyroObjectId",None)
+            objectOrId=getattr(objectOrId,"_pyroId",None)
             if objectOrId is None:
                 raise Pyro.errors.DaemonError("object isn't registered")
         return PyroURI("PYRO:"+objectOrId+"@"+self.locationStr)
