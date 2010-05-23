@@ -110,6 +110,15 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         p1._pyroRelease()
         p2._pyroRelease()
 
+    def testCompression(self):
+        try:
+            with Pyro.core.Proxy(self.objectUri) as p:
+                Pyro.config.COMPRESSION=True
+                self.assertEqual(55, p.multiply(5,11))
+                self.assertEqual("*"*1000, p.multiply("*"*500,2))
+        finally:
+            Pyro.config.COMPRESSION=False
+
     def testReconnect(self):
         with Pyro.core.Proxy(self.objectUri) as p:
             self.assertTrue(p._pyroConnection is None)
