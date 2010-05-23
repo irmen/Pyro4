@@ -69,7 +69,7 @@ class Shop(object):
         return Pyro.core.Proxy(uri)
     def __unproxyfy(self, object):
         """unregister the object with the daemon"""
-        self._pyroDaemon.unregister(object._pyroObjectId)
+        self._pyroDaemon.unregister(object)
 
 
 ######## main program

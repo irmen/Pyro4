@@ -1,10 +1,12 @@
+#!/usr/bin/env python
+
 import random
 import Pyro
 
 # We need to set either a socket communication timeout,
 # or use the select based server. Otherwise the daemon requestLoop
 # will block indefinitely and is never able to evaluate the loopCondition.
-Pyro.COMMTIMEOUT=1
+Pyro.config.COMMTIMEOUT=0.5
 
 NUM_WORKERS=5
 
