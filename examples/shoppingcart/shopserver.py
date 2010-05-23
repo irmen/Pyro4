@@ -66,7 +66,7 @@ class Shop(object):
     def __proxyfy(self, object):
         """register the object with the daemon and return a proxy"""
         uri=self._pyroDaemon.register(object)
-        return Pyro.core.Proxy(uri)
+        return Pyro.Proxy(uri)
     def __unproxyfy(self, object):
         """unregister the object with the daemon"""
         self._pyroDaemon.unregister(object)
@@ -74,10 +74,10 @@ class Shop(object):
 
 ######## main program
 
-daemon=Pyro.core.Daemon()
+daemon=Pyro.Daemon()
 shop=Shop()
 uri=daemon.register(shop)
-ns=Pyro.naming.locateNS()
+ns=Pyro.locateNS()
 ns.remove("example.shop")
 ns.register("example.shop", uri)
 print "Shop Server is ready."

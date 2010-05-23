@@ -3,7 +3,7 @@
 import random
 import Pyro
 
-shop = Pyro.core.Proxy("PYRONAME:example.shop")
+shop = Pyro.Proxy("PYRONAME:example.shop")
 
 print "Simulating some customers."
 harrysCart=shop.enter("Harry")
