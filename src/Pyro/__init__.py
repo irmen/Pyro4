@@ -59,3 +59,5 @@ import Pyro.util            #@UnresolvedImport (pydev)
 import Pyro.errors          #@UnresolvedImport (pydev)
 import Pyro.core            #@UnresolvedImport (pydev)
 import Pyro.naming          #@UnresolvedImport (pydev)
+from Pyro.core import *
+from Pyro.naming import *

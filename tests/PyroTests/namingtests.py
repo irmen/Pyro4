@@ -75,11 +75,11 @@ class NameServerTests(unittest.TestCase):
         
         # check that we cannot register a stupid type
         self.assertRaises(TypeError, ns.register, "unittest.object1", 5555)
-        # we can register str or PyroURI, lookup always returns PyroURI        
+        # we can register str or URI, lookup always returns URI        
         ns.register("unittest.object2", "PYRO:55555@host.com:4444")
-        self.assertEquals(Pyro.core.PyroURI("PYRO:55555@host.com:4444"), ns.lookup("unittest.object2"))
-        ns.register("unittest.object3", Pyro.core.PyroURI("PYRO:66666@host.com:4444"))
-        self.assertEquals(Pyro.core.PyroURI("PYRO:66666@host.com:4444"), ns.lookup("unittest.object3"))
+        self.assertEquals(Pyro.core.URI("PYRO:55555@host.com:4444"), ns.lookup("unittest.object2"))
+        ns.register("unittest.object3", Pyro.core.URI("PYRO:66666@host.com:4444"))
+        self.assertEquals(Pyro.core.URI("PYRO:66666@host.com:4444"), ns.lookup("unittest.object3"))
         
         # check that the non-socket locations are not yet supported  
         self.assertRaises(NotImplementedError, Pyro.naming.locateNS, "./p:pipename")
@@ -143,9 +143,9 @@ class NameServerTests(unittest.TestCase):
         uri=Pyro.naming.resolve(pyronameUri)
     
     def testResolve(self):
-        resolved1=Pyro.naming.resolve(Pyro.core.PyroURI("PYRO:12345@host.com:4444"))
+        resolved1=Pyro.naming.resolve(Pyro.core.URI("PYRO:12345@host.com:4444"))
         resolved2=Pyro.naming.resolve("PYRO:12345@host.com:4444")
-        self.assertTrue(type(resolved1) is Pyro.core.PyroURI)
+        self.assertTrue(type(resolved1) is Pyro.core.URI)
         self.assertEqual(resolved1, resolved2)
         self.assertEqual("PYRO:12345@host.com:4444", str(resolved1))
         
@@ -160,7 +160,7 @@ class NameServerTests(unittest.TestCase):
         # broadcast lookup
         self.assertRaises(NamingError, Pyro.naming.resolve, "PYRONAME:unknown_object")
         uri=Pyro.naming.resolve("PYRONAME:"+Pyro.constants.NAMESERVER_NAME)
-        self.assertEquals(Pyro.core.PyroURI,type(uri))
+        self.assertEquals(Pyro.core.URI,type(uri))
         self.assertEquals("PYRO",uri.protocol)
 
         # test some errors

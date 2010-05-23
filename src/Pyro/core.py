@@ -16,11 +16,11 @@ import Pyro.socketutil
 import Pyro.util
 import Pyro.errors
 
-__all__=["PyroURI", "Proxy", "Daemon"]
+__all__=["URI", "Proxy", "Daemon"]
 
 log=logging.getLogger("Pyro.core")
 
-class PyroURI(object):
+class URI(object):
     """Pyro object URI (universal resource identifier)
     PYRO uri format: PYRO:objectid@location
         where location is one of:
@@ -35,7 +35,7 @@ class PyroURI(object):
     __slots__=("protocol","object","pipename","sockname","host","port","object")
 
     def __init__(self, uri):
-        if isinstance(uri, PyroURI):
+        if isinstance(uri, URI):
             state=uri.__getstate__()
             self.__setstate__(state)
             return
@@ -127,8 +127,8 @@ class Proxy(object):
     __pyroAttributes=frozenset(["__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri","_pyroOneway","_pyroTimeout"])
     def __init__(self, uri):
         if isinstance(uri, basestring):
-            uri=Pyro.core.PyroURI(uri)
-        elif not isinstance(uri, Pyro.core.PyroURI):
+            uri=URI(uri)
+        elif not isinstance(uri, URI):
             raise TypeError("expected Pyro URI")
         self._pyroUri=uri
         self._pyroConnection=None
@@ -154,7 +154,7 @@ class Proxy(object):
         self._pyroConnection=None
         self.__pyroLock=threading.Lock()
     def __copy__(self):
-        uriCopy=PyroURI(self._pyroUri)
+        uriCopy=URI(self._pyroUri)
         return Proxy(uriCopy)
     def __enter__(self):
         return self
@@ -475,7 +475,7 @@ class Daemon(object):
         """
         Register a Pyro object under the given id. Note that this object is now only 
         known inside this daemon, it is not automatically available in a name server.
-        This method returns a PyroURI for the registered object.
+        This method returns a URI for the registered object.
         """
         if objectId:
             if not isinstance(objectId, basestring):
@@ -515,7 +515,7 @@ class Daemon(object):
 
     def uriFor(self, objectOrId=None):
         """
-        Get a PyroURI for the given object (or object id) from this daemon.
+        Get a URI for the given object (or object id) from this daemon.
         Only a daemon can hand out proper uris because the access location is
         contained in them.
         Note that unregistered objects cannot be given an uri, but unregistered
@@ -525,7 +525,7 @@ class Daemon(object):
             objectOrId=getattr(objectOrId,"_pyroId",None)
             if objectOrId is None:
                 raise Pyro.errors.DaemonError("object isn't registered")
-        return PyroURI("PYRO:"+objectOrId+"@"+self.locationStr)
+        return URI("PYRO:"+objectOrId+"@"+self.locationStr)
 
     def close(self):
         """Close down the server and release resources"""

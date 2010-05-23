@@ -5,6 +5,7 @@ import copy
 import Pyro.core
 import Pyro.config
 import Pyro.errors
+import Pyro
 
 class Thing(object):
     def __init__(self, arg):
@@ -22,108 +23,115 @@ class CoreTests(unittest.TestCase):
         self.assertTrue("COMPRESSION" in config)
         self.assertEqual(Pyro.config.COMPRESSION, config["COMPRESSION"])
 
+    def testImports(self):
+        self.assertTrue(Pyro.Proxy is Pyro.core.Proxy)
+        self.assertTrue(Pyro.URI is Pyro.core.URI)
+        self.assertTrue(Pyro.Daemon is Pyro.core.Daemon)
+        self.assertTrue(Pyro.locateNS is Pyro.naming.locateNS)
+        self.assertTrue(Pyro.resolve is Pyro.naming.resolve)
+        
     def testUriStrAndRepr(self):
         uri="PYRONAME:some_obj_name"
-        p=Pyro.core.PyroURI(uri)
+        p=Pyro.core.URI(uri)
         self.assertEqual(uri,str(p))
         uri="PYRONAME:some_obj_name@host.com"
-        p=Pyro.core.PyroURI(uri)
+        p=Pyro.core.URI(uri)
         self.assertEqual(uri+":"+str(Pyro.config.NS_PORT),str(p))   # a PYRONAME uri with a hostname gets a port too if omitted
         uri="PYRONAME:some_obj_name@host.com:8888"
-        p=Pyro.core.PyroURI(uri)
+        p=Pyro.core.URI(uri)
         self.assertEqual(uri,str(p))
-        self.assertTrue("PyroURI object at" in repr(p))
+        self.assertTrue("URI object at" in repr(p))
         uri="PYRO:12345@host.com:9999"
-        p=Pyro.core.PyroURI(uri)
+        p=Pyro.core.URI(uri)
         self.assertEqual(uri,str(p))
         self.assertEqual(uri,p.asString())
         uri="PYRO:12345@./p:pipename"
-        p=Pyro.core.PyroURI(uri)
+        p=Pyro.core.URI(uri)
         self.assertEqual(uri,str(p))
         uri="PYRO:12345@./u:sockname"
-        p=Pyro.core.PyroURI(uri)
+        p=Pyro.core.URI(uri)
         self.assertEqual(uri,str(p))
         uri="PYRO:12345@./u:sockname"
         unicodeuri=unicode(uri)
-        p=Pyro.core.PyroURI(unicodeuri)
+        p=Pyro.core.URI(unicodeuri)
         self.assertEqual(uri,str(p))
         self.assertEqual(unicodeuri,unicode(p))
         self.assertTrue(type(p.sockname) is unicode)
 
     def testUriParsingPyro(self):
-        p=Pyro.core.PyroURI("PYRONAME:some_obj_name")
+        p=Pyro.core.URI("PYRONAME:some_obj_name")
         self.assertEqual("PYRONAME",p.protocol)
         self.assertEqual("some_obj_name",p.object)
         self.assertEqual(None,p.host)
         self.assertEqual(None,p.pipename)
         self.assertEqual(None,p.sockname)
         self.assertEqual(None,p.port)
-        p=Pyro.core.PyroURI("PYRONAME:some_obj_name@host.com:9999")
+        p=Pyro.core.URI("PYRONAME:some_obj_name@host.com:9999")
         self.assertEqual("PYRONAME",p.protocol)
         self.assertEqual("some_obj_name",p.object)
         self.assertEqual("host.com",p.host)
         self.assertEqual(9999,p.port)
 
-        p=Pyro.core.PyroURI("PYRO:12345@host.com:4444")
+        p=Pyro.core.URI("PYRO:12345@host.com:4444")
         self.assertEqual("PYRO",p.protocol)
         self.assertEqual("12345",p.object)
         self.assertEqual("host.com",p.host)
         self.assertEqual(None,p.pipename)
         self.assertEqual(None,p.sockname)
         self.assertEqual(4444,p.port)
-        p=Pyro.core.PyroURI("PYRO:12345@./p:pipename")
+        p=Pyro.core.URI("PYRO:12345@./p:pipename")
         self.assertEqual("12345",p.object)
         self.assertEqual("pipename",p.pipename)
-        p=Pyro.core.PyroURI("PYRO:12345@./u:sockname")
+        p=Pyro.core.URI("PYRO:12345@./u:sockname")
         self.assertEqual("12345",p.object)
         self.assertEqual("sockname",p.sockname)
 
     def testUriParsingPyroname(self):
-        p=Pyro.core.PyroURI("PYRONAME:objectname")
+        p=Pyro.core.URI("PYRONAME:objectname")
         self.assertEqual("PYRONAME",p.protocol)
         self.assertEqual("objectname",p.object)
         self.assertEqual(None,p.host)
         self.assertEqual(None,p.port)
-        p=Pyro.core.PyroURI("PYRONAME:objectname@nameserverhost")
+        p=Pyro.core.URI("PYRONAME:objectname@nameserverhost")
         self.assertEqual("PYRONAME",p.protocol)
         self.assertEqual("objectname",p.object)
         self.assertEqual("nameserverhost",p.host)
         self.assertEqual(Pyro.config.NS_PORT,p.port)   # Pyroname uri with host gets a port too if not specified
-        p=Pyro.core.PyroURI("PYRONAME:objectname@nameserverhost:4444")
+        p=Pyro.core.URI("PYRONAME:objectname@nameserverhost:4444")
         self.assertEqual("PYRONAME",p.protocol)
         self.assertEqual("objectname",p.object)
         self.assertEqual("nameserverhost",p.host)
         self.assertEqual(4444,p.port)
 
     def testInvalidUris(self):
-        self.assertRaises(TypeError, Pyro.core.PyroURI, None)
-        self.assertRaises(TypeError, Pyro.core.PyroURI, 99999)
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "a")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO::")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:a")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:x@")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:x@hostname")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:@hostname:portstr")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:@hostname:7766")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:objid@hostname:7766:bogus")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYROLOC:objname")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYROLOC:objname@host")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYROLOC:objectname@hostname:4444")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRONAME:")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRONAME:objname@nameserver:bogus")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRONAME:objname@nameserver:7766:bogus")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "FOOBAR:")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "FOOBAR:objid@hostname:7766")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:12345@./p:pipename/slash")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:12345@./u:sockname/slash")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:12345@./p:pipename:9999")
-        self.assertRaises(Pyro.errors.PyroError, Pyro.core.PyroURI, "PYRO:12345@./u:sockname:9999")
+        self.assertRaises(TypeError, Pyro.core.URI, None)
+        self.assertRaises(TypeError, Pyro.core.URI, 99999)
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "a")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO:")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO::")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO:a")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO:x@")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO:x@hostname")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO:@hostname:portstr")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO:@hostname:7766")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO:objid@hostname:7766:bogus")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYROLOC:objname")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYROLOC:objname@host")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYROLOC:objectname@hostname:4444")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRONAME:")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRONAME:objname@nameserver:bogus")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRONAME:objname@nameserver:7766:bogus")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "FOOBAR:")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "FOOBAR:objid@hostname:7766")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO:12345@./p:pipename/slash")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO:12345@./u:sockname/slash")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO:12345@./p:pipename:9999")
+        self.assertRaises(Pyro.errors.PyroError, Pyro.core.URI, "PYRO:12345@./u:sockname:9999")
 
     def testUriUnicode(self):
-        p=Pyro.core.PyroURI(u"PYRO:12345@host.com:4444") 
+        p=Pyro.core.URI(u"PYRO:12345@host.com:4444") 
         self.assertEqual("PYRO",p.protocol)
         self.assertEqual("12345",p.object)
         self.assertEqual("host.com",p.host)
@@ -135,25 +143,25 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(4444,p.port)
 
         uri="PYRO:12345@hostname:9999"
-        p=Pyro.core.PyroURI(uri)
-        pu=Pyro.core.PyroURI(unicode(uri))
+        p=Pyro.core.URI(uri)
+        pu=Pyro.core.URI(unicode(uri))
         self.assertEqual("PYRO",pu.protocol)
         self.assertEqual("hostname",pu.host)
         self.assertEqual(p,pu)
         self.assertEqual(str(p), str(pu))
         unicodeuri=u"PYRO:weirdchars\u20AC@host\u20AC.com:4444"
-        pu=Pyro.core.PyroURI(unicodeuri)
+        pu=Pyro.core.URI(unicodeuri)
         self.assertEqual("PYRO",pu.protocol)
         self.assertEqual(u"host\u20AC.com",pu.host)
         self.assertEqual(u"weirdchars\u20AC",pu.object)
         self.assertEqual(pu.asString(), pu.__str__())
         self.assertEqual(u"PYRO:weirdchars\u20ac@host\u20ac.com:4444", pu.asString())
         self.assertEqual(u"PYRO:weirdchars\u20ac@host\u20ac.com:4444", unicode(pu))
-        self.assertTrue("PyroURI object at" in repr(pu))
+        self.assertTrue("URI object at" in repr(pu))
     
     def testUriCopy(self):
-        p1=Pyro.core.PyroURI("PYRO:12345@hostname:9999")
-        p2=Pyro.core.PyroURI(p1)
+        p1=Pyro.core.URI("PYRO:12345@hostname:9999")
+        p2=Pyro.core.URI(p1)
         p3=copy.copy(p1)
         self.assertEqual(p1.protocol, p2.protocol)
         self.assertEqual(p1.host, p2.host)
@@ -167,9 +175,9 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(p1,p3)
         
     def testUriEqual(self):
-        p1=Pyro.core.PyroURI("PYRO:12345@host.com:9999")
-        p2=Pyro.core.PyroURI("PYRO:12345@host.com:9999")
-        p3=Pyro.core.PyroURI("PYRO:99999@host.com:4444")
+        p1=Pyro.core.URI("PYRO:12345@host.com:9999")
+        p2=Pyro.core.URI("PYRO:12345@host.com:9999")
+        p3=Pyro.core.URI("PYRO:99999@host.com:4444")
         self.assertEqual(p1,p2)
         self.assertNotEqual(p1,p3)
         self.assertNotEqual(p2,p3)
@@ -179,10 +187,10 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(p2,p3)
         
     def testLocation(self):
-        self.assertTrue(Pyro.core.PyroURI.isPipeOrUnixsockLocation("./p:name"))
-        self.assertTrue(Pyro.core.PyroURI.isPipeOrUnixsockLocation("./u:name"))
-        self.assertFalse(Pyro.core.PyroURI.isPipeOrUnixsockLocation("./x:name"))
-        self.assertFalse(Pyro.core.PyroURI.isPipeOrUnixsockLocation("foobar"))
+        self.assertTrue(Pyro.core.URI.isPipeOrUnixsockLocation("./p:name"))
+        self.assertTrue(Pyro.core.URI.isPipeOrUnixsockLocation("./u:name"))
+        self.assertFalse(Pyro.core.URI.isPipeOrUnixsockLocation("./x:name"))
+        self.assertFalse(Pyro.core.URI.isPipeOrUnixsockLocation("foobar"))
 
     def testMsgFactory(self):
         MF=Pyro.core.MessageFactory
@@ -220,7 +228,7 @@ class CoreTests(unittest.TestCase):
         # online stuff needs a running daemon, so we do that in another test, to keep this one simple
         self.assertRaises(TypeError, Pyro.core.Proxy, 999)  # wrong arg
         p1=Pyro.core.Proxy("PYRO:9999@localhost:15555")
-        p2=Pyro.core.Proxy(Pyro.core.PyroURI("PYRO:9999@localhost:15555"))
+        p2=Pyro.core.Proxy(Pyro.core.URI("PYRO:9999@localhost:15555"))
         self.assertEqual(p1._pyroUri, p2._pyroUri)
         self.assertTrue(p1._pyroConnection is None)
         p1._pyroRelease()

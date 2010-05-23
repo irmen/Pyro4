@@ -15,6 +15,8 @@ import Pyro.constants
 import Pyro.socketutil
 from Pyro.errors import PyroError, NamingError
 
+__all__=["locateNS","resolve"]
+
 log=logging.getLogger("Pyro.naming")
 
 class NameServer(object):
@@ -24,16 +26,16 @@ class NameServer(object):
         self.lock=RLock()
     def lookup(self,arg):
         try:
-            return Pyro.core.PyroURI(self.namespace[arg])
+            return Pyro.core.URI(self.namespace[arg])
         except KeyError:
             raise NamingError("unknown name: "+arg)
     def register(self,name,uri):
-        if isinstance(uri, Pyro.core.PyroURI):
+        if isinstance(uri, Pyro.core.URI):
             uri=uri.asString()
         elif not isinstance(uri, basestring):
-            raise TypeError("only PyroURIs or strings can be registered")
+            raise TypeError("only URIs or strings can be registered")
         else:
-            Pyro.core.PyroURI(uri)  # check if uri is valid
+            Pyro.core.URI(uri)  # check if uri is valid
         if not isinstance(name, basestring):
             raise TypeError("name must be a str")
         if name in self.namespace:
@@ -239,11 +241,11 @@ def locateNS(host=None, port=None):
     # pyro direct lookup
     if not port:
         port=Pyro.config.NS_PORT
-    if Pyro.core.PyroURI.isPipeOrUnixsockLocation(host):
+    if Pyro.core.URI.isPipeOrUnixsockLocation(host):
         uristring="PYRO:%s@%s" % (Pyro.constants.NAMESERVER_NAME,host)
     else:
         uristring="PYRO:%s@%s:%d" % (Pyro.constants.NAMESERVER_NAME,host,port)
-    uri=Pyro.core.PyroURI(uristring)
+    uri=Pyro.core.URI(uristring)
     log.debug("locating the NS: %s",uri)
     proxy=Pyro.core.Proxy(uri)
     try:
@@ -258,8 +260,8 @@ def locateNS(host=None, port=None):
 def resolve(uri):
     """Resolve a 'magic' uri (PYRONAME) into the direct PYRO uri."""
     if isinstance(uri, basestring):
-        uri=Pyro.core.PyroURI(uri)
-    elif not isinstance(uri, Pyro.core.PyroURI):
+        uri=Pyro.core.URI(uri)
+    elif not isinstance(uri, Pyro.core.URI):
         raise TypeError("can only resolve Pyro URIs")
     if uri.protocol=="PYRO":
         return uri

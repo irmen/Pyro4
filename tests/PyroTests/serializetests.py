@@ -46,7 +46,7 @@ class SerializeTests(unittest.TestCase):
         self.assertEqual(repr(e3), repr(e))
     
     def testSerCoreOffline(self):
-        uri=Pyro.core.PyroURI("PYRO:9999@host.com:4444")
+        uri=Pyro.core.URI("PYRO:9999@host.com:4444")
         p,_=self.ser.serialize(uri)
         uri2=self.ser.deserialize(p)
         self.assertEqual(uri, uri2)

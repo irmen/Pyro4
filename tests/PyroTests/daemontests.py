@@ -131,7 +131,7 @@ class DaemonTests(unittest.TestCase):
             
             # uri return value from register
             uri=d.register(MyObj("xyz"))
-            self.assertTrue(isinstance(uri, Pyro.core.PyroURI))
+            self.assertTrue(isinstance(uri, Pyro.core.URI))
             uri=d.register(MyObj("xyz"), "test.register")
             self.assertTrue("test.register", uri.object)
 
@@ -205,13 +205,13 @@ class DaemonTests(unittest.TestCase):
             u2=d.uriFor(o2._pyroId)
             u3=d.uriFor("unexisting_thingie")  # unregistered name is no problem, it's just an uri we're requesting
             u4=d.uriFor(o2)
-            self.assertEquals(Pyro.core.PyroURI, type(u1))
+            self.assertEquals(Pyro.core.URI, type(u1))
             self.assertEquals("PYRO",u1.protocol)
             self.assertEquals("PYRO",u2.protocol)
             self.assertEquals("PYRO",u3.protocol)
             self.assertEquals("PYRO",u4.protocol)
             self.assertEquals("object_two",u4.object)
-            self.assertEquals(Pyro.core.PyroURI("PYRO:unexisting_thingie@"+locationstr), u3)
+            self.assertEquals(Pyro.core.URI("PYRO:unexisting_thingie@"+locationstr), u3)
         finally:
             d.close()
     

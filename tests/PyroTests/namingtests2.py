@@ -15,8 +15,8 @@ class OfflineNameServerTests(unittest.TestCase):
         ns.register("test.object1","PYRO:111111@host.com:4444")
         ns.register("test.object2","PYRO:222222@host.com:4444")
         ns.register("test.object3","PYRO:333333@host.com:4444")
-        ns.register("test.sub.objectA",Pyro.core.PyroURI("PYRO:AAAAAA@host.com:4444"))
-        ns.register("test.sub.objectB",Pyro.core.PyroURI("PYRO:BBBBBB@host.com:4444"))
+        ns.register("test.sub.objectA",Pyro.core.URI("PYRO:AAAAAA@host.com:4444"))
+        ns.register("test.sub.objectB",Pyro.core.URI("PYRO:BBBBBB@host.com:4444"))
 
         self.assertRaises(NamingError, ns.register, "test.object1", "PYRO:X@Y:5555")
         self.assertRaises(TypeError, ns.register, None, None)
@@ -27,7 +27,7 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertRaises(NamingError, ns.lookup, "unknown_object")
         
         uri=ns.lookup("test.object3")
-        self.assertEqual(Pyro.core.PyroURI("PYRO:333333@host.com:4444"), uri)   # lookup always returns PyroURI
+        self.assertEqual(Pyro.core.URI("PYRO:333333@host.com:4444"), uri)   # lookup always returns URI
         ns.remove("unknown_object")
         ns.remove("test.object1")
         ns.remove("test.object2")
@@ -55,7 +55,7 @@ class OfflineNameServerTests(unittest.TestCase):
             
     def testUnicodeNames(self):
         ns=Pyro.naming.NameServer()
-        uri=Pyro.core.PyroURI(u"PYRO:unicode\u20ac@host:5555")
+        uri=Pyro.core.URI(u"PYRO:unicode\u20ac@host:5555")
         ns.register(u"unicodename\u20ac", uri)
         x=ns.lookup(u"unicodename\u20ac")
         self.assertEqual(uri, x)
@@ -125,7 +125,7 @@ class OfflineNameServerTests(unittest.TestCase):
     def testStartNSfunc(self):
         uri1,ns1,bc1=Pyro.naming.startNS(port=0, enableBroadcast=False)
         uri2,ns2,bc2=Pyro.naming.startNS(port=0, enableBroadcast=True)
-        self.assertTrue(isinstance(uri1, Pyro.core.PyroURI))
+        self.assertTrue(isinstance(uri1, Pyro.core.URI))
         self.assertTrue(isinstance(ns1, Pyro.naming.NameServerDaemon))
         self.assertTrue(bc1 is None)
         self.assertTrue(isinstance(bc2, Pyro.naming.BroadcastServer))
