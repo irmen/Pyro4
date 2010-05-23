@@ -43,7 +43,6 @@ class OfflineNameServerTests(unittest.TestCase):
         for i in range(20):
             ns.register("test.%d" % i, "PYRO:obj@host:555")
         self.assertEqual(21, len(ns.list()))
-        self.assertEqual(0, ns.remove(Pyro.constants.NAMESERVER_NAME))
         self.assertEqual(0, ns.remove("wrong"))
         self.assertEqual(0, ns.remove(prefix="wrong"))
         self.assertEqual(0, ns.remove(regex="wrong.*"))
@@ -53,6 +52,14 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertEqual(8, ns.remove(regex=r"test\.."))  # 2-9
         self.assertEqual(1, len(ns.list()))
             
+    def testRemoveProtected(self):
+        ns=Pyro.naming.NameServer()
+        ns.register(Pyro.constants.NAMESERVER_NAME, "PYRO:nameserver@host:555")
+        self.assertEqual(0, ns.remove(Pyro.constants.NAMESERVER_NAME))
+        self.assertEqual(0, ns.remove(prefix="Pyro"))
+        self.assertEqual(0, ns.remove(regex="Pyro.*"))
+        self.assertTrue(Pyro.constants.NAMESERVER_NAME in ns.list())
+
     def testUnicodeNames(self):
         ns=Pyro.naming.NameServer()
         uri=Pyro.core.URI(u"PYRO:unicode\u20ac@host:5555")
