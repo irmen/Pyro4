@@ -1,6 +1,6 @@
 from __future__ import with_statement
 import unittest
-import os, threading, time
+import os, threading, time, socket
 import Pyro.config
 import Pyro.core
 import Pyro.naming
@@ -33,6 +33,8 @@ class BCSetupTests(unittest.TestCase):
 class NameServerTests(unittest.TestCase):
     def setUp(self):
         Pyro.config.POLLTIMEOUT=0.1
+        self.old_workerthreads=Pyro.config.WORKERTHREADS
+        Pyro.config.WORKERTHREADS=4
         self.nsUri, self.nameserver, self.bcserver = Pyro.naming.startNS(port=0, bcport=0)
         self.assertTrue(self.bcserver is not None,"expected a BC server to be running")
         if os.name!="java":
@@ -55,23 +57,29 @@ class NameServerTests(unittest.TestCase):
         self.daemonthread.join()
         Pyro.config.NS_PORT=self.old_nsPort
         Pyro.config.NS_BCPORT=self.old_bcPort
+        Pyro.config.WORKERTHREADS=self.old_workerthreads
    
     def testLookupAndRegister(self):
-        ns=Pyro.naming.locateNS() # broadcast lookup
-        self.assertTrue(isinstance(ns, Pyro.core.Proxy))
-        ns._pyroRelease()
-        ns=Pyro.naming.locateNS(self.nsUri.host) # normal lookup
-        self.assertTrue(isinstance(ns, Pyro.core.Proxy))
-        uri=ns._pyroUri
-        self.assertEqual("PYRO",uri.protocol)
-        self.assertEqual(self.nsUri.host,uri.host)
-        self.assertEqual(Pyro.config.NS_PORT,uri.port)
-        ns._pyroRelease()
-        ns=Pyro.naming.locateNS(self.nsUri.host,Pyro.config.NS_PORT)
-        uri=ns._pyroUri
-        self.assertEqual("PYRO",uri.protocol)
-        self.assertEqual(self.nsUri.host,uri.host)
-        self.assertEqual(Pyro.config.NS_PORT,uri.port)
+        original_nshost=Pyro.config.NS_HOST
+        try:
+            Pyro.config.NS_HOST=socket.gethostname()
+            ns=Pyro.naming.locateNS() # broadcast lookup
+            self.assertTrue(isinstance(ns, Pyro.core.Proxy))
+            ns._pyroRelease()
+            ns=Pyro.naming.locateNS(self.nsUri.host) # normal lookup
+            self.assertTrue(isinstance(ns, Pyro.core.Proxy))
+            uri=ns._pyroUri
+            self.assertEqual("PYRO",uri.protocol)
+            self.assertEqual(self.nsUri.host,uri.host)
+            self.assertEqual(Pyro.config.NS_PORT,uri.port)
+            ns._pyroRelease()
+            ns=Pyro.naming.locateNS(self.nsUri.host,Pyro.config.NS_PORT)
+            uri=ns._pyroUri
+            self.assertEqual("PYRO",uri.protocol)
+            self.assertEqual(self.nsUri.host,uri.host)
+            self.assertEqual(Pyro.config.NS_PORT,uri.port)
+        finally:
+            Pyro.config.NS_HOST=original_nshost
         
         # check that we cannot register a stupid type
         self.assertRaises(TypeError, ns.register, "unittest.object1", 5555)
