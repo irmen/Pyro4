@@ -23,6 +23,8 @@ class MyThing(object):
     def delayAndId(self, delay, id):
         time.sleep(delay)
         return "slept for "+str(id)
+    def testargs(self,x,*args,**kwargs):
+        return x,args,kwargs
 
 class DaemonLoopThread(threading.Thread):
     def __init__(self, pyrodaemon):
@@ -69,6 +71,15 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 pass
             x=p.getDict()
             self.assertEqual({"number":42}, x)
+            # also test some argument type things
+            self.assertEqual((1,(),{}), p.testargs(1))
+            self.assertEqual((1,(2,3),{'a':4}), p.testargs(1,2,3,a=4))
+            self.assertEqual((1,(),{'a':2}), p.testargs(1, **{'a':2}))
+            if sys.version_info>=(2,6):
+                result=p.testargs(1, **{unichr(0x20ac):2})
+                key=result[2].keys()[0]
+                self.assertTrue(key==unichr(0x20ac))
+
 
     def testDottedNames(self):
         try:

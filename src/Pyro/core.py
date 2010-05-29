@@ -9,7 +9,7 @@
 ######################################################################
 
 from __future__ import with_statement
-import re, struct, sys, time
+import re, struct, sys, time, os
 import logging, uuid, threading
 import Pyro.config
 import Pyro.socketutil
@@ -271,7 +271,7 @@ class Proxy(object):
         else:
             raise NotImplementedError("non-socket uri connections not yet implemented")
 
-    def _pyroReconnect(self, tries=sys.maxint):
+    def _pyroReconnect(self, tries=100000000):
         self._pyroRelease()
         while tries:
             try:
@@ -322,7 +322,7 @@ class DaemonObject(object):
     def __init__(self, daemon):
         self.daemon=daemon
     def registered(self):
-        return self.daemon.objectsById.keys() 
+        return list(self.daemon.objectsById.keys()) 
     def ping(self):
         pass
 
@@ -426,10 +426,9 @@ class Daemon(object):
                                            data,compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             obj=self.objectsById.get(objId)
             if obj is not None:
-                if kwargs and type(kwargs.iterkeys().next()) is unicode and sys.platform!="cli":
-                    # IronPython sends all strings as unicode, but apply() doesn't grok unicode keywords.
-                    # So we need to rebuild the keywords dict with str keys... 
-                    kwargs = dict((str(k),v) for k,v in kwargs.iteritems())
+                if kwargs and sys.version_info<(2,6) and os.name!="java":
+                    # Python before 2.6 doesn't accept unicode keyword arguments
+                    kwargs = dict((str(k),kwargs[k]) for k in kwargs)
                 log.debug("calling %s.%s",obj.__class__.__name__,method)
                 obj=Pyro.util.resolveDottedAttribute(obj,method,Pyro.config.DOTTEDNAMES)
                 if flags & MessageFactory.FLAGS_ONEWAY and Pyro.config.ONEWAY_THREADED:
