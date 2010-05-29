@@ -38,21 +38,21 @@ class LocalGameObserver(object):
     def start(self):
         self.robot.emote("Here we go!")
     def victory(self):
-        print "[%s] I WON!!!" % self.name
+        print("[%s] I WON!!!" % self.name)
     def death(self, killer):
         if killer:
-            print "[%s] I DIED (%s did it)" % (self.name, killer.name)
+            print("[%s] I DIED (%s did it)" % (self.name, killer.name))
         else:
-            print "[%s] I DIED" % self.name
+            print("[%s] I DIED" % self.name)
     
 class GameObserver(object):
     def world_update(self, iteration, world, robotdata):
         pass
     def start(self):
-        print "Battle starts!"
+        print("Battle starts!")
     def victory(self):
-        print "I WON!!!"
+        print("I WON!!!")
     def death(self, killer):
-        print "I DIED"
+        print("I DIED")
         if killer:
-            print killer.name,"KILLED ME :-("
+            print("%s KILLED ME :-(" % killer.name)

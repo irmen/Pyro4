@@ -1,9 +1,12 @@
 import random
-import time
+import time, sys
 import robot
 import threading
 import remote
-from Tkinter import *
+try:
+    from Tkinter import *
+except ImportError:
+    from tkinter import *
 import Pyro
 
 class VisibleRobot(robot.Robot):
@@ -95,9 +98,10 @@ class GameEngine(object):
             self.start_round()
     def start_round(self):
         self.gui.statuslabel.config(text="new round!")
-        print "WORLD:"
-        print "\n".join(line.tostring() for line in self.world.dump())
-        print "NUMBER OF ROBOTS:",len(self.world.robots)
+        print("WORLD:")
+        for line in self.world.dump():
+            print(line.tostring())
+        print("NUMBER OF ROBOTS: %d" % len(self.world.robots))
         txtid=self.grid.create_text(20,20,text="GO!",font=("Courier",120,"bold"),anchor=NW,fill='purple')
         self.grid.after(1500,lambda:self.grid.delete(txtid))
         self.grid.after(2000,self.update)
@@ -119,13 +123,13 @@ class GameEngine(object):
         self.notify_worldupdate()
         self.gui.statuslabel.config(text="survivors: %d" % len(self.world.robots))
         if len(self.world.robots)<1:
-            print "[server] No results."
+            print("[server] No results.")
             self.round_ends()
         elif len(self.world.robots)==1:
-            self.survivor=iter(self.world.robots).next()
+            self.survivor=self.world.robots[0]
             self.world.remove(self.survivor)
             self.survivor.popuptext("I WIN! HURRAH!", True)
-            print "[server] %s wins!" % self.survivor.name
+            print("[server] %s wins!" % self.survivor.name)
             self.gui.statuslabel.config(text="winner: %s" % self.survivor.name)
             self.notify_winner(self.survivor)
             self.round_ends()
@@ -223,7 +227,7 @@ class PyroDaemonThread(threading.Thread):
                 uri=self.pyrodaemon.register(self.pyroserver)
                 self.ns.remove("example.robotserver")
                 self.ns.register("example.robotserver", uri)
-                print "Pyro server registered on",self.pyrodaemon.locationStr
+                print("Pyro server registered on %s" % self.pyrodaemon.locationStr)
                 self.pyrodaemon.requestLoop()
        
 def main():
@@ -234,8 +238,8 @@ def main():
     engine=GameEngine(gui, world)
     try:
         PyroDaemonThread(engine).start()
-    except Pyro.errors.NamingError,x:
-        print "Can't find the Pyro Nameserver. Running without remote connections."
+    except Pyro.errors.NamingError:
+        print("Can't find the Pyro Nameserver. Running without remote connections.")
     gui.tk.mainloop()
 
 if __name__=="__main__":

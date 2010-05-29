@@ -1,4 +1,4 @@
-import array
+import array, sys
 import random
 
 class Wall(object):
@@ -40,7 +40,7 @@ class Robot(object):
         if isinstance(other,Wall):
             self.strength-=1  # hit wall, decrease our strength
             if self.strength<=0:
-                print "[server] %s killed himself!" % self.name
+                print("[server] %s killed himself!" % self.name)
                 world.remove(self)
                 self.died(None,world)
         else:
@@ -49,7 +49,7 @@ class Robot(object):
             if other.strength<=0:
                 world.remove(other)
                 other.died(self, world)
-                print "[server] %s killed %s!" % (self.name, other.name)
+                print("[server] %s killed %s!" % (self.name, other.name))
         return True
     def killed(self, victim, world):
         """you can override this to react on kills"""
@@ -59,7 +59,7 @@ class Robot(object):
         pass
     def emote(self, text):
         """you can override this"""
-        print "[server] %s says: '%s'" % (self.name, text)
+        print("[server] %s says: '%s'" % (self.name, text))
 
 class World(object):
     """the world the robots move in (Cartesian grid)"""
@@ -83,9 +83,11 @@ class World(object):
         self.robots.remove(obj)
     def dump(self):
         line=' '*self.width
-        grid=[array.array('c', line) for y in range(self.height)]
+        if sys.version_info>=(3,0):
+            line=bytes(line, "ASCII")
+        grid=[array.array('b', line) for y in range(self.height)]
         for obj in self.all:
-            grid[obj.y][obj.x]='R' if isinstance(obj, Robot) else '#'
+            grid[obj.y][obj.x]=ord('R') if isinstance(obj, Robot) else ord('#')
         return grid
     def __getstate__(self):
         all=[o.serializable() for o in self.all]
