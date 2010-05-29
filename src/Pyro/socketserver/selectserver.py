@@ -9,7 +9,7 @@
 #
 ######################################################################
 
-import select, os, socket, logging
+import select, os, socket, logging, sys
 from Pyro.socketutil import SocketConnection, createSocket, ERRNO_RETRIES, ERRNO_BADF
 from Pyro.errors import ConnectionClosedError, PyroError
 import Pyro.config
@@ -66,7 +66,8 @@ class SocketServer(object):
                             if others and conn in others[0]:
                                 try:
                                     others[1]([conn])  # handle events from other socket
-                                except socket.error,x:
+                                except socket.error:
+                                    x=sys.exc_info()[1]
                                     log.warn("there was an uncaught socket error for the other sockets: %s",x)
                             else:
                                 try:
@@ -130,7 +131,8 @@ class SocketServer(object):
                     if rlist and others:
                         try:
                             others[1](rlist)  # handle events from other sockets
-                        except socket.error,x:
+                        except socket.error:
+                            x=sys.exc_info()[1]
                             log.warn("there was an uncaught socket error for the other sockets: %s",x)
                 except socket.timeout:
                     pass   # just continue the loop on a timeout
@@ -145,7 +147,8 @@ class SocketServer(object):
             log.debug("connection from %s",caddr)
             if Pyro.config.COMMTIMEOUT:
                 csock.settimeout(Pyro.config.COMMTIMEOUT)
-        except socket.error,x:
+        except socket.error:
+            x=sys.exc_info()[1]
             err=getattr(x,"errno",x.args[0])
             if err in ERRNO_RETRIES:
                 # just ignore this error for now and continue
@@ -159,7 +162,8 @@ class SocketServer(object):
             conn=SocketConnection(csock)
             if self.callback.handshake(conn):
                 return conn
-        except (socket.error, PyroError), x:
+        except (socket.error, PyroError):
+            x=sys.exc_info()[1]
             log.warn("error during connect: %s",x)
             csock.close()
         return None

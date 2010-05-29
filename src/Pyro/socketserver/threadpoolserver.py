@@ -7,7 +7,11 @@
 #
 ######################################################################
 
-import os, threading, socket, select, logging, Queue
+import os, threading, socket, select, logging, sys
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 from Pyro.socketutil import SocketConnection, createSocket
 from Pyro.errors import ConnectionClosedError, PyroError
 import Pyro.config
@@ -52,7 +56,8 @@ class SocketWorker(threading.Thread):
         try:
             if self.callback.handshake(conn):
                 return True
-        except (socket.error, PyroError), x:
+        except (socket.error, PyroError):
+            x=sys.exc_info()[1]
             log.warn("error during connect: %s",x)
             conn.close()
         return False
@@ -71,7 +76,7 @@ class SocketServer(object):
         port=port or self._socketaddr[1]
         self.locationStr="%s:%d" % (host,port)
         self.threadpool=set()
-        self.workqueue=Queue.Queue()
+        self.workqueue=queue.Queue()
         for _ in range(Pyro.config.WORKERTHREADS):  #  XXX should be dynamic
             worker=SocketWorker(self, callbackObject)
             self.threadpool.add(worker)
@@ -102,7 +107,8 @@ class SocketServer(object):
                 if ins:
                     try:
                         others[1](ins)  # handle events from other sockets
-                    except socket.error,x:
+                    except socket.error:
+                        x=sys.exc_info()[1]
                         log.warn("there was an uncaught socket error for the other sockets: %s",x)
             except socket.timeout:
                 pass  # just continue the loop on a timeout on accept

@@ -1,10 +1,17 @@
 from __future__ import with_statement
 import unittest
-import sys, StringIO, select, os
+import sys, select, os
 import Pyro.core
 import Pyro.naming
 import Pyro.nsc
 from Pyro.errors import NamingError,PyroError
+
+if sys.version_info>=(3,0):
+    from io import StringIO
+    unicode=str
+    unichr=chr
+else:
+    from StringIO import StringIO
 
 # offline name-server tests
 
@@ -62,9 +69,9 @@ class OfflineNameServerTests(unittest.TestCase):
 
     def testUnicodeNames(self):
         ns=Pyro.naming.NameServer()
-        uri=Pyro.core.URI(u"PYRO:unicode\u20ac@host:5555")
-        ns.register(u"unicodename\u20ac", uri)
-        x=ns.lookup(u"unicodename\u20ac")
+        uri=Pyro.core.URI("PYRO:unicode"+unichr(0x20ac)+"@host:5555")
+        ns.register("unicodename"+unichr(0x20ac), uri)
+        x=ns.lookup("unicodename"+unichr(0x20ac))
         self.assertEqual(uri, x)
 
     def testList(self):
@@ -112,7 +119,7 @@ class OfflineNameServerTests(unittest.TestCase):
         try:
             with Pyro.naming.NameServerDaemon(port=0) as ns:
                 self.assertFalse(ns.nameserver is None)
-                print 1//0 # cause an error
+                print(1//0) # cause an error
             self.fail("expected error")
         except ZeroDivisionError: 
             pass
@@ -167,8 +174,8 @@ class OfflineNameServerTests(unittest.TestCase):
         oldstdout=sys.stdout
         oldstderr=sys.stderr
         try:
-            sys.stdout=StringIO.StringIO()
-            sys.stderr=StringIO.StringIO()
+            sys.stdout=StringIO()
+            sys.stderr=StringIO()
             self.assertRaises(SystemExit, Pyro.naming.main, ["--invalidarg"])
             self.assertTrue("no such option" in sys.stderr.getvalue())
             sys.stderr.truncate(0)
@@ -183,8 +190,8 @@ class OfflineNameServerTests(unittest.TestCase):
         oldstdout=sys.stdout
         oldstderr=sys.stderr
         try:
-            sys.stdout=StringIO.StringIO()
-            sys.stderr=StringIO.StringIO()
+            sys.stdout=StringIO()
+            sys.stderr=StringIO()
             self.assertRaises(SystemExit, Pyro.nsc.main, ["--invalidarg"])
             self.assertTrue("no such option" in sys.stderr.getvalue())
             sys.stderr.truncate(0)

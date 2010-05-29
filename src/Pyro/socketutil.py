@@ -7,7 +7,7 @@
 #
 ######################################################################
 
-import socket, os, errno, logging, time
+import socket, os, errno, logging, time, sys
 from Pyro.errors import ConnectionClosedError,TimeoutError,CommunicationError
 
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
@@ -71,7 +71,8 @@ def receiveData(sock, size):
                     return data
                 except socket.timeout:
                     raise TimeoutError("receiving: timeout")
-                except socket.error,x:
+                except socket.error:
+                    x=sys.exc_info()[1]
                     err=getattr(x,"errno",x.args[0])
                     if err not in ERRNO_RETRIES:
                         raise ConnectionClosedError("receiving: connection lost: "+str(x))
@@ -98,7 +99,8 @@ def receiveData(sock, size):
                 return data  # yay, complete
             except socket.timeout:
                 raise TimeoutError("receiving: timeout")
-            except socket.error,x:
+            except socket.error:
+                x=sys.exc_info()[1]
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("receiving: connection lost: "+str(x))
@@ -121,7 +123,8 @@ def sendData(sock, data):
                 return
             except socket.timeout:
                 raise TimeoutError("sending: timeout")
-            except socket.error,x:
+            except socket.error:
+                x=sys.exc_info()[1]
                 raise ConnectionClosedError("sending: connection lost: "+str(x))
     else:
         # Socket is in non-blocking mode, use regular send loop.
@@ -132,7 +135,8 @@ def sendData(sock, data):
                 data = data[sent:]
             except socket.timeout:
                 raise TimeoutError("sending: timeout")
-            except socket.error, x:
+            except socket.error:
+                x=sys.exc_info()[1]
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("sending: connection lost: "+str(x))

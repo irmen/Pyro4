@@ -8,7 +8,7 @@
 ######################################################################
 
 from __future__ import with_statement
-import os, re, logging, socket
+import os, re, logging, socket, sys
 from threading import RLock, Thread
 import Pyro.core        # not Pyro.core, to avoid circular import
 import Pyro.constants
@@ -16,6 +16,9 @@ import Pyro.socketutil
 from Pyro.errors import PyroError, NamingError
 
 __all__=["locateNS","resolve"]
+
+if sys.version_info>(3,0):
+    basestring=str
 
 log=logging.getLogger("Pyro.naming")
 
@@ -49,7 +52,7 @@ class NameServer(object):
             return 1
         if prefix:
             with self.lock:
-                items=self.list(prefix=prefix).keys()
+                items=list(self.list(prefix=prefix).keys())
                 if Pyro.constants.NAMESERVER_NAME in items:
                     items.remove(Pyro.constants.NAMESERVER_NAME)
                 for item in items:
@@ -57,7 +60,7 @@ class NameServer(object):
                 return len(items)
         if regex:
             with self.lock:
-                items=self.list(regex=regex).keys()
+                items=list(self.list(regex=regex).keys())
                 if Pyro.constants.NAMESERVER_NAME in items:
                     items.remove(Pyro.constants.NAMESERVER_NAME)
                 for item in items:
@@ -77,7 +80,8 @@ class NameServer(object):
                 result={}
                 try:
                     regex=re.compile(regex+"$")  # add end of string marker
-                except re.error,x:
+                except re.error:
+                    x=sys.exc_info()[1]
                     raise NamingError("invalid regex: "+str(x))
                 else:
                     for name in self.namespace:
@@ -169,27 +173,27 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
     hostip=daemon.sock.getsockname()[0]
     nsUri=daemon.uriFor(daemon.nameserver)
     if hostip.startswith("127."):
-        print "Not starting broadcast server for localhost."
+        print("Not starting broadcast server for localhost.")
         log.info("Not starting NS broadcast server because NS is bound to localhost")
         enableBroadcast=False
     bcserver=None
     others=None
     if enableBroadcast:
         bcserver=BroadcastServer(nsUri,bchost,bcport)
-        print "Broadcast server running on", bcserver.locationStr
+        print("Broadcast server running on %s" % bcserver.locationStr)
         if os.name!="java":
             others=([bcserver.sock], bcserver.processRequest)
         else:
             bcserver.runInThread()  
-    print "NS running on %s (%s)" % (daemon.locationStr,hostip)
-    print "URI =",nsUri
+    print("NS running on %s (%s)" % (daemon.locationStr,hostip))
+    print("URI = %s" % nsUri)
     try:
         daemon.requestLoop(others=others)
     finally:
         daemon.close()
         if bcserver is not None:
             bcserver.close()
-    print "NS shut down."
+    print("NS shut down.")
 
 def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
     """utility fuction to quickly get a Name server daemon to be used in your own event loops.

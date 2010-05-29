@@ -9,12 +9,15 @@
 ######################################################################
 
 from __future__ import with_statement
-import re, struct, sys, time
+import re, struct, sys, time, os
 import logging, uuid, threading
 import Pyro.config
 import Pyro.socketutil
 import Pyro.util
 import Pyro.errors
+
+if sys.version_info>(3,0):
+    basestring=str
 
 __all__=["URI", "Proxy", "Daemon"]
 
@@ -240,7 +243,8 @@ class Proxy(object):
                         # any trailing data (dataLen>0) is an error message, if any
                     else:
                         msgType=MessageFactory.MSG_CONNECTOK
-            except Exception,x:
+            except Exception:
+                x=sys.exc_info()[1]
                 if conn:
                     conn.close()
                 err="cannot connect: %s" % x
@@ -271,7 +275,7 @@ class Proxy(object):
         else:
             raise NotImplementedError("non-socket uri connections not yet implemented")
 
-    def _pyroReconnect(self, tries=sys.maxint):
+    def _pyroReconnect(self, tries=100000000):
         self._pyroRelease()
         while tries:
             try:
@@ -298,11 +302,15 @@ class MessageFactory(object):
     FLAGS_EXCEPTION  = 1<<0
     FLAGS_COMPRESSED = 1<<1
     FLAGS_ONEWAY     = 1<<2
+    if sys.version_info>=(3,0):
+        empty_bytes  = bytes("","ASCII")
+    else:
+        empty_bytes  = ""
 
     @classmethod
     def createMessage(cls, msgType, data, flags=0):
         """creates a message containing a header followed by the given data"""
-        data=data or ""
+        data=data or cls.empty_bytes
         msg=struct.pack(cls.headerFmt, "PYRO", Pyro.constants.PROTOCOL_VERSION, msgType, flags, len(data))
         return msg+data
 
@@ -322,7 +330,7 @@ class DaemonObject(object):
     def __init__(self, daemon):
         self.daemon=daemon
     def registered(self):
-        return self.daemon.objectsById.keys() 
+        return list(self.daemon.objectsById.keys()) 
     def ping(self):
         pass
 
@@ -426,10 +434,9 @@ class Daemon(object):
                                            data,compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             obj=self.objectsById.get(objId)
             if obj is not None:
-                if kwargs and type(kwargs.iterkeys().next()) is unicode and sys.platform!="cli":
-                    # IronPython sends all strings as unicode, but apply() doesn't grok unicode keywords.
-                    # So we need to rebuild the keywords dict with str keys... 
-                    kwargs = dict((str(k),v) for k,v in kwargs.iteritems())
+                if kwargs and sys.version_info<(2,6) and os.name!="java":
+                    # Python before 2.6 doesn't accept unicode keyword arguments
+                    kwargs = dict((str(k),kwargs[k]) for k in kwargs)
                 log.debug("calling %s.%s",obj.__class__.__name__,method)
                 obj=Pyro.util.resolveDottedAttribute(obj,method,Pyro.config.DOTTEDNAMES)
                 if flags & MessageFactory.FLAGS_ONEWAY and Pyro.config.ONEWAY_THREADED:
@@ -452,10 +459,11 @@ class Daemon(object):
                 msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags)
                 del data
                 conn.send(msg)
-        except Pyro.errors.CommunicationError,x:
+        except Pyro.errors.CommunicationError:
             # communication errors are not handled here (including TimeoutError)
             raise
-        except Exception,x:
+        except Exception:
+            x=sys.exc_info()[1]
             # all other errors are caught
             log.debug("Exception occurred while handling request: %s",x)
             if not flags & MessageFactory.FLAGS_ONEWAY:
