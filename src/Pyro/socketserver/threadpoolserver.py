@@ -154,9 +154,9 @@ class SocketServer(object):
         try:
             sock=createSocket(connect=self._socketaddr)
             if sys.version_info<(3,0): 
-                self.sock.send("!"*16)
+                sock.send("!"*16)
             else:
-                self.sock.send(bytes([1]*16))
+                sock.send(bytes([1]*16))
             sock.close()
         except socket.error:
             pass
