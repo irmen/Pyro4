@@ -17,7 +17,7 @@ from Pyro.errors import PyroError, NamingError
 
 __all__=["locateNS","resolve"]
 
-if sys.version_info>(3,0):
+if sys.version_info>=(3,0):
     basestring=str
 
 log=logging.getLogger("Pyro.naming")
@@ -121,6 +121,10 @@ class NameServerDaemon(Pyro.core.Daemon):
         return super(NameServerDaemon,self).__exit__(exc_type, exc_value, traceback)
         
 class BroadcastServer(object):
+    if sys.version_info>=(3,0):
+        REQUEST_NSURI=bytes("GET_NSURI","ASCII")
+    else:
+        REQUEST_NSURI="GET_NSURI"
     def __init__(self, nsUri, bchost=None, bcport=None):
         self.nsUri=str(nsUri)
         if bcport is None:
@@ -157,9 +161,12 @@ class BroadcastServer(object):
         for bcsocket in otherSockets:
             try:
                 data,addr=bcsocket.recvfrom(100)
-                if data=="GET_NSURI":
+                if data==self.REQUEST_NSURI:
                     log.debug("responding to broadcast request from %s",addr)
-                    bcsocket.sendto(self.nsUri, 0, addr)
+                    responsedata=self.nsUri
+                    if sys.version_info>=(3,0):
+                        responsedata=bytes(responsedata,"iso-8859-1")
+                    bcsocket.sendto(responsedata, 0, addr)
             except socket.error:
                 pass
     def __enter__(self):
@@ -230,9 +237,10 @@ def locateNS(host=None, port=None):
         sock=Pyro.socketutil.createBroadcastSocket(timeout=0.7)
         for _ in range(3):
             try:
-                sock.sendto("GET_NSURI",0,("<broadcast>",port))
+                sock.sendto(BroadcastServer.REQUEST_NSURI,0,("<broadcast>",port))
                 data,_=sock.recvfrom(100)
                 sock.close()
+                data=data.decode("iso-8859-1")
                 log.debug("located NS: %s",data)
                 return Pyro.core.Proxy(data)
             except socket.timeout:
