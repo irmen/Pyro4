@@ -11,7 +11,7 @@ except ImportError:
     print "No coverage info available"
 
 sys.path.insert(0,"../src")    # add Pyro source directory
-    
+sys.path.insert(1,"PyroTests")
 
 if __name__=="__main__":
     # add test modules here

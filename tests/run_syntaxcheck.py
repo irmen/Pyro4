@@ -1,6 +1,7 @@
 import os
 import sys
 sys.path.insert(0,"../src")
+sys.path.insert(1,"PyroTests")
 
 def Pyflakes(path, modules):
     try:
