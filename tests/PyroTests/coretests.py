@@ -15,7 +15,7 @@ if sys.version_info<(3,0):
     def tobytes(string, encoding=None):
         return string
 else:
-    def tobytes(string, encoding="ASCII"):
+    def tobytes(string, encoding="iso-8859-1"):
         return bytes(string,encoding)
 
 class Thing(object):
@@ -224,13 +224,16 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(42, flags)
         self.assertEqual(5, dataLen)
         msg=MF.createMessage(255,None)
-        self.assertEqual("PYRO\x00"+chr(Pyro.constants.PROTOCOL_VERSION)+"\x00\xff\x00\x00\x00\x00\x00\x00",msg)
+        expected=tobytes("PYRO\x00"+chr(Pyro.constants.PROTOCOL_VERSION)+"\x00\xff\x00\x00\x00\x00\x00\x00")
+        self.assertEqual(expected,msg)
         msg=MF.createMessage(1,None)
-        self.assertEqual("PYRO\x00"+chr(Pyro.constants.PROTOCOL_VERSION)+"\x00\x01\x00\x00\x00\x00\x00\x00",msg)
+        expected=tobytes("PYRO\x00"+chr(Pyro.constants.PROTOCOL_VERSION)+"\x00\x01\x00\x00\x00\x00\x00\x00")
+        self.assertEqual(expected,msg)
         msg=MF.createMessage(1,None,flags=255)
-        self.assertEqual("PYRO\x00"+chr(Pyro.constants.PROTOCOL_VERSION)+"\x00\x01\x00\xff\x00\x00\x00\x00",msg)
+        expected=tobytes("PYRO\x00"+chr(Pyro.constants.PROTOCOL_VERSION)+"\x00\x01\x00\xff\x00\x00\x00\x00")
+        self.assertEqual(expected,msg)
         # compression is a job of the code supplying the data, so the messagefactory should leave it untouched
-        data="x"*1000
+        data=tobytes("x"*1000)
         msg=MF.createMessage(MF.MSG_INVOKE, data, 0)
         msg2=MF.createMessage(MF.MSG_INVOKE, data, MF.FLAGS_COMPRESSED)
         self.assertEquals(len(msg),len(msg2))

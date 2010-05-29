@@ -1,10 +1,16 @@
 import unittest
-import socket, os
+import socket, os, sys
 import Pyro.socketutil as SU
 import Pyro.config
 from Pyro.socketserver.selectserver import SocketServer as SocketServer_Select
 from Pyro.socketserver.threadpoolserver import SocketServer as SocketServer_Threadpool
 
+if sys.version_info<(3,0):
+    def tobytes(string, encoding=None):
+        return string
+else:
+    def tobytes(string, encoding="iso-8859-1"):
+        return bytes(string,encoding)
 
 class TestSocketutil(unittest.TestCase):
     def setUp(self):
@@ -71,13 +77,13 @@ class TestSocketutil(unittest.TestCase):
         ss=SU.createSocket(bind=("localhost",0))
         port=ss.getsockname()[1]
         cs=SU.createSocket(connect=("localhost",port))
-        SU.sendData(cs,"foobar!"*10)
+        SU.sendData(cs,tobytes("foobar!"*10))
         cs.shutdown(socket.SHUT_WR)
         a=ss.accept()
         data=SU.receiveData(a[0], 5)
-        self.assertEqual("fooba",data)
+        self.assertEqual(tobytes("fooba"),data)
         data=SU.receiveData(a[0], 5)
-        self.assertEqual("r!foo",data)
+        self.assertEqual(tobytes("r!foo"),data)
         a[0].close()
         ss.close()
         cs.close()
@@ -85,9 +91,9 @@ class TestSocketutil(unittest.TestCase):
         ss=SU.createBroadcastSocket((None, 0))
         port=ss.getsockname()[1]
         cs=SU.createBroadcastSocket()
-        cs.sendto("monkey",('<broadcast>',port))
+        cs.sendto(tobytes("monkey"),0,('<broadcast>',port))
         data,_=ss.recvfrom(500)
-        self.assertEqual("monkey",data)
+        self.assertEqual(tobytes("monkey"),data)
         cs.close()
         ss.close()
 

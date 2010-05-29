@@ -159,7 +159,7 @@ class BroadcastServer(object):
                 data,addr=bcsocket.recvfrom(100)
                 if data=="GET_NSURI":
                     log.debug("responding to broadcast request from %s",addr)
-                    bcsocket.sendto(self.nsUri, addr)
+                    bcsocket.sendto(self.nsUri, 0, addr)
             except socket.error:
                 pass
     def __enter__(self):
@@ -230,7 +230,7 @@ def locateNS(host=None, port=None):
         sock=Pyro.socketutil.createBroadcastSocket(timeout=0.7)
         for _ in range(3):
             try:
-                sock.sendto("GET_NSURI",("<broadcast>",port))
+                sock.sendto("GET_NSURI",0,("<broadcast>",port))
                 data,_=sock.recvfrom(100)
                 sock.close()
                 log.debug("located NS: %s",data)

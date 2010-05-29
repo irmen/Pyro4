@@ -303,15 +303,17 @@ class MessageFactory(object):
     FLAGS_COMPRESSED = 1<<1
     FLAGS_ONEWAY     = 1<<2
     if sys.version_info>=(3,0):
-        empty_bytes  = bytes("","ASCII")
+        empty_bytes  = bytes([])
+        pyro_tag     = bytes("PYRO","ASCII")
     else:
         empty_bytes  = ""
+        pyro_tag     = "PYRO"
 
     @classmethod
     def createMessage(cls, msgType, data, flags=0):
         """creates a message containing a header followed by the given data"""
         data=data or cls.empty_bytes
-        msg=struct.pack(cls.headerFmt, "PYRO", Pyro.constants.PROTOCOL_VERSION, msgType, flags, len(data))
+        msg=struct.pack(cls.headerFmt, cls.pyro_tag, Pyro.constants.PROTOCOL_VERSION, msgType, flags, len(data))
         return msg+data
 
     @classmethod
@@ -320,7 +322,7 @@ class MessageFactory(object):
         if not headerData or len(headerData)!=cls.HEADERSIZE:
             raise Pyro.errors.ProtocolError("header data size mismatch")
         tag,ver,msgType,flags,dataLen = struct.unpack(cls.headerFmt, headerData)
-        if tag!="PYRO" or ver!=Pyro.constants.PROTOCOL_VERSION:
+        if tag!=cls.pyro_tag or ver!=Pyro.constants.PROTOCOL_VERSION:
             raise Pyro.errors.ProtocolError("invalid data or unsupported protocol version")
         return msgType,flags,dataLen
 

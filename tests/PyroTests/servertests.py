@@ -8,6 +8,10 @@ import threading, time, os, sys
 # tests that require a running Pyro server (daemon)
 # the server part here is not using a timeout setting.
 
+if sys.version_info>=(3,0):
+    unicode=str
+    unichr=chr
+
 class MyThing(object):
     def __init__(self):
         self.dictionary={"number":42}
@@ -77,7 +81,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             self.assertEqual((1,(),{'a':2}), p.testargs(1, **{'a':2}))
             if sys.version_info>=(2,6):
                 result=p.testargs(1, **{unichr(0x20ac):2})
-                key=result[2].keys()[0]
+                key=list(result[2].keys())[0]
                 self.assertTrue(key==unichr(0x20ac))
 
 
@@ -227,13 +231,13 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             start=time.time()
             p.delay(0.5)
             duration=time.time()-start
-            self.assertAlmostEqual(0.5, duration, 1)
+            self.assertAlmostEqual(0.5, duration, places=1)
             p._pyroTimeout=0.1
             start=time.time()
             self.assertRaises(Pyro.errors.TimeoutError, p.delay, 1)
             duration=time.time()-start
             if sys.platform!="cli":
-                self.assertAlmostEqual(0.1, duration, 1)
+                self.assertAlmostEqual(0.1, duration, places=1)
             else:
                 # ironpython's time is wonky
                 self.assertTrue(0.0<duration<0.7)

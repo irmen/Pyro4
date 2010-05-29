@@ -153,7 +153,10 @@ class SocketServer(object):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
             sock=createSocket(connect=self._socketaddr)
-            sock.send("!!!!!!!!!!!!!!!!!!!!!")
+            if sys.version_info<(3,0): 
+                self.sock.send("!"*16)
+            else:
+                self.sock.send(bytes([1]*16))
             sock.close()
         except socket.error:
             pass

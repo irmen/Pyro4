@@ -186,6 +186,9 @@ class SocketServer(object):
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
-            self.sock.send("!!!!!!!!!!!!!!!!!!!!!!!")
+            if sys.version_info<(3,0): 
+                self.sock.send("!"*16)
+            else:
+                self.sock.send(bytes([1]*16))
         except socket.error:
             pass

@@ -94,9 +94,12 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                 seen_crap = 0
                 for frame in frame_stack:
                     # Get items
-                    flocals = frame.f_locals.items()[:]
+                    flocals = list(frame.f_locals.items())
      
-                    line_num = lines.next()
+                    if sys.version_info>=(2,6):
+                        line_num = next(lines)
+                    else:
+                        line_num = lines.next()
                     filename = frame.f_code.co_filename
      
                     name = None
