@@ -49,7 +49,7 @@ class NameServer(object):
             return 1
         if prefix:
             with self.lock:
-                items=self.list(prefix=prefix).keys()
+                items=list(self.list(prefix=prefix).keys())
                 if Pyro.constants.NAMESERVER_NAME in items:
                     items.remove(Pyro.constants.NAMESERVER_NAME)
                 for item in items:
@@ -57,7 +57,7 @@ class NameServer(object):
                 return len(items)
         if regex:
             with self.lock:
-                items=self.list(regex=regex).keys()
+                items=list(self.list(regex=regex).keys())
                 if Pyro.constants.NAMESERVER_NAME in items:
                     items.remove(Pyro.constants.NAMESERVER_NAME)
                 for item in items:
