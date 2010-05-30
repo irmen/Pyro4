@@ -160,6 +160,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
     def testOnewayDelayed(self):
         try:
             with Pyro.core.Proxy(self.objectUri) as p:
+                p.ping()
                 Pyro.config.ONEWAY_THREADED=True   # the default
                 p._pyroOneway.add("delay")
                 now=time.time()
@@ -244,6 +245,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
     def testTimeoutConnect(self):
         # set up a unresponsive daemon
         with Pyro.core.Daemon(port=0) as d:
+            time.sleep(0.5)
             obj=MyThing()
             uri=d.register(obj)
             # we're not going to start the daemon's event loop
@@ -270,7 +272,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                         time.sleep(0.001)
                     self.error=False
                 except:
-                    print "Something went wrong in the thread:"
+                    print "Something went wrong in the thread (SharedProxyThread):"
                     print "".join(Pyro.util.getPyroTraceback())
         with Pyro.core.Proxy(self.objectUri) as p:
             threads=[]

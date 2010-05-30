@@ -8,7 +8,7 @@ import servertests
 
 class ServerTestsThreadTimeout(servertests.ServerTestsThreadNoTimeout):
     SERVERTYPE="thread"
-    COMMTIMEOUT=2
+    COMMTIMEOUT=2.0
     def testServerParallelism(self):
         # this test is not suitable on a server with timeout set
         pass
@@ -16,7 +16,7 @@ class ServerTestsThreadTimeout(servertests.ServerTestsThreadNoTimeout):
 if os.name!="java":
     class ServerTestsSelectTimeout(servertests.ServerTestsSelectNoTimeout):
         SERVERTYPE="select"
-        COMMTIMEOUT=2
+        COMMTIMEOUT=2.0
         def testServerParallelism(self):
             # this test is not suitable on a server with timeout set
             pass
