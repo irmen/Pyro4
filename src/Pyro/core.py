@@ -197,8 +197,8 @@ class Proxy(object):
             flags |= MessageFactory.FLAGS_COMPRESSED
         if methodname in self._pyroOneway:
             flags |= MessageFactory.FLAGS_ONEWAY
-        data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags)
         with self.__pyroLock:
+            data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags)
             try:
                 self._pyroConnection.send(data)
                 if flags & MessageFactory.FLAGS_ONEWAY:

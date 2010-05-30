@@ -7,10 +7,10 @@
 #
 ######################################################################
 
-import sys, zlib, logging
+import sys, zlib, logging, struct
 import traceback, linecache
 import Pyro.constants
-from Pyro.errors import CommunicationError
+import Pyro.errors
 
 log=logging.getLogger("Pyro.util")
 
@@ -168,8 +168,8 @@ class Serializer(object):
     def serialize(self, data, compress=False):
         """Serialize the given data object, try to compress if told so.
         Returns a tuple of the serialized data and a bool indicating if it is compressed or not."""
-        data=(sys.hexversion, data) # add the python version to the stream
-        data=self.pickle.dumps(data, self.pickle.HIGHEST_PROTOCOL)
+        version=struct.pack("!H",sys.hexversion>>16)
+        data=version+self.pickle.dumps(data, self.pickle.HIGHEST_PROTOCOL)
         if compress and len(data)>200:       # don't waste time compressing small messages
             compressed=zlib.compress(data)
             if len(compressed)<len(data):
@@ -180,13 +180,14 @@ class Serializer(object):
         """Deserializes the given data. Set compressed to True to decompress the data first."""
         if compressed:
             data=zlib.decompress(data)
-        otherversion,data=self.pickle.loads(data)
         # if the major version number differs, the pickle stream is incompatible
-        othermajorv=otherversion>>24
+        otherversion=struct.unpack("!H",data[0:2])[0]
+        othermajorv=otherversion>>8
         if othermajorv!=sys.hexversion>>24:
-            otherminorv=(otherversion&0xff0000)>>16
-            raise CommunicationError("incompatible python version detected on other side: %d.%d" %(othermajorv,otherminorv))
-        return data
+            otherminorv=otherversion&0xff
+            raise Pyro.errors.CommunicationError("incompatible python version detected on other side: %d.%d" %(othermajorv,otherminorv))
+        # version is ok, can unpickle
+        return self.pickle.loads(data[2:])
     def __eq__(self, other):
         """this is only for the unit tests. It is not required."""
         return type(other) is Serializer and vars(self)==vars(other)

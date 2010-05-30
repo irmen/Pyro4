@@ -39,7 +39,10 @@ class DaemonLoopThread(threading.Thread):
         self.running.clear()
     def run(self):
         self.running.set()
-        self.pyrodaemon.requestLoop()
+        try:
+            self.pyrodaemon.requestLoop()
+        except:
+            print("Swallow exception from terminated daemon")
         
 class ServerTestsThreadNoTimeout(unittest.TestCase):
     SERVERTYPE="thread"
@@ -128,7 +131,14 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         p1._pyroRelease()
         p2._pyroRelease()
 
-    def testCompression(self):
+    def testReconnectAndCompression(self):
+        # try reconnects
+        with Pyro.core.Proxy(self.objectUri) as p:
+            self.assertTrue(p._pyroConnection is None)
+            p._pyroReconnect(tries=100)
+            self.assertTrue(p._pyroConnection is not None)
+        self.assertTrue(p._pyroConnection is None)
+        # test compression:
         try:
             with Pyro.core.Proxy(self.objectUri) as p:
                 Pyro.config.COMPRESSION=True
@@ -136,13 +146,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 self.assertEqual("*"*1000, p.multiply("*"*500,2))
         finally:
             Pyro.config.COMPRESSION=False
-
-    def testReconnect(self):
-        with Pyro.core.Proxy(self.objectUri) as p:
-            self.assertTrue(p._pyroConnection is None)
-            p._pyroReconnect(tries=100)
-            self.assertTrue(p._pyroConnection is not None)
-        self.assertTrue(p._pyroConnection is None)
     
     def testOneway(self):
         with Pyro.core.Proxy(self.objectUri) as p:
@@ -160,10 +163,20 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             p._pyroOneway.add("nonexisting")
             # now it shouldn't fail because of oneway semantics
             p.nonexisting()
+        # also test on class:
+        class ProxyWithOneway(Pyro.core.Proxy):
+            def __init__(self, arg):
+                super(ProxyWithOneway,self).__init__(arg)
+                self._pyroOneway=["multiply"]   # set is faster but don't care for this test
+        with ProxyWithOneway(self.objectUri) as p:
+            self.assertEquals(None, p.multiply(5,11))
+            p._pyroOneway=[]   # empty set is better but don't care in this test
+            self.assertEquals(55, p.multiply(5,11))
             
     def testOnewayDelayed(self):
         try:
             with Pyro.core.Proxy(self.objectUri) as p:
+                p.ping()
                 Pyro.config.ONEWAY_THREADED=True   # the default
                 p._pyroOneway.add("delay")
                 now=time.time()
@@ -183,16 +196,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 self.assertFalse(time.time()-now < 0.2, "delay should be running in the server thread")
         finally:
             Pyro.config.ONEWAY_THREADED=True   # back to normal
-
-    def testOnewayOnClass(self):
-        class ProxyWithOneway(Pyro.core.Proxy):
-            def __init__(self, arg):
-                super(ProxyWithOneway,self).__init__(arg)
-                self._pyroOneway=["multiply"]   # set is faster but don't care for this test
-        with ProxyWithOneway(self.objectUri) as p:
-            self.assertEquals(None, p.multiply(5,11))
-            p._pyroOneway=[]   # empty set is better but don't care in this test
-            self.assertEquals(55, p.multiply(5,11))
 
     def testSerializeConnected(self):
         # online serialization tests
@@ -248,6 +251,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
     def testTimeoutConnect(self):
         # set up a unresponsive daemon
         with Pyro.core.Daemon(port=0) as d:
+            time.sleep(0.5)
             obj=MyThing()
             uri=d.register(obj)
             # we're not going to start the daemon's event loop
@@ -274,7 +278,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                         time.sleep(0.001)
                     self.error=False
                 except:
-                    print("Something went wrong in the thread:")
+                    print("Something went wrong in the thread (SharedProxyThread):")
                     print("".join(Pyro.util.getPyroTraceback()))
         with Pyro.core.Proxy(self.objectUri) as p:
             threads=[]
@@ -329,6 +333,8 @@ if os.name!="java":
     class ServerTestsSelectNoTimeout(ServerTestsThreadNoTimeout):
         SERVERTYPE="select"
         COMMTIMEOUT=None
+        def testProxySharing(self):
+            pass
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

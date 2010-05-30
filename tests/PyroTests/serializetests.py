@@ -1,4 +1,4 @@
-import unittest
+import unittest, sys, os
 import Pyro.util
 import Pyro.errors
 import Pyro.core
@@ -64,6 +64,25 @@ class SerializeTests(unittest.TestCase):
         self.assertEqual(proxy2._pyroSerializer, proxy._pyroSerializer)
         self.assertEqual(42, proxy2._pyroTimeout)
         
+    def testSerVersion(self):
+        if os.name=="java":
+            return # jython cannot run this testcase...
+        data="data"
+        p,_=self.ser.serialize(data)
+        r=self.ser.deserialize(p)
+        self.assertEqual(data,r)
+        orig_hexversion=sys.hexversion
+        orig_versioninfo=sys.version_info
+        try:
+            # set some silly versions to force a communicationerror
+            sys.hexversion=0x999955f0   
+            sys.version_info=(199,199,199,"bogus",0)
+            p,_=self.ser.serialize("data")
+        finally:
+            sys.hexversion=orig_hexversion
+            sys.version_info=orig_versioninfo
+        self.assertRaises(Pyro.errors.CommunicationError, self.ser.deserialize, p)
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
