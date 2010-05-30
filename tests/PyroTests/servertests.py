@@ -35,7 +35,10 @@ class DaemonLoopThread(threading.Thread):
         self.running.clear()
     def run(self):
         self.running.set()
-        self.pyrodaemon.requestLoop()
+        try:
+            self.pyrodaemon.requestLoop()
+        except:
+            print "Swallow exception from terminated daemon"
         
 class ServerTestsThreadNoTimeout(unittest.TestCase):
     SERVERTYPE="thread"
