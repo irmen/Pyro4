@@ -436,8 +436,8 @@ class Daemon(object):
                                            data,compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             obj=self.objectsById.get(objId)
             if obj is not None:
-                if kwargs and sys.version_info<(2,6) and os.name!="java":
-                    # Python before 2.6 doesn't accept unicode keyword arguments
+                if kwargs and sys.version_info<(2,6,5) and os.name!="java":
+                    # Python before 2.6.5 doesn't accept unicode keyword arguments
                     kwargs = dict((str(k),kwargs[k]) for k in kwargs)
                 log.debug("calling %s.%s",obj.__class__.__name__,method)
                 obj=Pyro.util.resolveDottedAttribute(obj,method,Pyro.config.DOTTEDNAMES)
