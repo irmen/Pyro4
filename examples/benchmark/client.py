@@ -25,38 +25,40 @@ def ff(): void=object.mapping( {"aap":42, "noot": 99, "mies": 987654} )
 
 funcs = (f1,f2,f3,f4,f5,f6,f7,f8,f9,fa,fb,fc,fd,fe,ff)
 
-print '-------- BENCHMARK REMOTE OBJECT ---------'
-print 'Pay attention to the "fe" test -- this is a Oneway call and should be *fast*'
-print '(if you are running the server and client on different machines)'
+print('-------- BENCHMARK REMOTE OBJECT ---------')
+print('Pay attention to the "fe" test -- this is a Oneway call and should be *fast*')
+print('(if you are running the server and client on different machines)')
 begin = time.time()
 iters = 1000
 for f in funcs:
-	print iters,'times',f.__name__,
+	sys.stdout.write('%d times %s ' % (iters,f.__name__))
 	sys.stdout.flush()
 	voor = time.time()
 	for i in range(iters):
 		f()
-	print '%.4f' % (time.time()-voor)
+	sys.stdout.write('%.4f' % (time.time()-voor))
+	sys.stdout.write('\n')
 duration = time.time()-begin
-print 'total time %.4f seconds' % duration
-print 'total method calls',len(funcs)*iters
+print('total time %.4f seconds' % duration)
+print('total method calls: %d'%(len(funcs)*iters))
 avg_pyro_msec = 1000.0*duration/(len(funcs)*iters)
-print 'avg. time per method call: %.4f' % avg_pyro_msec ,"msec"
+print('avg. time per method call: %.4f' % avg_pyro_msec ,"msec")
 
-print '-------- BENCHMARK LOCAL OBJECT ---------'
+print('-------- BENCHMARK LOCAL OBJECT ---------')
 object=bench.bench()
 begin = time.time()
 iters = 200000
 for f in funcs:
-	print iters,'times',f.__name__,
+	sys.stdout.write('%d times %s '%(iters,f.__name__))
 	voor = time.time()
 	for i in range(iters):
 		f()
-	print '%.4f' % (time.time()-voor)
+	sys.stdout.write('%.4f\n' % (time.time()-voor))
 duration = time.time()-begin
-print 'total time %.4f seconds' % duration
-print 'total method calls',len(funcs)*iters
+print('total time %.4f seconds' % duration)
+print('total method calls: %d' % (len(funcs)*iters))
 avg_normal_msec = 1000.0*duration/(len(funcs)*iters)
-print 'avg. time per method call: %.4f' % avg_normal_msec,"msec"
-print 'Normal method call is %.4f times faster than Pyro method call.'%(avg_pyro_msec/avg_normal_msec)
+print('avg. time per method call: %.4f msec' % avg_normal_msec)
+print('Normal method call is %.4f times faster than Pyro method call.'%(avg_pyro_msec/avg_normal_msec))
+
 

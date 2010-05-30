@@ -6,9 +6,9 @@ obj=bench.bench()
 
 daemon=Pyro.core.Daemon()
 ns=Pyro.naming.locateNS()
-print "ns found at",ns._pyroUri
+print("ns found at %s"%ns._pyroUri)
 uri = daemon.register(obj)
 ns.remove("example.benchmark")
 ns.register("example.benchmark", uri)
-print "Server running."
+print("Server running.")
 daemon.requestLoop()
