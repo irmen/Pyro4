@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import with_statement
 try:
 	import queue
 except ImportError:

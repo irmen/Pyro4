@@ -8,6 +8,9 @@ except ImportError:
 import Pyro
 from workitem import Workitem
 
+if sys.version_info<(3,0):
+    range=xrange
+
 WORKERNAME = "Worker_%d@%s" % (os.getpid(), socket.gethostname())
 
 def factorize(n):
