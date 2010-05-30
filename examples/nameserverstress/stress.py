@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import random, time
+import random, time, sys
 from threading import Thread
 import Pyro
 
@@ -41,12 +41,13 @@ class NamingTrasher(Thread):
     def listregex(self):
         entries=self.ns.list(regex=r"stresstest\.??\.41.*")
     def run(self):  
-        print 'Name Server trasher running.'
+        print("Name Server trasher running.")
         while not self.mustStop:
             random.choice((self.list, self.register, self.remove, self.lookup, self.listregex, self.listprefix)) ()
-            print self.number,
-            time.sleep(0.01)
-        print 'Trasher exiting.'    
+            sys.stdout.write("%d " % self.number)
+            sys.stdout.flush()
+            time.sleep(0.001)
+        print("Trasher exiting.")    
 
 def main():
     threads=[]
@@ -63,12 +64,12 @@ def main():
     except KeyboardInterrupt:
         pass
 
-    print 'Break-- waiting for threads to stop.'
+    print("Break-- waiting for threads to stop.")
     for nt in threads:
         nt.mustStop=True
         nt.join()
     count=ns.remove(prefix="stresstest.")
-    print "cleaned up",count,"names."
+    print("cleaned up %d names." % count)
 
 if __name__=='__main__':
     main()

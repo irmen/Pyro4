@@ -5,23 +5,24 @@ import Pyro
 Pyro.config.COMMTIMEOUT=2
 
 basesize = 500000
-data='A'*basesize
+data='x'*basesize
+if sys.version_info>=(3,0):
+    data=bytes(data,"ASCII")
+    
 totalsize=0
 
 obj=Pyro.core.Proxy("PYRONAME:example.hugetransfer")
-print "binding"
 obj._pyroBind()
-print "done"
 
 begin=time.time()
 for i in range(1,15):
-    print 'transferring',basesize*i,'bytes'
+    print("transferring %d bytes" % (basesize*i))
     size=obj.transfer(data*i)
-    # print " reply=",size
+    # print(" reply=%d" % size)
     totalsize=totalsize+basesize*i
 duration=time.time()-begin
 
 totalsize=float(totalsize)
-print 'It took',duration,'seconds to transfer',totalsize/1024,'kilobyte.'
-print 'That is',totalsize/1024/duration,'k/sec. = ',totalsize/1024/1024/duration,'mb/sec.'
+print("It took %.2f seconds to transfer %d kilobyte." % (duration, totalsize/1024))
+print("That is %.2f k/sec. = %.2f mb/sec." % (totalsize/1024/duration, totalsize/1024/1024/duration))
 

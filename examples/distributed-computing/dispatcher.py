@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-from Queue import Queue
+try:
+	from queue import Queue
+except ImportError:
+	from Queue import Queue
 import Pyro
 
 class DispatcherQueue(object):
@@ -27,5 +30,5 @@ dispatcher=DispatcherQueue()
 uri=daemon.register(dispatcher)
 ns.remove("example.distributed.dispatcher")
 ns.register("example.distributed.dispatcher", uri)
-print "Dispatcher is ready."
+print("Dispatcher is ready.")
 daemon.requestLoop()

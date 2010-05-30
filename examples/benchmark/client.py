@@ -59,6 +59,6 @@ print('total time %.4f seconds' % duration)
 print('total method calls: %d' % (len(funcs)*iters))
 avg_normal_msec = 1000.0*duration/(len(funcs)*iters)
 print('avg. time per method call: %.4f msec' % avg_normal_msec)
-print('Normal method call is %.4f times faster than Pyro method call.'%(avg_pyro_msec/avg_normal_msec))
+print('Normal method call is %.2f times faster than Pyro method call.'%(avg_pyro_msec/avg_normal_msec))
 
 

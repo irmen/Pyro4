@@ -13,7 +13,7 @@ NUM_WORKERS=5
 class CallbackHandler(object):
     workdone=0
     def done(self, number):
-        print "callback: worker %d reports work is done!" % number
+        print("callback: worker %d reports work is done!" % number)
         CallbackHandler.workdone+=1
 
 with Pyro.core.Daemon() as daemon:
@@ -23,13 +23,13 @@ with Pyro.core.Daemon() as daemon:
     callback=Pyro.core.Proxy(uri)
     
     # contact the server and put it to work
-    print "creating a bunch of workers"
+    print("creating a bunch of workers")
     with Pyro.core.Proxy("PYRONAME:example.callback") as server:
         for _ in range(NUM_WORKERS):
             worker=server.addworker(callback)   # provide our callback handler!
             worker._pyroOneway.add("work")      # to be able to run in the background
             worker.work(random.randint(1,5))
     
-    print "waiting for all work complete..."
+    print("waiting for all work complete...")
     daemon.requestLoop(loopCondition=lambda: CallbackHandler.workdone<NUM_WORKERS)
-    print "done!"
+    print("done!")

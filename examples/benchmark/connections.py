@@ -20,7 +20,7 @@ for loop in range(ITERATIONS):
         p._pyroRelease()
         p._pyroBind()
 duration=time.time()-begin
-print("%d connections in %s sec = %f conn/sec" % (ITERATIONS*len(proxies), duration, ITERATIONS*len(proxies)/duration))
+print("%d connections in %s sec = %.2f conn/sec" % (ITERATIONS*len(proxies), duration, ITERATIONS*len(proxies)/duration))
 del proxies
 
 print("Timing proxy connect speed...")
@@ -33,4 +33,4 @@ for loop in range(ITERATIONS):
     p.ping()
     p._pyroRelease()
 duration=time.time()-begin
-print("%d new proxy calls in %s sec = %f calls/sec" % (ITERATIONS, duration, ITERATIONS/duration))
+print("%d new proxy calls in %s sec = %.2f calls/sec" % (ITERATIONS, duration, ITERATIONS/duration))

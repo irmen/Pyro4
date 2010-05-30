@@ -1,6 +1,9 @@
 #!/usr/bin/env python
-import time, threading
+import time, threading, sys
 import Pyro
+
+if sys.version_info<(3,0):
+    input=raw_input
 
 class Server(object):
     def __init__(self):
@@ -13,13 +16,13 @@ class Server(object):
         return Pyro.config.asDict()
     def delay(self):
         threadname=threading.currentThread().getName()
-        print "delay called in thread",threadname
+        print("delay called in thread %s" % threadname)
         time.sleep(1)
         self.callcount+=1
         return threadname
     def onewaydelay(self):
         threadname=threading.currentThread().getName()
-        print "onewaydelay called in thread",threadname
+        print("onewaydelay called in thread %s" % threadname)
         time.sleep(1)
         self.callcount+=1
 
@@ -27,7 +30,7 @@ class Server(object):
 ######## main program
 
 Pyro.config.SERVERTYPE="undefined"
-servertype=raw_input("Servertype threaded or select (t/s)?")
+servertype=input("Servertype threaded or select (t/s)?")
 if servertype=="t":
     Pyro.config.SERVERTYPE="thread"
 if servertype=="s":
@@ -39,5 +42,5 @@ uri=daemon.register(obj)
 ns=Pyro.naming.locateNS()
 ns.remove("example.servertypes")
 ns.register("example.servertypes", uri)
-print "Server is ready."
+print("Server is ready.")
 daemon.requestLoop()

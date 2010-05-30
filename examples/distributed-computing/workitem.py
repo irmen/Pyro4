@@ -1,6 +1,6 @@
 class Workitem(object):
 	def __init__(self, itemId, data):
-		print "Created workitem",itemId
+		print("Created workitem %s" % itemId)
 		self.itemId=itemId
 		self.data=data
 		self.result=None

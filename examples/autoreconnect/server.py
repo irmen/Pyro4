@@ -2,12 +2,12 @@
 import time
 import Pyro
 
-print "Autoreconnect using PYRO uri."
+print("Autoreconnect using PYRO uri.")
 
 class TestClass(object):
     def method(self,arg):
-        print "Method called with",arg
-        print "You can now try to stop this server with ctrl-C/ctrl-Break"
+        print("Method called with %s"%arg)
+        print("You can now try to stop this server with ctrl-C/ctrl-Break")
         time.sleep(1)
 
 obj=TestClass()
@@ -24,5 +24,5 @@ obj=TestClass()
 daemon = Pyro.core.Daemon(port=7777)
 uri = daemon.register(obj,objectId="autoreconnect_fixed_objectid")
 
-print "Server started, uri =",uri
+print("Server started, uri=%s"%uri)
 daemon.requestLoop()
