@@ -11,6 +11,9 @@ import sys
 import Pyro.naming
 import Pyro.errors
 
+if sys.version_info<(3,0):
+    input=raw_input
+
 def handleCommand(nameserver, options, args):
     def printListResult(resultdict, title=""):
         print("--------START LIST %s" % title)
@@ -39,7 +42,9 @@ def handleCommand(nameserver, options, args):
         else:
             print("Nothing removed")
     def cmd_removeregex():
-        sure=raw_input("Potentially removing lots of items from the Name server. Are you sure (y/n)?")
+        if len(args)<2:
+            raise SystemExit("missing regex argument")
+        sure=input("Potentially removing lots of items from the Name server. Are you sure (y/n)?")
         if sure in ('y','Y'):
             count=nameserver.remove(regex=args[1])
             print("%d items removed." % count)
