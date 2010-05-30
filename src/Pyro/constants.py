@@ -8,7 +8,7 @@
 ######################################################################
 
 # Pyro version
-VERSION = '4.0-svn'
+VERSION = '4.0-svn-python3'
 
 # standard object name for the Daemon object
 DAEMON_NAME = "Pyro.Daemon"
