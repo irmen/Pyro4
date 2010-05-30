@@ -127,7 +127,14 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         p1._pyroRelease()
         p2._pyroRelease()
 
-    def testCompression(self):
+    def testReconnectAndCompression(self):
+        # try reconnects
+        with Pyro.core.Proxy(self.objectUri) as p:
+            self.assertTrue(p._pyroConnection is None)
+            p._pyroReconnect(tries=100)
+            self.assertTrue(p._pyroConnection is not None)
+        self.assertTrue(p._pyroConnection is None)
+        # test compression:
         try:
             with Pyro.core.Proxy(self.objectUri) as p:
                 Pyro.config.COMPRESSION=True
@@ -135,13 +142,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 self.assertEqual("*"*1000, p.multiply("*"*500,2))
         finally:
             Pyro.config.COMPRESSION=False
-
-    def testReconnect(self):
-        with Pyro.core.Proxy(self.objectUri) as p:
-            self.assertTrue(p._pyroConnection is None)
-            p._pyroReconnect(tries=100)
-            self.assertTrue(p._pyroConnection is not None)
-        self.assertTrue(p._pyroConnection is None)
     
     def testOneway(self):
         with Pyro.core.Proxy(self.objectUri) as p:
@@ -159,6 +159,15 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             p._pyroOneway.add("nonexisting")
             # now it shouldn't fail because of oneway semantics
             p.nonexisting()
+        # also test on class:
+        class ProxyWithOneway(Pyro.core.Proxy):
+            def __init__(self, arg):
+                super(ProxyWithOneway,self).__init__(arg)
+                self._pyroOneway=["multiply"]   # set is faster but don't care for this test
+        with ProxyWithOneway(self.objectUri) as p:
+            self.assertEquals(None, p.multiply(5,11))
+            p._pyroOneway=[]   # empty set is better but don't care in this test
+            self.assertEquals(55, p.multiply(5,11))
             
     def testOnewayDelayed(self):
         try:
@@ -183,16 +192,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 self.assertFalse(time.time()-now < 0.2, "delay should be running in the server thread")
         finally:
             Pyro.config.ONEWAY_THREADED=True   # back to normal
-
-    def testOnewayOnClass(self):
-        class ProxyWithOneway(Pyro.core.Proxy):
-            def __init__(self, arg):
-                super(ProxyWithOneway,self).__init__(arg)
-                self._pyroOneway=["multiply"]   # set is faster but don't care for this test
-        with ProxyWithOneway(self.objectUri) as p:
-            self.assertEquals(None, p.multiply(5,11))
-            p._pyroOneway=[]   # empty set is better but don't care in this test
-            self.assertEquals(55, p.multiply(5,11))
 
     def testSerializeConnected(self):
         # online serialization tests
@@ -330,6 +329,8 @@ if os.name!="java":
     class ServerTestsSelectNoTimeout(ServerTestsThreadNoTimeout):
         SERVERTYPE="select"
         COMMTIMEOUT=None
+        def testProxySharing(self):
+            pass
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

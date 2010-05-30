@@ -12,13 +12,17 @@ class ServerTestsThreadTimeout(servertests.ServerTestsThreadNoTimeout):
     def testServerParallelism(self):
         # this test is not suitable on a server with timeout set
         pass
-
+    def testProxySharing(self):
+        pass
+    
 if os.name!="java":
     class ServerTestsSelectTimeout(servertests.ServerTestsSelectNoTimeout):
         SERVERTYPE="select"
         COMMTIMEOUT=2.0
         def testServerParallelism(self):
             # this test is not suitable on a server with timeout set
+            pass
+        def testProxySharing(self):
             pass
 
 
