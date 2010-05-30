@@ -81,7 +81,8 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             self.assertEqual((1,(),{}), p.testargs(1))
             self.assertEqual((1,(2,3),{'a':4}), p.testargs(1,2,3,a=4))
             self.assertEqual((1,(),{'a':2}), p.testargs(1, **{'a':2}))
-            if sys.version_info>=(2,6):
+            if sys.version_info>=(2,6,5):
+                # python 2.6.5 and later support unicode keyword args
                 result=p.testargs(1, **{unichr(0x20ac):2})
                 key=result[2].keys()[0]
                 self.assertTrue(key==unichr(0x20ac))
