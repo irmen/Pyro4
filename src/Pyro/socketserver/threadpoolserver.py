@@ -1,12 +1,11 @@
-######################################################################
-#
-#  Socket server based on a worker thread pool. Doesn't use select.
-#  Uses a single worker thread per client connection.
-#
-#  Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-#  irmen@razorvine.net - http://www.razorvine.net/python/Pyro
-#
-######################################################################
+"""
+Socket server based on a worker thread pool. Doesn't use select.
+
+Uses a single worker thread per client connection.
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
 
 import os, threading, socket, logging, Queue
 from Pyro.socketutil import SocketConnection, createSocket

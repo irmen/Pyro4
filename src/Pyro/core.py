@@ -1,12 +1,9 @@
-######################################################################
-#
-#  Core Pyro logic (uri, daemon, proxy stuff).
-#  Not directly in Pyro.core, to avoid circular imports.
-#
-#  Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-#  irmen@razorvine.net - http://www.razorvine.net/python/Pyro
-#
-######################################################################
+"""
+Core logic (uri, daemon, proxy stuff).
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
 
 from __future__ import with_statement
 import re, struct, sys, time, os

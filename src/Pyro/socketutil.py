@@ -1,11 +1,9 @@
-######################################################################
-#
-#  Low level socket utilities.
-#
-#  Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-#  irmen@razorvine.net - http://www.razorvine.net/python/Pyro
-#
-######################################################################
+"""
+Low level socket utilities.
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
 
 import socket, os, errno, logging, time
 from Pyro.errors import ConnectionClosedError,TimeoutError,CommunicationError

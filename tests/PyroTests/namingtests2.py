@@ -1,3 +1,10 @@
+"""
+Tests for the name server (offline/basic logic).
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
+
 from __future__ import with_statement
 import unittest
 import sys, StringIO, select, os
@@ -5,8 +12,6 @@ import Pyro.core
 import Pyro.naming
 import Pyro.nsc
 from Pyro.errors import NamingError,PyroError
-
-# offline name-server tests
 
 class OfflineNameServerTests(unittest.TestCase):
     def testRegister(self):

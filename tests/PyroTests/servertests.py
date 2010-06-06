@@ -1,12 +1,16 @@
+"""
+Tests for a running Pyro server, without timeouts.
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
+
 from __future__ import with_statement
 import unittest
 import Pyro.config
 import Pyro.core
 import Pyro.errors
 import threading, time, os, sys
-
-# tests that require a running Pyro server (daemon)
-# the server part here is not using a timeout setting.
 
 class MyThing(object):
     def __init__(self):

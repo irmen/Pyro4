@@ -1,3 +1,10 @@
+"""
+Tests for the low level socket functions.
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
+
 import unittest
 import socket, os
 import Pyro.socketutil as SU

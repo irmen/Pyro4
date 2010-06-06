@@ -1,11 +1,9 @@
-######################################################################
-#
-#  Pyro configuration settings.
-#
-#  Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-#  irmen@razorvine.net - http://www.razorvine.net/python/Pyro
-#
-######################################################################
+"""
+Configuration settings.
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
 
 HOST            =  "localhost"     # don't expose us to the outside world by default
 NS_HOST         =  HOST

@@ -1,3 +1,10 @@
+"""
+Run the complete test suite.
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
+
 import unittest
 import sys, os
 try:
