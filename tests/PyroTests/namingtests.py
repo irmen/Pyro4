@@ -4,28 +4,29 @@ import os, threading, time, socket
 import Pyro.config
 import Pyro.core
 import Pyro.naming
+import Pyro.socketutil
 from Pyro.errors import NamingError
 
 # online name server tests
 
 class NSLoopThread(threading.Thread):
-    def __init__(self, nameserver, others):
+    def __init__(self, nameserver):
         super(NSLoopThread,self).__init__()
         self.setDaemon(True)
         self.nameserver=nameserver
-        self.others=others
         self.running=threading.Event()
         self.running.clear()
     def run(self):
         self.running.set()
-        self.nameserver.requestLoop(others=self.others)
+        self.nameserver.requestLoop()
 
 class BCSetupTests(unittest.TestCase):
     def testBCstart(self):
-        nsUri, nameserver, bcserver = Pyro.naming.startNS(port=0, bcport=0, enableBroadcast=False)
+        myIpAddress=Pyro.socketutil.getMyIpAddress(workaround127=True)
+        nsUri, nameserver, bcserver = Pyro.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=False)
         self.assertTrue(bcserver is None)
         nameserver.close()
-        nsUri, nameserver, bcserver = Pyro.naming.startNS(port=0, bcport=0, enableBroadcast=True)
+        nsUri, nameserver, bcserver = Pyro.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=True)
         self.assertTrue(bcserver is not None, "expected a BC server to be running. Check DNS setup (hostname must not resolve to loopback address")
         nameserver.close()
         bcserver.close()
@@ -35,15 +36,11 @@ class NameServerTests(unittest.TestCase):
         Pyro.config.POLLTIMEOUT=0.1
         self.old_workerthreads=Pyro.config.WORKERTHREADS
         Pyro.config.WORKERTHREADS=4
-        self.nsUri, self.nameserver, self.bcserver = Pyro.naming.startNS(port=0, bcport=0)
+        myIpAddress=Pyro.socketutil.getMyIpAddress(workaround127=True)
+        self.nsUri, self.nameserver, self.bcserver = Pyro.naming.startNS(host=myIpAddress, port=0, bcport=0)
         self.assertTrue(self.bcserver is not None,"expected a BC server to be running")
-        if os.name!="java":
-            others=([self.bcserver.sock], self.bcserver.processRequest)
-        else:
-            # jython doesn't support 'others' so start the bc server in a separate thread
-            others=None
-            self.bcserver.runInThread()
-        self.daemonthread=NSLoopThread(self.nameserver, others)
+        self.bcserver.runInThread()
+        self.daemonthread=NSLoopThread(self.nameserver)
         self.daemonthread.start()
         self.daemonthread.running.wait()
         self.old_bcPort=Pyro.config.NS_BCPORT

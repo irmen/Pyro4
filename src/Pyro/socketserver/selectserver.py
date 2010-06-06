@@ -38,17 +38,13 @@ class SocketServer(object):
             self.sock.close()
             self.sock=None
     if hasattr(select,"poll"):
-        def requestLoop(self, loopCondition=lambda:True, others=None):
+        def requestLoop(self, loopCondition=lambda:True):
             log.debug("enter poll-based requestloop")
             try:
                 poll=select.poll()  #@UndefinedVariable (pydev)
                 fileno2connection={}  # map fd to original connection object
                 poll.register(self.sock.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
                 fileno2connection[self.sock.fileno()]=self.sock
-                if others:
-                    for sock in others[0]:
-                        poll.register(sock.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
-                        fileno2connection[sock.fileno()]=sock
                 while loopCondition():
                     polls=poll.poll(1000*Pyro.config.POLLTIMEOUT)
                     for (fd,mask) in polls:  #@UnusedVariable (pydev)
@@ -63,25 +59,18 @@ class SocketServer(object):
                                 poll.register(conn.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
                                 fileno2connection[conn.fileno()]=conn
                         else:
-                            if others and conn in others[0]:
+                            try:
+                                self.callback.handleRequest(conn)
+                            except (socket.error,ConnectionClosedError):
+                                # client went away.
                                 try:
-                                    others[1]([conn])  # handle events from other socket
+                                    fn=conn.fileno()
                                 except socket.error:
-                                    x=sys.exc_info()[1]
-                                    log.warn("there was an uncaught socket error for the other sockets: %s",x)
-                            else:
-                                try:
-                                    self.callback.handleRequest(conn)
-                                except (socket.error,ConnectionClosedError):
-                                    # client went away.
-                                    try:
-                                        fn=conn.fileno()
-                                    except socket.error:
-                                        pass  
-                                    else:
-                                        poll.unregister(fn)
-                                        del fileno2connection[fn]
-                                        conn.close()
+                                    pass  
+                                else:
+                                    poll.unregister(fn)
+                                    del fileno2connection[fn]
+                                    conn.close()
             except KeyboardInterrupt:
                 log.debug("stopping on break signal")
                 pass
@@ -91,14 +80,12 @@ class SocketServer(object):
             log.debug("exit poll-based requestloop")
 
     else:
-        def requestLoop(self, loopCondition=lambda:True, others=None):
+        def requestLoop(self, loopCondition=lambda:True):
             log.debug("entering select-based requestloop")
             while loopCondition():
                 try:
                     rlist=self.clients[:]
                     rlist.append(self.sock)
-                    if others:
-                        rlist.extend(others[0])
                     try:
                         rlist,_,_=select.select(rlist, [], [], Pyro.config.POLLTIMEOUT)
                     except select.error:
@@ -128,18 +115,15 @@ class SocketServer(object):
                                 conn.close()
                                 if conn in self.clients:
                                     self.clients.remove(conn)
-                    if rlist and others:
-                        try:
-                            others[1](rlist)  # handle events from other sockets
-                        except socket.error:
-                            x=sys.exc_info()[1]
-                            log.warn("there was an uncaught socket error for the other sockets: %s",x)
                 except socket.timeout:
                     pass   # just continue the loop on a timeout
                 except KeyboardInterrupt:
                     log.debug("stopping on break signal")
                     break
             log.debug("exit select-based requestloop")
+
+    def handleRequests(self):
+        raise NotImplementedError("select server doesn't currently support external request loop")
 
     def handleConnection(self, sock):
         try:

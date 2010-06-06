@@ -8,7 +8,7 @@
 ######################################################################
 
 from __future__ import with_statement
-import os, re, logging, socket, sys
+import re, logging, socket, sys
 from threading import RLock, Thread
 import Pyro.core        # not Pyro.core, to avoid circular import
 import Pyro.constants
@@ -155,20 +155,19 @@ class BroadcastServer(object):
         log.debug("broadcast server loop running in own thread")
     def __requestLoop(self):
         while self.running:
-            self.processRequest([self.sock])
+            self.processRequest()
         log.debug("broadcast server loop terminating")
-    def processRequest(self, otherSockets):
-        for bcsocket in otherSockets:
-            try:
-                data,addr=bcsocket.recvfrom(100)
-                if data==self.REQUEST_NSURI:
-                    log.debug("responding to broadcast request from %s",addr)
-                    responsedata=self.nsUri
-                    if sys.version_info>=(3,0):
-                        responsedata=bytes(responsedata,"iso-8859-1")
-                    bcsocket.sendto(responsedata, 0, addr)
-            except socket.error:
-                pass
+    def processRequest(self):
+        try:
+            data,addr=self.sock.recvfrom(100)
+            if data==self.REQUEST_NSURI:
+                log.debug("responding to broadcast request from %s",addr)
+                responsedata=self.nsUri
+                if sys.version_info>=(3,0):
+                    responsedata=bytes(responsedata,"iso-8859-1")
+                self.sock.sendto(responsedata, 0, addr)
+        except socket.error:
+            pass
     def __enter__(self):
         return self
     def __exit__(self, exc_type, exc_value, traceback):
@@ -184,18 +183,14 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
         log.info("Not starting NS broadcast server because NS is bound to localhost")
         enableBroadcast=False
     bcserver=None
-    others=None
     if enableBroadcast:
         bcserver=BroadcastServer(nsUri,bchost,bcport)
         print("Broadcast server running on %s" % bcserver.locationStr)
-        if os.name!="java":
-            others=([bcserver.sock], bcserver.processRequest)
-        else:
-            bcserver.runInThread()  
+        bcserver.runInThread()  
     print("NS running on %s (%s)" % (daemon.locationStr,hostip))
     print("URI = %s" % nsUri)
     try:
-        daemon.requestLoop(others=others)
+        daemon.requestLoop()
     finally:
         daemon.close()
         if bcserver is not None:
@@ -205,12 +200,12 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
 def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
     """utility fuction to quickly get a Name server daemon to be used in your own event loops.
     Returns (nameserverUri, nameserverDaemon, broadcastServer)."""
-    hostip=Pyro.socketutil.getIpAddress(host)
+    daemon=NameServerDaemon(host, port)
+    nsUri=daemon.uriFor(daemon.nameserver)
+    hostip=daemon.sock.getsockname()[0]
     if hostip.startswith("127."):
         # not starting broadcast server for localhost.
         enableBroadcast=False
-    daemon=NameServerDaemon(host, port)
-    nsUri=daemon.uriFor(daemon.nameserver)
     bcserver=None
     if enableBroadcast:
         bcserver=BroadcastServer(nsUri,bchost,bcport)

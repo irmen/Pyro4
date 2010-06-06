@@ -1,13 +1,14 @@
 ######################################################################
 #
-#  socket server based on a worker thread pool. Doesn't use select.
+#  Socket server based on a worker thread pool. Doesn't use select.
+#  Uses a single worker thread per client connection.
 #
 #  Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 #  irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 #
 ######################################################################
 
-import os, threading, socket, select, logging, sys
+import threading, socket, logging, sys
 try:
     import queue
 except ImportError:
@@ -85,33 +86,12 @@ class SocketServer(object):
     def __del__(self):
         if self.sock is not None:
             self.sock.close()
-    def requestLoop(self, loopCondition=lambda:True, others=None):
+
+    def requestLoop(self, loopCondition=lambda:True):
         log.debug("threadpool server requestloop")
-        if os.name=="java" and others:
-            raise RuntimeError("currently Jython doesn't seem to have a reliable select() implementation required for multiplexing multiple sockets, so you cannot provide 'others'")
         while (self.sock is not None) and loopCondition():
             try:
-                ins=[self.sock]
-                if others:
-                    ins.extend(others[0])
-                    ins,_,_=select.select(ins,[],[],Pyro.config.POLLTIMEOUT)
-                    if not ins:
-                        continue
-                if self.sock in ins:
-                    ins.remove(self.sock)
-                    csock, caddr=self.sock.accept()
-                    log.debug("connection from %s",caddr)
-                    if Pyro.config.COMMTIMEOUT:
-                        csock.settimeout(Pyro.config.COMMTIMEOUT)
-                    self.workqueue.put((csock,caddr))
-                if ins:
-                    try:
-                        others[1](ins)  # handle events from other sockets
-                    except socket.error:
-                        x=sys.exc_info()[1]
-                        log.warn("there was an uncaught socket error for the other sockets: %s",x)
-            except socket.timeout:
-                pass  # just continue the loop on a timeout on accept
+                self.handleRequests()
             except socket.error:
                 if not loopCondition():
                     # swallow the socket error if loop terminates anyway
@@ -123,6 +103,16 @@ class SocketServer(object):
                 log.debug("stopping on break signal")
                 break
         log.debug("threadpool server exits requestloop")
+    def handleRequests(self):
+        try:
+            csock, caddr=self.sock.accept()
+            log.debug("connection from %s",caddr)
+            if Pyro.config.COMMTIMEOUT:
+                csock.settimeout(Pyro.config.COMMTIMEOUT)
+            self.workqueue.put((csock,caddr))
+        except socket.timeout:
+            pass  # just continue the loop on a timeout on accept
+
     def close(self, joinWorkers=True): 
         log.debug("closing threadpool server")
         if self.sock:
@@ -145,10 +135,10 @@ class SocketServer(object):
                 break
             else:
                 worker.join()
-            
+
     def fileno(self):
         return self.sock.fileno()
-                
+
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
