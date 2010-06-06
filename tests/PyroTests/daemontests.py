@@ -50,12 +50,6 @@ class DaemonTests(unittest.TestCase):
         Pyro.config.SERVERTYPE="thread"
         with Pyro.core.Daemon(port=0) as d:
             self.assertTrue(d.fileno()>0)
-            if os.name=="java":
-                # if we are Jython, it must not accept 'others'
-                self.assertRaises(RuntimeError, d.requestLoop, others=42)
-            else:
-                # must accept 'others' parameter (but we supply a wrong type on purpose)
-                self.assertRaises(TypeError, d.requestLoop, others=42)
         Pyro.config.SERVERTYPE=old_servertype
 
     def testServertypeSelect(self):
@@ -67,8 +61,6 @@ class DaemonTests(unittest.TestCase):
         else:
             with Pyro.core.Daemon(port=0) as d:
                 self.assertTrue(d.fileno()>0)
-                # must accept 'others' parameter (but we supply a wrong type on purpose)
-                self.assertRaises(TypeError, d.requestLoop, others=42)
         Pyro.config.SERVERTYPE=old_servertype
                 
     def testServertypeFoobar(self):

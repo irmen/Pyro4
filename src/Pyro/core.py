@@ -359,22 +359,23 @@ class Daemon(object):
     def sock(self):
         return self.transportServer.sock
 
-    def requestLoop(self, loopCondition=lambda:True, others=None):
+    def requestLoop(self, loopCondition=lambda:True):
         """
         Goes in a loop to service incoming requests, until someone breaks this
-        or calls shutdown from another thread. 'others' is an optional tuple of
-        (socketlist,callback) for extra sockets to listen on + callback function
-        for them when they trigger.
+        or calls shutdown from another thread.
         """  
         self.__mustshutdown=False
         log.info("daemon %s entering requestloop", self.locationStr)
         try:
             self.__loopstopped.clear()
             condition=lambda: not self.__mustshutdown and loopCondition()
-            self.transportServer.requestLoop(loopCondition=condition, others=others)
+            self.transportServer.requestLoop(loopCondition=condition)
         finally:
             self.__loopstopped.set()
         log.debug("daemon exits requestloop")
+
+    def handleRequests(self):
+        return self.transportServer.handleRequests()
 
     def shutdown(self):
         """Cleanly terminate a deamon that is running in the requestloop. It must be running

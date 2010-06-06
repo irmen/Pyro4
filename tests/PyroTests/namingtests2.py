@@ -130,8 +130,9 @@ class OfflineNameServerTests(unittest.TestCase):
         ns.close()
 
     def testStartNSfunc(self):
-        uri1,ns1,bc1=Pyro.naming.startNS(port=0, enableBroadcast=False)
-        uri2,ns2,bc2=Pyro.naming.startNS(port=0, enableBroadcast=True)
+        myIpAddress=Pyro.socketutil.getMyIpAddress(workaround127=True)
+        uri1,ns1,bc1=Pyro.naming.startNS(host=myIpAddress, port=0, enableBroadcast=False)
+        uri2,ns2,bc2=Pyro.naming.startNS(host=myIpAddress, port=0, enableBroadcast=True)
         self.assertTrue(isinstance(uri1, Pyro.core.URI))
         self.assertTrue(isinstance(ns1, Pyro.naming.NameServerDaemon))
         self.assertTrue(bc1 is None)
@@ -144,7 +145,8 @@ class OfflineNameServerTests(unittest.TestCase):
         bc2.close()
     
     def testOwnloopBasics(self):
-        uri1,ns1,bc1=Pyro.naming.startNS(port=0, enableBroadcast=True)
+        myIpAddress=Pyro.socketutil.getMyIpAddress(workaround127=True)
+        uri1,ns1,bc1=Pyro.naming.startNS(host=myIpAddress, port=0, enableBroadcast=True)
         self.assertTrue(ns1.fileno() > 0)
         self.assertTrue(bc1.fileno() > 0)
         if hasattr(select, "poll"):
