@@ -1,11 +1,9 @@
-######################################################################
-#
-#  Pyro Name Server and helper functions.
-#
-#  Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-#  irmen@razorvine.net - http://www.razorvine.net/python/Pyro
-#
-######################################################################
+"""
+Name Server and helper functions.
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
 
 from __future__ import with_statement
 import re, logging, socket, sys

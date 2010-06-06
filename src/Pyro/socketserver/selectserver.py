@@ -1,15 +1,14 @@
-######################################################################
-#
-#  Socket server based on select/poll. Doesn't use threads.
-#  Not supported for Jython due to a few obscure problems
-#  with the select/poll implementation.
-#
-#  Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-#  irmen@razorvine.net - http://www.razorvine.net/python/Pyro
-#
-######################################################################
+"""
+Socket server based on select/poll. Doesn't use threads.
 
-import select, os, socket, logging, sys
+Not supported for Jython due to a few obscure problems
+with the select/poll implementation.
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
+
+import select, socket, os, sys, logging
 from Pyro.socketutil import SocketConnection, createSocket, ERRNO_RETRIES, ERRNO_BADF
 from Pyro.errors import ConnectionClosedError, PyroError
 import Pyro.config

@@ -1,3 +1,10 @@
+"""
+Tests for the daemon.
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
+
 from __future__ import with_statement
 
 import os, time, sys

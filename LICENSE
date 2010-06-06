@@ -1,8 +1,8 @@
 
-Pyro - Python Remote Objects - Version 4 and later
+PYRO - Python Remote Objects
 Software License, copyright, and disclaimer
 
-  Pyro is Copyright (c) by Irmen de Jong (irmen@razorvine.net).
+  PYRO is Copyright (c) by Irmen de Jong (irmen@razorvine.net).
 
   Permission is hereby granted, free of charge, to any person obtaining a copy 
   of this software and associated documentation files (the "Software"), to deal 
@@ -24,6 +24,6 @@ Software License, copyright, and disclaimer
 
 
 This is the "MIT Software License" which is OSI-certified, and GPL-compatible. 
-See http://www.opensource.org/licenses/mit-license.php (it strongly resembles 
-the modified BSD license).
+See http://www.opensource.org/licenses/mit-license.php
+
 

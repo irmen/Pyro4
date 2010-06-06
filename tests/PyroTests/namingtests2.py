@@ -1,3 +1,10 @@
+"""
+Tests for the name server (offline/basic logic).
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
+
 from __future__ import with_statement
 import unittest
 import sys, select, os
@@ -12,8 +19,6 @@ if sys.version_info>=(3,0):
     unichr=chr
 else:
     from StringIO import StringIO
-
-# offline name-server tests
 
 class OfflineNameServerTests(unittest.TestCase):
     def testRegister(self):

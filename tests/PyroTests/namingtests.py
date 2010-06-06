@@ -1,3 +1,10 @@
+"""
+Tests for the name server (online/running).
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
+irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+"""
+
 from __future__ import with_statement
 import unittest
 import os, threading, time, socket
@@ -6,8 +13,6 @@ import Pyro.core
 import Pyro.naming
 import Pyro.socketutil
 from Pyro.errors import NamingError
-
-# online name server tests
 
 class NSLoopThread(threading.Thread):
     def __init__(self, nameserver):
