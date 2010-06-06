@@ -17,5 +17,5 @@ if it arrives for a second time on the same server,
 it concludes that we're done).
 
 First start the three servers (servA,B,C) and then run the client.
-					  
+  
 You need to have a nameserver running.

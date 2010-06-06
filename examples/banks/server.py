@@ -1,5 +1,5 @@
 #
-#	The banks server
+#   The banks server
 #
 
 import sys

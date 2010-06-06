@@ -30,12 +30,12 @@ print '(if you are running the server and client on different machines)'
 begin = time.time()
 iters = 1000
 for f in funcs:
-	print iters,'times',f.__name__,
-	sys.stdout.flush()
-	voor = time.time()
-	for i in range(iters):
-		f()
-	print '%.4f' % (time.time()-voor)
+    print iters,'times',f.__name__,
+    sys.stdout.flush()
+    voor = time.time()
+    for i in range(iters):
+        f()
+    print '%.4f' % (time.time()-voor)
 duration = time.time()-begin
 print 'total time %.4f seconds' % duration
 print 'total method calls',len(funcs)*iters
@@ -47,11 +47,11 @@ object=bench.bench()
 begin = time.time()
 iters = 200000
 for f in funcs:
-	print iters,'times',f.__name__,
-	voor = time.time()
-	for i in range(iters):
-		f()
-	print '%.4f' % (time.time()-voor)
+    print iters,'times',f.__name__,
+    voor = time.time()
+    for i in range(iters):
+        f()
+    print '%.4f' % (time.time()-voor)
 duration = time.time()-begin
 print 'total time %.4f seconds' % duration
 print 'total method calls',len(funcs)*iters
