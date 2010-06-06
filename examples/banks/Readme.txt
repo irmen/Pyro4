@@ -1,7 +1,6 @@
 This is a simple electronic banking example.
 
 There are two banks:-
-
 Rabobank and ABN (don't ask - I'm from Holland)
 Their services are started with BankServer.py.
 

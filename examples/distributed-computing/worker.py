@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import os,socket,sys
 from math import sqrt
 import Queue

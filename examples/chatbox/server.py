@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import sys
 from threading import Thread
 import Pyro

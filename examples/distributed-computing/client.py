@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import Queue
 import random
 import Pyro

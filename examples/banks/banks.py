@@ -1,3 +1,4 @@
+
 # the bank uses this exception to say there's something wrong:
 class BankError(Exception): pass
 

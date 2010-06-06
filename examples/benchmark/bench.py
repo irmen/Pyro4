@@ -26,4 +26,3 @@ class bench(sub4):
 		pass
 	def mapping(self, mapping):
 		return mapping
-

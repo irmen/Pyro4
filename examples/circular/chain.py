@@ -20,3 +20,4 @@ class Chain(object):
 			result=self.next.process(message)
 			result.insert(0,"passed on from "+self.name)
 			return result
+

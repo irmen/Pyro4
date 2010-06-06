@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import time,sys
 import Pyro
 
