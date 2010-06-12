@@ -1,5 +1,4 @@
 import sys
-from threading import Thread
 import Pyro
 
 # Chat box administration server.

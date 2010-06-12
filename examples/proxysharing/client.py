@@ -1,12 +1,12 @@
-import threading
 import time
 import Pyro
+from Pyro import threadutil
 
 stop=False
 
 def myThread(nsproxy, proxy):
     global stop
-    name=threading.currentThread().getName()
+    name=threadutil.currentThread().getName()
     try:
         while not stop:
             result=nsproxy.list(prefix="example.")
@@ -20,7 +20,7 @@ proxy = Pyro.core.Proxy("PYRONAME:example.proxysharing")
 # now create a handful of threads and give each of them the same two proxy objects
 threads = []
 for i in range(5):
-    thread=threading.Thread(target=myThread, args=(nsproxy, proxy) )
+    thread=threadutil.Thread(target=myThread, args=(nsproxy, proxy) )
     # thread.setDaemon(True)
     thread.setDaemon(False)
     threads.append(thread)
@@ -48,7 +48,7 @@ stop=False
 proxy.reset_work()
 threads = []
 for i in range(10):
-    thread=threading.Thread(target=myThread2, args=[proxy] )
+    thread=threadutil.Thread(target=myThread2, args=[proxy] )
     thread.setDaemon(False)
     threads.append(thread)
     thread.start()
@@ -74,7 +74,7 @@ stop=False
 threads = []
 for i in range(10):
     proxy=Pyro.core.Proxy(proxy._pyroUri) # create a new proxy
-    thread=threading.Thread(target=myThread2, args=[proxy] )
+    thread=threadutil.Thread(target=myThread2, args=[proxy] )
     thread.setDaemon(False)
     threads.append(thread)
     thread.start()

@@ -7,7 +7,7 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 from __future__ import with_statement
 import re, logging, socket
-from threading import RLock, Thread
+from Pyro.threadutil import RLock, Thread
 import Pyro.core        # not Pyro.core, to avoid circular import
 import Pyro.constants
 import Pyro.socketutil

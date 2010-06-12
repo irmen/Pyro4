@@ -1,10 +1,10 @@
 import random
 import time
 import robot
-import threading
 import remote
 from Tkinter import *
 import Pyro
+from Pyro import threadutil
 
 class VisibleRobot(robot.Robot):
     """represents a robot that is visible on the screen."""
@@ -210,9 +210,9 @@ class GUI(object):
             self.addrobotbutton.config(state=DISABLED)
             self.startbutton.config(state=DISABLED)
 
-class PyroDaemonThread(threading.Thread):
+class PyroDaemonThread(threadutil.Thread):
     def __init__(self, engine):
-        threading.Thread.__init__(self)
+        threadutil.Thread.__init__(self)
         self.pyroserver=remote.GameServer(engine)
         self.pyrodaemon=Pyro.Daemon()
         self.ns=Pyro.locateNS()

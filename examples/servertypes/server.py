@@ -1,5 +1,6 @@
-import time, threading
+import time
 import Pyro
+from Pyro import threadutil
 
 class Server(object):
     def __init__(self):
@@ -11,13 +12,13 @@ class Server(object):
     def getconfig(self):
         return Pyro.config.asDict()
     def delay(self):
-        threadname=threading.currentThread().getName()
+        threadname=threadutil.currentThread().getName()
         print "delay called in thread",threadname
         time.sleep(1)
         self.callcount+=1
         return threadname
     def onewaydelay(self):
-        threadname=threading.currentThread().getName()
+        threadname=threadutil.currentThread().getName()
         print "onewaydelay called in thread",threadname
         time.sleep(1)
         self.callcount+=1

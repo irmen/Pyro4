@@ -1,5 +1,5 @@
-from threading import Thread
 import Pyro
+from Pyro import threadutil
 
 # The daemon is running in its own thread, to be able to deal with server
 # callback messages while the main thread is processing user input. 
@@ -44,9 +44,9 @@ class Chatter(object):
             self.abort=1
             self._pyroDaemon.shutdown()
 
-class DaemonThread(Thread):
+class DaemonThread(threadutil.Thread):
     def __init__(self, chatter):
-        Thread.__init__(self)
+        threadutil.Thread.__init__(self)
         self.chatter=chatter
         self.setDaemon(True)
     def run(self):

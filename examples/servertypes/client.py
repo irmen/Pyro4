@@ -1,5 +1,6 @@
-import time, threading
+import time
 import Pyro
+from Pyro import threadutil
 
 serv = Pyro.core.Proxy("PYRONAME:example.servertypes")
 serv._pyroOneway.add("onewaydelay")
@@ -61,12 +62,12 @@ def func(uri):
     # This will run in a thread. Create a proxy just for this thread:
     with Pyro.core.Proxy(uri) as p:
         processed=p.delay()
-        print "  thread %s called delay, processed by: %s" % (threading.currentThread().getName(), processed)
+        print "  thread %s called delay, processed by: %s" % (threadutil.currentThread().getName(), processed)
 
 serv._pyroBind()  # simplify the uri
 threads=[]
 for i in range(5):
-    t=threading.Thread(target=func, args=[serv._pyroUri])
+    t=threadutil.Thread(target=func, args=[serv._pyroUri])
     t.setDaemon(True)
     threads.append(t)
     t.start()

@@ -12,7 +12,6 @@ import copy
 import Pyro.core
 import Pyro.config
 import Pyro.errors
-import Pyro
 
 class Thing(object):
     def __init__(self, arg):
