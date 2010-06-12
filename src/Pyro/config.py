@@ -66,7 +66,9 @@ def asDict():
 # easy config diagnostic with python -m
 if __name__=="__main__":
     import Pyro.constants
+    import os
     print("Pyro version: %s" % Pyro.constants.VERSION)
+    print("Loaded from: %s" % os.path.abspath(os.path.split(Pyro.__file__)[0]))
     print("Active configuration settings:")
     for n,v in sorted(asDict().items()):
         print("%s=%s" % (n,v)) 
