@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import time,sys
 import Pyro
 
@@ -17,7 +16,7 @@ obj._pyroBind()
 print("No timeout is configured. Calling delay with 2 seconds.")
 start=time.time()
 result=obj.delay(2)
-assert result=="slept 2.00 seconds"
+assert result=="slept 2 seconds"
 duration=time.time()-start
 if sys.platform!="cli":
     assert approxEqual(duration,2), "expected 2 seconds duration"
@@ -61,14 +60,14 @@ obj._pyroTimeout=None
 print("No timeout is configured. Calling delay with 3 seconds.")
 start=time.time()
 result=obj.delay(3)
-assert result=="slept 3.00 seconds"
+assert result=="slept 3 seconds"
 duration=time.time()-start
 if sys.platform!="cli":
     assert approxEqual(duration,3), "expected 3 seconds duration"
 else:
     assert 2.5<duration<3.5, "expected about 3 second duration"
 
-print("\nTrying to connect to the frozen daemon.")
+print("Trying to connect to the frozen daemon.")
 obj=Pyro.core.Proxy("PYRONAME:example.timeout.frozendaemon")
 obj._pyroTimeout=1
 print("Timeout set to 1 seconds. Trying to connect.")

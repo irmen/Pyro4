@@ -1,19 +1,17 @@
-#!/usr/bin/env python
-
 # The server that doesn't use the Name Server.
 
 import os
 import Pyro
 
 class QuoteGen(object):
-	def quote(self):
-		try:
-			quote=os.popen('fortune').read()
-			if len(quote)>0:
-				return quote
-			return "This system cannot provide you a good fortune, install 'fortune'"	
-		except:		
-			return "This system knows no witty quotes :-("
+    def quote(self):
+        try:
+            quote=os.popen('fortune').read()
+            if len(quote)>0:
+                return quote
+            return "This system cannot provide you a good fortune, install 'fortune'"    
+        except:        
+            return "This system knows no witty quotes :-("
 
 daemon = Pyro.core.Daemon()
 quote1 = QuoteGen()

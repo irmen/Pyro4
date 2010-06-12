@@ -20,7 +20,6 @@ profile=no
 
 # Add <file or directory> to the black list. It should be a base name, not a
 # path. You may set this option multiple times.
-ignore=CVS
 ignore=SVN
 
 # Pickle collected data for later comparisons.
@@ -51,10 +50,10 @@ load-plugins=
 disable-msg-cat=I
 
 # Enable the message(s) with the given id(s).
-#enable=
+#enable-msg=
 
 # Disable the message(s) with the given id(s).
-disable=W0704,C0111,C0322,C0324
+disable-msg=W0704,C0111,C0322,C0324
 
 
 [REPORTS]
@@ -90,6 +89,25 @@ comment=no
 
 # Disable the report(s) with the given id(s).
 #disable-report=
+
+
+# checks for
+# * unused variables / imports
+# * undefined variables
+# * redefinition of variable from builtins or from an outer scope
+# * use of variable before assignment
+# 
+[VARIABLES]
+
+# Tells whether we should check for unused import in __init__ files.
+init-import=no
+
+# A regular expression matching names used for dummy variables (i.e. not used).
+dummy-variables-rgx=_|dummy
+
+# List of additional names supposed to be defined in builtins. Remember that
+# you should avoid to define new builtins when possible.
+additional-builtins=
 
 
 # checks for :
@@ -170,25 +188,6 @@ zope=no
 generated-members=REQUEST,acl_users,aq_parent
 
 
-# checks for
-# * unused variables / imports
-# * undefined variables
-# * redefinition of variable from builtins or from an outer scope
-# * use of variable before assignment
-# 
-[VARIABLES]
-
-# Tells whether we should check for unused import in __init__ files.
-init-import=no
-
-# A regular expression matching names used for dummy variables (i.e. not used).
-dummy-variables-rgx=_|dummy
-
-# List of additional names supposed to be defined in builtins. Remember that
-# you should avoid to define new builtins when possible.
-additional-builtins=
-
-
 # checks for :
 # * methods without self as first argument
 # * overridden methods signature
@@ -265,25 +264,6 @@ ext-import-graph=
 int-import-graph=
 
 
-# checks for :
-# * unauthorized constructions
-# * strict indentation
-# * line length
-# * use of <> instead of !=
-# 
-[FORMAT]
-
-# Maximum number of characters on a single line.
-max-line-length=110
-
-# Maximum number of lines in a module
-max-module-lines=1000
-
-# String used as indentation unit. This is usually " " (4 spaces) or "\t" (1
-# tab).
-indent-string='    '
-
-
 # checks for:
 # * warning notes in the code like FIXME, XXX
 # * PEP 263: source code with non ascii character but no encoding declaration
@@ -308,3 +288,22 @@ ignore-comments=yes
 
 # Ignore docstrings when computing similarities.
 ignore-docstrings=yes
+
+
+# checks for :
+# * unauthorized constructions
+# * strict indentation
+# * line length
+# * use of <> instead of !=
+# 
+[FORMAT]
+
+# Maximum number of characters on a single line.
+max-line-length=110
+
+# Maximum number of lines in a module
+max-module-lines=1000
+
+# String used as indentation unit. This is usually " " (4 spaces) or "\t" (1
+# tab).
+indent-string='    '

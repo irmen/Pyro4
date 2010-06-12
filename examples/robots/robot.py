@@ -1,4 +1,5 @@
-import array, sys
+import sys
+import array
 import random
 
 class Wall(object):

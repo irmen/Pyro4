@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-
 #
-#	The banks server
+#   The banks server
 #
 
 import sys
@@ -19,7 +17,7 @@ uri=daemon.register(banks.ABN())
 ns.register("example.banks.abn",uri)
 
 print("available banks:")
-print([name for name in ns.list(prefix="example.banks.")])
+print(list(ns.list(prefix="example.banks.").keys()))
 
 # enter the service loop.
 print("Banks are ready for customers.")

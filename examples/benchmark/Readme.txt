@@ -13,5 +13,4 @@ connect speed (by releasing and rebinding existing proxies) and
 also the speed at which new proxies can be created that perform
 a single remote method call.
 
-
 Both tests require a name server to be running.

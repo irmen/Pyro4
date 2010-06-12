@@ -1,7 +1,13 @@
-#!/usr/bin/env python
-from __future__ import with_statement
-import time, threading
+import sys
+import time
 import Pyro
+from Pyro import threadutil
+
+if sys.version_info<(3,0):
+    current_thread=threadutil.currentThread
+else:
+    current_thread=threadutil.current_thread
+
 
 serv = Pyro.core.Proxy("PYRONAME:example.servertypes")
 serv._pyroOneway.add("onewaydelay")
@@ -24,8 +30,8 @@ print("This should be 0, because all 5 calls are still busy in the background.")
 if completed>0:
     print("  !!! The oneway calls were not running in the background !!!")
     print("  ??? Are you sure ONEWAY_THREADED=True on the server ???")
-
-print("\nCalling normal delay 5 times. They will all be processed")
+print
+print("Calling normal delay 5 times. They will all be processed")
 print("by the same server thread because we're using the same proxy.")
 r=serv.delay()
 print("  call processed by: %s" % r)
@@ -40,7 +46,6 @@ print("  call processed by: %s" % r)
 time.sleep(2)
 print("Number of completed calls in the server: %d" % serv.getcount())
 print("This should be 10, because by now the 5 oneway calls have completed as well.")
-
 serv.reset()
 
 print("\n--------------------------------------------------------------")
@@ -63,12 +68,12 @@ def func(uri):
     # This will run in a thread. Create a proxy just for this thread:
     with Pyro.core.Proxy(uri) as p:
         processed=p.delay()
-        print("  thread %s called delay, processed by: %s" % (threading.currentThread().getName(), processed))
+        print("  thread %s called delay, processed by: %s" % (current_thread().getName(), processed))
 
 serv._pyroBind()  # simplify the uri
 threads=[]
 for i in range(5):
-    t=threading.Thread(target=func, args=[serv._pyroUri])
+    t=threadutil.Thread(target=func, args=[serv._pyroUri])
     t.setDaemon(True)
     threads.append(t)
     t.start()

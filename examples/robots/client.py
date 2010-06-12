@@ -1,4 +1,3 @@
-from __future__ import with_statement
 import random
 import sys
 import remote
@@ -51,7 +50,7 @@ observers= {
 def main(args):
     if len(args)!=3:
         print("usage: client.py <robotname> <robottype>")
-        print("   type is one of: %s" %observers.keys())
+        print("   type is one of: %s" % list(observers.keys()))
         return
     name=args[1]
     observertype=args[2]
@@ -62,7 +61,7 @@ def main(args):
         robot=gameserver.register(name, Pyro.Proxy(uri))
         robot.emote("Hi there! I'm here to kick your ass")
         observer.robot=robot
-        print("Pyro server registered on %s" %daemon.locationStr)
+        print("Pyro server registered on %s" % daemon.locationStr)
         daemon.requestLoop()
 
 if __name__=="__main__":

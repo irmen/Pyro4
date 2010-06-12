@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import sys,os,time
 import Pyro
 import bench
@@ -31,34 +30,32 @@ print('(if you are running the server and client on different machines)')
 begin = time.time()
 iters = 1000
 for f in funcs:
-	sys.stdout.write('%d times %s ' % (iters,f.__name__))
-	sys.stdout.flush()
-	voor = time.time()
-	for i in range(iters):
-		f()
-	sys.stdout.write('%.4f' % (time.time()-voor))
-	sys.stdout.write('\n')
+    sys.stdout.write("%d times %s " % (iters,f.__name__))
+    voor = time.time()
+    for i in range(iters):
+        f()
+    sys.stdout.write("%.4f\n" % (time.time()-voor))
+    sys.stdout.flush()
 duration = time.time()-begin
 print('total time %.4f seconds' % duration)
-print('total method calls: %d'%(len(funcs)*iters))
+print('total method calls: %d' % (len(funcs)*iters))
 avg_pyro_msec = 1000.0*duration/(len(funcs)*iters)
-print('avg. time per method call: %.4f' % avg_pyro_msec ,"msec")
+print('avg. time per method call: %.4f msec' % avg_pyro_msec)
 
 print('-------- BENCHMARK LOCAL OBJECT ---------')
 object=bench.bench()
 begin = time.time()
 iters = 200000
 for f in funcs:
-	sys.stdout.write('%d times %s '%(iters,f.__name__))
-	voor = time.time()
-	for i in range(iters):
-		f()
-	sys.stdout.write('%.4f\n' % (time.time()-voor))
+    sys.stdout.write("%d times %s " % (iters,f.__name__))
+    voor = time.time()
+    for i in range(iters):
+        f()
+    sys.stdout.write("%.4f\n" % (time.time()-voor))
+    sys.stdout.flush()
 duration = time.time()-begin
 print('total time %.4f seconds' % duration)
 print('total method calls: %d' % (len(funcs)*iters))
 avg_normal_msec = 1000.0*duration/(len(funcs)*iters)
 print('avg. time per method call: %.4f msec' % avg_normal_msec)
 print('Normal method call is %.2f times faster than Pyro method call.'%(avg_pyro_msec/avg_normal_msec))
-
-

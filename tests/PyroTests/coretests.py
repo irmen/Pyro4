@@ -13,7 +13,6 @@ import sys
 import Pyro.core
 import Pyro.config
 import Pyro.errors
-import Pyro
 
 if sys.version_info>=(3,0):
     unicode=str

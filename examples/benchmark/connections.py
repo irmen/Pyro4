@@ -1,18 +1,17 @@
-#!/usr/bin/env python
 import time
 import Pyro
 
 ns_uri=Pyro.naming.resolve("PYRONAME:Pyro.NameServer")
-print("Name server location: %s"%ns_uri)
+print("Name server location: %s" % ns_uri)
 
 NUM_PROXIES=10  # 
 
-print("Timing raw rebind (connect) speed... %d proxies"%NUM_PROXIES)
+print("Timing raw rebind (connect) speed... %d proxies" % NUM_PROXIES)
 proxies=[Pyro.core.Proxy(ns_uri) for i in range(NUM_PROXIES)]
 for p in proxies:
     p.ping()
 begin=time.time()
-ITERATIONS=150
+ITERATIONS=200
 for loop in range(ITERATIONS):
     if loop%25==0:
         print(loop*len(proxies))
@@ -24,7 +23,7 @@ print("%d connections in %s sec = %.2f conn/sec" % (ITERATIONS*len(proxies), dur
 del proxies
 
 print("Timing proxy connect speed...")
-ITERATIONS=1500
+ITERATIONS=2000
 begin=time.time()
 for loop in range(ITERATIONS):
     if loop%250==0:

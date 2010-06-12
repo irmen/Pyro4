@@ -10,7 +10,8 @@ import unittest
 import Pyro.config
 import Pyro.core
 import Pyro.errors
-import threading, time, os, sys
+import time, os, sys
+from Pyro import threadutil
 
 if sys.version_info>=(3,0):
     unicode=str
@@ -34,12 +35,12 @@ class MyThing(object):
     def testargs(self,x,*args,**kwargs):
         return x,args,kwargs
 
-class DaemonLoopThread(threading.Thread):
+class DaemonLoopThread(threadutil.Thread):
     def __init__(self, pyrodaemon):
         super(DaemonLoopThread,self).__init__()
         self.setDaemon(True)
         self.pyrodaemon=pyrodaemon
-        self.running=threading.Event()
+        self.running=threadutil.Event()
         self.running.clear()
     def run(self):
         self.running.set()
@@ -268,7 +269,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             self.assertTrue(duration<2.0)
             
     def testProxySharing(self):
-        class SharedProxyThread(threading.Thread):
+        class SharedProxyThread(threadutil.Thread):
             def __init__(self, proxy):
                 super(SharedProxyThread,self).__init__()
                 self.proxy=proxy
@@ -299,7 +300,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 self.assertFalse(t.error, "all threads should report no errors") 
 
     def testServerParallelism(self):
-        class ClientThread(threading.Thread):
+        class ClientThread(threadutil.Thread):
             def __init__(self, uri, name):
                 super(ClientThread,self).__init__()
                 self.setDaemon(True)

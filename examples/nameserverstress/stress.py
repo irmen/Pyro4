@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-
-import random, time, sys
-from threading import Thread
+import sys
+import random, time
 import Pyro
+from Pyro import threadutil
 
 def randomname():
     def partname():
@@ -13,9 +12,9 @@ def randomname():
     return ".".join(parts)
     
 
-class NamingTrasher(Thread):
+class NamingTrasher(threadutil.Thread):
     def __init__(self,nsuri,number):
-        Thread.__init__(self)
+        threadutil.Thread.__init__(self)
         self.daemon=True
         self.number=number
         self.ns=Pyro.core.Proxy(nsuri)

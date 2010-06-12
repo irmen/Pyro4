@@ -7,19 +7,20 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 from __future__ import with_statement
 import unittest
-import os, threading, time, socket
+import time, socket
 import Pyro.config
 import Pyro.core
 import Pyro.naming
 import Pyro.socketutil
 from Pyro.errors import NamingError
+from Pyro import threadutil
 
-class NSLoopThread(threading.Thread):
+class NSLoopThread(threadutil.Thread):
     def __init__(self, nameserver):
         super(NSLoopThread,self).__init__()
         self.setDaemon(True)
         self.nameserver=nameserver
-        self.running=threading.Event()
+        self.running=threadutil.Event()
         self.running.clear()
     def run(self):
         self.running.set()

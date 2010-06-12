@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import time
 import Pyro
 
@@ -6,7 +5,7 @@ print("Autoreconnect using Name Server.")
 
 class TestClass(object):
     def method(self,arg):
-        print("Method called with %s"%arg)
+        print("Method called with %s" % arg)
         print("You can now try to stop this server with ctrl-C/ctrl-Break")
         time.sleep(1)
 
@@ -18,8 +17,8 @@ obj=TestClass()
 ns=Pyro.naming.locateNS()
 try:
     existing=ns.lookup("example.autoreconnect")
-    print("Object still exists in Name Server with id: %s"%existing.object)
-    print("Previous daemon socket port: %d"%existing.port)
+    print("Object still exists in Name Server with id: %s" % existing.object)
+    print("Previous daemon socket port: %d" % existing.port)
     # start the daemon on the previous port
     daemon = Pyro.core.Daemon(port=existing.port)
     # register the object in the daemon with the old objectId

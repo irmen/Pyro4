@@ -7,7 +7,7 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 from __future__ import with_statement
 import re, logging, socket, sys
-from threading import RLock, Thread
+from Pyro.threadutil import RLock, Thread
 import Pyro.core        # not Pyro.core, to avoid circular import
 import Pyro.constants
 import Pyro.socketutil
@@ -294,5 +294,4 @@ def main(args):
             bchost=options.bchost,bcport=options.bcport)
 
 if __name__=="__main__":
-    import sys
     main(sys.argv[1:])

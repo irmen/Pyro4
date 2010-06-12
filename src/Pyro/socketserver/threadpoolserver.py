@@ -7,7 +7,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
-import threading, socket, logging, sys
+import socket, logging, sys
 try:
     import queue
 except ImportError:
@@ -15,10 +15,11 @@ except ImportError:
 from Pyro.socketutil import SocketConnection, createSocket
 from Pyro.errors import ConnectionClosedError, PyroError
 import Pyro.config
+from Pyro import threadutil
 
 log=logging.getLogger("Pyro.socketserver.threadpool")
 
-class SocketWorker(threading.Thread):
+class SocketWorker(threadutil.Thread):
     """worker thread to process requests"""
     def __init__(self, server, callback):
         super(SocketWorker,self).__init__()

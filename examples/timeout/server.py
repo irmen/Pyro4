@@ -1,13 +1,12 @@
-#!/usr/bin/env python
 import time
 import Pyro
 
 class TimeoutServer(object):
     def delay(self, amount):
-        print("sleeping %.2f" % amount)
+        print("sleeping %d" % amount)
         time.sleep(amount)
         print("done.")
-        return "slept %.2f seconds" % amount
+        return "slept %d seconds" % amount
 
 Pyro.config.COMMTIMEOUT=0        # the server won't be using timeouts
 

@@ -1,27 +1,26 @@
-#!/usr/bin/env python
 try:
-	from queue import Queue
+    import queue
 except ImportError:
-	from Queue import Queue
+    import Queue as queue
 import Pyro
 
 class DispatcherQueue(object):
-	def __init__(self):
-		self.workqueue = Queue()
-		self.resultqueue = Queue()
-	def putWork(self, item):
-		self.workqueue.put(item)
-	def getWork(self, timeout=5):
-		return self.workqueue.get(block=True, timeout=timeout)
-	def putResult(self, item):
-		self.resultqueue.put(item)
-	def getResult(self, timeout=5):
-		return self.resultqueue.get(block=True, timeout=timeout)
-	def workQueueSize(self):
-		return self.workqueue.qsize()
-	def resultQueueSize(self):
-		return self.resultqueue.qsize()
-		
+    def __init__(self):
+        self.workqueue = queue.Queue()
+        self.resultqueue = queue.Queue()
+    def putWork(self, item):
+        self.workqueue.put(item)
+    def getWork(self, timeout=5):
+        return self.workqueue.get(block=True, timeout=timeout)
+    def putResult(self, item):
+        self.resultqueue.put(item)
+    def getResult(self, timeout=5):
+        return self.resultqueue.get(block=True, timeout=timeout)
+    def workQueueSize(self):
+        return self.workqueue.qsize()
+    def resultQueueSize(self):
+        return self.resultqueue.qsize()
+        
 ######## main program
 
 ns=Pyro.naming.locateNS()

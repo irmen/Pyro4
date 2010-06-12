@@ -7,11 +7,12 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 from __future__ import with_statement
 import re, struct, sys, time, os
-import logging, uuid, threading
+import logging, uuid
 import Pyro.config
 import Pyro.socketutil
 import Pyro.util
 import Pyro.errors
+from Pyro import threadutil
 
 if sys.version_info>(3,0):
     basestring=str
@@ -134,7 +135,7 @@ class Proxy(object):
         self._pyroConnection=None
         self._pyroOneway=set()
         self.__pyroTimeout=Pyro.config.COMMTIMEOUT
-        self.__pyroLock=threading.Lock()
+        self.__pyroLock=threadutil.Lock()
     def __del__(self):
         if hasattr(self,"_pyroConnection"):
             self._pyroRelease()
@@ -152,7 +153,7 @@ class Proxy(object):
     def __setstate__(self, state):
         self._pyroUri,self._pyroOneway,self._pyroSerializer,self.__pyroTimeout = state
         self._pyroConnection=None
-        self.__pyroLock=threading.Lock()
+        self.__pyroLock=threadutil.Lock()
     def __copy__(self):
         uriCopy=URI(self._pyroUri)
         return Proxy(uriCopy)
@@ -357,7 +358,7 @@ class Daemon(object):
         pyroObject._pyroId=Pyro.constants.DAEMON_NAME
         self.objectsById={pyroObject._pyroId: pyroObject}
         self.__mustshutdown=False
-        self.__loopstopped=threading.Event()
+        self.__loopstopped=threadutil.Event()
         self.__loopstopped.set()
 
     def fileno(self):
@@ -441,7 +442,7 @@ class Daemon(object):
                 obj=Pyro.util.resolveDottedAttribute(obj,method,Pyro.config.DOTTEDNAMES)
                 if flags & MessageFactory.FLAGS_ONEWAY and Pyro.config.ONEWAY_THREADED:
                     # oneway call to be run inside its own thread
-                    thread=threading.Thread(target=obj, args=vargs, kwargs=kwargs)
+                    thread=threadutil.Thread(target=obj, args=vargs, kwargs=kwargs)
                     thread.setDaemon(True)
                     thread.start()
                 else:

@@ -19,6 +19,7 @@ POLLTIMEOUT     =  2.0      # seconds
 ONEWAY_THREADED    =  True     # oneway calls run in their own thread
 DETAILED_TRACEBACK =  False
 CONNECTHANDSHAKE = True     # should a connection handshake be done?
+THREADING2      = False     # use threading2 if available?
 
 
 # Btw, env vars only used at package import time (see __init__.py):
@@ -29,7 +30,7 @@ def _process(dictionary):
     """Process all config items and update them with environment var settings if available."""
     import os, re
     PREFIX="PYRO_"
-    rx=re.compile(r"[A-Z_]+$")
+    rx=re.compile(r"[A-Z_]+[A-Z_0-9]*$")
     for symbol,value in dictionary.items():
         if rx.match(symbol):
             if PREFIX+symbol in os.environ:
@@ -55,7 +56,7 @@ del _process
 def asDict():
     """returns the current config as a regular dictionary"""
     import re
-    rx=re.compile(r"[A-Z_]+$")
+    rx=re.compile(r"[A-Z_]+[A-Z_0-9]*$")
     result={}
     for n,v in globals().items():
         if rx.match(n):

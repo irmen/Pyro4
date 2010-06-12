@@ -55,4 +55,4 @@ class GameObserver(object):
     def death(self, killer):
         print("I DIED")
         if killer:
-            print("%s KILLED ME :-(" % killer.name)
+            print ("%s KILLED ME :(" % killer.name)

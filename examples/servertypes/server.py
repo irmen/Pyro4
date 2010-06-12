@@ -1,9 +1,13 @@
-#!/usr/bin/env python
-import time, threading, sys
+import time
+import sys
 import Pyro
+from Pyro import threadutil
 
 if sys.version_info<(3,0):
     input=raw_input
+    current_thread=threadutil.currentThread
+else:
+    current_thread=threadutil.current_thread
 
 class Server(object):
     def __init__(self):
@@ -15,13 +19,13 @@ class Server(object):
     def getconfig(self):
         return Pyro.config.asDict()
     def delay(self):
-        threadname=threading.currentThread().getName()
+        threadname=current_thread().getName()
         print("delay called in thread %s" % threadname)
         time.sleep(1)
         self.callcount+=1
         return threadname
     def onewaydelay(self):
-        threadname=threading.currentThread().getName()
+        threadname=current_thread().getName()
         print("onewaydelay called in thread %s" % threadname)
         time.sleep(1)
         self.callcount+=1

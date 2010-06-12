@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import time
 import Pyro
 
@@ -18,7 +16,6 @@ print("calling a non existing method, but since it is flagged oneway, we won't f
 serv.nonexisting()
 
 time.sleep(2)
-print
 print("\nNow contacting the server to see if it's done.")
 print("we are faster, so you should see a few attempts,")
 print("until the server is finished.")

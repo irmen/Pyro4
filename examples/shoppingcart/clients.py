@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import random
 import Pyro
 
@@ -41,13 +39,11 @@ except:
     print("ERROR: %s" % ("".join(Pyro.util.getPyroTraceback())))
 print("Harry payed. The cart now contains: %s (should be empty)" % harrysCart.getContents())
 print("Harry got this receipt:")
-print("\n%s\n" % receipt)
-
+print(receipt)
 receipt=shop.payCart(sallysCart)
 print("Sally payed. The cart now contains: %s (should be empty)" % sallysCart.getContents())
 print("Sally got this receipt:")
-print("\n%s\n" % receipt)
-
+print(receipt)
 print("Harry is leaving.")
 shop.leave("Harry")
 print("Sally is leaving.")
@@ -58,6 +54,6 @@ try:
 except:
     print("".join(Pyro.util.getPyroTraceback()))
 
-print("\nHarry is attempting to put stuff back in his cart again,")
+print("Harry is attempting to put stuff back in his cart again,")
 print("which should fail because the cart does no longer exist.")
 harrysCart.purchase("crap")

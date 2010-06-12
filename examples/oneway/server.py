@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import time
 import Pyro
 
@@ -21,7 +20,7 @@ class Server(object):
         print("ready status requested (%r)" % (not self.busy))
         return not self.busy
     def result(self):
-        return("The result :)")
+        return "The result :)"
     def nothing(self):
         print("nothing got called, doing nothing")
       
