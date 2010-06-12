@@ -7,3 +7,4 @@ global-exclude */.svn/*
 global-exclude *.class
 global-exclude *.pyc
 global-exclude *.pyo
+global-exclude *.coverage
