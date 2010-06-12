@@ -11,7 +11,7 @@ import Pyro.config
 if Pyro.config.THREADING2:
     try:
         from threading2 import *
-    except ImportError, e:
+    except ImportError:
         from threading import *
 else:    
     from threading import *
