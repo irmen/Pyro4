@@ -4,7 +4,7 @@ import sys
 if __name__ == '__main__' :
     sys.path.insert(0, "src")
     import Pyro.constants
-    print 'Pyro version =',Pyro.constants.VERSION
+    print('Pyro version = %s' % Pyro.constants.VERSION)
 
     setup(name="Pyro",
         version= Pyro.constants.VERSION,
@@ -31,3 +31,8 @@ if __name__ == '__main__' :
                 "Topic :: System :: Networking"
             ]
     )
+    
+    if len(sys.argv)>=2 and sys.argv[1].startswith("install"):
+        print("\nOnly the Pyro library has been installed (version %s)." % Pyro.constants.VERSION)
+        print("If you want to install the tests, the examples, and/or the manual,")
+        print("you have to copy them manually to the desired location.")
