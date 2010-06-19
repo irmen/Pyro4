@@ -63,7 +63,7 @@ class SocketWorker(threadutil.Thread):
             conn.close()
         return False
                     
-class SocketServer(object):
+class SocketServer_Threadpool(object):
     """transport server for socket connections, worker thread pool version."""
     def __init__(self, callbackObject, host, port, timeout=None):
         log.info("starting thread pool socketserver")
@@ -91,7 +91,7 @@ class SocketServer(object):
         log.debug("threadpool server requestloop")
         while (self.sock is not None) and loopCondition():
             try:
-                self.handleRequests()
+                self.handleRequests(None)
             except socket.error:
                 if not loopCondition():
                     # swallow the socket error if loop terminates anyway
@@ -103,8 +103,10 @@ class SocketServer(object):
                 log.debug("stopping on break signal")
                 break
         log.debug("threadpool server exits requestloop")
-    def handleRequests(self):
+    def handleRequests(self, eventsockets):
         try:
+            # we only react on events on our own server socket.
+            # all other (client) sockets are owned by their individual threads.
             csock, caddr=self.sock.accept()
             log.debug("connection from %s",caddr)
             if Pyro.config.COMMTIMEOUT:
@@ -138,6 +140,9 @@ class SocketServer(object):
 
     def fileno(self):
         return self.sock.fileno()
+    def sockets(self):
+        # the server socket is all we care about, all client sockets are running in their own threads 
+        return [self.sock]
 
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""

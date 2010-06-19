@@ -9,8 +9,8 @@ import unittest
 import socket, os, sys
 import Pyro.socketutil as SU
 import Pyro.config
-from Pyro.socketserver.selectserver import SocketServer as SocketServer_Select
-from Pyro.socketserver.threadpoolserver import SocketServer as SocketServer_Threadpool
+from Pyro.socketserver.selectserver import SocketServer_Select
+from Pyro.socketserver.threadpoolserver import SocketServer_Threadpool
 
 if sys.version_info<(3,0):
     def tobytes(string, encoding=None):
