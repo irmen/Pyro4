@@ -52,8 +52,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro.config.POLLTIMEOUT=0.1
         Pyro.config.SERVERTYPE=self.SERVERTYPE
         Pyro.config.COMMTIMEOUT=self.COMMTIMEOUT
-        self.old_workerthreads=Pyro.config.WORKERTHREADS
-        Pyro.config.WORKERTHREADS=10
         self.daemon=Pyro.core.Daemon(port=0)
         obj=MyThing()
         uri=self.daemon.register(obj, "something")
@@ -67,7 +65,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         self.daemonthread.join()
         Pyro.config.SERVERTYPE="thread"
         Pyro.config.COMMTIMEOUT=None
-        Pyro.config.WORKERTHREADS=self.old_workerthreads
 
     def testNoDottedNames(self):
         Pyro.config.DOTTEDNAMES=False
@@ -301,6 +298,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 super(ClientThread,self).__init__()
                 self.setDaemon(True)
                 self.proxy=Pyro.core.Proxy(uri)
+                self.proxy._pyroBind()
                 self.name=name
                 self.error=True
             def run(self):

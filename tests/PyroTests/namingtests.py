@@ -42,8 +42,6 @@ class BCSetupTests(unittest.TestCase):
 class NameServerTests(unittest.TestCase):
     def setUp(self):
         Pyro.config.POLLTIMEOUT=0.1
-        self.old_workerthreads=Pyro.config.WORKERTHREADS
-        Pyro.config.WORKERTHREADS=4
         myIpAddress=Pyro.socketutil.getMyIpAddress(workaround127=True)
         self.nsUri, self.nameserver, self.bcserver = Pyro.naming.startNS(host=myIpAddress, port=0, bcport=0)
         self.assertTrue(self.bcserver is not None,"expected a BC server to be running")
@@ -62,7 +60,6 @@ class NameServerTests(unittest.TestCase):
         self.daemonthread.join()
         Pyro.config.NS_PORT=self.old_nsPort
         Pyro.config.NS_BCPORT=self.old_bcPort
-        Pyro.config.WORKERTHREADS=self.old_workerthreads
    
     def testLookupAndRegister(self):
         original_nshost=Pyro.config.NS_HOST
