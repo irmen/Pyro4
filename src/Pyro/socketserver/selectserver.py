@@ -15,7 +15,7 @@ import Pyro.config
 
 log=logging.getLogger("Pyro.socketserver.select")
 
-class SocketServer(object):
+class SocketServer_Select(object):
     """transport server for socket connections, select/poll loop multiplex version."""
     def __init__(self, callbackObject, host, port, timeout=None):
         if os.name=="java":
@@ -121,8 +121,24 @@ class SocketServer(object):
                     break
             log.debug("exit select-based requestloop")
 
-    def handleRequests(self):
-        raise NotImplementedError("select server doesn't currently support external request loop")
+    def handleRequests(self, eventsockets):
+        """used for external event loops: handle events that occur on one of the sockets of this server"""
+        for s in eventsockets:
+            if s is self.sock:
+                # server socket, means new connection
+                conn=self.handleConnection(self.sock)
+                if conn:
+                    self.clients.append(conn)
+            else:
+                # must be client socket, means remote call
+                try:
+                    if self.callback:
+                        self.callback.handleRequest(s)
+                except (socket.error,ConnectionClosedError):
+                    # client went away.
+                    s.close()
+                    if s in self.clients:
+                        self.clients.remove(s)
 
     def handleConnection(self, sock):
         try:
@@ -163,6 +179,10 @@ class SocketServer(object):
 
     def fileno(self):
         return self.sock.fileno()
+    def sockets(self):
+        socks=[self.sock]
+        socks.extend(self.clients)
+        return socks
 
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""

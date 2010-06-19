@@ -9,8 +9,8 @@ import unittest
 import socket, os
 import Pyro.socketutil as SU
 import Pyro.config
-from Pyro.socketserver.selectserver import SocketServer as SocketServer_Select
-from Pyro.socketserver.threadpoolserver import SocketServer as SocketServer_Threadpool
+from Pyro.socketserver.selectserver import SocketServer_Select
+from Pyro.socketserver.threadpoolserver import SocketServer_Threadpool
 
 
 class TestSocketutil(unittest.TestCase):

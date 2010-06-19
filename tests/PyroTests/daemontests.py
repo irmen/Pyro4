@@ -36,7 +36,6 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual( locationstr, d.locationStr)
             self.assertTrue(Pyro.constants.DAEMON_NAME in d.objectsById)
             self.assertEqual("PYRO:"+Pyro.constants.DAEMON_NAME+"@"+locationstr, str(d.uriFor(Pyro.constants.DAEMON_NAME)))
-            self.assertTrue(d.fileno() > 0)
             # check the string representations
             self.assertEqual("<Pyro Daemon on "+locationstr+">",str(d))
             self.assertEqual("<Pyro Daemon on "+locationstr+">",unicode(d))
@@ -56,7 +55,10 @@ class DaemonTests(unittest.TestCase):
         old_servertype=Pyro.config.SERVERTYPE
         Pyro.config.SERVERTYPE="thread"
         with Pyro.core.Daemon(port=0) as d:
-            self.assertTrue(d.fileno()>0)
+            sock=d.sock
+            sockets=d.sockets()
+            self.assertTrue(sock in sockets, "daemon's socketlist should contain the server socket")
+            self.assertTrue(len(sockets)==1, "daemon without connections should have just 1 socket")
         Pyro.config.SERVERTYPE=old_servertype
 
     def testServertypeSelect(self):
@@ -67,7 +69,10 @@ class DaemonTests(unittest.TestCase):
             self.assertRaises(NotImplementedError, Pyro.core.Daemon, port=0)
         else:
             with Pyro.core.Daemon(port=0) as d:
-                self.assertTrue(d.fileno()>0)
+                sock=d.sock
+                sockets=d.sockets()
+                self.assertTrue(sock in sockets, "daemon's socketlist should contain the server socket")
+                self.assertTrue(len(sockets)==1, "daemon without connections should have just 1 socket")
         Pyro.config.SERVERTYPE=old_servertype
                 
     def testServertypeFoobar(self):

@@ -34,6 +34,8 @@ class BCSetupTests(unittest.TestCase):
         nameserver.close()
         nsUri, nameserver, bcserver = Pyro.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=True)
         self.assertTrue(bcserver is not None, "expected a BC server to be running. Check DNS setup (hostname must not resolve to loopback address")
+        self.assertTrue(bcserver.fileno() > 1)
+        self.assertTrue(bcserver.sock is not None)
         nameserver.close()
         bcserver.close()
 

@@ -28,13 +28,13 @@ assert broadcastServer is not None, "expect a broadcast server to be created"
 
 print("got a Nameserver, uri=%s" % nameserverUri)
 print("ns daemon location string=%s" % nameserverDaemon.locationStr)
-print("ns daemon socket=%s (fileno %d)" % (nameserverDaemon.sock, nameserverDaemon.fileno()))
+print("ns daemon sockets=%s" % nameserverDaemon.sockets())
 print("bc server socket=%s (fileno %d)" % (broadcastServer.sock, broadcastServer.fileno()))
 
 # create a Pyro daemon
 pyrodaemon=Pyro.core.Daemon(host=hostname)
 print("daemon location string=%s" % pyrodaemon.locationStr)
-print("daemon socket=%s (fileno %d)" % (pyrodaemon.sock, pyrodaemon.fileno()))
+print("daemon sockets=%s" % pyrodaemon.sockets())
 
 # register a server object with the daemon
 serveruri=pyrodaemon.register(EmbeddedServer())
@@ -48,17 +48,31 @@ print("")
 # below is our custom event loop.
 while True:
     print("Waiting for events...")
-    rs=[nameserverDaemon, broadcastServer, pyrodaemon]
-    rs,_,_ = select.select(rs,[],[],3)          # use select on the three pyro objects to multiplex them
-    if broadcastServer in rs:
-        print("Broadcast server received a request")
-        broadcastServer.processRequest()
-    if nameserverDaemon in rs:
+    # create sets of the socket objects we will be waiting on
+    # (a set provides fast lookup compared to a list)
+    nameserverSockets = set(nameserverDaemon.sockets())
+    pyroSockets = set(pyrodaemon.sockets())
+    rs=[broadcastServer]  # only the broadcast server is directly usable as a select() object
+    rs.extend(nameserverSockets)
+    rs.extend(pyroSockets)
+    rs,_,_ = select.select(rs,[],[],3)
+    eventsForNameserver=[]
+    eventsForDaemon=[]
+    for s in rs:
+        if s is broadcastServer:
+            print("Broadcast server received a request")
+            broadcastServer.processRequest()
+        elif s in nameserverSockets:
+            eventsForNameserver.append(s)
+        elif s in pyroSockets:
+            eventsForDaemon.append(s)
+    if eventsForNameserver:
         print("Nameserver received a request")
-        nameserverDaemon.handleRequests()
-    if pyrodaemon in rs:
+        nameserverDaemon.handleRequests(eventsForNameserver)
+    if eventsForDaemon:
         print("Daemon received a request")
-        pyrodaemon.handleRequests()
+        pyrodaemon.handleRequests(eventsForDaemon)
+        
 
 nameserverDaemon.close()
 broadcastServer.close()

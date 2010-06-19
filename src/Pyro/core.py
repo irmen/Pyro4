@@ -324,8 +324,8 @@ class DaemonObject(object):
     def ping(self):
         pass
 
-from Pyro.socketserver.threadpoolserver import SocketServer as SocketServer_Threadpool
-from Pyro.socketserver.selectserver import SocketServer as SocketServer_Select
+from Pyro.socketserver.threadpoolserver import SocketServer_Threadpool
+from Pyro.socketserver.selectserver import SocketServer_Select
 
 class Daemon(object):
     """
@@ -351,11 +351,12 @@ class Daemon(object):
         self.__loopstopped=threadutil.Event()
         self.__loopstopped.set()
 
-    def fileno(self):
-        return self.transportServer.fileno()
     @property
     def sock(self):
         return self.transportServer.sock
+
+    def sockets(self):
+        return self.transportServer.sockets()
 
     def requestLoop(self, loopCondition=lambda:True):
         """
@@ -372,8 +373,9 @@ class Daemon(object):
             self.__loopstopped.set()
         log.debug("daemon exits requestloop")
 
-    def handleRequests(self):
-        return self.transportServer.handleRequests()
+    def handleRequests(self, eventsockets):
+        """for use in an external event loop: handle any requests that are pending for this daemon"""
+        return self.transportServer.handleRequests(eventsockets)
 
     def shutdown(self):
         """Cleanly terminate a deamon that is running in the requestloop. It must be running

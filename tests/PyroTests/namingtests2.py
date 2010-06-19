@@ -152,7 +152,6 @@ class OfflineNameServerTests(unittest.TestCase):
     def testOwnloopBasics(self):
         myIpAddress=Pyro.socketutil.getMyIpAddress(workaround127=True)
         uri1,ns1,bc1=Pyro.naming.startNS(host=myIpAddress, port=0, enableBroadcast=True)
-        self.assertTrue(ns1.fileno() > 0)
         self.assertTrue(bc1.fileno() > 0)
         if hasattr(select, "poll"):
             p=select.poll()
@@ -160,13 +159,16 @@ class OfflineNameServerTests(unittest.TestCase):
                 # jython requires nonblocking sockets for poll
                 ns1.sock.setblocking(False)
                 bc1.sock.setblocking(False)
-            p.register(ns1.fileno(), select.POLLIN)  #@UndefinedVariable (pydev)
+            for s in ns1.sockets():
+                p.register(s, select.POLLIN)  #@UndefinedVariable (pydev)
             p.register(bc1.fileno(), select.POLLIN)  #@UndefinedVariable (pydev)
             p.poll(100)
             if hasattr(p,"close"):
                 p.close()
         else:
-            _,_,_=select.select([ns1, bc1],[],[],0.1)
+            rs=[bc1]
+            rs.extend(ns1.sockets())
+            _,_,_=select.select(rs,[],[],0.1)
         ns1.close()
         bc1.close()
 
