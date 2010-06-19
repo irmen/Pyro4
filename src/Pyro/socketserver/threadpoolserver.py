@@ -7,11 +7,13 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
+from __future__ import with_statement
 import socket, logging, sys
 try:
     import queue
 except ImportError:
     import Queue as queue
+import time
 from Pyro.socketutil import SocketConnection, createSocket
 from Pyro.errors import ConnectionClosedError, PyroError
 import Pyro.config
@@ -39,19 +41,21 @@ class SocketWorker(threadutil.Thread):
                 log.debug("worker %s got a client connection %s", self.getName(), self.caddr)
                 self.csock=SocketConnection(self.csock)
                 if self.handleConnection(self.csock):
-                    while self.running:   # loop over all requests during a single connection
-                        try:
-                            self.callback.handleRequest(self.csock)
-                        except (socket.error,ConnectionClosedError):
-                            # client went away.
-                            log.debug("worker %s client disconnected %s", self.getName(), self.caddr)
-                            break
-                    self.csock.close()
+                    self.server.threadpool.updateWorking(1)  # tell the pool we're working
+                    try:
+                        while self.running:   # loop over all requests during a single connection
+                            try:
+                                self.callback.handleRequest(self.csock)
+                            except (socket.error,ConnectionClosedError):
+                                # client went away.
+                                log.debug("worker %s client disconnected %s", self.getName(), self.caddr)
+                                break
+                        self.csock.close()
+                    finally:
+                        # make sure we tell the pool that we are no longer working
+                        self.server.threadpool.updateWorking(-1)
         finally:
-            try:
-                self.server.threadpool.remove(self)
-            except KeyError:
-                pass
+            self.server.threadpool.remove(self)
         log.debug("worker %s stopping", self.getName())
     def handleConnection(self,conn):
         try:
@@ -62,6 +66,49 @@ class SocketWorker(threadutil.Thread):
             log.warn("error during connect: %s",x)
             conn.close()
         return False
+                    
+class ThreadPool(set):
+    lock=threadutil.Lock()
+    def __init__(self, server, callback):
+        self.__server=server
+        self.__callback=callback
+        self.__working=0
+        self.__lastshrink=time.time()
+    def attemptRemove(self, member):
+        with self.lock:
+            if len(self)>Pyro.config.THREADPOOL_MINTHREADS:
+                super(ThreadPool,self).remove(member)
+                return True
+            return False
+    def remove(self, member):
+        with self.lock:
+            try:
+                super(ThreadPool,self).remove(member)
+            except KeyError:
+                pass
+    def attemptSpawn(self):
+        with self.lock:
+            if len(self)<Pyro.config.THREADPOOL_MAXTHREADS:
+                worker=SocketWorker(self.__server, self.__callback)
+                self.add(worker)
+                worker.start()
+                return True
+            return False
+    def poolCritical(self):
+        idle=len(self)-self.__working
+        return idle<=0
+    def updateWorking(self, number):
+        self.shrink()
+        with self.lock:
+            self.__working+=number
+    def shrink(self):
+        threads=len(self)
+        if threads>Pyro.config.THREADPOOL_MINTHREADS:
+            idle=threads-self.__working
+            if idle>Pyro.config.THREADPOOL_MINTHREADS and (time.time()-self.__lastshrink)>Pyro.config.THREADPOOL_IDLETIMEOUT:
+                for _ in range(idle-Pyro.config.THREADPOOL_MINTHREADS):
+                    self.__server.workqueue.put((None,None)) # put a 'stop' sentinel in the worker queue to kill a worker
+                self.__lastshrink=time.time()
                     
 class SocketServer_Threadpool(object):
     """transport server for socket connections, worker thread pool version."""
@@ -76,12 +123,10 @@ class SocketServer_Threadpool(object):
         host=host or self._socketaddr[0]
         port=port or self._socketaddr[1]
         self.locationStr="%s:%d" % (host,port)
-        self.threadpool=set()
+        self.threadpool=ThreadPool(self, callbackObject)
         self.workqueue=queue.Queue()
-        for _ in range(Pyro.config.WORKERTHREADS):  #  XXX should be dynamic
-            worker=SocketWorker(self, callbackObject)
-            self.threadpool.add(worker)
-            worker.start()
+        for _ in range(Pyro.config.THREADPOOL_MINTHREADS):
+            self.threadpool.attemptSpawn()
         log.info("%d worker threads started", len(self.threadpool))
     def __del__(self):
         if self.sock is not None:
@@ -111,6 +156,8 @@ class SocketServer_Threadpool(object):
             log.debug("connection from %s",caddr)
             if Pyro.config.COMMTIMEOUT:
                 csock.settimeout(Pyro.config.COMMTIMEOUT)
+            if self.threadpool.poolCritical():
+                self.threadpool.attemptSpawn()
             self.workqueue.put((csock,caddr))
         except socket.timeout:
             pass  # just continue the loop on a timeout on accept
@@ -125,11 +172,11 @@ class SocketServer_Threadpool(object):
             self.sock=None
         for worker in self.threadpool.copy():
             worker.running=False
-            if self.workqueue is not None:
-                self.workqueue.put((None,None)) # put a 'stop' sentinel in the worker queue
             csock=getattr(worker,"csock",None)
             if csock:
                 csock.close()    # terminate socket that the worker might be listening on
+            if self.workqueue is not None:
+                self.workqueue.put((None,None)) # put a 'stop' sentinel in the worker queue
         while joinWorkers:
             try:
                 worker=self.threadpool.pop()

@@ -5,21 +5,23 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
-HOST            =  "localhost"     # don't expose us to the outside world by default
-NS_HOST         =  HOST
-NS_PORT         =  9090     # tcp
-NS_BCPORT       =  9091     # udp
-NS_BCHOST       =  None
-COMPRESSION     =  False
-SERVERTYPE      =  "thread"
-DOTTEDNAMES     =  False    # server-side 
-COMMTIMEOUT     =  0.0
-WORKERTHREADS   =  20       # 5 should be minimum
-POLLTIMEOUT     =  2.0      # seconds
-ONEWAY_THREADED    =  True     # oneway calls run in their own thread
-DETAILED_TRACEBACK =  False
-CONNECTHANDSHAKE = True     # should a connection handshake be done?
-THREADING2      = False     # use threading2 if available?
+HOST          =  "localhost"     # don't expose us to the outside world by default
+NS_HOST       =  HOST
+NS_PORT       =  9090     # tcp
+NS_BCPORT     =  9091     # udp
+NS_BCHOST     =  None
+COMPRESSION   =  False
+SERVERTYPE    =  "thread"
+DOTTEDNAMES   =  False    # server-side 
+COMMTIMEOUT   =  0.0
+POLLTIMEOUT   =  2.0      # seconds
+THREADING2    =  False     # use threading2 if available?
+ONEWAY_THREADED    = True     # oneway calls run in their own thread
+DETAILED_TRACEBACK = False
+CONNECTHANDSHAKE   = True     # should a connection handshake be done?
+THREADPOOL_MINTHREADS  = 4
+THREADPOOL_MAXTHREADS  = 50
+THREADPOOL_IDLETIMEOUT = 5.0
 
 
 # Btw, env vars only used at package import time (see __init__.py):
