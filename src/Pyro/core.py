@@ -430,7 +430,7 @@ class Daemon(object):
                 if kwargs and sys.version_info<(2,6,5) and os.name!="java":
                     # Python before 2.6.5 doesn't accept unicode keyword arguments
                     kwargs = dict((str(k),kwargs[k]) for k in kwargs)
-                log.debug("calling %s.%s",obj.__class__.__name__,method)
+                #log.debug("calling %s.%s",obj.__class__.__name__,method)
                 obj=Pyro.util.resolveDottedAttribute(obj,method,Pyro.config.DOTTEDNAMES)
                 if flags & MessageFactory.FLAGS_ONEWAY and Pyro.config.ONEWAY_THREADED:
                     # oneway call to be run inside its own thread

@@ -52,6 +52,8 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro.config.POLLTIMEOUT=0.1
         Pyro.config.SERVERTYPE=self.SERVERTYPE
         Pyro.config.COMMTIMEOUT=self.COMMTIMEOUT
+        Pyro.config.THREADPOOL_MINTHREADS=2
+        Pyro.config.THREADPOOL_MAXTHREADS=20
         self.daemon=Pyro.core.Daemon(port=0)
         obj=MyThing()
         uri=self.daemon.register(obj, "something")
@@ -291,6 +293,20 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 t.join()
             for t in threads:
                 self.assertFalse(t.error, "all threads should report no errors") 
+
+    def testServerConnections(self):
+        # check if the server allows to grow the number of connections
+        proxies=[Pyro.core.Proxy(self.objectUri) for _ in range(10)]
+        try:
+            Pyro.config.COMMTIMEOUT=0.5
+            for p in proxies:
+                p._pyroBind()
+            for p in proxies:
+                p.ping()
+        finally:
+            for p in proxies:
+                p._pyroRelease()
+            Pyro.config.COMMTIMEOUT=self.COMMTIMEOUT
 
     def testServerParallelism(self):
         class ClientThread(threadutil.Thread):
