@@ -298,15 +298,14 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         # check if the server allows to grow the number of connections
         proxies=[Pyro.core.Proxy(self.objectUri) for _ in range(10)]
         try:
-            Pyro.config.COMMTIMEOUT=0.5
             for p in proxies:
+                p._pyroTimeout=0.5
                 p._pyroBind()
             for p in proxies:
                 p.ping()
         finally:
             for p in proxies:
                 p._pyroRelease()
-            Pyro.config.COMMTIMEOUT=self.COMMTIMEOUT
 
     def testServerParallelism(self):
         class ClientThread(threadutil.Thread):
@@ -314,9 +313,10 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 super(ClientThread,self).__init__()
                 self.setDaemon(True)
                 self.proxy=Pyro.core.Proxy(uri)
-                self.proxy._pyroBind()
                 self.name=name
                 self.error=True
+                self.proxy._pyroTimeout=0.5
+                self.proxy._pyroBind()
             def run(self):
                 try:
                     reply=self.proxy.delayAndId(0.5, self.name)
@@ -326,9 +326,16 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                     self.proxy._pyroRelease()
         threads=[]
         start=time.time()
-        for i in range(6):
-            t=ClientThread(self.objectUri,"t%d" % i)
-            threads.append(t)
+        try:
+            for i in range(6):
+                t=ClientThread(self.objectUri,"t%d" % i)
+                threads.append(t)
+        except:
+            # some exception (probably timeout) while creating clients
+            # try to clean up some connections first
+            for t in threads:
+                t.proxy._pyroRelease()
+            raise  # re-raise the exception
         for t in threads:
             t.start()
         for t in threads:
