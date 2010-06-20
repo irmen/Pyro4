@@ -72,5 +72,8 @@ if __name__=="__main__":
     print "Pyro version:",Pyro.constants.VERSION
     print "Loaded from:",os.path.abspath(os.path.split(Pyro.__file__)[0])
     print "Active configuration settings:"
-    for n,v in sorted(asDict().items()):
+    config=asDict()
+    config["LOGFILE"]=os.environ.get("PYRO_LOGFILE")
+    config["LOGLEVEL"]=os.environ.get("PYRO_LOGLEVEL")
+    for n,v in sorted(config.items()):
         print "%s=%s" % (n,v) 

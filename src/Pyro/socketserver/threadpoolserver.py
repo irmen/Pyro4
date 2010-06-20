@@ -9,7 +9,7 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 from __future__ import with_statement
 import socket, logging, Queue
-import time
+import time, sys, os
 from Pyro.socketutil import SocketConnection, createSocket
 from Pyro.errors import ConnectionClosedError, PyroError
 import Pyro.config
@@ -24,10 +24,13 @@ class SocketWorker(threadutil.Thread):
         self.setDaemon(True)
         self.server=server
         self.callback=callback
+        if os.name=="java":
+            # jython names every thread 'Thread', so we improve that a little
+            self.setName("Thread-%d"%id(self))
     def run(self):
         self.running=True
         try:
-            log.debug("worker %s waiting for work", self.getName())
+            log.debug("new worker %s", self.getName())
             while self.running: # loop over all connections in the queue
                 self.csock,self.caddr = self.server.workqueue.get()
                 if self.csock is None and self.caddr is None:
@@ -50,9 +53,12 @@ class SocketWorker(threadutil.Thread):
                     finally:
                         # make sure we tell the pool that we are no longer working
                         self.server.threadpool.updateWorking(-1)
+        except Exception:
+            exc_type, exc_value, _ = sys.exc_info()
+            log.warn("swallow exception in worker %s: %s %s",self.getName(),exc_type,exc_value)
         finally:
             self.server.threadpool.remove(self)
-        log.debug("worker %s stopping", self.getName())
+            log.debug("stopping worker %s", self.getName())
     def handleConnection(self,conn):
         try:
             if self.callback.handshake(conn):
