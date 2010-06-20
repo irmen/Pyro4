@@ -315,7 +315,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 self.proxy=Pyro.core.Proxy(uri)
                 self.name=name
                 self.error=True
-                self.proxy._pyroTimeout=0.5
+                self.proxy._pyroTimeout=5.0
                 self.proxy._pyroBind()
             def run(self):
                 try:
