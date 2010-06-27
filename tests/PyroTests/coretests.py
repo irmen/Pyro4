@@ -340,6 +340,20 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(None, p._pyroConnection.timeout)
         Pyro.config.COMMTIMEOUT=None
 
+    def testDecorators(self):
+        # just test the decorator itself, testing the callback
+        # exception handling is kinda hard in unit tests. Maybe later.
+        class Test(object):
+            @Pyro.callback
+            def method(self):
+                pass
+            def method2(self):
+                pass
+        t=Test()
+        self.assertEquals(True, getattr(t.method,"_pyroCallback"))
+        self.assertEquals(False, getattr(t.method2,"_pyroCallback", False))
+        
+        
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

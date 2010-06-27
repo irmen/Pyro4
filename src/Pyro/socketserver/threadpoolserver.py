@@ -9,7 +9,7 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 from __future__ import with_statement
 import socket, logging, Queue
-import time, sys, os
+import time, os
 from Pyro.socketutil import SocketConnection, createSocket
 from Pyro.errors import ConnectionClosedError, PyroError
 import Pyro.config
@@ -53,9 +53,11 @@ class SocketWorker(threadutil.Thread):
                     finally:
                         # make sure we tell the pool that we are no longer working
                         self.server.threadpool.updateWorking(-1)
-        except Exception:
-            exc_type, exc_value, _ = sys.exc_info()
-            log.warn("swallow exception in worker %s: %s %s",self.getName(),exc_type,exc_value)
+        # Note: we don't swallow exceptions here anymore because @Pyro.callback doesn't
+        #       do anything anymore if we do (the re-raised exception would be swallowed...)
+        #except Exception:
+        #    exc_type, exc_value, _ = sys.exc_info()
+        #    log.warn("swallow exception in worker %s: %s %s",self.getName(),exc_type,exc_value)
         finally:
             self.server.threadpool.remove(self)
             log.debug("stopping worker %s", self.getName())
