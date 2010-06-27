@@ -6,7 +6,6 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 from __future__ import with_statement
-
 import os, time, sys
 import unittest
 import Pyro.core

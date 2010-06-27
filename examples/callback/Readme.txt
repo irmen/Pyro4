@@ -1,4 +1,7 @@
-This example shows how you can let a server call back to the client.
+These examples shows how you can let a server call back to the client.
+There are 2 examples.
+
+1) first example: server.py + client.py
 
 The client creates some worker objects on the server. It provides them
 with (a proxy of) a callback object that lives in the client.
@@ -26,3 +29,13 @@ force it to periodically break from the blocking wait and check the
 loop condition.  We could also have used the 'select' servertype instead
 of setting a PYRO_COMMTIMEOUT, because that one already breaks periodically.
 (PYRO_POLLTIMEOUT).
+
+
+2) second example: server2.py + client2.py
+
+This example shows how to use the @Pyro.callback decorator to flag a method
+to be a callback method. This makes Pyro raise any exceptions that occur in
+this method also on the side where the method is running. Otherwise it would
+just silently pass the exception back to the side that was calling the
+callback method.
+ 

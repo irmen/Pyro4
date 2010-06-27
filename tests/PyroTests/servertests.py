@@ -56,6 +56,8 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro.config.POLLTIMEOUT=0.1
         Pyro.config.SERVERTYPE=self.SERVERTYPE
         Pyro.config.COMMTIMEOUT=self.COMMTIMEOUT
+        Pyro.config.THREADPOOL_MINTHREADS=2
+        Pyro.config.THREADPOOL_MAXTHREADS=20
         self.daemon=Pyro.core.Daemon(port=0)
         obj=MyThing()
         uri=self.daemon.register(obj, "something")
@@ -296,15 +298,29 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             for t in threads:
                 self.assertFalse(t.error, "all threads should report no errors") 
 
+    def testServerConnections(self):
+        # check if the server allows to grow the number of connections
+        proxies=[Pyro.core.Proxy(self.objectUri) for _ in range(10)]
+        try:
+            for p in proxies:
+                p._pyroTimeout=0.5
+                p._pyroBind()
+            for p in proxies:
+                p.ping()
+        finally:
+            for p in proxies:
+                p._pyroRelease()
+
     def testServerParallelism(self):
         class ClientThread(threadutil.Thread):
             def __init__(self, uri, name):
                 super(ClientThread,self).__init__()
                 self.setDaemon(True)
                 self.proxy=Pyro.core.Proxy(uri)
-                self.proxy._pyroBind()
                 self.name=name
                 self.error=True
+                self.proxy._pyroTimeout=5.0
+                self.proxy._pyroBind()
             def run(self):
                 try:
                     reply=self.proxy.delayAndId(0.5, self.name)
@@ -314,9 +330,16 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                     self.proxy._pyroRelease()
         threads=[]
         start=time.time()
-        for i in range(6):
-            t=ClientThread(self.objectUri,"t%d" % i)
-            threads.append(t)
+        try:
+            for i in range(6):
+                t=ClientThread(self.objectUri,"t%d" % i)
+                threads.append(t)
+        except:
+            # some exception (probably timeout) while creating clients
+            # try to clean up some connections first
+            for t in threads:
+                t.proxy._pyroRelease()
+            raise  # re-raise the exception
         for t in threads:
             t.start()
         for t in threads:

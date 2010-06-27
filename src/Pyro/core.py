@@ -14,10 +14,10 @@ import Pyro.util
 import Pyro.errors
 from Pyro import threadutil
 
+__all__=["URI", "Proxy", "Daemon", "callback"]
+
 if sys.version_info>(3,0):
     basestring=str
-
-__all__=["URI", "Proxy", "Daemon"]
 
 log=logging.getLogger("Pyro.core")
 
@@ -425,6 +425,7 @@ class Daemon(object):
         terminate due to exceptions caused by remote invocations.
         """
         flags=0
+        isCallback=False
         try:
             header=conn.recv(MessageFactory.HEADERSIZE)
             msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
@@ -440,7 +441,7 @@ class Daemon(object):
                 if kwargs and sys.version_info<(2,6,5) and os.name!="java":
                     # Python before 2.6.5 doesn't accept unicode keyword arguments
                     kwargs = dict((str(k),kwargs[k]) for k in kwargs)
-                log.debug("calling %s.%s",obj.__class__.__name__,method)
+                #log.debug("calling %s.%s",obj.__class__.__name__,method)
                 obj=Pyro.util.resolveDottedAttribute(obj,method,Pyro.config.DOTTEDNAMES)
                 if flags & MessageFactory.FLAGS_ONEWAY and Pyro.config.ONEWAY_THREADED:
                     # oneway call to be run inside its own thread
@@ -448,6 +449,7 @@ class Daemon(object):
                     thread.setDaemon(True)
                     thread.start()
                 else:
+                    isCallback=getattr(obj,"_pyroCallback",False)
                     data=obj(*vargs,**kwargs)   # this is the actual method call to the Pyro object
             else:
                 log.debug("unknown object requested: %s",objId)
@@ -473,6 +475,8 @@ class Daemon(object):
                 # only return the error to the client if it wasn't a oneway call
                 tblines=Pyro.util.formatTraceback(detailed=Pyro.config.DETAILED_TRACEBACK)
                 self.sendExceptionResponse(conn, x, tblines)
+            if isCallback:
+                raise       # re-raise if flagged as callback
 
     def sendExceptionResponse(self, connection, exc_value, tbinfo):
         """send an exception back including the local traceback info"""
@@ -556,3 +560,14 @@ class Daemon(object):
         return self
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
+
+# decorators
+
+def callback(object):
+    """
+    decorator to mark a method to be a 'callback'. This will make Pyro
+    raise any errors also on the callback side, and not only on the side
+    that does the callback call. 
+    """
+    object._pyroCallback=True
+    return object
