@@ -9,9 +9,9 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 import select, os, socket, logging
-from Pyro.socketutil import SocketConnection, createSocket, ERRNO_RETRIES, ERRNO_BADF
-from Pyro.errors import ConnectionClosedError, PyroError
-import Pyro.config
+from Pyro4.socketutil import SocketConnection, createSocket, ERRNO_RETRIES, ERRNO_BADF
+from Pyro4.errors import ConnectionClosedError, PyroError
+import Pyro4.config
 
 log=logging.getLogger("Pyro.socketserver.select")
 
@@ -45,7 +45,7 @@ class SocketServer_Select(object):
                 poll.register(self.sock.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
                 fileno2connection[self.sock.fileno()]=self.sock
                 while loopCondition():
-                    polls=poll.poll(1000*Pyro.config.POLLTIMEOUT)
+                    polls=poll.poll(1000*Pyro4.config.POLLTIMEOUT)
                     for (fd,mask) in polls:  #@UnusedVariable (pydev)
                         conn=fileno2connection[fd]
                         if conn is self.sock:
@@ -86,7 +86,7 @@ class SocketServer_Select(object):
                     rlist=self.clients[:]
                     rlist.append(self.sock)
                     try:
-                        rlist,_,_=select.select(rlist, [], [], Pyro.config.POLLTIMEOUT)
+                        rlist,_,_=select.select(rlist, [], [], Pyro4.config.POLLTIMEOUT)
                     except select.error:
                         if loopCondition():
                             raise
@@ -144,8 +144,8 @@ class SocketServer_Select(object):
         try:
             csock, caddr=sock.accept()
             log.debug("connection from %s",caddr)
-            if Pyro.config.COMMTIMEOUT:
-                csock.settimeout(Pyro.config.COMMTIMEOUT)
+            if Pyro4.config.COMMTIMEOUT:
+                csock.settimeout(Pyro4.config.COMMTIMEOUT)
         except socket.error,x:
             err=getattr(x,"errno",x.args[0])
             if err in ERRNO_RETRIES:

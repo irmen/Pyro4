@@ -8,20 +8,20 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 from __future__ import with_statement
 import unittest
 import sys, StringIO, select, os
-import Pyro.core
-import Pyro.naming
-import Pyro.nsc
-from Pyro.errors import NamingError,PyroError
+import Pyro4.core
+import Pyro4.naming
+import Pyro4.nsc
+from Pyro4.errors import NamingError,PyroError
 
 class OfflineNameServerTests(unittest.TestCase):
     def testRegister(self):
-        ns=Pyro.naming.NameServer()
+        ns=Pyro4.naming.NameServer()
         ns.ping()
         ns.register("test.object1","PYRO:111111@host.com:4444")
         ns.register("test.object2","PYRO:222222@host.com:4444")
         ns.register("test.object3","PYRO:333333@host.com:4444")
-        ns.register("test.sub.objectA",Pyro.core.URI("PYRO:AAAAAA@host.com:4444"))
-        ns.register("test.sub.objectB",Pyro.core.URI("PYRO:BBBBBB@host.com:4444"))
+        ns.register("test.sub.objectA",Pyro4.core.URI("PYRO:AAAAAA@host.com:4444"))
+        ns.register("test.sub.objectB",Pyro4.core.URI("PYRO:BBBBBB@host.com:4444"))
 
         self.assertRaises(NamingError, ns.register, "test.object1", "PYRO:X@Y:5555")
         self.assertRaises(TypeError, ns.register, None, None)
@@ -32,7 +32,7 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertRaises(NamingError, ns.lookup, "unknown_object")
         
         uri=ns.lookup("test.object3")
-        self.assertEqual(Pyro.core.URI("PYRO:333333@host.com:4444"), uri)   # lookup always returns URI
+        self.assertEqual(Pyro4.core.URI("PYRO:333333@host.com:4444"), uri)   # lookup always returns URI
         ns.remove("unknown_object")
         ns.remove("test.object1")
         ns.remove("test.object2")
@@ -43,8 +43,8 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertRaises(PyroError, ns.register, "test.nonurivalue", "THISVALUEISNOTANURI")
 
     def testRemove(self):
-        ns=Pyro.naming.NameServer()
-        ns.register(Pyro.constants.NAMESERVER_NAME, "PYRO:nameserver@host:555")
+        ns=Pyro4.naming.NameServer()
+        ns.register(Pyro4.constants.NAMESERVER_NAME, "PYRO:nameserver@host:555")
         for i in range(20):
             ns.register("test.%d" % i, "PYRO:obj@host:555")
         self.assertEqual(21, len(ns.list()))
@@ -58,22 +58,22 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertEqual(1, len(ns.list()))
             
     def testRemoveProtected(self):
-        ns=Pyro.naming.NameServer()
-        ns.register(Pyro.constants.NAMESERVER_NAME, "PYRO:nameserver@host:555")
-        self.assertEqual(0, ns.remove(Pyro.constants.NAMESERVER_NAME))
+        ns=Pyro4.naming.NameServer()
+        ns.register(Pyro4.constants.NAMESERVER_NAME, "PYRO:nameserver@host:555")
+        self.assertEqual(0, ns.remove(Pyro4.constants.NAMESERVER_NAME))
         self.assertEqual(0, ns.remove(prefix="Pyro"))
         self.assertEqual(0, ns.remove(regex="Pyro.*"))
-        self.assertTrue(Pyro.constants.NAMESERVER_NAME in ns.list())
+        self.assertTrue(Pyro4.constants.NAMESERVER_NAME in ns.list())
 
     def testUnicodeNames(self):
-        ns=Pyro.naming.NameServer()
-        uri=Pyro.core.URI(u"PYRO:unicode\u20ac@host:5555")
+        ns=Pyro4.naming.NameServer()
+        uri=Pyro4.core.URI(u"PYRO:unicode\u20ac@host:5555")
         ns.register(u"unicodename\u20ac", uri)
         x=ns.lookup(u"unicodename\u20ac")
         self.assertEqual(uri, x)
 
     def testList(self):
-        ns=Pyro.naming.NameServer()
+        ns=Pyro4.naming.NameServer()
         ns.register("test.objects.1","PYRONAME:something1")
         ns.register("test.objects.2","PYRONAME:something2")
         ns.register("test.objects.3","PYRONAME:something3")
@@ -97,32 +97,32 @@ class OfflineNameServerTests(unittest.TestCase):
 
     def testRefuseDotted(self):
         try:
-            Pyro.config.DOTTEDNAMES=True
-            ns=Pyro.naming.NameServerDaemon(port=0)
+            Pyro4.config.DOTTEDNAMES=True
+            ns=Pyro4.naming.NameServerDaemon(port=0)
             self.fail("should refuse to create name server")
         except PyroError:
             pass
         finally:
-            Pyro.config.DOTTEDNAMES=False
+            Pyro4.config.DOTTEDNAMES=False
         
     def testNameserverWithStmt(self):
-        ns=Pyro.naming.NameServerDaemon(port=0)
+        ns=Pyro4.naming.NameServerDaemon(port=0)
         self.assertFalse(ns.nameserver is None)
         ns.close()
         self.assertTrue(ns.nameserver is None)
-        with Pyro.naming.NameServerDaemon(port=0) as ns:
+        with Pyro4.naming.NameServerDaemon(port=0) as ns:
             self.assertFalse(ns.nameserver is None)
             pass
         self.assertTrue(ns.nameserver is None)
         try:
-            with Pyro.naming.NameServerDaemon(port=0) as ns:
+            with Pyro4.naming.NameServerDaemon(port=0) as ns:
                 self.assertFalse(ns.nameserver is None)
                 print 1//0 # cause an error
             self.fail("expected error")
         except ZeroDivisionError: 
             pass
         self.assertTrue(ns.nameserver is None)
-        ns=Pyro.naming.NameServerDaemon(port=0)
+        ns=Pyro4.naming.NameServerDaemon(port=0)
         with ns:
             pass
         try:
@@ -135,13 +135,13 @@ class OfflineNameServerTests(unittest.TestCase):
         ns.close()
 
     def testStartNSfunc(self):
-        myIpAddress=Pyro.socketutil.getMyIpAddress(workaround127=True)
-        uri1,ns1,bc1=Pyro.naming.startNS(host=myIpAddress, port=0, enableBroadcast=False)
-        uri2,ns2,bc2=Pyro.naming.startNS(host=myIpAddress, port=0, enableBroadcast=True)
-        self.assertTrue(isinstance(uri1, Pyro.core.URI))
-        self.assertTrue(isinstance(ns1, Pyro.naming.NameServerDaemon))
+        myIpAddress=Pyro4.socketutil.getMyIpAddress(workaround127=True)
+        uri1,ns1,bc1=Pyro4.naming.startNS(host=myIpAddress, port=0, enableBroadcast=False)
+        uri2,ns2,bc2=Pyro4.naming.startNS(host=myIpAddress, port=0, enableBroadcast=True)
+        self.assertTrue(isinstance(uri1, Pyro4.core.URI))
+        self.assertTrue(isinstance(ns1, Pyro4.naming.NameServerDaemon))
         self.assertTrue(bc1 is None)
-        self.assertTrue(isinstance(bc2, Pyro.naming.BroadcastServer))
+        self.assertTrue(isinstance(bc2, Pyro4.naming.BroadcastServer))
         sock=bc2.sock
         self.assertTrue(hasattr(sock,"fileno"))
         func=bc2.processRequest
@@ -150,8 +150,8 @@ class OfflineNameServerTests(unittest.TestCase):
         bc2.close()
     
     def testOwnloopBasics(self):
-        myIpAddress=Pyro.socketutil.getMyIpAddress(workaround127=True)
-        uri1,ns1,bc1=Pyro.naming.startNS(host=myIpAddress, port=0, enableBroadcast=True)
+        myIpAddress=Pyro4.socketutil.getMyIpAddress(workaround127=True)
+        uri1,ns1,bc1=Pyro4.naming.startNS(host=myIpAddress, port=0, enableBroadcast=True)
         self.assertTrue(bc1.fileno() > 0)
         if hasattr(select, "poll"):
             p=select.poll()
@@ -178,11 +178,11 @@ class OfflineNameServerTests(unittest.TestCase):
         try:
             sys.stdout=StringIO.StringIO()
             sys.stderr=StringIO.StringIO()
-            self.assertRaises(SystemExit, Pyro.naming.main, ["--invalidarg"])
+            self.assertRaises(SystemExit, Pyro4.naming.main, ["--invalidarg"])
             self.assertTrue("no such option" in sys.stderr.getvalue())
             sys.stderr.truncate(0)
             sys.stdout.truncate(0)
-            self.assertRaises(SystemExit, Pyro.naming.main, ["-h"])
+            self.assertRaises(SystemExit, Pyro4.naming.main, ["-h"])
             self.assertTrue("show this help message" in sys.stdout.getvalue())
         finally:
             sys.stdout=oldstdout
@@ -194,11 +194,11 @@ class OfflineNameServerTests(unittest.TestCase):
         try:
             sys.stdout=StringIO.StringIO()
             sys.stderr=StringIO.StringIO()
-            self.assertRaises(SystemExit, Pyro.nsc.main, ["--invalidarg"])
+            self.assertRaises(SystemExit, Pyro4.nsc.main, ["--invalidarg"])
             self.assertTrue("no such option" in sys.stderr.getvalue())
             sys.stderr.truncate(0)
             sys.stdout.truncate(0)
-            self.assertRaises(SystemExit, Pyro.nsc.main, ["-h"])
+            self.assertRaises(SystemExit, Pyro4.nsc.main, ["-h"])
             self.assertTrue("show this help message" in sys.stdout.getvalue())
         finally:
             sys.stdout=oldstdout

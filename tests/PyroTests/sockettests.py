@@ -7,15 +7,15 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 import unittest
 import socket, os
-import Pyro.socketutil as SU
-import Pyro.config
-from Pyro.socketserver.selectserver import SocketServer_Select
-from Pyro.socketserver.threadpoolserver import SocketServer_Threadpool
+import Pyro4.socketutil as SU
+import Pyro4.config
+from Pyro4.socketserver.selectserver import SocketServer_Select
+from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 
 
 class TestSocketutil(unittest.TestCase):
     def setUp(self):
-        Pyro.config.POLLTIMEOUT=0.1
+        Pyro4.config.POLLTIMEOUT=0.1
         
     def testGetIP(self):
         localip=SU.getIpAddress()

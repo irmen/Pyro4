@@ -67,10 +67,10 @@ def asDict():
     
 # easy config diagnostic with python -m
 if __name__=="__main__":
-    import Pyro.constants
+    import Pyro4.constants
     import os
-    print "Pyro version:",Pyro.constants.VERSION
-    print "Loaded from:",os.path.abspath(os.path.split(Pyro.__file__)[0])
+    print "Pyro version:",Pyro4.constants.VERSION
+    print "Loaded from:",os.path.abspath(os.path.split(Pyro4.__file__)[0])
     print "Active configuration settings:"
     config=asDict()
     config["LOGFILE"]=os.environ.get("PYRO_LOGFILE")

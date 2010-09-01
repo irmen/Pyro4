@@ -7,8 +7,8 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 import sys, zlib, logging, struct
 import traceback, linecache
-import Pyro.constants
-import Pyro.errors
+import Pyro4.constants
+import Pyro4.errors
 
 log=logging.getLogger("Pyro.util")
 
@@ -37,8 +37,8 @@ def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
         if ex_type is None and ex_tb is None:
             ex_type, ex_value, ex_tb=sys.exc_info()
         
-        remote_tb=getattr(ex_value,Pyro.constants.TRACEBACK_ATTRIBUTE,None)
-        local_tb=formatTraceback(ex_type, ex_value, ex_tb, Pyro.config.DETAILED_TRACEBACK)
+        remote_tb=getattr(ex_value,Pyro4.constants.TRACEBACK_ATTRIBUTE,None)
+        local_tb=formatTraceback(ex_type, ex_value, ex_tb, Pyro4.config.DETAILED_TRACEBACK)
         if remote_tb:
             remote_tb=formatRemoteTraceback(remote_tb)
             return local_tb + remote_tb
@@ -182,7 +182,7 @@ class Serializer(object):
         othermajorv=otherversion>>8
         if othermajorv!=sys.hexversion>>24:
             otherminorv=otherversion&0xff
-            raise Pyro.errors.CommunicationError("incompatible python version detected on other side: %d.%d" %(othermajorv,otherminorv))
+            raise Pyro4.errors.CommunicationError("incompatible python version detected on other side: %d.%d" %(othermajorv,otherminorv))
         # version is ok, can unpickle
         return self.pickle.loads(data[2:])
     def __eq__(self, other):

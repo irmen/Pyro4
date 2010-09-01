@@ -6,17 +6,17 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 import unittest, sys, os
-import Pyro.util
-import Pyro.errors
-import Pyro.core
+import Pyro4.util
+import Pyro4.errors
+import Pyro4.core
 
 class SerializeTests(unittest.TestCase):
     
     def setUp(self):
-        self.ser=Pyro.util.Serializer()
+        self.ser=Pyro4.util.Serializer()
         
     def testSerItself(self):
-        s=Pyro.util.Serializer()
+        s=Pyro4.util.Serializer()
         p,_=self.ser.serialize(s)
         s2=self.ser.deserialize(p)
         self.assertEqual(s,s2)
@@ -36,31 +36,31 @@ class SerializeTests(unittest.TestCase):
         self.assertEqual(bigdata, self.ser.deserialize(d2, compressed=True))
 
     def testSerErrors(self):
-        e1=Pyro.errors.NamingError("x")
-        e2=Pyro.errors.PyroError("x")
-        e3=Pyro.errors.ProtocolError("x")
+        e1=Pyro4.errors.NamingError("x")
+        e2=Pyro4.errors.PyroError("x")
+        e3=Pyro4.errors.ProtocolError("x")
         p,_=self.ser.serialize(e1)
         e=self.ser.deserialize(p)
-        self.assertTrue(isinstance(e, Pyro.errors.NamingError))
+        self.assertTrue(isinstance(e, Pyro4.errors.NamingError))
         self.assertEqual(repr(e1), repr(e))
         p,_=self.ser.serialize(e2)
         e=self.ser.deserialize(p)
-        self.assertTrue(isinstance(e, Pyro.errors.PyroError))
+        self.assertTrue(isinstance(e, Pyro4.errors.PyroError))
         self.assertEqual(repr(e2), repr(e))
         p,_=self.ser.serialize(e3)
         e=self.ser.deserialize(p)
-        self.assertTrue(isinstance(e, Pyro.errors.ProtocolError))
+        self.assertTrue(isinstance(e, Pyro4.errors.ProtocolError))
         self.assertEqual(repr(e3), repr(e))
     
     def testSerCoreOffline(self):
-        uri=Pyro.core.URI("PYRO:9999@host.com:4444")
+        uri=Pyro4.core.URI("PYRO:9999@host.com:4444")
         p,_=self.ser.serialize(uri)
         uri2=self.ser.deserialize(p)
         self.assertEqual(uri, uri2)
         self.assertEqual("PYRO",uri2.protocol)
         self.assertEqual("9999",uri2.object)
         self.assertEqual("host.com:4444",uri2.location)
-        proxy=Pyro.core.Proxy("PYRO:9999@host.com:4444")
+        proxy=Pyro4.core.Proxy("PYRO:9999@host.com:4444")
         proxy._pyroTimeout=42
         self.assertTrue(proxy._pyroConnection is None)
         p,_=self.ser.serialize(proxy)
@@ -88,7 +88,7 @@ class SerializeTests(unittest.TestCase):
         finally:
             sys.hexversion=orig_hexversion
             sys.version_info=orig_versioninfo
-        self.assertRaises(Pyro.errors.CommunicationError, self.ser.deserialize, p)
+        self.assertRaises(Pyro4.errors.CommunicationError, self.ser.deserialize, p)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

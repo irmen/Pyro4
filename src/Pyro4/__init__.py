@@ -53,9 +53,9 @@ _configLogging()
 del _configLogging
 
 # import the required Pyro packages to avoid import problems later on
-import Pyro.util            #@UnresolvedImport (pydev)
-import Pyro.errors          #@UnresolvedImport (pydev)
-import Pyro.core            #@UnresolvedImport (pydev)
-import Pyro.naming          #@UnresolvedImport (pydev)
-from Pyro.core import *
-from Pyro.naming import *
+import Pyro4.util            #@UnresolvedImport (pydev)
+import Pyro4.errors          #@UnresolvedImport (pydev)
+import Pyro4.core            #@UnresolvedImport (pydev)
+import Pyro4.naming          #@UnresolvedImport (pydev)
+from Pyro4.core import *
+from Pyro4.naming import *

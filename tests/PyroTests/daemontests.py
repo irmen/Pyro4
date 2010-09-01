@@ -8,11 +8,11 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 from __future__ import with_statement
 import os, time
 import unittest
-import Pyro.core
-import Pyro.constants
-import Pyro.config
-import Pyro.socketutil
-from Pyro.errors import DaemonError,PyroError
+import Pyro4.core
+import Pyro4.constants
+import Pyro4.config
+import Pyro4.socketutil
+from Pyro4.errors import DaemonError,PyroError
 
 class MyObj(object):
     def __init__(self, arg):
@@ -26,22 +26,22 @@ class DaemonTests(unittest.TestCase):
     # 'on-line' tests are all taking place in another test, to keep this one simple.
 
     def setUp(self):
-        Pyro.config.POLLTIMEOUT=0.1
+        Pyro4.config.POLLTIMEOUT=0.1
 
     def testDaemon(self):
-        freeport=Pyro.socketutil.findUnusedPort()
-        with Pyro.core.Daemon(port=freeport) as d:
-            locationstr="%s:%d" %(Pyro.config.HOST, freeport)
+        freeport=Pyro4.socketutil.findUnusedPort()
+        with Pyro4.core.Daemon(port=freeport) as d:
+            locationstr="%s:%d" %(Pyro4.config.HOST, freeport)
             self.assertEqual( locationstr, d.locationStr)
-            self.assertTrue(Pyro.constants.DAEMON_NAME in d.objectsById)
-            self.assertEqual("PYRO:"+Pyro.constants.DAEMON_NAME+"@"+locationstr, str(d.uriFor(Pyro.constants.DAEMON_NAME)))
+            self.assertTrue(Pyro4.constants.DAEMON_NAME in d.objectsById)
+            self.assertEqual("PYRO:"+Pyro4.constants.DAEMON_NAME+"@"+locationstr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
             # check the string representations
             self.assertEqual("<Pyro Daemon on "+locationstr+">",str(d))
             self.assertEqual("<Pyro Daemon on "+locationstr+">",unicode(d))
             self.assertTrue("Daemon object at" in repr(d))
             sockname=d.sock.getsockname()
             self.assertEqual(freeport, sockname[1])
-            daemonobj=d.objectsById[Pyro.constants.DAEMON_NAME]
+            daemonobj=d.objectsById[Pyro4.constants.DAEMON_NAME]
             daemonobj.ping()
             daemonobj.registered()
             try:
@@ -51,44 +51,44 @@ class DaemonTests(unittest.TestCase):
                 pass
 
     def testServertypeThread(self):
-        old_servertype=Pyro.config.SERVERTYPE
-        Pyro.config.SERVERTYPE="thread"
-        with Pyro.core.Daemon(port=0) as d:
+        old_servertype=Pyro4.config.SERVERTYPE
+        Pyro4.config.SERVERTYPE="thread"
+        with Pyro4.core.Daemon(port=0) as d:
             sock=d.sock
             sockets=d.sockets()
             self.assertTrue(sock in sockets, "daemon's socketlist should contain the server socket")
             self.assertTrue(len(sockets)==1, "daemon without connections should have just 1 socket")
-        Pyro.config.SERVERTYPE=old_servertype
+        Pyro4.config.SERVERTYPE=old_servertype
 
     def testServertypeSelect(self):
-        old_servertype=Pyro.config.SERVERTYPE
-        Pyro.config.SERVERTYPE="select"
+        old_servertype=Pyro4.config.SERVERTYPE
+        Pyro4.config.SERVERTYPE="select"
         # this type is not supported in Jython
         if os.name=="java":
-            self.assertRaises(NotImplementedError, Pyro.core.Daemon, port=0)
+            self.assertRaises(NotImplementedError, Pyro4.core.Daemon, port=0)
         else:
-            with Pyro.core.Daemon(port=0) as d:
+            with Pyro4.core.Daemon(port=0) as d:
                 sock=d.sock
                 sockets=d.sockets()
                 self.assertTrue(sock in sockets, "daemon's socketlist should contain the server socket")
                 self.assertTrue(len(sockets)==1, "daemon without connections should have just 1 socket")
-        Pyro.config.SERVERTYPE=old_servertype
+        Pyro4.config.SERVERTYPE=old_servertype
                 
     def testServertypeFoobar(self):
-        old_servertype=Pyro.config.SERVERTYPE
-        Pyro.config.SERVERTYPE="foobar"
-        self.assertRaises(PyroError, Pyro.core.Daemon)
-        Pyro.config.SERVERTYPE=old_servertype
+        old_servertype=Pyro4.config.SERVERTYPE
+        Pyro4.config.SERVERTYPE="foobar"
+        self.assertRaises(PyroError, Pyro4.core.Daemon)
+        Pyro4.config.SERVERTYPE=old_servertype
 
     def testRegisterEtc(self):
         try:
-            freeport=Pyro.socketutil.findUnusedPort()
-            d=Pyro.core.Daemon(port=freeport)
+            freeport=Pyro4.socketutil.findUnusedPort()
+            d=Pyro4.core.Daemon(port=freeport)
             self.assertEquals(1, len(d.objectsById))
             o1=MyObj("object1")
             o2=MyObj("object2")
             d.register(o1)
-            self.assertRaises(DaemonError, d.register, o2, Pyro.constants.DAEMON_NAME)  # cannot use daemon name
+            self.assertRaises(DaemonError, d.register, o2, Pyro4.constants.DAEMON_NAME)  # cannot use daemon name
             self.assertRaises(DaemonError, d.register, o1, None)  # cannot register twice
             self.assertRaises(DaemonError, d.register, o1, "obj1a")
             d.register(o2, "obj2a")
@@ -123,8 +123,8 @@ class DaemonTests(unittest.TestCase):
             self.assertRaises(DaemonError, d.unregister, [1,2,3])
             
             # test unregister daemon name
-            d.unregister(Pyro.constants.DAEMON_NAME)
-            self.assertTrue(Pyro.constants.DAEMON_NAME in d.objectsById)
+            d.unregister(Pyro4.constants.DAEMON_NAME)
+            self.assertTrue(Pyro4.constants.DAEMON_NAME in d.objectsById)
             
             # weird args
             w=MyObj("weird")
@@ -134,7 +134,7 @@ class DaemonTests(unittest.TestCase):
             
             # uri return value from register
             uri=d.register(MyObj("xyz"))
-            self.assertTrue(isinstance(uri, Pyro.core.URI))
+            self.assertTrue(isinstance(uri, Pyro4.core.URI))
             uri=d.register(MyObj("xyz"), "test.register")
             self.assertTrue("test.register", uri.object)
 
@@ -142,7 +142,7 @@ class DaemonTests(unittest.TestCase):
             d.close()
 
     def testRegisterUnicode(self):
-        with Pyro.core.Daemon(port=0) as d:
+        with Pyro4.core.Daemon(port=0) as d:
             myobj1=MyObj("hello1")
             myobj2=MyObj("hello2")
             myobj3=MyObj("hello3")
@@ -152,26 +152,26 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(4, len(d.objectsById))
             uri=d.uriFor(myobj1)
             self.assertEqual(uri1,uri)
-            p=Pyro.core.Proxy(uri)
+            p=Pyro4.core.Proxy(uri)
             uri=d.uriFor(myobj2)
             self.assertEqual(uri2,uri)
-            p=Pyro.core.Proxy(uri)
+            p=Pyro4.core.Proxy(uri)
             uri=d.uriFor(myobj3)
             self.assertEqual(uri3,uri)
-            p=Pyro.core.Proxy(uri)
+            p=Pyro4.core.Proxy(uri)
             uri=d.uriFor("str_name")
             self.assertEqual(uri1,uri)
-            p=Pyro.core.Proxy(uri)
+            p=Pyro4.core.Proxy(uri)
             uri=d.uriFor(u"unicode_name")
             self.assertEqual(uri2,uri)
-            p=Pyro.core.Proxy(uri)
+            p=Pyro4.core.Proxy(uri)
             uri=d.uriFor(u"unicode_\u20ac")
             self.assertEqual(uri3,uri)
-            p=Pyro.core.Proxy(uri)
+            p=Pyro4.core.Proxy(uri)
 
     def testDaemonObject(self):
-        with Pyro.core.Daemon(port=0) as d:
-            daemon=Pyro.core.DaemonObject(d)
+        with Pyro4.core.Daemon(port=0) as d:
+            daemon=Pyro4.core.DaemonObject(d)
             obj1=MyObj("object1")
             obj2=MyObj("object2")
             obj3=MyObj("object2")
@@ -193,9 +193,9 @@ class DaemonTests(unittest.TestCase):
         
     def testUriFor(self):
         try:
-            freeport=Pyro.socketutil.findUnusedPort()
-            d=Pyro.core.Daemon(port=freeport)
-            locationstr="%s:%d" %(Pyro.config.HOST, freeport)
+            freeport=Pyro4.socketutil.findUnusedPort()
+            d=Pyro4.core.Daemon(port=freeport)
+            locationstr="%s:%d" %(Pyro4.config.HOST, freeport)
             o1=MyObj("object1")
             o2=MyObj("object2")
             self.assertRaises(DaemonError, d.uriFor, o1)
@@ -208,33 +208,33 @@ class DaemonTests(unittest.TestCase):
             u2=d.uriFor(o2._pyroId)
             u3=d.uriFor("unexisting_thingie")  # unregistered name is no problem, it's just an uri we're requesting
             u4=d.uriFor(o2)
-            self.assertEquals(Pyro.core.URI, type(u1))
+            self.assertEquals(Pyro4.core.URI, type(u1))
             self.assertEquals("PYRO",u1.protocol)
             self.assertEquals("PYRO",u2.protocol)
             self.assertEquals("PYRO",u3.protocol)
             self.assertEquals("PYRO",u4.protocol)
             self.assertEquals("object_two",u4.object)
-            self.assertEquals(Pyro.core.URI("PYRO:unexisting_thingie@"+locationstr), u3)
+            self.assertEquals(Pyro4.core.URI("PYRO:unexisting_thingie@"+locationstr), u3)
         finally:
             d.close()
     
     def testDaemonWithStmt(self):
-        d=Pyro.core.Daemon()
+        d=Pyro4.core.Daemon()
         self.assertTrue(d.transportServer is not None)
         d.close()   # closes the transportserver and sets it to None
         self.assertTrue(d.transportServer is None)
-        with Pyro.core.Daemon() as d:
+        with Pyro4.core.Daemon() as d:
             self.assertTrue(d.transportServer is not None)
             pass
         self.assertTrue(d.transportServer is None)
         try:
-            with Pyro.core.Daemon() as d:
+            with Pyro4.core.Daemon() as d:
                 print 1//0 # cause an error
             self.fail("expected error")
         except ZeroDivisionError: 
             pass
         self.assertTrue(d.transportServer is None)
-        d=Pyro.core.Daemon()
+        d=Pyro4.core.Daemon()
         with d:
             pass
         try:
@@ -247,7 +247,7 @@ class DaemonTests(unittest.TestCase):
         d.close()
         
     def testRequestloopCondition(self):
-        with Pyro.core.Daemon(port=0) as d:
+        with Pyro4.core.Daemon(port=0) as d:
             condition=lambda:False
             start=time.time()
             d.requestLoop(loopCondition=condition)   #this should return almost immediately

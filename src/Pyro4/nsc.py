@@ -5,8 +5,8 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
-import Pyro.naming
-import Pyro.errors
+import Pyro4.naming
+import Pyro4.errors
 
 def handleCommand(nameserver, options, args):
     def printListResult(resultdict, title=""):
@@ -71,8 +71,8 @@ def main(args):
     if options.verbose:
         print "Locating name server..."
     try:
-        nameserver=Pyro.naming.locateNS(options.host,options.port)
-    except Pyro.errors.PyroError,x:
+        nameserver=Pyro4.naming.locateNS(options.host,options.port)
+    except Pyro4.errors.PyroError,x:
         print "Failed to locate the name server:",x
         return
     if options.verbose:

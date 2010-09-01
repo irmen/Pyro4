@@ -10,10 +10,10 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 from __future__ import with_statement
 import socket, logging, Queue
 import time, os
-from Pyro.socketutil import SocketConnection, createSocket
-from Pyro.errors import ConnectionClosedError, PyroError
-import Pyro.config
-from Pyro import threadutil
+from Pyro4.socketutil import SocketConnection, createSocket
+from Pyro4.errors import ConnectionClosedError, PyroError
+import Pyro4.config
+from Pyro4 import threadutil
 
 log=logging.getLogger("Pyro.socketserver.threadpool")
 
@@ -53,7 +53,7 @@ class SocketWorker(threadutil.Thread):
                     finally:
                         # make sure we tell the pool that we are no longer working
                         self.server.threadpool.updateWorking(-1)
-        # Note: we don't swallow exceptions here anymore because @Pyro.callback doesn't
+        # Note: we don't swallow exceptions here anymore because @Pyro4.callback doesn't
         #       do anything anymore if we do (the re-raised exception would be swallowed...)
         #except Exception:
         #    exc_type, exc_value, _ = sys.exc_info()
@@ -79,7 +79,7 @@ class ThreadPool(set):
         self.__lastshrink=time.time()
     def attemptRemove(self, member):
         with self.lock:
-            if len(self)>Pyro.config.THREADPOOL_MINTHREADS:
+            if len(self)>Pyro4.config.THREADPOOL_MINTHREADS:
                 super(ThreadPool,self).remove(member)
                 return True
             return False
@@ -91,7 +91,7 @@ class ThreadPool(set):
                 pass
     def attemptSpawn(self):
         with self.lock:
-            if len(self)<Pyro.config.THREADPOOL_MAXTHREADS:
+            if len(self)<Pyro4.config.THREADPOOL_MAXTHREADS:
                 worker=SocketWorker(self.__server, self.__callback)
                 self.add(worker)
                 worker.start()
@@ -106,10 +106,10 @@ class ThreadPool(set):
             self.__working+=number
     def shrink(self):
         threads=len(self)
-        if threads>Pyro.config.THREADPOOL_MINTHREADS:
+        if threads>Pyro4.config.THREADPOOL_MINTHREADS:
             idle=threads-self.__working
-            if idle>Pyro.config.THREADPOOL_MINTHREADS and (time.time()-self.__lastshrink)>Pyro.config.THREADPOOL_IDLETIMEOUT:
-                for _ in range(idle-Pyro.config.THREADPOOL_MINTHREADS):
+            if idle>Pyro4.config.THREADPOOL_MINTHREADS and (time.time()-self.__lastshrink)>Pyro4.config.THREADPOOL_IDLETIMEOUT:
+                for _ in range(idle-Pyro4.config.THREADPOOL_MINTHREADS):
                     self.__server.workqueue.put((None,None)) # put a 'stop' sentinel in the worker queue to kill a worker
                 self.__lastshrink=time.time()
                     
@@ -128,7 +128,7 @@ class SocketServer_Threadpool(object):
         self.locationStr="%s:%d" % (host,port)
         self.threadpool=ThreadPool(self, callbackObject)
         self.workqueue=Queue.Queue()
-        for _ in range(Pyro.config.THREADPOOL_MINTHREADS):
+        for _ in range(Pyro4.config.THREADPOOL_MINTHREADS):
             self.threadpool.attemptSpawn()
         log.info("%d worker threads started", len(self.threadpool))
     def __del__(self):
@@ -157,8 +157,8 @@ class SocketServer_Threadpool(object):
             # all other (client) sockets are owned by their individual threads.
             csock, caddr=self.sock.accept()
             log.debug("connection from %s",caddr)
-            if Pyro.config.COMMTIMEOUT:
-                csock.settimeout(Pyro.config.COMMTIMEOUT)
+            if Pyro4.config.COMMTIMEOUT:
+                csock.settimeout(Pyro4.config.COMMTIMEOUT)
             if self.threadpool.poolCritical():
                 self.threadpool.attemptSpawn()
             self.workqueue.put((csock,caddr))
