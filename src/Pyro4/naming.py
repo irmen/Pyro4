@@ -6,14 +6,17 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 from __future__ import with_statement
-import re, logging, socket
+import re, logging, socket, sys
 from Pyro4.threadutil import RLock, Thread
-import Pyro4.core        # not Pyro4.core, to avoid circular import
+import Pyro4.core
 import Pyro4.constants
 import Pyro4.socketutil
 from Pyro4.errors import PyroError, NamingError
 
 __all__=["locateNS","resolve"]
+
+if sys.version_info>=(3,0):
+    basestring=str
 
 log=logging.getLogger("Pyro.naming")
 
@@ -75,7 +78,8 @@ class NameServer(object):
                 result={}
                 try:
                     regex=re.compile(regex+"$")  # add end of string marker
-                except re.error,x:
+                except re.error:
+                    x=sys.exc_info()[1]
                     raise NamingError("invalid regex: "+str(x))
                 else:
                     for name in self.namespace:
@@ -115,6 +119,10 @@ class NameServerDaemon(Pyro4.core.Daemon):
         return super(NameServerDaemon,self).__exit__(exc_type, exc_value, traceback)
         
 class BroadcastServer(object):
+    if sys.version_info>=(3,0):
+        REQUEST_NSURI=bytes("GET_NSURI","ASCII")
+    else:
+        REQUEST_NSURI="GET_NSURI"
     def __init__(self, nsUri, bchost=None, bcport=None):
         self.nsUri=str(nsUri)
         if bcport is None:
@@ -150,9 +158,12 @@ class BroadcastServer(object):
     def processRequest(self):
         try:
             data,addr=self.sock.recvfrom(100)
-            if data=="GET_NSURI":
+            if data==self.REQUEST_NSURI:
                 log.debug("responding to broadcast request from %s",addr)
-                self.sock.sendto(self.nsUri, addr)
+                responsedata=self.nsUri
+                if sys.version_info>=(3,0):
+                    responsedata=bytes(responsedata,"iso-8859-1")
+                self.sock.sendto(responsedata, 0, addr)
         except socket.error:
             pass
     def __enter__(self):
@@ -166,23 +177,23 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
     hostip=daemon.sock.getsockname()[0]
     nsUri=daemon.uriFor(daemon.nameserver)
     if hostip.startswith("127."):
-        print "Not starting broadcast server for localhost."
+        print("Not starting broadcast server for localhost.")
         log.info("Not starting NS broadcast server because NS is bound to localhost")
         enableBroadcast=False
     bcserver=None
     if enableBroadcast:
         bcserver=BroadcastServer(nsUri,bchost,bcport)
-        print "Broadcast server running on", bcserver.locationStr
+        print("Broadcast server running on %s" % bcserver.locationStr)
         bcserver.runInThread()  
-    print "NS running on %s (%s)" % (daemon.locationStr,hostip)
-    print "URI =",nsUri
+    print("NS running on %s (%s)" % (daemon.locationStr,hostip))
+    print("URI = %s" % nsUri)
     try:
         daemon.requestLoop()
     finally:
         daemon.close()
         if bcserver is not None:
             bcserver.close()
-    print "NS shut down."
+    print("NS shut down.")
 
 def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
     """utility fuction to quickly get a Name server daemon to be used in your own event loops.
@@ -219,9 +230,10 @@ def locateNS(host=None, port=None):
         sock=Pyro4.socketutil.createBroadcastSocket(timeout=0.7)
         for _ in range(3):
             try:
-                sock.sendto("GET_NSURI",("<broadcast>",port))
+                sock.sendto(BroadcastServer.REQUEST_NSURI,0,("<broadcast>",port))
                 data,_=sock.recvfrom(100)
                 sock.close()
+                data=data.decode("iso-8859-1")
                 log.debug("located NS: %s",data)
                 return Pyro4.core.Proxy(data)
             except socket.timeout:
@@ -282,5 +294,4 @@ def main(args):
             bchost=options.bchost,bcport=options.bcport)
 
 if __name__=="__main__":
-    import sys
     main(sys.argv[1:])

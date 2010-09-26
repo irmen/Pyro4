@@ -8,7 +8,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
-import select, os, socket, logging
+import select, socket, os, sys, logging
 from Pyro4.socketutil import SocketConnection, createSocket, ERRNO_RETRIES, ERRNO_BADF
 from Pyro4.errors import ConnectionClosedError, PyroError
 import Pyro4.config
@@ -146,7 +146,8 @@ class SocketServer_Select(object):
             log.debug("connection from %s",caddr)
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
-        except socket.error,x:
+        except socket.error:
+            x=sys.exc_info()[1]
             err=getattr(x,"errno",x.args[0])
             if err in ERRNO_RETRIES:
                 # just ignore this error for now and continue
@@ -160,7 +161,8 @@ class SocketServer_Select(object):
             conn=SocketConnection(csock)
             if self.callback.handshake(conn):
                 return conn
-        except (socket.error, PyroError), x:
+        except (socket.error, PyroError):
+            x=sys.exc_info()[1]
             log.warn("error during connect: %s",x)
             csock.close()
         return None
@@ -187,6 +189,9 @@ class SocketServer_Select(object):
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
-            self.sock.send("!!!!!!!!!!!!!!!!!!!!!!!")
+            if sys.version_info<(3,0): 
+                self.sock.send("!"*16)
+            else:
+                self.sock.send(bytes([1]*16))
         except socket.error:
             pass

@@ -16,6 +16,9 @@ from Pyro4 import threadutil
 
 __all__=["URI", "Proxy", "Daemon", "callback"]
 
+if sys.version_info>(3,0):
+    basestring=str
+
 log=logging.getLogger("Pyro.core")
 
 class URI(object):
@@ -238,7 +241,8 @@ class Proxy(object):
                         # any trailing data (dataLen>0) is an error message, if any
                     else:
                         msgType=MessageFactory.MSG_CONNECTOK
-            except Exception,x:
+            except Exception:
+                x=sys.exc_info()[1]
                 if conn:
                     conn.close()
                 err="cannot connect: %s" % x
@@ -296,12 +300,18 @@ class MessageFactory(object):
     FLAGS_EXCEPTION  = 1<<0
     FLAGS_COMPRESSED = 1<<1
     FLAGS_ONEWAY     = 1<<2
+    if sys.version_info>=(3,0):
+        empty_bytes  = bytes([])
+        pyro_tag     = bytes("PYRO","ASCII")
+    else:
+        empty_bytes  = ""
+        pyro_tag     = "PYRO"
 
     @classmethod
     def createMessage(cls, msgType, data, flags=0):
         """creates a message containing a header followed by the given data"""
-        data=data or ""
-        msg=struct.pack(cls.headerFmt, "PYRO", Pyro4.constants.PROTOCOL_VERSION, msgType, flags, len(data))
+        data=data or cls.empty_bytes
+        msg=struct.pack(cls.headerFmt, cls.pyro_tag, Pyro4.constants.PROTOCOL_VERSION, msgType, flags, len(data))
         return msg+data
 
     @classmethod
@@ -310,7 +320,7 @@ class MessageFactory(object):
         if not headerData or len(headerData)!=cls.HEADERSIZE:
             raise Pyro4.errors.ProtocolError("header data size mismatch")
         tag,ver,msgType,flags,dataLen = struct.unpack(cls.headerFmt, headerData)
-        if tag!="PYRO" or ver!=Pyro4.constants.PROTOCOL_VERSION:
+        if tag!=cls.pyro_tag or ver!=Pyro4.constants.PROTOCOL_VERSION:
             raise Pyro4.errors.ProtocolError("invalid data or unsupported protocol version")
         return msgType,flags,dataLen
 
@@ -454,10 +464,11 @@ class Daemon(object):
                 msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags)
                 del data
                 conn.send(msg)
-        except Pyro4.errors.CommunicationError,x:
+        except Pyro4.errors.CommunicationError:
             # communication errors are not handled here (including TimeoutError)
             raise
-        except Exception,x:
+        except Exception:
+            x=sys.exc_info()[1]
             # all other errors are caught
             log.debug("Exception occurred while handling request: %s",x)
             if not flags & MessageFactory.FLAGS_ONEWAY:

@@ -5,18 +5,22 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
+import sys
 import Pyro4.naming
 import Pyro4.errors
 
+if sys.version_info<(3,0):
+    input=raw_input
+
 def handleCommand(nameserver, options, args):
     def printListResult(resultdict, title=""):
-        print "--------START LIST",title
+        print("--------START LIST %s" % title)
         for name,uri in sorted(resultdict.items()):
-            print "%s --> %s" % (name, uri)
-        print "--------END LIST",title
+            print("%s --> %s" % (name, uri))
+        print("--------END LIST %s" % title)
     def cmd_ping():
         nameserver.ping()
-        print "Name server ping ok."
+        print("Name server ping ok.")
     def cmd_listprefix():
         if len(args)==1:
             printListResult(nameserver.list())
@@ -28,20 +32,20 @@ def handleCommand(nameserver, options, args):
         printListResult(nameserver.list(regex=args[1]), "- regex '%s'" % args[1])
     def cmd_register():
         nameserver.register(args[1], args[2])
-        print "Registered",args[1]
+        print("Registered %s" % args[1])
     def cmd_remove():
         count=nameserver.remove(args[1])
         if count>0:
-            print "Removed",args[1]
+            print("Removed %s" % args[1])
         else:
-            print "Nothing removed"
+            print("Nothing removed")
     def cmd_removeregex():
         if len(args)<2:
             raise SystemExit("missing regex argument")
-        sure=raw_input("Potentially removing lots of items from the Name server. Are you sure (y/n)?")
+        sure=input("Potentially removing lots of items from the Name server. Are you sure (y/n)?")
         if sure in ('y','Y'):
             count=nameserver.remove(regex=args[1])
-            print count,"items removed."
+            print("%d items removed." % count)
 
     commands={
         "ping": cmd_ping,
@@ -53,8 +57,9 @@ def handleCommand(nameserver, options, args):
     }
     try:
         commands[args[0]]()
-    except Exception,x:
-        print "Error:",x
+    except Exception:
+        x=sys.exc_info()[1]
+        print("Error: %s" % x)
     
 def main(args):
     from optparse import OptionParser
@@ -69,18 +74,18 @@ def main(args):
     if not args or args[0] not in ("register","remove","removematching","list", "listmatching", "ping"):
         parser.error("invalid or missing command")
     if options.verbose:
-        print "Locating name server..."
+        print("Locating name server...")
     try:
         nameserver=Pyro4.naming.locateNS(options.host,options.port)
-    except Pyro4.errors.PyroError,x:
-        print "Failed to locate the name server:",x
+    except Pyro4.errors.PyroError:
+        x=sys.exc_info()[1]
+        print("Failed to locate the name server: %s" % x)
         return
     if options.verbose:
-        print "Name server found:",nameserver._pyroUri
+        print("Name server found: %s" % nameserver._pyroUri)
     handleCommand(nameserver, options, args)
     if options.verbose:
-        print "Done."
+        print("Done.")
 
 if __name__=="__main__":
-    import sys
     main(sys.argv[1:])

@@ -5,7 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
-import socket, os, errno, logging, time
+import socket, os, errno, logging, time, sys
 from Pyro4.errors import ConnectionClosedError,TimeoutError,CommunicationError
 
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
@@ -48,6 +48,11 @@ def __nextRetrydelay(delay):
         return 0.01
     return delay+0.1
 
+if sys.version_info<(3,0):
+    EMPTY_BYTES=""
+else:
+    EMPTY_BYTES=bytes([])
+
 def receiveData(sock, size):
     """Retrieve a given number of bytes from a socket.
     It is expected the socket is able to supply that number of bytes.
@@ -69,7 +74,8 @@ def receiveData(sock, size):
                     return data
                 except socket.timeout:
                     raise TimeoutError("receiving: timeout")
-                except socket.error,x:
+                except socket.error:
+                    x=sys.exc_info()[1]
                     err=getattr(x,"errno",x.args[0])
                     if err not in ERRNO_RETRIES:
                         raise ConnectionClosedError("receiving: connection lost: "+str(x))
@@ -87,7 +93,7 @@ def receiveData(sock, size):
                         break
                     chunks.append(chunk)
                     msglen+=len(chunk)
-                data="".join(chunks)
+                data=EMPTY_BYTES.join(chunks)
                 del chunks
                 if len(data)!=size:
                     err=ConnectionClosedError("receiving: not enough data")
@@ -96,7 +102,8 @@ def receiveData(sock, size):
                 return data  # yay, complete
             except socket.timeout:
                 raise TimeoutError("receiving: timeout")
-            except socket.error,x:
+            except socket.error:
+                x=sys.exc_info()[1]
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("receiving: connection lost: "+str(x))
@@ -119,7 +126,8 @@ def sendData(sock, data):
                 return
             except socket.timeout:
                 raise TimeoutError("sending: timeout")
-            except socket.error,x:
+            except socket.error:
+                x=sys.exc_info()[1]
                 raise ConnectionClosedError("sending: connection lost: "+str(x))
     else:
         # Socket is in non-blocking mode, use regular send loop.
@@ -130,7 +138,8 @@ def sendData(sock, data):
                 data = data[sent:]
             except socket.timeout:
                 raise TimeoutError("sending: timeout")
-            except socket.error, x:
+            except socket.error:
+                x=sys.exc_info()[1]
                 err=getattr(x,"errno",x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("sending: connection lost: "+str(x))

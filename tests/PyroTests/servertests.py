@@ -13,6 +13,10 @@ import Pyro4.errors
 import time, os, sys
 from Pyro4 import threadutil
 
+if sys.version_info>=(3,0):
+    unicode=str
+    unichr=chr
+
 class MyThing(object):
     def __init__(self):
         self.dictionary={"number":42}
@@ -43,7 +47,7 @@ class DaemonLoopThread(threadutil.Thread):
         try:
             self.pyrodaemon.requestLoop()
         except:
-            print "Swallow exception from terminated daemon"
+            print("Swallow exception from terminated daemon")
         
 class ServerTestsThreadNoTimeout(unittest.TestCase):
     SERVERTYPE="thread"
@@ -88,7 +92,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             if sys.version_info>=(2,6,5):
                 # python 2.6.5 and later support unicode keyword args
                 result=p.testargs(1, **{unichr(0x20ac):2})
-                key=result[2].keys()[0]
+                key=list(result[2].keys())[0]
                 self.assertTrue(key==unichr(0x20ac))
 
 
@@ -238,13 +242,13 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             start=time.time()
             p.delay(0.5)
             duration=time.time()-start
-            self.assertAlmostEqual(0.5, duration, 1)
+            self.assertAlmostEqual(0.5, duration, places=1)
             p._pyroTimeout=0.1
             start=time.time()
             self.assertRaises(Pyro4.errors.TimeoutError, p.delay, 1)
             duration=time.time()-start
             if sys.platform!="cli":
-                self.assertAlmostEqual(0.1, duration, 1)
+                self.assertAlmostEqual(0.1, duration, places=1)
             else:
                 # ironpython's time is wonky
                 self.assertTrue(0.0<duration<0.7)
@@ -279,8 +283,8 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                         time.sleep(0.001)
                     self.error=False
                 except:
-                    print "Something went wrong in the thread (SharedProxyThread):"
-                    print "".join(Pyro4.util.getPyroTraceback())
+                    print("Something went wrong in the thread (SharedProxyThread):")
+                    print("".join(Pyro4.util.getPyroTraceback()))
         with Pyro4.core.Proxy(self.objectUri) as p:
             threads=[]
             for i in range(5):

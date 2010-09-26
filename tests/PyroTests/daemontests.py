@@ -6,13 +6,18 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 from __future__ import with_statement
-import os, time
+import os, time, sys
 import unittest
 import Pyro4.core
 import Pyro4.constants
 import Pyro4.config
 import Pyro4.socketutil
 from Pyro4.errors import DaemonError,PyroError
+
+if sys.version_info>=(3,0):
+    unicode=str
+    unichr=chr
+
 
 class MyObj(object):
     def __init__(self, arg):
@@ -147,8 +152,8 @@ class DaemonTests(unittest.TestCase):
             myobj2=MyObj("hello2")
             myobj3=MyObj("hello3")
             uri1=d.register(myobj1, "str_name")
-            uri2=d.register(myobj2, u"unicode_name")
-            uri3=d.register(myobj3, u"unicode_\u20ac")
+            uri2=d.register(myobj2, unicode("unicode_name"))
+            uri3=d.register(myobj3, "unicode_"+unichr(0x20ac))
             self.assertEqual(4, len(d.objectsById))
             uri=d.uriFor(myobj1)
             self.assertEqual(uri1,uri)
@@ -162,10 +167,10 @@ class DaemonTests(unittest.TestCase):
             uri=d.uriFor("str_name")
             self.assertEqual(uri1,uri)
             p=Pyro4.core.Proxy(uri)
-            uri=d.uriFor(u"unicode_name")
+            uri=d.uriFor(unicode("unicode_name"))
             self.assertEqual(uri2,uri)
             p=Pyro4.core.Proxy(uri)
-            uri=d.uriFor(u"unicode_\u20ac")
+            uri=d.uriFor("unicode_"+unichr(0x20ac))
             self.assertEqual(uri3,uri)
             p=Pyro4.core.Proxy(uri)
 
@@ -229,7 +234,7 @@ class DaemonTests(unittest.TestCase):
         self.assertTrue(d.transportServer is None)
         try:
             with Pyro4.core.Daemon() as d:
-                print 1//0 # cause an error
+                print(1//0) # cause an error
             self.fail("expected error")
         except ZeroDivisionError: 
             pass

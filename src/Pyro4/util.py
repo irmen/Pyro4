@@ -63,8 +63,6 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
     if ex_type is None and ex_tb is None:
         ex_type,ex_value,ex_tb=sys.exc_info()
     if detailed and sys.platform!="cli":           # detailed tracebacks don't work in ironpython 
-        get_line_number = traceback.tb_lineno
-    
         res = ['-'*50+ "\n",
                " <%s> RAISED : %s\n" % (str(ex_type), str(ex_value)),
                " Extended stacktrace follows (most recent call last)\n",
@@ -76,7 +74,7 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                 line_number_stack = []
      
                 while 1:
-                    line_num = get_line_number(ex_tb)
+                    line_num = ex_tb.tb_lineno
                     line_number_stack.append(line_num)
                     if not ex_tb.tb_next:
                         break
@@ -95,9 +93,12 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                 seen_crap = 0
                 for frame in frame_stack:
                     # Get items
-                    flocals = frame.f_locals.items()[:]
+                    flocals = list(frame.f_locals.items())
      
-                    line_num = lines.next()
+                    if sys.version_info>=(2,6):
+                        line_num = next(lines)
+                    else:
+                        line_num = lines.next()
                     filename = frame.f_code.co_filename
      
                     name = None

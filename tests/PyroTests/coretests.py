@@ -8,9 +8,20 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 from __future__ import with_statement
 import unittest
 import copy
+import sys
 import Pyro4.core
 import Pyro4.config
 import Pyro4.errors
+
+if sys.version_info>=(3,0):
+    unicode=str
+    unichr=chr
+if sys.version_info<(3,0):
+    def tobytes(string, encoding=None):
+        return string
+else:
+    def tobytes(string, encoding="iso-8859-1"):
+        return bytes(string,encoding)
 
 class Thing(object):
     def __init__(self, arg):
@@ -28,13 +39,6 @@ class CoreTests(unittest.TestCase):
         self.assertTrue("COMPRESSION" in config)
         self.assertEqual(Pyro4.config.COMPRESSION, config["COMPRESSION"])
 
-    def testImports(self):
-        self.assertTrue(Pyro4.Proxy is Pyro4.core.Proxy)
-        self.assertTrue(Pyro4.URI is Pyro4.core.URI)
-        self.assertTrue(Pyro4.Daemon is Pyro4.core.Daemon)
-        self.assertTrue(Pyro4.locateNS is Pyro4.naming.locateNS)
-        self.assertTrue(Pyro4.resolve is Pyro4.naming.resolve)
-        
     def testUriStrAndRepr(self):
         uri="PYRONAME:some_obj_name"
         p=Pyro4.core.URI(uri)
@@ -136,7 +140,7 @@ class CoreTests(unittest.TestCase):
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYRO:12345@./u:sockname:9999")
 
     def testUriUnicode(self):
-        p=Pyro4.core.URI(u"PYRO:12345@host.com:4444") 
+        p=Pyro4.core.URI(unicode("PYRO:12345@host.com:4444")) 
         self.assertEqual("PYRO",p.protocol)
         self.assertEqual("12345",p.object)
         self.assertEqual("host.com",p.host)
@@ -154,14 +158,14 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("hostname",pu.host)
         self.assertEqual(p,pu)
         self.assertEqual(str(p), str(pu))
-        unicodeuri=u"PYRO:weirdchars\u20AC@host\u20AC.com:4444"
+        unicodeuri="PYRO:weirdchars"+unichr(0x20ac)+"@host"+unichr(0x20AC)+".com:4444"
         pu=Pyro4.core.URI(unicodeuri)
         self.assertEqual("PYRO",pu.protocol)
-        self.assertEqual(u"host\u20AC.com",pu.host)
-        self.assertEqual(u"weirdchars\u20AC",pu.object)
+        self.assertEqual("host"+unichr(0x20AC)+".com",pu.host)
+        self.assertEqual("weirdchars"+unichr(0x20AC),pu.object)
         self.assertEqual(pu.asString(), pu.__str__())
-        self.assertEqual(u"PYRO:weirdchars\u20ac@host\u20ac.com:4444", pu.asString())
-        self.assertEqual(u"PYRO:weirdchars\u20ac@host\u20ac.com:4444", unicode(pu))
+        self.assertEqual("PYRO:weirdchars"+unichr(0x20ac)+"@host"+unichr(0x20ac)+".com:4444", pu.asString())
+        self.assertEqual("PYRO:weirdchars"+unichr(0x20ac)+"@host"+unichr(0x20ac)+".com:4444", unicode(pu))
         self.assertTrue("URI object at" in repr(pu))
     
     def testUriCopy(self):
@@ -198,10 +202,11 @@ class CoreTests(unittest.TestCase):
         self.assertFalse(Pyro4.core.URI.isPipeOrUnixsockLocation("foobar"))
 
     def testMsgFactory(self):
+        
         MF=Pyro4.core.MessageFactory
         MF.createMessage(99, None) # doesn't check msg type here
         self.assertRaises(Pyro4.errors.ProtocolError, MF.parseMessageHeader, "FOOBAR")
-        hdr=MF.createMessage(MF.MSG_CONNECT, "hello")[:-5]
+        hdr=MF.createMessage(MF.MSG_CONNECT, tobytes("hello"))[:-5]
         msgType,flags,dataLen=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_CONNECT, msgType)
         self.assertEqual(0, flags)
@@ -211,19 +216,22 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(MF.MSG_RESULT, msgType)
         self.assertEqual(0, flags)
         self.assertEqual(0, dataLen)
-        hdr=MF.createMessage(MF.MSG_RESULT, "hello", 42)[:-5]
+        hdr=MF.createMessage(MF.MSG_RESULT, tobytes("hello"), 42)[:-5]
         msgType,flags,dataLen=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_RESULT, msgType)
         self.assertEqual(42, flags)
         self.assertEqual(5, dataLen)
         msg=MF.createMessage(255,None)
-        self.assertEqual("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\xff\x00\x00\x00\x00\x00\x00",msg)
+        expected=tobytes("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\xff\x00\x00\x00\x00\x00\x00")
+        self.assertEqual(expected,msg)
         msg=MF.createMessage(1,None)
-        self.assertEqual("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\x01\x00\x00\x00\x00\x00\x00",msg)
+        expected=tobytes("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\x01\x00\x00\x00\x00\x00\x00")
+        self.assertEqual(expected,msg)
         msg=MF.createMessage(1,None,flags=255)
-        self.assertEqual("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\x01\x00\xff\x00\x00\x00\x00",msg)
+        expected=tobytes("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\x01\x00\xff\x00\x00\x00\x00")
+        self.assertEqual(expected,msg)
         # compression is a job of the code supplying the data, so the messagefactory should leave it untouched
-        data="x"*1000
+        data=tobytes("x"*1000)
         msg=MF.createMessage(MF.MSG_INVOKE, data, 0)
         msg2=MF.createMessage(MF.MSG_INVOKE, data, MF.FLAGS_COMPRESSED)
         self.assertEquals(len(msg),len(msg2))
@@ -250,7 +258,7 @@ class CoreTests(unittest.TestCase):
     def testProxyStr(self):
         p=Pyro4.core.Proxy("PYRO:9999@localhost:15555")
         self.assertEqual("<Pyro Proxy for PYRO:9999@localhost:15555>", str(p))
-        self.assertEqual(u"<Pyro Proxy for PYRO:9999@localhost:15555>", unicode(p))
+        self.assertEqual(unicode("<Pyro Proxy for PYRO:9999@localhost:15555>"), unicode(p))
         self.assertTrue("Proxy object at" in repr(p))
         
     def testProxySettings(self):
@@ -284,7 +292,7 @@ class CoreTests(unittest.TestCase):
         try:
             with Pyro4.core.Proxy("PYRO:9999@localhost:15555") as p:
                 p._pyroConnection=connMock
-                print 1//0  # cause an error
+                print(1//0)  # cause an error
             self.fail("expected error")
         except ZeroDivisionError:
             pass

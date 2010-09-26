@@ -69,11 +69,11 @@ def asDict():
 if __name__=="__main__":
     import Pyro4.constants
     import os
-    print "Pyro version:",Pyro4.constants.VERSION
-    print "Loaded from:",os.path.abspath(os.path.split(Pyro4.__file__)[0])
-    print "Active configuration settings:"
+    print("Pyro version: %s" % Pyro4.constants.VERSION)
+    print("Loaded from: %s" % os.path.abspath(os.path.split(Pyro4.__file__)[0]))
+    print("Active configuration settings:")
     config=asDict()
     config["LOGFILE"]=os.environ.get("PYRO_LOGFILE")
     config["LOGLEVEL"]=os.environ.get("PYRO_LOGLEVEL")
     for n,v in sorted(config.items()):
-        print "%s=%s" % (n,v) 
+        print("%s=%s" % (n,v)) 

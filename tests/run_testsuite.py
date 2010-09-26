@@ -15,7 +15,7 @@ except ImportError:
         def stop(self): pass
         def report(self, *args, **kwargs): pass
     coverage=CoverageDummy()
-    print "No coverage info available"
+    print("No coverage info available")
 
 sys.path.insert(0,"../src")    # add Pyro source directory
 sys.path.insert(1,"PyroTests")
@@ -24,7 +24,7 @@ if __name__=="__main__":
     # add test modules here
     modules=[module[:-3] for module in os.listdir("PyroTests") if module.endswith(".py") and not module.startswith("__")]
      
-    print >>sys.stderr, "gathering testcases from",modules
+    print("gathering testcases from %s" % modules)
 
     coverage.start()
      
@@ -35,15 +35,13 @@ if __name__=="__main__":
         testcases = unittest.defaultTestLoader.loadTestsFromModule(m)
         suite.addTest(testcases)
 
-    print
-    print "RUNNING UNIT TESTS..."
+    print("\nRUNNING UNIT TESTS...")
     unittest.TextTestRunner(verbosity=1).run(suite)
 
     coverage.stop()
-    print 
+    print("")
     coverage.report(show_missing=False, omit_prefixes=["PyroTests"])
     
-    print
-    print "RUNNING PYFLAKE CODE CHECKS..."
+    print("\nRUNNING PYFLAKE CODE CHECKS...")
     import run_syntaxcheck
     run_syntaxcheck.main(["flakes"])

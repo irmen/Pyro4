@@ -8,7 +8,11 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 from __future__ import with_statement
-import socket, logging, Queue
+import socket, logging, sys
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import time, os
 from Pyro4.socketutil import SocketConnection, createSocket
 from Pyro4.errors import ConnectionClosedError, PyroError
@@ -65,7 +69,8 @@ class SocketWorker(threadutil.Thread):
         try:
             if self.callback.handshake(conn):
                 return True
-        except (socket.error, PyroError), x:
+        except (socket.error, PyroError):
+            x=sys.exc_info()[1]
             log.warn("error during connect: %s",x)
             conn.close()
         return False
@@ -127,7 +132,7 @@ class SocketServer_Threadpool(object):
         port=port or self._socketaddr[1]
         self.locationStr="%s:%d" % (host,port)
         self.threadpool=ThreadPool(self, callbackObject)
-        self.workqueue=Queue.Queue()
+        self.workqueue=queue.Queue()
         for _ in range(Pyro4.config.THREADPOOL_MINTHREADS):
             self.threadpool.attemptSpawn()
         log.info("%d worker threads started", len(self.threadpool))
@@ -198,7 +203,10 @@ class SocketServer_Threadpool(object):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
             sock=createSocket(connect=self._socketaddr)
-            sock.send("!!!!!!!!!!!!!!!!!!!!!")
+            if sys.version_info<(3,0): 
+                sock.send("!"*16)
+            else:
+                sock.send(bytes([1]*16))
             sock.close()
         except socket.error:
             pass

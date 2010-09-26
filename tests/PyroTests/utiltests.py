@@ -66,7 +66,8 @@ class TestUtils(unittest.TestCase):
                 self.assertTrue(" Extended stacktrace follows (most recent call last)\n" in pyro_tb)
         try:
             crash("stringvalue")
-        except Exception,x: 
+        except Exception:
+            x=sys.exc_info()[1] 
             setattr(x, Pyro4.constants.TRACEBACK_ATTRIBUTE, pyro_tb)
             pyrotb="".join(Pyro4.util.getPyroTraceback())
             self.assertTrue("Remote traceback" in pyrotb)
@@ -83,8 +84,9 @@ class TestUtils(unittest.TestCase):
     def testPyroTracebackArgs(self):
         try:
             crash()
-        except Exception,x:
+        except Exception:
             ex_type, ex_value, ex_tb = sys.exc_info()
+            x=ex_value
             tb1=Pyro4.util.getPyroTraceback()
             tb2=Pyro4.util.getPyroTraceback(ex_type, ex_value, ex_tb)
             self.assertEqual(tb1, tb2)
