@@ -1,6 +1,13 @@
 import time
+import sys
 import Pyro4
 from Pyro4 import threadutil
+
+if sys.version_info<(3,0):
+    input=raw_input
+    current_thread=threadutil.currentThread
+else:
+    current_thread=threadutil.current_thread
 
 class Server(object):
     def __init__(self):
@@ -12,14 +19,14 @@ class Server(object):
     def getconfig(self):
         return Pyro4.config.asDict()
     def delay(self):
-        threadname=threadutil.currentThread().getName()
-        print "delay called in thread",threadname
+        threadname=current_thread().getName()
+        print("delay called in thread %s" % threadname)
         time.sleep(1)
         self.callcount+=1
         return threadname
     def onewaydelay(self):
-        threadname=threadutil.currentThread().getName()
-        print "onewaydelay called in thread",threadname
+        threadname=current_thread().getName()
+        print("onewaydelay called in thread %s" % threadname)
         time.sleep(1)
         self.callcount+=1
 
@@ -27,7 +34,7 @@ class Server(object):
 ######## main program
 
 Pyro4.config.SERVERTYPE="undefined"
-servertype=raw_input("Servertype threaded or select (t/s)?")
+servertype=input("Servertype threaded or select (t/s)?")
 if servertype=="t":
     Pyro4.config.SERVERTYPE="thread"
 if servertype=="s":
@@ -39,5 +46,5 @@ uri=daemon.register(obj)
 ns=Pyro4.naming.locateNS()
 ns.remove("example.servertypes")
 ns.register("example.servertypes", uri)
-print "Server is ready."
+print("Server is ready.")
 daemon.requestLoop()

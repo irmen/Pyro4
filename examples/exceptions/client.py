@@ -1,46 +1,47 @@
+import sys
 import Pyro4
 from excep import MyError
 
 test = Pyro4.core.Proxy("PYRONAME:example.exceptions")
 
-print test.div(2.0,9.0)
+print(test.div(2.0,9.0))
 try:
-    print 2//0
-except ZeroDivisionError,x:
-    print 'DIVIDE BY ZERO',x
+    print(2//0)
+except ZeroDivisionError:
+    print("DIVIDE BY ZERO: %s" % sys.exc_info()[1])
 try:
-    print test.div(2,0)
-except ZeroDivisionError,x:
-    print 'DIVIDE BY ZERO',x
+    print(test.div(2,0))
+except ZeroDivisionError:
+    print("DIVIDE BY ZERO: %s" % sys.exc_info()[1])
 try:
     result=test.error()
-    print repr(result),result
-except ValueError,x:
-    print 'VALUERROR',x
+    print("%r, %s" % (result,result))
+except ValueError:
+    print("VALUERROR: %s" % sys.exc_info()[1])
 try:
     result=test.error2()
-    print repr(result),result
-except ValueError,x:
-    print 'VALUERROR',x
+    print("%r, %s" % (result,result))
+except ValueError:
+    print("VALUERROR: %s" % sys.exc_info()[1])
 try:
     result=test.othererr()
-    print repr(result),result
-except MyError,x:
-    print 'MYERROR',x
+    print("%r, %s" % (result,result))
+except MyError:
+    print("MYERROR: %s" % sys.exc_info()[1])
 try:
     result=test.othererr2()
-    print repr(result),result
-except MyError,x:
-    print 'MYERROR',x
+    print("%r, %s" % (result,result))
+except MyError:
+    print("MYERROR: %s" % sys.exc_info()[1])
 
-print '*** invoking server method that crashes, catching traceback ***'
+print("*** invoking server method that crashes, catching traceback ***")
 try:
-    print test.complexerror()
-except Exception,x:
-    print 'CAUGHT ERROR  >>> ',x
-    print 'Printing Pyro traceback >>>>>>'
-    print ''.join(Pyro4.util.getPyroTraceback())
-    print '<<<<<<< end of Pyro traceback'
+    print(test.complexerror())
+except Exception:
+    print("CAUGHT ERROR  >>> %s" % sys.exc_info()[1])
+    print("Printing Pyro traceback >>>>>>")
+    print("".join(Pyro4.util.getPyroTraceback()))
+    print("<<<<<<< end of Pyro traceback")
     
-print '*** invoking server method that crashes, not catching anything ***'
-print test.complexerror()
+print("*** invoking server method that crashes, not catching anything ***")
+print(test.complexerror())

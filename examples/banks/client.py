@@ -14,45 +14,47 @@ class client(object):
     def __init__(self,name):
         self.name=name
     def doBusiness(self, bank):
-        print
-        print '***',self.name,'is doing business with',bank.name(),':'
-
-        print 'Creating account'
+        print("\n*** %s is doing business with %s:" % (self.name, bank.name()))
+        print("Creating account")
         try:
             bank.createAccount(self.name)
-        except BankError,x:
-            print 'Failed:',x
-            print 'Removing account and trying again'
+        except BankError:
+            x=sys.exc_info()[1]
+            print("Failed: %s" % x)
+            print("Removing account and trying again")
             bank.deleteAccount(self.name)
             bank.createAccount(self.name)
 
-        print 'Deposit money'
+        print("Deposit money")
         bank.deposit(self.name, 200.00)
-        print 'Deposit money'
+        print("Deposit money")
         bank.deposit(self.name, 500.75)
-        print 'Balance=', bank.balance(self.name)
-        print 'Withdraw money'
+        print("Balance=%.2f" % bank.balance(self.name))
+        print("Withdraw money")
         bank.withdraw(self.name, 400.00)
-        print 'Withdraw money (red)'
+        print("Withdraw money (overdraw)")
         try:
             bank.withdraw(self.name, 400.00)
-        except BankError,x:
-            print 'Failed:',x
-        print 'End balance=', bank.balance(self.name)
+        except BankError:
+            x=sys.exc_info()[1]
+            print("Failed: %s" % x)
+        print("End balance=%.2f" % bank.balance(self.name))
 
-        print 'Withdraw money from non-existing account'
+        print("Withdraw money from non-existing account")
         try:
             bank.withdraw('GOD',2222.22)
-            print '!!! Succeeded?!? That is an error'
-        except BankError,x:
-            print 'Failed, as expected:',x
+            print("!!! Succeeded?!? That is an error")
+        except BankError:
+            x=sys.exc_info()[1]
+            print("Failed as expected: %s" % x)
 
-        print 'Deleting non-existing account'
+        print("Deleting non-existing account")
         try:
             bank.deleteAccount('GOD')
-            print '!!! Succeeded?!? That is an error'
-        except BankError,x:
-            print 'Failed, as expected:',x
+            print("!!! Succeeded?!? That is an error")
+        except BankError:
+            x=sys.exc_info()[1]
+            print("Failed as expected: %s" % x)
 
 
 ns=Pyro4.naming.locateNS()
@@ -65,7 +67,7 @@ if not banknames:
 banks=[]    # list of banks (proxies)
 print
 for name in banknames:
-    print "Contacting bank: ",name
+    print("Contacting bank: %s" % name)
     uri=ns.lookup(name)
     banks.append(Pyro4.core.Proxy(uri))
 
@@ -80,7 +82,7 @@ for bank in banks:
 # List all accounts
 print
 for bank in banks:
-    print 'The accounts in the',bank.name(),':'
+    print("The accounts in the %s:" % bank.name())
     accounts = bank.allAccounts()
     for name in accounts.keys():
-        print '  ',name,':',accounts[name]
+        print("  %s : %.2f" % (name,accounts[name]))

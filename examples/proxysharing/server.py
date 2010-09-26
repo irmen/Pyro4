@@ -7,7 +7,7 @@ class RemoteObject(object):
     def method(self, arg):
         return " ~~this is the remote result~~ "
     def work(self):
-        print "work...",self.amount
+        print("work... %d" %self.amount)
         time.sleep(0.5)
         self.amount+=1
     def reset_work(self):
@@ -21,5 +21,5 @@ obj=RemoteObject()
 uri=daemon.register(obj)
 ns.remove("example.proxysharing")
 ns.register("example.proxysharing", uri)
-print "Server is ready."
+print("Server is ready.")
 daemon.requestLoop()

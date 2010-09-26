@@ -6,11 +6,11 @@ class Worker(object):
     def __init__(self,number,callback):
         self.number=number
         self.callback=callback
-        print "Worker %d created" % self.number
+        print("Worker %d created" % self.number)
     def work(self, amount):
-        print "Worker %d busy..." % self.number
+        print("Worker %d busy..." % self.number)
         time.sleep(amount)
-        print "Worker %d done. Informing callback client." % self.number
+        print("Worker %d done. Informing callback client." % self.number)
         self._pyroDaemon.unregister(self)
         self.callback.done(self.number)    # invoke the callback object
 
@@ -19,7 +19,7 @@ class CallbackServer(object):
         self.number=0
     def addworker(self, callback):
         self.number+=1
-        print "server: adding worker",self.number
+        print("server: adding worker %d" % self.number)
         worker=Worker(self.number, callback)
         uri=self._pyroDaemon.register(worker)
         return Pyro4.core.Proxy(uri)
@@ -30,5 +30,5 @@ with Pyro4.core.Daemon() as daemon:
         uri=daemon.register(obj)
         ns.remove("example.callback")
         ns.register("example.callback",uri)
-    print "Server ready."
+    print("Server ready.")
     daemon.requestLoop()

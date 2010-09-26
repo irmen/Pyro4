@@ -3,9 +3,9 @@ import Pyro4
 
 class TimeoutServer(object):
     def delay(self, amount):
-        print "sleeping",amount
+        print("sleeping %d" % amount)
         time.sleep(amount)
-        print "done."
+        print("done.")
         return "slept %d seconds" % amount
 
 Pyro4.config.COMMTIMEOUT=0        # the server won't be using timeouts
@@ -21,7 +21,7 @@ ns.remove("example.timeout")
 ns.remove("example.timeout.frozendaemon")
 ns.register("example.timeout",uri)
 ns.register("example.timeout.frozendaemon",uri2)
-print "Server ready."
+print("Server ready.")
 # Note that we're only starting one of the 2 daemons.
 # daemon2 is not started to simulate connection timeouts.
 daemon.requestLoop()

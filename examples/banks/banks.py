@@ -61,7 +61,7 @@ class Rabobank(Bank):
     def name(s):
         return 'Rabobank'
     def createAccount(s,name):
-        if s.accounts.has_key(name):
+        if name in s.accounts:
             raise BankError('Account already exists')
         s.accounts[name]=Account()
 
@@ -71,6 +71,6 @@ class ABN(Bank):
     def name(s):
         return 'ABN bank'
     def createAccount(s,name):
-        if s.accounts.has_key(name):
+        if name in s.accounts:
             raise BankError('Account already exists')
         s.accounts[name]=RestrictedAccount()

@@ -1,6 +1,10 @@
 from __future__ import with_statement
+import sys
 import Pyro4
 from Pyro4 import threadutil
+
+if sys.version_info<(3,0):
+    input=raw_input
 
 # The daemon is running in its own thread, to be able to deal with server
 # callback messages while the main thread is processing user input. 
@@ -11,29 +15,28 @@ class Chatter(object):
         self.abort=0
     def message(self, nick, msg):
         if nick!=self.nick:
-            print '['+nick+'] '+msg
+            print('[%s] %s' % (nick,msg))
     def start(self):
         nicks=self.chatbox.getNicks()
         if nicks:
-            print 'The following people are on the server: ',', '.join(nicks)
+            print('The following people are on the server: %s' % (', '.join(nicks)))
         channels=sorted(self.chatbox.getChannels())
         if channels:
-            print 'The following channels already exist: ',', '.join(channels)
-            print
-            self.channel=raw_input('Choose a channel or create a new one: ')
+            print('The following channels already exist: %s' % (', '.join(channels)))
+            self.channel=input('Choose a channel or create a new one: ')
         else:
-            print 'The server has no active channels.'
-            self.channel=raw_input('Name for new channel: ')
-        self.nick=raw_input('Choose a nickname: ')
+            print('The server has no active channels.')
+            self.channel=input('Name for new channel: ')
+        self.nick=input('Choose a nickname: ')
         proxy=Pyro4.core.Proxy(self._pyroDaemon.uriFor(self))
         people=self.chatbox.join(self.channel,self.nick,proxy)
-        print 'Joined channel',self.channel,'as',self.nick
-        print 'People on this channel:',', '.join(people)
-        print 'Ready for input! Type /quit to quit'
+        print('Joined channel %s as %s' % (self.channel,self.nick))
+        print('People on this channel: %s' % (', '.join(people)))
+        print('Ready for input! Type /quit to quit')
         try:
             try:
                 while not self.abort:
-                    line=raw_input('> ')
+                    line=input('> ')
                     if line=='/quit':
                         break
                     if line:
@@ -59,4 +62,4 @@ chatter=Chatter()
 daemonthread=DaemonThread(chatter)
 daemonthread.start()
 chatter.start()
-print 'Exiting.'
+print('Exit.')

@@ -1,12 +1,12 @@
 import time
 import Pyro4
 
-print "Autoreconnect using Name Server."
+print("Autoreconnect using Name Server.")
 
 class TestClass(object):
     def method(self,arg):
-        print "Method called with",arg
-        print "You can now try to stop this server with ctrl-C/ctrl-Break"
+        print("Method called with %s" % arg)
+        print("You can now try to stop this server with ctrl-C/ctrl-Break")
         time.sleep(1)
 
 obj=TestClass()
@@ -17,8 +17,8 @@ obj=TestClass()
 ns=Pyro4.naming.locateNS()
 try:
     existing=ns.lookup("example.autoreconnect")
-    print "Object still exists in Name Server with id:",existing.object
-    print "Previous daemon socket port:",existing.port
+    print("Object still exists in Name Server with id: %s" % existing.object)
+    print("Previous daemon socket port: %d" % existing.port)
     # start the daemon on the previous port
     daemon = Pyro4.core.Daemon(port=existing.port)
     # register the object in the daemon with the old objectId
@@ -30,7 +30,7 @@ except Pyro4.errors.NamingError:
     # also need to register in name server because it's not there yet.
     uri = daemon.register(obj)
     ns.register("example.autoreconnect", uri)
-print "Server started."
+print("Server started.")
 daemon.requestLoop()
 
 # note: we are not removing the name server registration!

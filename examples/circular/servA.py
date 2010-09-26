@@ -14,5 +14,5 @@ ns.remove(servername)
 ns.register(servername,uri)
 
 # enter the service loop.
-print 'Server started',this
+print("Server started %s" % this)
 daemon.requestLoop()

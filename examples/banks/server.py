@@ -16,9 +16,9 @@ ns.register("example.banks.rabobank",uri)
 uri=daemon.register(banks.ABN())
 ns.register("example.banks.abn",uri)
 
-print "available banks:"
-print ns.list(prefix="example.banks.").keys()
+print("available banks:")
+print(list(ns.list(prefix="example.banks.").keys()))
 
 # enter the service loop.
-print 'Banks are ready for customers.'
+print("Banks are ready for customers.")
 daemon.requestLoop()

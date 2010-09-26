@@ -22,18 +22,18 @@ class Shop(object):
     customersInStore={}
     
     def enter(self, name):
-        print "Customer %s enters the store." % name
-        print "Customer takes a shopping cart."
+        print("Customer %s enters the store." % name)
+        print("Customer takes a shopping cart.")
         # create a cart and return it as a pyro object to the client
         cart=ShoppingCart()
         self.customersInStore[name]=cart
         return self.__proxyfy(cart)
     def customers(self):
-        return self.customersInStore.keys()
+        return list(self.customersInStore.keys())
     def goods(self):
         return self.inventory
     def payByName(self, name):
-        print "Customer %s goes to the counter to pay." % name
+        print("Customer %s goes to the counter to pay." % name)
         cart=self.customersInStore[name]
         return self.payCart(cart, name)
     def payCart(self,cart,name=None):
@@ -51,11 +51,11 @@ class Shop(object):
         cart.empty()
         return "\n".join(receipt)
     def leave(self, name):
-        print "Customer %s leaves." % name
+        print("Customer %s leaves." % name)
         cart=self.customersInStore[name]
-        print "  their shopping cart contains:",cart.getContents()
+        print("  their shopping cart contains: %s" % cart.getContents())
         if cart.getContents():
-            print "  it is not empty, they are trying to shoplift!"
+            print("  it is not empty, they are trying to shoplift!")
             raise Exception("attempt to steal a full cart prevented")
         # delete the cart and unregister it with pyro
         del self.customersInStore[name]
@@ -79,5 +79,5 @@ uri=daemon.register(shop)
 ns=Pyro4.locateNS()
 ns.remove("example.shop")
 ns.register("example.shop", uri)
-print "Shop Server is ready."
+print("Shop Server is ready.")
 daemon.requestLoop()

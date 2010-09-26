@@ -1,10 +1,13 @@
-from Queue import Queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import Pyro4
 
 class DispatcherQueue(object):
     def __init__(self):
-        self.workqueue = Queue()
-        self.resultqueue = Queue()
+        self.workqueue = queue.Queue()
+        self.resultqueue = queue.Queue()
     def putWork(self, item):
         self.workqueue.put(item)
     def getWork(self, timeout=5):
@@ -26,5 +29,5 @@ dispatcher=DispatcherQueue()
 uri=daemon.register(dispatcher)
 ns.remove("example.distributed.dispatcher")
 ns.register("example.distributed.dispatcher", uri)
-print "Dispatcher is ready."
+print("Dispatcher is ready.")
 daemon.requestLoop()
