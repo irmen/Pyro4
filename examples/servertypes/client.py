@@ -1,9 +1,9 @@
 from __future__ import with_statement
 import time
-import Pyro
-from Pyro import threadutil
+import Pyro4
+from Pyro4 import threadutil
 
-serv = Pyro.core.Proxy("PYRONAME:example.servertypes")
+serv = Pyro4.core.Proxy("PYRONAME:example.servertypes")
 serv._pyroOneway.add("onewaydelay")
 
 print "--------------------------------------------------------------"
@@ -61,7 +61,7 @@ else:
 
 def func(uri):
     # This will run in a thread. Create a proxy just for this thread:
-    with Pyro.core.Proxy(uri) as p:
+    with Pyro4.core.Proxy(uri) as p:
         processed=p.delay()
         print "  thread %s called delay, processed by: %s" % (threadutil.currentThread().getName(), processed)
 

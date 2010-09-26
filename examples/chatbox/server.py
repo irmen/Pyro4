@@ -1,6 +1,6 @@
 from __future__ import with_statement
 import sys
-import Pyro
+import Pyro4
 
 # Chat box administration server.
 # Handles logins, logouts, channels and nicknames, and the chatting.
@@ -45,15 +45,15 @@ class ChatBox(object):
         for (n,c) in self.channels[channel][:]:        # use a copy of the list
             try:
                 c.message(nick,msg)    # oneway call
-            except Pyro.errors.ConnectionClosedError,x:
+            except Pyro4.errors.ConnectionClosedError,x:
                 # connection dropped, remove the listener if it's still there
                 # check for existence because other thread may have killed it already
                 if (n,c) in self.channels[channel]:
                     self.channels[channel].remove((n,c))
                     print 'Removed dead listener',n,c
 
-with Pyro.core.Daemon() as daemon:
-    with Pyro.naming.locateNS() as ns:
+with Pyro4.core.Daemon() as daemon:
+    with Pyro4.naming.locateNS() as ns:
         uri=daemon.register(ChatBox())
         ns.remove("example.chatbox.server")
         ns.register("example.chatbox.server",uri)

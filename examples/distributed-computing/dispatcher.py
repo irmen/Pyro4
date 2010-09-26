@@ -1,5 +1,5 @@
 from Queue import Queue
-import Pyro
+import Pyro4
 
 class DispatcherQueue(object):
     def __init__(self):
@@ -20,8 +20,8 @@ class DispatcherQueue(object):
         
 ######## main program
 
-ns=Pyro.naming.locateNS()
-daemon=Pyro.core.Daemon()
+ns=Pyro4.naming.locateNS()
+daemon=Pyro4.core.Daemon()
 dispatcher=DispatcherQueue()
 uri=daemon.register(dispatcher)
 ns.remove("example.distributed.dispatcher")

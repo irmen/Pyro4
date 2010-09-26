@@ -1,5 +1,5 @@
 import time
-import Pyro
+import Pyro4
 
 class RemoteObject(object):
     def __init__(self):
@@ -15,8 +15,8 @@ class RemoteObject(object):
     def get_work_done(self):
         return self.amount
 
-ns=Pyro.naming.locateNS()
-daemon=Pyro.core.Daemon()
+ns=Pyro4.naming.locateNS()
+daemon=Pyro4.core.Daemon()
 obj=RemoteObject()
 uri=daemon.register(obj)
 ns.remove("example.proxysharing")

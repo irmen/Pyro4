@@ -4,8 +4,8 @@ import time
 import robot
 import remote
 from Tkinter import *
-import Pyro
-from Pyro import threadutil
+import Pyro4
+from Pyro4 import threadutil
 
 class VisibleRobot(robot.Robot):
     """represents a robot that is visible on the screen."""
@@ -215,8 +215,8 @@ class PyroDaemonThread(threadutil.Thread):
     def __init__(self, engine):
         threadutil.Thread.__init__(self)
         self.pyroserver=remote.GameServer(engine)
-        self.pyrodaemon=Pyro.Daemon()
-        self.ns=Pyro.locateNS()
+        self.pyrodaemon=Pyro4.Daemon()
+        self.ns=Pyro4.locateNS()
         self.setDaemon(True)
     def run(self):
         with self.pyrodaemon:
@@ -235,7 +235,7 @@ def main():
     engine=GameEngine(gui, world)
     try:
         PyroDaemonThread(engine).start()
-    except Pyro.errors.NamingError,x:
+    except Pyro4.errors.NamingError,x:
         print "Can't find the Pyro Nameserver. Running without remote connections."
     gui.tk.mainloop()
 

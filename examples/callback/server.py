@@ -1,6 +1,6 @@
 from __future__ import with_statement
 import time
-import Pyro
+import Pyro4
 
 class Worker(object):
     def __init__(self,number,callback):
@@ -22,10 +22,10 @@ class CallbackServer(object):
         print "server: adding worker",self.number
         worker=Worker(self.number, callback)
         uri=self._pyroDaemon.register(worker)
-        return Pyro.core.Proxy(uri)
+        return Pyro4.core.Proxy(uri)
 
-with Pyro.core.Daemon() as daemon:
-    with Pyro.naming.locateNS() as ns:
+with Pyro4.core.Daemon() as daemon:
+    with Pyro4.naming.locateNS() as ns:
         obj=CallbackServer()
         uri=daemon.register(obj)
         ns.remove("example.callback")

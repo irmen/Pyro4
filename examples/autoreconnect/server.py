@@ -1,5 +1,5 @@
 import time
-import Pyro
+import Pyro4
 
 print "Autoreconnect using PYRO uri."
 
@@ -20,7 +20,7 @@ obj=TestClass()
 # The other thing is that your Daemon must re-bind on the same port.
 # By default Pyro will select a random port so we specify a fixed port.
 
-daemon = Pyro.core.Daemon(port=7777)
+daemon = Pyro4.core.Daemon(port=7777)
 uri = daemon.register(obj,objectId="autoreconnect_fixed_objectid")
 
 print "Server started, uri =",uri

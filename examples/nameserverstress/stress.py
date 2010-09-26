@@ -1,6 +1,6 @@
 import random, time
-import Pyro
-from Pyro import threadutil
+import Pyro4
+from Pyro4 import threadutil
 
 def randomname():
     def partname():
@@ -16,7 +16,7 @@ class NamingTrasher(threadutil.Thread):
         threadutil.Thread.__init__(self)
         self.daemon=True
         self.number=number
-        self.ns=Pyro.core.Proxy(nsuri)
+        self.ns=Pyro4.core.Proxy(nsuri)
         self.mustStop=False
 
     def list(self):
@@ -25,14 +25,14 @@ class NamingTrasher(threadutil.Thread):
         for i in range(4):
             try:
                 self.ns.register(randomname(),'PYRO:objname@host:555')
-            except Pyro.errors.NamingError:
+            except Pyro4.errors.NamingError:
                 pass
     def remove(self):
         self.ns.remove(randomname())
     def lookup(self):
         try:
             uri=self.ns.lookup(randomname())
-        except Pyro.errors.NamingError:
+        except Pyro4.errors.NamingError:
             pass
     def listprefix(self):
         entries=self.ns.list(prefix="stresstest.51")
@@ -48,7 +48,7 @@ class NamingTrasher(threadutil.Thread):
 
 def main():
     threads=[]
-    ns=Pyro.naming.locateNS()
+    ns=Pyro4.naming.locateNS()
     ns.remove(prefix="stresstest.")
     for i in range(5):
         nt=NamingTrasher(ns._pyroUri,i)

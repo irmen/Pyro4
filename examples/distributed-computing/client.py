@@ -1,7 +1,7 @@
 from __future__ import with_statement
 import Queue
 import random
-import Pyro
+import Pyro4
 from workitem import Workitem
 
 NUMBER_OF_ITEMS = 40
@@ -11,7 +11,7 @@ def main():
     print "\nThis program will calculate Prime Factorials of a bunch of random numbers."
     print "The more workers you will start (on different cpus/cores/machines),"
     print "the faster you will get the complete list of results!\n"
-    with Pyro.core.Proxy("PYRONAME:example.distributed.dispatcher") as dispatcher:
+    with Pyro4.core.Proxy("PYRONAME:example.distributed.dispatcher") as dispatcher:
         placework(dispatcher)
         numbers=collectresults(dispatcher)
     printresults(numbers)

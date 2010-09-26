@@ -1,5 +1,5 @@
 import time
-import Pyro
+import Pyro4
 from shoppingcart import ShoppingCart
 
 class Shop(object):
@@ -65,7 +65,7 @@ class Shop(object):
     def __proxyfy(self, object):
         """register the object with the daemon and return a proxy"""
         uri=self._pyroDaemon.register(object)
-        return Pyro.Proxy(uri)
+        return Pyro4.Proxy(uri)
     def __unproxyfy(self, object):
         """unregister the object with the daemon"""
         self._pyroDaemon.unregister(object)
@@ -73,10 +73,10 @@ class Shop(object):
 
 ######## main program
 
-daemon=Pyro.Daemon()
+daemon=Pyro4.Daemon()
 shop=Shop()
 uri=daemon.register(shop)
-ns=Pyro.locateNS()
+ns=Pyro4.locateNS()
 ns.remove("example.shop")
 ns.register("example.shop", uri)
 print "Shop Server is ready."

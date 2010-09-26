@@ -1,4 +1,4 @@
-import Pyro
+import Pyro4
 
 class CallbackHandler(object):
     def crash(self):
@@ -9,21 +9,23 @@ class CallbackHandler(object):
         print "callback 1 received from server!"
         print "going to crash - you won't see the exception here, only on the server"
         return self.crash()
-    @Pyro.callback
+    @Pyro4.callback
     def call2(self):
         print "callback 2 received from server!"
         print "going to crash - but you will see the exception here too"
         return self.crash()
 
 
-daemon=Pyro.core.Daemon()
+daemon=Pyro4.core.Daemon()
 obj=CallbackHandler()
 uri=daemon.register(obj)
-callback=Pyro.core.Proxy(uri)
+callback=Pyro4.core.Proxy(uri)
 
-with Pyro.core.Proxy("PYRONAME:example.callback2") as server:
+with Pyro4.core.Proxy("PYRONAME:example.callback2") as server:
     server._pyroOneway.add("doCallback")
     server.doCallback(callback)
 
 print "waiting for callbacks to arrive..."
+print "(ctrl-c/break the program once it's done)"
+print
 daemon.requestLoop()

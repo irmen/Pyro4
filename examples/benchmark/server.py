@@ -1,10 +1,10 @@
-import Pyro
+import Pyro4
 import bench
 
 obj=bench.bench()
 
-daemon=Pyro.core.Daemon()
-ns=Pyro.naming.locateNS()
+daemon=Pyro4.core.Daemon()
+ns=Pyro4.naming.locateNS()
 print "ns found at",ns._pyroUri
 uri = daemon.register(obj)
 ns.remove("example.benchmark")

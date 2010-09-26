@@ -1,5 +1,5 @@
 import time
-import Pyro
+import Pyro4
 
 class TimeoutServer(object):
     def delay(self, amount):
@@ -8,11 +8,11 @@ class TimeoutServer(object):
         print "done."
         return "slept %d seconds" % amount
 
-Pyro.config.COMMTIMEOUT=0        # the server won't be using timeouts
+Pyro4.config.COMMTIMEOUT=0        # the server won't be using timeouts
 
-ns=Pyro.naming.locateNS()
-daemon=Pyro.core.Daemon()
-daemon2=Pyro.core.Daemon()
+ns=Pyro4.naming.locateNS()
+daemon=Pyro4.core.Daemon()
+daemon2=Pyro4.core.Daemon()
 obj=TimeoutServer()
 obj2=TimeoutServer()
 uri=daemon.register(obj)

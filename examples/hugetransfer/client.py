@@ -1,13 +1,13 @@
 import sys, os, time
-import Pyro
+import Pyro4
 
-Pyro.config.COMMTIMEOUT=2
+Pyro4.config.COMMTIMEOUT=2
 
 basesize = 500000
 data='A'*basesize
 totalsize=0
 
-obj=Pyro.core.Proxy("PYRONAME:example.hugetransfer")
+obj=Pyro4.core.Proxy("PYRONAME:example.hugetransfer")
 print "binding"
 obj._pyroBind()
 print "done"

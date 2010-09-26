@@ -1,5 +1,5 @@
 import random
-import Pyro
+import Pyro4
 
 class GameServer(object):
     def __init__(self, engine):
@@ -7,7 +7,7 @@ class GameServer(object):
     def register(self, name, observer):
         robot=self.engine.signup_robot(name, observer)
         uri=self._pyroDaemon.register(robot)
-        return Pyro.Proxy(uri)
+        return Pyro4.Proxy(uri)
 
 class RemoteBot(object):
     def __init__(self, robot, engine):

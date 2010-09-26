@@ -1,5 +1,5 @@
 import time
-import Pyro
+import Pyro4
 
 print "Autoreconnect using PYRO uri."
 
@@ -7,7 +7,7 @@ print "Autoreconnect using PYRO uri."
 # Reconnect logic depends on the server now.
 # (it needs to restart the object with the same id)
 uri=raw_input("Enter the uri that the server printed:")
-obj=Pyro.core.Proxy(uri)
+obj=Pyro4.core.Proxy(uri)
 
 while True:
     print "call..."
@@ -15,7 +15,7 @@ while True:
         obj.method(42)
         print "Sleeping 1 second"
         time.sleep(1)
-    except Pyro.errors.ConnectionClosedError,x:     # or possibly even ProtocolError
+    except Pyro4.errors.ConnectionClosedError,x:     # or possibly even ProtocolError
         print "Connection lost. REBINDING..."
         print "(restart the server now)"
         obj._pyroReconnect()

@@ -1,7 +1,7 @@
 import sys, os
-import Pyro
+import Pyro4
 
-Pyro.config.COMMTIMEOUT=2
+Pyro4.config.COMMTIMEOUT=2
 
 
 class Testclass(object):
@@ -9,10 +9,10 @@ class Testclass(object):
         print 'received',len(data),'bytes'
         return len(data)
 
-daemon=Pyro.core.Daemon()
+daemon=Pyro4.core.Daemon()
 obj=Testclass()
 uri = daemon.register(obj)
-ns=Pyro.naming.locateNS()
+ns=Pyro4.naming.locateNS()
 print "ns found at",ns._pyroUri
 ns.remove("example.hugetransfer")
 ns.register("example.hugetransfer", uri)

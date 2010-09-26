@@ -1,4 +1,4 @@
-import Pyro
+import Pyro4
 
-obj=Pyro.core.Proxy("PYRONAME:example.chain.A")
+obj=Pyro4.core.Proxy("PYRONAME:example.chain.A")
 print "Result=",obj.process(["hello"])

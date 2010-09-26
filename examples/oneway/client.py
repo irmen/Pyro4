@@ -1,7 +1,7 @@
 import time
-import Pyro
+import Pyro4
 
-serv = Pyro.core.Proxy("PYRONAME:example.oneway")
+serv = Pyro4.core.Proxy("PYRONAME:example.oneway")
 serv._pyroOneway.add("start")
 serv._pyroOneway.add("nothing")
 serv._pyroOneway.add("nonexisting")

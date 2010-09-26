@@ -1,4 +1,4 @@
-import Pyro
+import Pyro4
 
 # a Chain member. Passes messages to the next link,
 # until the message went full-circle: then it exits.
@@ -10,7 +10,7 @@ class Chain(object):
         self.next=None
     def process(self,message):
         if self.next is None:
-            self.next=Pyro.core.Proxy("PYRONAME:example.chain."+self.nextName)
+            self.next=Pyro4.core.Proxy("PYRONAME:example.chain."+self.nextName)
         if self.name in message:
             print "Back at",self.name,"; we completed the circle!"
             return ["complete at "+self.name]

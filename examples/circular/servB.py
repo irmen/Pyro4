@@ -1,4 +1,4 @@
-import Pyro
+import Pyro4
 import chain
 
 this = "B"
@@ -6,10 +6,10 @@ next = "C"
 
 servername="example.chain."+this
 
-daemon=Pyro.core.Daemon()
+daemon=Pyro4.core.Daemon()
 obj=chain.Chain(this,next)
 uri=daemon.register(obj)
-ns=Pyro.naming.locateNS()
+ns=Pyro4.naming.locateNS()
 ns.remove(servername)
 ns.register(servername,uri)
 

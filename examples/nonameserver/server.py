@@ -1,7 +1,7 @@
 # The server that doesn't use the Name Server.
 
 import os
-import Pyro
+import Pyro4
 
 class QuoteGen(object):
     def quote(self):
@@ -13,7 +13,7 @@ class QuoteGen(object):
         except:        
             return "This system knows no witty quotes :-("
 
-daemon = Pyro.core.Daemon()
+daemon = Pyro4.core.Daemon()
 quote1 = QuoteGen()
 quote2 = QuoteGen()
 

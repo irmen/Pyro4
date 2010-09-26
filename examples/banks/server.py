@@ -3,11 +3,11 @@
 #
 
 import sys
-import Pyro
+import Pyro4
 import banks
 
-ns=Pyro.naming.locateNS()
-daemon=Pyro.core.Daemon()
+ns=Pyro4.naming.locateNS()
+daemon=Pyro4.core.Daemon()
 ns.remove("example.banks.rabobank")
 ns.remove("example.banks.abn")
 

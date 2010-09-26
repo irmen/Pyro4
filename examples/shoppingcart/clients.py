@@ -1,7 +1,7 @@
 import random
-import Pyro
+import Pyro4
 
-shop = Pyro.Proxy("PYRONAME:example.shop")
+shop = Pyro4.Proxy("PYRONAME:example.shop")
 
 print "Simulating some customers."
 harrysCart=shop.enter("Harry")
@@ -36,7 +36,7 @@ print "Customers currently in the shop:",shop.customers()
 try:
     receipt=shop.payByName("Harry")
 except:
-    print "ERROR:", "".join(Pyro.util.getPyroTraceback())
+    print "ERROR:", "".join(Pyro4.util.getPyroTraceback())
 print "Harry payed. The cart now contains:",harrysCart.getContents(),"(should be empty)"
 print "Harry got this receipt:"
 print
@@ -56,7 +56,7 @@ print "Shoplifter is leaving. (should be impossible i.e. give an error)"
 try:
     shop.leave("shoplifter")
 except:
-    print "".join(Pyro.util.getPyroTraceback())
+    print "".join(Pyro4.util.getPyroTraceback())
 
 print
 print "Harry is attempting to put stuff back in his cart again,"

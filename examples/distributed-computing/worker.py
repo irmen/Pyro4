@@ -1,7 +1,7 @@
 import os,socket,sys
 from math import sqrt
 import Queue
-import Pyro
+import Pyro4
 from workitem import Workitem
 
 WORKERNAME = "Worker_%d@%s" % (os.getpid(), socket.gethostname())
@@ -27,7 +27,7 @@ def process(item):
     item.processedBy = WORKERNAME
 
 def main():
-    dispatcher = Pyro.core.Proxy("PYRONAME:example.distributed.dispatcher")
+    dispatcher = Pyro4.core.Proxy("PYRONAME:example.distributed.dispatcher")
     print "This is worker",WORKERNAME
     print "getting work from dispatcher."
     while True:

@@ -1,9 +1,9 @@
 import time
-import Pyro
+import Pyro4
 
 # set the oneway behavior to run inside a new thread, otherwise the client stalls.
 # this is the default, but I've added it here just for clarification.
-Pyro.config.ONEWAY_THREADED=True
+Pyro4.config.ONEWAY_THREADED=True
 
 class Server(object):
     def __init__(self):
@@ -27,10 +27,10 @@ class Server(object):
 
 ######## main program
 
-daemon=Pyro.core.Daemon()
+daemon=Pyro4.core.Daemon()
 obj=Server()
 uri=daemon.register(obj)
-ns=Pyro.naming.locateNS()
+ns=Pyro4.naming.locateNS()
 ns.remove("example.oneway")
 ns.register("example.oneway", uri)
 print "Server is ready."

@@ -2,17 +2,18 @@ import socket
 import time
 import select
 import sys
-import Pyro.core
-import Pyro.naming
+import Pyro4.core
+import Pyro4.naming
 
 if sys.version_info<(3,0):
     input=raw_input
 
+print "Make sure that you don't have a name server running already."
 servertype=input("Servertype thread/select (t/s)?")
 if servertype=='t':
-    Pyro.config.SERVERTYPE="thread"
+    Pyro4.config.SERVERTYPE="thread"
 else:
-    Pyro.config.SERVERTYPE="select"
+    Pyro4.config.SERVERTYPE="select"
 
 hostname=socket.gethostname()
 
@@ -21,9 +22,9 @@ class EmbeddedServer(object):
         return x*y
 
 
-print("initializing services... servertype=%s" % Pyro.config.SERVERTYPE)
+print("initializing services... servertype=%s" % Pyro4.config.SERVERTYPE)
 # start a name server with broadcast server as well
-nameserverUri, nameserverDaemon, broadcastServer = Pyro.naming.startNS(host=hostname)
+nameserverUri, nameserverDaemon, broadcastServer = Pyro4.naming.startNS(host=hostname)
 assert broadcastServer is not None, "expect a broadcast server to be created"
 
 print("got a Nameserver, uri=%s" % nameserverUri)
@@ -32,7 +33,7 @@ print("ns daemon sockets=%s" % nameserverDaemon.sockets())
 print("bc server socket=%s (fileno %d)" % (broadcastServer.sock, broadcastServer.fileno()))
 
 # create a Pyro daemon
-pyrodaemon=Pyro.core.Daemon(host=hostname)
+pyrodaemon=Pyro4.core.Daemon(host=hostname)
 print("daemon location string=%s" % pyrodaemon.locationStr)
 print("daemon sockets=%s" % pyrodaemon.sockets())
 

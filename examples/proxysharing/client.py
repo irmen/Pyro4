@@ -1,6 +1,6 @@
 import time
-import Pyro
-from Pyro import threadutil
+import Pyro4
+from Pyro4 import threadutil
 
 stop=False
 
@@ -14,8 +14,8 @@ def myThread(nsproxy, proxy):
     except Exception,x:
         print "**** Exception in thread %s: {%s} %s" % (name, type(x), x)
 
-nsproxy = Pyro.naming.locateNS()
-proxy = Pyro.core.Proxy("PYRONAME:example.proxysharing")
+nsproxy = Pyro4.naming.locateNS()
+proxy = Pyro4.core.Proxy("PYRONAME:example.proxysharing")
 
 # now create a handful of threads and give each of them the same two proxy objects
 threads = []
@@ -73,7 +73,7 @@ proxy.reset_work()
 stop=False
 threads = []
 for i in range(10):
-    proxy=Pyro.core.Proxy(proxy._pyroUri) # create a new proxy
+    proxy=Pyro4.core.Proxy(proxy._pyroUri) # create a new proxy
     thread=threadutil.Thread(target=myThread2, args=[proxy] )
     thread.setDaemon(False)
     threads.append(thread)

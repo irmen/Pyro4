@@ -1,7 +1,7 @@
-import Pyro
+import Pyro4
 from excep import MyError
 
-test = Pyro.core.Proxy("PYRONAME:example.exceptions")
+test = Pyro4.core.Proxy("PYRONAME:example.exceptions")
 
 print test.div(2.0,9.0)
 try:
@@ -39,7 +39,7 @@ try:
 except Exception,x:
     print 'CAUGHT ERROR  >>> ',x
     print 'Printing Pyro traceback >>>>>>'
-    print ''.join(Pyro.util.getPyroTraceback())
+    print ''.join(Pyro4.util.getPyroTraceback())
     print '<<<<<<< end of Pyro traceback'
     
 print '*** invoking server method that crashes, not catching anything ***'

@@ -6,7 +6,7 @@
 #
 
 import sys
-import Pyro
+import Pyro4
 from banks import BankError
 
 # A bank client.
@@ -55,7 +55,7 @@ class client(object):
             print 'Failed, as expected:',x
 
 
-ns=Pyro.naming.locateNS()
+ns=Pyro4.naming.locateNS()
 
 # list the available banks by looking in the NS for the given prefix path
 banknames=[name for name in ns.list(prefix="example.banks.")]
@@ -67,7 +67,7 @@ print
 for name in banknames:
     print "Contacting bank: ",name
     uri=ns.lookup(name)
-    banks.append(Pyro.core.Proxy(uri))
+    banks.append(Pyro4.core.Proxy(uri))
 
 # Different clients that do business with all banks
 irmen = client('Irmen')

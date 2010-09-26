@@ -2,7 +2,7 @@ from __future__ import with_statement
 import random
 import sys
 import remote
-import Pyro
+import Pyro4
 
 
 class DrunkenGameObserver(remote.GameObserver):
@@ -55,11 +55,11 @@ def main(args):
         return
     name=args[1]
     observertype=args[2]
-    with Pyro.Daemon() as daemon:
+    with Pyro4.Daemon() as daemon:
         observer=observers[observertype]()
         uri=daemon.register(observer)
-        gameserver=Pyro.Proxy("PYRONAME:example.robotserver")
-        robot=gameserver.register(name, Pyro.Proxy(uri))
+        gameserver=Pyro4.Proxy("PYRONAME:example.robotserver")
+        robot=gameserver.register(name, Pyro4.Proxy(uri))
         robot.emote("Hi there! I'm here to kick your ass")
         observer.robot=robot
         print "Pyro server registered on",daemon.locationStr

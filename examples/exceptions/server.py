@@ -1,8 +1,8 @@
-import Pyro
+import Pyro4
 import excep
 
-ns=Pyro.naming.locateNS()
-daemon=Pyro.core.Daemon()
+ns=Pyro4.naming.locateNS()
+daemon=Pyro4.core.Daemon()
 obj=excep.TestClass()
 uri=daemon.register(obj)
 ns.remove("example.exceptions")

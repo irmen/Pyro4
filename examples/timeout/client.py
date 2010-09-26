@@ -1,5 +1,5 @@
 import time,sys
-import Pyro
+import Pyro4
 
 
 # NOTE: the timer in IronPython seems to be wacky.
@@ -9,9 +9,9 @@ def approxEqual(x,y):
     return abs(x-y) < 0.2
 
 # disable timeout globally 
-Pyro.config.COMMTIMEOUT=0
+Pyro4.config.COMMTIMEOUT=0
 
-obj=Pyro.core.Proxy("PYRONAME:example.timeout")
+obj=Pyro4.core.Proxy("PYRONAME:example.timeout")
 obj._pyroBind()
 print "No timeout is configured. Calling delay with 2 seconds."
 start=time.time()
@@ -30,7 +30,7 @@ start=time.time()
 try:
     result=obj.delay(2)
     print "!?should have raised TimeoutError!?"
-except Pyro.errors.TimeoutError:
+except Pyro4.errors.TimeoutError:
     print "Timeouterror! As expected!"
     duration=time.time()-start
     if sys.platform!="cli":
@@ -39,15 +39,15 @@ except Pyro.errors.TimeoutError:
         assert 0.9<duration<1.9, "expected about 1 second duration"
 
 # set timeout globally
-Pyro.config.COMMTIMEOUT=1
+Pyro4.config.COMMTIMEOUT=1
 
-obj=Pyro.core.Proxy("PYRONAME:example.timeout")
+obj=Pyro4.core.Proxy("PYRONAME:example.timeout")
 print "COMMTIMEOUT is set globally. Calling delay with 2 seconds."
 start=time.time()
 try:
     result=obj.delay(2)
     print "!?should have raised TimeoutError!?"
-except Pyro.errors.TimeoutError:
+except Pyro4.errors.TimeoutError:
     print "Timeouterror! As expected!"
     duration=time.time()-start
     if sys.platform!="cli":
@@ -69,14 +69,14 @@ else:
 
 print 
 print "Trying to connect to the frozen daemon."
-obj=Pyro.core.Proxy("PYRONAME:example.timeout.frozendaemon")
+obj=Pyro4.core.Proxy("PYRONAME:example.timeout.frozendaemon")
 obj._pyroTimeout=1
 print "Timeout set to 1 seconds. Trying to connect."
 start=time.time()
 try:
     result=obj.delay(5)
     print "!?should have raised TimeoutError!?"
-except Pyro.errors.TimeoutError:    
+except Pyro4.errors.TimeoutError:    
     print "Timeouterror! As expected!"
     duration=time.time()-start
     if sys.platform!="cli":

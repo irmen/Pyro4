@@ -1,8 +1,8 @@
 import sys,os,time
-import Pyro
+import Pyro4
 import bench
 
-object = Pyro.core.Proxy("PYRONAME:example.benchmark")
+object = Pyro4.core.Proxy("PYRONAME:example.benchmark")
 object._pyroOneway.add('oneway')
 object._pyroBind()
 
