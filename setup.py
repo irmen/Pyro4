@@ -24,8 +24,12 @@ if __name__ == '__main__' :
                 "Development Status :: 4 - Beta",
                 "Intended Audience :: Developers",
                 "License :: OSI Approved :: MIT License",
+                "Natural Language :: English",
+                "Natural Language :: Dutch",
                 "Operating System :: OS Independent",
                 "Programming Language :: Python",
+                "Programming Language :: Python :: 2.6",
+                "Programming Language :: Python :: 3",
                 "Topic :: Software Development :: Object Brokering",
                 "Topic :: System :: Distributed Computing",
                 "Topic :: System :: Networking"
