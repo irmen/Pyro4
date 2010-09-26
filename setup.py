@@ -3,11 +3,11 @@ import sys
 
 if __name__ == '__main__' :
     sys.path.insert(0, "src")
-    import Pyro.constants
-    print('Pyro version = %s' % Pyro.constants.VERSION)
+    import Pyro4.constants
+    print('Pyro version = %s' % Pyro4.constants.VERSION)
 
-    setup(name="Pyro",
-        version= Pyro.constants.VERSION,
+    setup(name="Pyro4",
+        version= Pyro4.constants.VERSION,
         license="MIT",
         description = "distributed object middleware for Python (RPC)",
         long_description = """Pyro stands for PYthon Remote Objects. It is an advanced and powerful Distributed Object Technology system written entirely in Python, that is designed to be fast and very easy to use.""",
@@ -17,7 +17,7 @@ if __name__ == '__main__' :
         url = "http://www.razorvine.net/python/Pyro",
         download_url="http://www.xs4all.nl/~irmen/pyro4/download/",
         package_dir={'':'src'},
-        packages=['Pyro', 'Pyro.socketserver'],
+        packages=['Pyro4', 'Pyro4.socketserver'],
         scripts = [],
         platforms="any",
         classifiers=[
@@ -33,6 +33,6 @@ if __name__ == '__main__' :
     )
     
     if len(sys.argv)>=2 and sys.argv[1].startswith("install"):
-        print("\nOnly the Pyro library has been installed (version %s)." % Pyro.constants.VERSION)
+        print("\nOnly the Pyro library has been installed (version %s)." % Pyro4.constants.VERSION)
         print("If you want to install the tests, the examples, and/or the manual,")
         print("you have to copy them manually to the desired location.")

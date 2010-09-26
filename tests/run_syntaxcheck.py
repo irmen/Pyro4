@@ -32,14 +32,14 @@ def Pylint(path, modules):
     for m in modules:
         m=m[:-3]
         if m and m!="__init__":
-            args.append("Pyro."+m)
+            args.append("Pyro4."+m)
     try:
         lint.Run(args)  # this will exit the interpreter... :( 
     finally:
         print "Lint done. Check the output files (pylint_*.txt)"
 
 def main(args):
-    pyropath="../src/Pyro"
+    pyropath="../src/Pyro4"
     pyromodules=[module for module in os.listdir(pyropath) if module.endswith(".py")]
     checkers=args or ["flakes","lint"]
     if "flakes" in checkers:
