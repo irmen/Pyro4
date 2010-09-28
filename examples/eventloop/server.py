@@ -8,7 +8,7 @@ import Pyro4.naming
 if sys.version_info<(3,0):
     input=raw_input
 
-print "Make sure that you don't have a name server running already."
+print("Make sure that you don't have a name server running already.")
 servertype=input("Servertype thread/select (t/s)?")
 if servertype=='t':
     Pyro4.config.SERVERTYPE="thread"

@@ -26,6 +26,5 @@ with Pyro4.core.Proxy("PYRONAME:example.callback2") as server:
     server.doCallback(callback)
 
 print("waiting for callbacks to arrive...")
-print "(ctrl-c/break the program once it's done)"
-print
+print("(ctrl-c/break the program once it's done)\n")
 daemon.requestLoop()
