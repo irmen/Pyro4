@@ -62,16 +62,24 @@ def receiveData(sock, size):
     the exception object."""
     try:
         retrydelay=0.0
+        msglen=0
+        chunks=[]
         if hasattr(socket,"MSG_WAITALL"):
             # waitall is very convenient and if a socket error occurs,
             # we can assume the receive has failed. No need for a loop,
             # unless it is a retryable error.
+            # Some systems have an erratic MSG_WAITALL and sometimes still return
+            # less bytes than asked. In that case, we drop down into the normal
+            # receive loop to finish the task.
             while True:
                 try:
                     data=sock.recv(size, socket.MSG_WAITALL) #@UndefinedVariable (pydev)
-                    if len(data)!=size:
-                        raise ConnectionClosedError("receiving: not enough data")
-                    return data
+                    if len(data)==size:
+                        return data
+                    # less data than asked, drop down into normal receive loop to finish
+                    msglen=len(data)
+                    chunks=[data]
+                    break
                 except socket.timeout:
                     raise TimeoutError("receiving: timeout")
                 except socket.error:
@@ -82,8 +90,6 @@ def receiveData(sock, size):
                     time.sleep(0.00001+retrydelay)  # a slight delay to wait before retrying
                     retrydelay=__nextRetrydelay(retrydelay)                
         # old fashioned recv loop, we gather chunks until the message is complete
-        msglen=0
-        chunks=[]
         while True:
             try:
                 while msglen<size:

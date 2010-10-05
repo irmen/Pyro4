@@ -1,7 +1,7 @@
 import sys, os, time
 import Pyro4
 
-Pyro4.config.COMMTIMEOUT=2
+#Pyro4.config.COMMTIMEOUT=2
 
 basesize = 500000
 data='x'*basesize

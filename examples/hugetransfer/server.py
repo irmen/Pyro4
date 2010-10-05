@@ -1,7 +1,7 @@
 import sys, os
 import Pyro4
 
-Pyro4.config.COMMTIMEOUT=2
+#Pyro4.config.COMMTIMEOUT=2
 
 
 class Testclass(object):
