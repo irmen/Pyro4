@@ -9,6 +9,7 @@ import unittest
 import socket, os, sys
 import Pyro4.socketutil as SU
 import Pyro4.config
+from Pyro4 import threadutil
 from Pyro4.socketserver.selectserver import SocketServer_Select
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 
@@ -19,6 +20,7 @@ else:
     def tobytes(string, encoding="iso-8859-1"):
         return bytes(string,encoding)
 
+        
 class TestSocketutil(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT=0.1
@@ -105,29 +107,46 @@ class TestSocketutil(unittest.TestCase):
         ss.close()
         
     def testMsgWaitallProblems(self):
-        def test(size,cs,ss):
-            SU.sendData(cs,tobytes("x")*size)
-            data=SU.receiveData(ss,size)
-            self.assertEqual(size, len(data))
-            
         ss=SU.createSocket(bind=("localhost",0))
         port=ss.getsockname()[1]
         cs=SU.createSocket(connect=("localhost",port))
         a=ss.accept()
         # test some sizes that might be problematic with MSG_WAITALL
-        test(1000,cs,a[0])
-        test(10000,cs,a[0])
-        test(32000,cs,a[0])
-        test(32768,cs,a[0])
-        test(32780,cs,a[0])
-        test(65000,cs,a[0])
-        test(65535,cs,a[0])
-        test(65600,cs,a[0])
-        test(999999,cs,a[0])
+        for size in [1000,10000,32000,32768,32780,65000,65535,65600,80000,999999]:
+            SU.sendData(cs,tobytes("x")*size)
+            data=SU.receiveData(a[0],size)
+            SU.sendData(a[0], data)
+            data=SU.receiveData(cs,size)
+            self.assertEqual(size, len(data))
         a[0].close()
         ss.close()
         cs.close()
         
+    def testMsgWaitallProblems2(self):
+        class ReceiveThread(threadutil.Thread):
+            def __init__(self, sock, sizes):
+                super(ReceiveThread,self).__init__()
+                self.sock=sock
+                self.sizes=sizes
+            def run(self):
+                cs,_ = self.sock.accept()
+                for size in self.sizes:
+                    data=SU.receiveData(cs,size)
+                    SU.sendData(cs, data)
+                cs.close()
+        ss=SU.createSocket(bind=("localhost",0))
+        SIZES=[1000,10000,32000,32768,32780,65000,65535,65600,80000,999999]
+        serverthread=ReceiveThread(ss, SIZES)
+        serverthread.start()
+        port=ss.getsockname()[1]
+        cs=SU.createSocket(connect=("localhost",port))
+        # test some sizes that might be problematic with MSG_WAITALL
+        for size in SIZES:
+            SU.sendData(cs,tobytes("x")*size)
+            data=SU.receiveData(cs,size)
+            self.assertEqual(size, len(data))
+        ss.close()
+        cs.close()
 
 class ServerCallback(object):
     def handshake(self, connection):
