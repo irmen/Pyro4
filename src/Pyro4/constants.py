@@ -6,7 +6,7 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 # Pyro version
-VERSION = '4.2'
+VERSION = '4.3-svn'
 
 # standard object name for the Daemon object
 DAEMON_NAME = "Pyro.Daemon"

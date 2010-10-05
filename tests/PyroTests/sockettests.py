@@ -103,6 +103,31 @@ class TestSocketutil(unittest.TestCase):
         self.assertEqual(tobytes("monkey"),data)
         cs.close()
         ss.close()
+        
+    def testMsgWaitallProblems(self):
+        def test(size,cs,ss):
+            SU.sendData(cs,tobytes("x")*size)
+            data=SU.receiveData(ss,size)
+            self.assertEqual(size, len(data))
+            
+        ss=SU.createSocket(bind=("localhost",0))
+        port=ss.getsockname()[1]
+        cs=SU.createSocket(connect=("localhost",port))
+        a=ss.accept()
+        # test some sizes that might be problematic with MSG_WAITALL
+        test(1000,cs,a[0])
+        test(10000,cs,a[0])
+        test(32000,cs,a[0])
+        test(32768,cs,a[0])
+        test(32780,cs,a[0])
+        test(65000,cs,a[0])
+        test(65535,cs,a[0])
+        test(65600,cs,a[0])
+        test(999999,cs,a[0])
+        a[0].close()
+        ss.close()
+        cs.close()
+        
 
 class ServerCallback(object):
     def handshake(self, connection):
