@@ -107,12 +107,12 @@ class TestSocketutil(unittest.TestCase):
         ss.close()
         
     def testMsgWaitallProblems(self):
-        ss=SU.createSocket(bind=("",0), timeout=1)
+        ss=SU.createSocket(bind=("localhost",0), timeout=0.5)
         port=ss.getsockname()[1]
-        cs=SU.createSocket(connect=("",port), timeout=1)
+        cs=SU.createSocket(connect=("localhost",port), timeout=0.5)
         a=ss.accept()
         # test some sizes that might be problematic with MSG_WAITALL
-        for size in [1000,10000,32000,32768,32780,41950,41952,42000,65000,65535,65600,80000,999999]:
+        for size in [1000,10000,32000,32768,32780,41950,41952,42000,65000,65535,65600,80000]:
             SU.sendData(cs,tobytes("x")*size)
             data=SU.receiveData(a[0],size)
             SU.sendData(a[0], data)
@@ -134,17 +134,19 @@ class TestSocketutil(unittest.TestCase):
                     data=SU.receiveData(cs,size)
                     SU.sendData(cs, data)
                 cs.close()
-        ss=SU.createSocket(bind=("localhost",0), timeout=1)
+        ss=SU.createSocket(bind=("localhost",0))
         SIZES=[1000,10000,32000,32768,32780,41950,41952,42000,65000,65535,65600,80000,999999]
         serverthread=ReceiveThread(ss, SIZES)
+        serverthread.setDaemon(True)
         serverthread.start()
         port=ss.getsockname()[1]
-        cs=SU.createSocket(connect=("localhost",port), timeout=1)
+        cs=SU.createSocket(connect=("localhost",port), timeout=0.5)
         # test some sizes that might be problematic with MSG_WAITALL
         for size in SIZES:
             SU.sendData(cs,tobytes("x")*size)
             data=SU.receiveData(cs,size)
             self.assertEqual(size, len(data))
+        serverthread.join()
         ss.close()
         cs.close()
 
