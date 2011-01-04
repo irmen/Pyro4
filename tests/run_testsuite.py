@@ -40,7 +40,7 @@ if __name__=="__main__":
 
     coverage.stop()
     print("")
-    coverage.report(show_missing=False, omit_prefixes=["PyroTests"])
+    coverage.report(show_missing=False, omit=["PyroTests*"])
     
     print("\nRUNNING PYFLAKE CODE CHECKS...")
     import run_syntaxcheck
