@@ -218,15 +218,19 @@ class Proxy(object):
                         raise data
                     else:
                         return data
-            except Pyro4.errors.CommunicationError:
+            except (Pyro4.errors.CommunicationError, KeyboardInterrupt):
                 # Communication error during read. To avoid corrupt transfers, we close the connection.
                 # Otherwise we might receive the previous reply as a result of a new methodcall! 
+                # Special case for keyboardinterrupt: people pressing ^C to abort the client
+                # may be catching the keyboardinterrupt in their code. We should probably be on the
+                # safe side and release the proxy connection in this case too, because they might
+                # be reusing the proxy object after catching the exception...
                 self._pyroRelease()
                 raise
 
     def __pyroCheckSequence(self, seq):
         if seq!=self._pyroSeq:
-            err="invoke: reply sequence out of sync, got %d expected %d. Please report this error; Pyro should not have let this happen!" % (seq,self._pyroSeq)
+            err="invoke: reply sequence out of sync, got %d expected %d" % (seq,self._pyroSeq)
             log.error(err)
             raise Pyro4.errors.ProtocolError(err)
 
@@ -344,7 +348,7 @@ class MessageFactory(object):
         if tag!=cls.pyro_tag or ver!=Pyro4.constants.PROTOCOL_VERSION:
             raise Pyro4.errors.ProtocolError("invalid data or unsupported protocol version")
         if checksum!=(msgType+ver+dataLen+flags+seq+MessageFactory.MAGIC)&0xffff:
-            raise Pyro4.errors.ProtocolError("header checksum mismatch. Please report this error.")
+            raise Pyro4.errors.ProtocolError("header checksum mismatch")
         return msgType,flags,seq,dataLen
 
 
