@@ -6,9 +6,9 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 import sys
-if sys.version_info<(2,5):
-    raise RuntimeError("Pyro requires at least Python 2.5")
-
+if sys.version_info<(2,6):
+    import warnings
+    warnings.warn("This Pyro version is unsupported on Python versions older than 2.6", RuntimeWarning)
 
 def _configLogging():
     """Do some basic config of the logging module at package import time.

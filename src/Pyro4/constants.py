@@ -18,4 +18,4 @@ NAMESERVER_NAME = "Pyro.NameServer"
 TRACEBACK_ATTRIBUTE = "_pyroTraceback"
 
 # wire protocol version
-PROTOCOL_VERSION = 40
+PROTOCOL_VERSION = 43

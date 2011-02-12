@@ -204,38 +204,50 @@ class CoreTests(unittest.TestCase):
     def testMsgFactory(self):
         
         MF=Pyro4.core.MessageFactory
-        MF.createMessage(99, None) # doesn't check msg type here
+        MF.createMessage(99, None, 0,0) # doesn't check msg type here
         self.assertRaises(Pyro4.errors.ProtocolError, MF.parseMessageHeader, "FOOBAR")
-        hdr=MF.createMessage(MF.MSG_CONNECT, tobytes("hello"))[:-5]
-        msgType,flags,dataLen=MF.parseMessageHeader(hdr)
+        hdr=MF.createMessage(MF.MSG_CONNECT, tobytes("hello"),0,0)[:-5]
+        msgType,flags,seq,dataLen=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_CONNECT, msgType)
         self.assertEqual(0, flags)
         self.assertEqual(5, dataLen)
-        hdr=MF.createMessage(MF.MSG_RESULT, None)
-        msgType,flags,dataLen=MF.parseMessageHeader(hdr)
+        hdr=MF.createMessage(MF.MSG_RESULT, None,0,0)
+        msgType,flags,seq,dataLen=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_RESULT, msgType)
         self.assertEqual(0, flags)
         self.assertEqual(0, dataLen)
-        hdr=MF.createMessage(MF.MSG_RESULT, tobytes("hello"), 42)[:-5]
-        msgType,flags,dataLen=MF.parseMessageHeader(hdr)
+        hdr=MF.createMessage(MF.MSG_RESULT, tobytes("hello"), 42, 0)[:-5]
+        msgType,flags,seq,dataLen=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_RESULT, msgType)
         self.assertEqual(42, flags)
         self.assertEqual(5, dataLen)
-        msg=MF.createMessage(255,None)
-        expected=tobytes("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\xff\x00\x00\x00\x00\x00\x00")
+        msg=MF.createMessage(255,None,0,255)
+        expected=tobytes("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\xff\x00\x00\x00\xff\x00\x00\x00\x00\x37\x12")
         self.assertEqual(expected,msg)
-        msg=MF.createMessage(1,None)
-        expected=tobytes("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\x01\x00\x00\x00\x00\x00\x00")
+        msg=MF.createMessage(1,None,0,255)
+        expected=tobytes("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\x01\x00\x00\x00\xff\x00\x00\x00\x00\x36\x14")
         self.assertEqual(expected,msg)
-        msg=MF.createMessage(1,None,flags=255)
-        expected=tobytes("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\x01\x00\xff\x00\x00\x00\x00")
+        msg=MF.createMessage(1,None,flags=253,seq=254)
+        expected=tobytes("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\x01\x00\xfd\x00\xfe\x00\x00\x00\x00\x37\x10")
         self.assertEqual(expected,msg)
         # compression is a job of the code supplying the data, so the messagefactory should leave it untouched
         data=tobytes("x"*1000)
-        msg=MF.createMessage(MF.MSG_INVOKE, data, 0)
-        msg2=MF.createMessage(MF.MSG_INVOKE, data, MF.FLAGS_COMPRESSED)
+        msg=MF.createMessage(MF.MSG_INVOKE, data, 0,0)
+        msg2=MF.createMessage(MF.MSG_INVOKE, data, MF.FLAGS_COMPRESSED,0)
         self.assertEquals(len(msg),len(msg2))
 
+    def testMsgFactoryProtocolVersion(self):
+        version=Pyro4.constants.PROTOCOL_VERSION
+        Pyro4.constants.PROTOCOL_VERSION=0;     # fake invalid protocol version number
+        msg=Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_RESULT, tobytes("result"), 0, 1)
+        try:
+            Pyro4.core.MessageFactory.parseMessageHeader(msg)
+            self.fail("expected protocolerror")
+        except Pyro4.errors.ProtocolError:
+            pass
+        finally:
+            Pyro4.constants.PROTOCOL_VERSION=version
+        
     def testProxyOffline(self):
         # only offline stuff here.
         # online stuff needs a running daemon, so we do that in another test, to keep this one simple

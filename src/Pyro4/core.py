@@ -125,7 +125,7 @@ class _RemoteMethod(object):
 class Proxy(object):
     """Pyro proxy for a remote object. Intercepts method calls and dispatches them to the remote object."""
     _pyroSerializer=Pyro4.util.Serializer()
-    __pyroAttributes=frozenset(["__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri","_pyroOneway","_pyroTimeout"])
+    __pyroAttributes=frozenset(["__getnewargs__","__getinitargs__","_pyroConnection","_pyroUri","_pyroOneway","_pyroTimeout","_pyroSeq"])
     def __init__(self, uri):
         if isinstance(uri, basestring):
             uri=URI(uri)
@@ -134,6 +134,7 @@ class Proxy(object):
         self._pyroUri=uri
         self._pyroConnection=None
         self._pyroOneway=set()
+        self._pyroSeq=0    # message sequence number
         self.__pyroTimeout=Pyro4.config.COMMTIMEOUT
         self.__pyroLock=threadutil.Lock()
     def __del__(self):
@@ -153,6 +154,7 @@ class Proxy(object):
     def __setstate__(self, state):
         self._pyroUri,self._pyroOneway,self._pyroSerializer,self.__pyroTimeout = state
         self._pyroConnection=None
+        self._pyroSeq=0
         self.__pyroLock=threadutil.Lock()
     def __copy__(self):
         uriCopy=URI(self._pyroUri)
@@ -196,18 +198,20 @@ class Proxy(object):
         if methodname in self._pyroOneway:
             flags |= MessageFactory.FLAGS_ONEWAY
         with self.__pyroLock:
-            data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags)
+            self._pyroSeq=(self._pyroSeq+1)&0xffff
+            data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags, self._pyroSeq)
             try:
                 self._pyroConnection.send(data)
                 if flags & MessageFactory.FLAGS_ONEWAY:
                     return None    # oneway call, no response data
                 else:
                     header=self._pyroConnection.recv(MessageFactory.HEADERSIZE)
-                    msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
+                    msgType,flags,seq,dataLen=MessageFactory.parseMessageHeader(header)
                     if msgType!=MessageFactory.MSG_RESULT:
                         err="invoke: invalid msg type %d received" % msgType
                         log.error(err)
                         raise Pyro4.errors.ProtocolError(err)
+                    self.__pyroCheckSequence(seq)
                     data=self._pyroConnection.recv(dataLen)
                     data=self._pyroSerializer.deserialize(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
                     if flags & MessageFactory.FLAGS_EXCEPTION:
@@ -219,6 +223,12 @@ class Proxy(object):
                 # Otherwise we might receive the previous reply as a result of a new methodcall! 
                 self._pyroRelease()
                 raise
+
+    def __pyroCheckSequence(self, seq):
+        if seq!=self._pyroSeq:
+            err="invoke: reply sequence out of sync, got %d expected %d. Please report this error; Pyro should not have let this happen!" % (seq,self._pyroSeq)
+            log.error(err)
+            raise Pyro4.errors.ProtocolError(err)
 
     def __pyroCreateConnection(self, replaceUri=False):
         """Connects this proxy to the remote Pyro daemon. Does connection handshake."""
@@ -234,11 +244,13 @@ class Proxy(object):
                     conn=Pyro4.socketutil.SocketConnection(sock, uri.object)
                     if Pyro4.config.CONNECTHANDSHAKE:
                         # handshake
-                        data=MessageFactory.createMessage(MessageFactory.MSG_CONNECT, None, 0)
+                        self._pyroSeq=(self._pyroSeq+1)&0xffff
+                        data=MessageFactory.createMessage(MessageFactory.MSG_CONNECT, None, 0, self._pyroSeq)
                         conn.send(data)
                         data=conn.recv(MessageFactory.HEADERSIZE)
-                        msgType,flags,dataLen=MessageFactory.parseMessageHeader(data) #@UnusedVariable (pydev)
+                        msgType,flags,seq,dataLen=MessageFactory.parseMessageHeader(data) #@UnusedVariable (pydev)
                         # any trailing data (dataLen>0) is an error message, if any
+                        self.__pyroCheckSequence(seq)
                     else:
                         msgType=MessageFactory.MSG_CONNECTOK
             except Exception:
@@ -290,7 +302,15 @@ class Proxy(object):
 
 class MessageFactory(object):
     """internal helper class to construct Pyro protocol messages"""
-    headerFmt = '!4sHHHi'    # header (id, version, msgtype, flags, dataLen)
+    headerFmt = '!4sHHHHiH'    # header (id, version, msgtype, flags, sequencenumber, dataLen, checksum)
+    # note: the sequencenumber is used to check if response messages correspond to the
+    # actual request message. This prevents the situation where Pyro would perhaps return
+    # the response data from another remote call (which would not result in an error otherwise!)
+    # This could happen for instance if the socket data stream gets out of sync, perhaps due To
+    # some form of signal that interrupts I/O.
+    # The header checksum is a simple sum of the header fields to make reasonably sure
+    # that we are dealing with an actual correct PYRO protocol header and not some random
+    # data that happens to start with the 'PYRO' protocol identifier.
     HEADERSIZE=struct.calcsize(headerFmt)
     MSG_CONNECT      = 1
     MSG_CONNECTOK    = 2
@@ -300,29 +320,32 @@ class MessageFactory(object):
     FLAGS_EXCEPTION  = 1<<0
     FLAGS_COMPRESSED = 1<<1
     FLAGS_ONEWAY     = 1<<2
+    MAGIC            = 0x34E9
     if sys.version_info>=(3,0):
         empty_bytes  = bytes([])
         pyro_tag     = bytes("PYRO","ASCII")
     else:
         empty_bytes  = ""
         pyro_tag     = "PYRO"
-
     @classmethod
-    def createMessage(cls, msgType, data, flags=0):
+    def createMessage(cls, msgType, data, flags, seq):
         """creates a message containing a header followed by the given data"""
         data=data or cls.empty_bytes
-        msg=struct.pack(cls.headerFmt, cls.pyro_tag, Pyro4.constants.PROTOCOL_VERSION, msgType, flags, len(data))
+        checksum=(msgType+Pyro4.constants.PROTOCOL_VERSION+len(data)+flags+seq+MessageFactory.MAGIC)&0xffff
+        msg=struct.pack(cls.headerFmt, cls.pyro_tag, Pyro4.constants.PROTOCOL_VERSION, msgType, flags, seq, len(data), checksum)
         return msg+data
 
     @classmethod
     def parseMessageHeader(cls, headerData):
-        """Parses a message header. Returns a tuple of messagetype, messageflags, datalength.""" 
+        """Parses a message header. Returns a tuple of messagetype, messageflags, sequencenumber, datalength.""" 
         if not headerData or len(headerData)!=cls.HEADERSIZE:
             raise Pyro4.errors.ProtocolError("header data size mismatch")
-        tag,ver,msgType,flags,dataLen = struct.unpack(cls.headerFmt, headerData)
+        tag,ver,msgType,flags,seq,dataLen,checksum = struct.unpack(cls.headerFmt, headerData)
         if tag!=cls.pyro_tag or ver!=Pyro4.constants.PROTOCOL_VERSION:
             raise Pyro4.errors.ProtocolError("invalid data or unsupported protocol version")
-        return msgType,flags,dataLen
+        if checksum!=(msgType+ver+dataLen+flags+seq+MessageFactory.MAGIC)&0xffff:
+            raise Pyro4.errors.ProtocolError("header checksum mismatch. Please report this error.")
+        return msgType,flags,seq,dataLen
 
 
 class DaemonObject(object):
@@ -407,14 +430,14 @@ class Daemon(object):
             return True
         """Perform connection handshake with new clients"""
         header=conn.recv(MessageFactory.HEADERSIZE)
-        msgType,flags,dataLen=MessageFactory.parseMessageHeader(header) #@UnusedVariable (pydev)
+        msgType,flags,seq,dataLen=MessageFactory.parseMessageHeader(header) #@UnusedVariable (pydev)
         if msgType!=MessageFactory.MSG_CONNECT:
             err="expected MSG_CONNECT message, got %d" % msgType
             log.warn(err)
             raise Pyro4.errors.ProtocolError(err)
         if dataLen>0:
             conn.recv(dataLen) # read away any trailing data (unused at the moment)
-        msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK,None,0)
+        msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK,None,0,seq)
         conn.send(msg)
         return True
 
@@ -426,9 +449,10 @@ class Daemon(object):
         """
         flags=0
         isCallback=False
+        seq=0
         try:
             header=conn.recv(MessageFactory.HEADERSIZE)
-            msgType,flags,dataLen=MessageFactory.parseMessageHeader(header)
+            msgType,flags,seq,dataLen=MessageFactory.parseMessageHeader(header)
             if msgType!=MessageFactory.MSG_INVOKE:
                 err="handlerequest: invalid msg type %d received" % msgType
                 log.warn(err)
@@ -461,7 +485,7 @@ class Daemon(object):
                 flags=0
                 if compressed:
                     flags |= MessageFactory.FLAGS_COMPRESSED
-                msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags)
+                msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags, seq)
                 del data
                 conn.send(msg)
         except Pyro4.errors.CommunicationError:
@@ -474,15 +498,15 @@ class Daemon(object):
             if not flags & MessageFactory.FLAGS_ONEWAY:
                 # only return the error to the client if it wasn't a oneway call
                 tblines=Pyro4.util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
-                self.sendExceptionResponse(conn, x, tblines)
+                self.sendExceptionResponse(conn, seq, x, tblines)
             if isCallback:
                 raise       # re-raise if flagged as callback
 
-    def sendExceptionResponse(self, connection, exc_value, tbinfo):
+    def sendExceptionResponse(self, connection, seq, exc_value, tbinfo):
         """send an exception back including the local traceback info"""
         setattr(exc_value, Pyro4.constants.TRACEBACK_ATTRIBUTE, tbinfo)
         data,_=self.serializer.serialize(exc_value)
-        msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, MessageFactory.FLAGS_EXCEPTION)
+        msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, MessageFactory.FLAGS_EXCEPTION, seq)
         del data
         connection.send(msg)
 
