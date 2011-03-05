@@ -89,7 +89,7 @@ class DaemonTests(unittest.TestCase):
         try:
             freeport=Pyro4.socketutil.findUnusedPort()
             d=Pyro4.core.Daemon(port=freeport)
-            self.assertEquals(1, len(d.objectsById))
+            self.assertEqual(1, len(d.objectsById))
             o1=MyObj("object1")
             o2=MyObj("object2")
             d.register(o1)
@@ -100,10 +100,10 @@ class DaemonTests(unittest.TestCase):
             self.assertRaises(DaemonError, d.register, o2, "obj2b")
             
             self.assertEqual(3, len(d.objectsById))
-            self.assertEquals(o1, d.objectsById[o1._pyroId])
-            self.assertEquals(o2, d.objectsById["obj2a"])
-            self.assertEquals("obj2a", o2._pyroId)
-            self.assertEquals(d, o2._pyroDaemon)
+            self.assertEqual(o1, d.objectsById[o1._pyroId])
+            self.assertEqual(o2, d.objectsById["obj2a"])
+            self.assertEqual("obj2a", o2._pyroId)
+            self.assertEqual(d, o2._pyroDaemon)
     
             # test unregister
             d.unregister("unexisting_thingie")
@@ -213,13 +213,13 @@ class DaemonTests(unittest.TestCase):
             u2=d.uriFor(o2._pyroId)
             u3=d.uriFor("unexisting_thingie")  # unregistered name is no problem, it's just an uri we're requesting
             u4=d.uriFor(o2)
-            self.assertEquals(Pyro4.core.URI, type(u1))
-            self.assertEquals("PYRO",u1.protocol)
-            self.assertEquals("PYRO",u2.protocol)
-            self.assertEquals("PYRO",u3.protocol)
-            self.assertEquals("PYRO",u4.protocol)
-            self.assertEquals("object_two",u4.object)
-            self.assertEquals(Pyro4.core.URI("PYRO:unexisting_thingie@"+locationstr), u3)
+            self.assertEqual(Pyro4.core.URI, type(u1))
+            self.assertEqual("PYRO",u1.protocol)
+            self.assertEqual("PYRO",u2.protocol)
+            self.assertEqual("PYRO",u3.protocol)
+            self.assertEqual("PYRO",u4.protocol)
+            self.assertEqual("object_two",u4.object)
+            self.assertEqual(Pyro4.core.URI("PYRO:unexisting_thingie@"+locationstr), u3)
         finally:
             d.close()
     

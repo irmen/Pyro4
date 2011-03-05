@@ -234,7 +234,7 @@ class CoreTests(unittest.TestCase):
         data=tobytes("x"*1000)
         msg=MF.createMessage(MF.MSG_INVOKE, data, 0,0)
         msg2=MF.createMessage(MF.MSG_INVOKE, data, MF.FLAGS_COMPRESSED,0)
-        self.assertEquals(len(msg),len(msg2))
+        self.assertEqual(len(msg),len(msg2))
 
     def testMsgFactoryProtocolVersion(self):
         version=Pyro4.constants.PROTOCOL_VERSION
@@ -370,8 +370,8 @@ class CoreTests(unittest.TestCase):
             def method2(self):
                 pass
         t=Test()
-        self.assertEquals(True, getattr(t.method,"_pyroCallback"))
-        self.assertEquals(False, getattr(t.method2,"_pyroCallback", False))
+        self.assertEqual(True, getattr(t.method,"_pyroCallback"))
+        self.assertEqual(False, getattr(t.method2,"_pyroCallback", False))
         
         
 if __name__ == "__main__":

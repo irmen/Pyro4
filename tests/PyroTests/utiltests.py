@@ -120,13 +120,22 @@ class TestUtils(unittest.TestCase):
         self.assertFalse(compressed)
         data2,compressed=ser.serialize(smalldata,compress=True)
         self.assertFalse(compressed, "small messages should not be compressed")
-        self.assertEquals(len(data1),len(data2))
+        self.assertEqual(len(data1),len(data2))
         data1,compressed=ser.serialize(largedata,compress=False)
         self.assertFalse(compressed)
         data2,compressed=ser.serialize(largedata,compress=True)
         self.assertTrue(compressed, "large messages should be compressed")
         self.assertTrue(len(data1)>len(data2))
 
+    def testSerializeException(self):
+        ex=ZeroDivisionError("test error")
+        ex._pyroTraceback=["test traceback payload"]
+        ser=Pyro4.util.Serializer()
+        data,compressed=ser.serialize(ex)
+        ex2=ser.deserialize(data,compressed)
+        self.assertEqual(ZeroDivisionError, type(ex2))
+        self.assertTrue(hasattr(ex2, "_pyroTraceback")) # fails on ironpython...
+        self.assertEqual(["test traceback payload"], ex2._pyroTraceback)  # fails on ironpython...
 
     def testConfig(self):
         def clearEnv():
@@ -170,7 +179,7 @@ class TestUtils(unittest.TestCase):
         obj.a.__p=Test("p2")
         obj.a.__p.q=Test("q2")
         #check the method with dotted disabled 
-        self.assertEquals("<a>",str(Pyro4.util.resolveDottedAttribute(obj,"a",False)))
+        self.assertEqual("<a>",str(Pyro4.util.resolveDottedAttribute(obj,"a",False)))
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b",False)
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b.c",False)
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b.c.d",False)
@@ -178,9 +187,9 @@ class TestUtils(unittest.TestCase):
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a._p.q",False)
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.__p.q",False)
         #now with dotted enabled
-        self.assertEquals("<a>",str(Pyro4.util.resolveDottedAttribute(obj,"a",True)))
-        self.assertEquals("<b>",str(Pyro4.util.resolveDottedAttribute(obj,"a.b",True)))
-        self.assertEquals("<c>",str(Pyro4.util.resolveDottedAttribute(obj,"a.b.c",True)))
+        self.assertEqual("<a>",str(Pyro4.util.resolveDottedAttribute(obj,"a",True)))
+        self.assertEqual("<b>",str(Pyro4.util.resolveDottedAttribute(obj,"a.b",True)))
+        self.assertEqual("<c>",str(Pyro4.util.resolveDottedAttribute(obj,"a.b.c",True)))
         self.assertRaises(AttributeError,Pyro4.util.resolveDottedAttribute, obj,"a.b.c.d",True)   # doesn't exist
         self.assertRaises(AttributeError,Pyro4.util.resolveDottedAttribute, obj,"a._p",True)    #private
         self.assertRaises(AttributeError,Pyro4.util.resolveDottedAttribute, obj,"a._p.q",True)    #private

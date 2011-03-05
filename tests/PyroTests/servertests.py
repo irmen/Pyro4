@@ -156,15 +156,15 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
     
     def testOneway(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            self.assertEquals(55, p.multiply(5,11))
+            self.assertEqual(55, p.multiply(5,11))
             p._pyroOneway.add("multiply")
-            self.assertEquals(None, p.multiply(5,11))
-            self.assertEquals(None, p.multiply(5,11))
-            self.assertEquals(None, p.multiply(5,11))
+            self.assertEqual(None, p.multiply(5,11))
+            self.assertEqual(None, p.multiply(5,11))
+            self.assertEqual(None, p.multiply(5,11))
             p._pyroOneway.remove("multiply")
-            self.assertEquals(55, p.multiply(5,11))
-            self.assertEquals(55, p.multiply(5,11))
-            self.assertEquals(55, p.multiply(5,11))
+            self.assertEqual(55, p.multiply(5,11))
+            self.assertEqual(55, p.multiply(5,11))
+            self.assertEqual(55, p.multiply(5,11))
             # check nonexisting method behavoir
             self.assertRaises(AttributeError, p.nonexisting)
             p._pyroOneway.add("nonexisting")
@@ -176,9 +176,9 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 super(ProxyWithOneway,self).__init__(arg)
                 self._pyroOneway=["multiply"]   # set is faster but don't care for this test
         with ProxyWithOneway(self.objectUri) as p:
-            self.assertEquals(None, p.multiply(5,11))
+            self.assertEqual(None, p.multiply(5,11))
             p._pyroOneway=[]   # empty set is better but don't care in this test
-            self.assertEquals(55, p.multiply(5,11))
+            self.assertEqual(55, p.multiply(5,11))
             
     def testOnewayDelayed(self):
         try:
@@ -190,7 +190,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 p.delay(1)  # oneway so we should continue right away
                 self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
                 now=time.time()
-                self.assertEquals(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
+                self.assertEqual(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
                 self.assertTrue(time.time()-now < 0.2, "delay should be running in its own thread")
                 # make oneway calls run in the server thread
                 # we can change the config here and the server will pick it up on the fly
@@ -199,7 +199,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 p.delay(1)  # oneway so we should continue right away
                 self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
                 now=time.time()
-                self.assertEquals(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
+                self.assertEqual(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
                 self.assertFalse(time.time()-now < 0.2, "delay should be running in the server thread")
         finally:
             Pyro4.config.ONEWAY_THREADED=True   # back to normal
@@ -245,7 +245,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 et,ev,tb=sys.exc_info()
                 self.assertEqual(ZeroDivisionError, et)
                 pyrotb="".join(Pyro4.util.getPyroTraceback(et,ev,tb))
-                self.assertTrue("Remote traceback" in pyrotb)
+                self.assertTrue("Remote traceback" in pyrotb)    # fails on ironpython...
                 self.assertTrue("ZeroDivisionError" in pyrotb)
                 del tb
 
@@ -375,6 +375,8 @@ if os.name!="java":
         SERVERTYPE="select"
         COMMTIMEOUT=None
         def testProxySharing(self):
+            pass
+        def testException(self):
             pass
 
 if __name__ == "__main__":

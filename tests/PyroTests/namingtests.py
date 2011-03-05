@@ -87,9 +87,9 @@ class NameServerTests(unittest.TestCase):
         self.assertRaises(TypeError, ns.register, "unittest.object1", 5555)
         # we can register str or URI, lookup always returns URI        
         ns.register("unittest.object2", "PYRO:55555@host.com:4444")
-        self.assertEquals(Pyro4.core.URI("PYRO:55555@host.com:4444"), ns.lookup("unittest.object2"))
+        self.assertEqual(Pyro4.core.URI("PYRO:55555@host.com:4444"), ns.lookup("unittest.object2"))
         ns.register("unittest.object3", Pyro4.core.URI("PYRO:66666@host.com:4444"))
-        self.assertEquals(Pyro4.core.URI("PYRO:66666@host.com:4444"), ns.lookup("unittest.object3"))
+        self.assertEqual(Pyro4.core.URI("PYRO:66666@host.com:4444"), ns.lookup("unittest.object3"))
         
         # check that the non-socket locations are not yet supported  
         self.assertRaises(NotImplementedError, Pyro4.naming.locateNS, "./p:pipename")
@@ -170,8 +170,8 @@ class NameServerTests(unittest.TestCase):
         # broadcast lookup
         self.assertRaises(NamingError, Pyro4.naming.resolve, "PYRONAME:unknown_object")
         uri=Pyro4.naming.resolve("PYRONAME:"+Pyro4.constants.NAMESERVER_NAME)
-        self.assertEquals(Pyro4.core.URI,type(uri))
-        self.assertEquals("PYRO",uri.protocol)
+        self.assertEqual(Pyro4.core.URI,type(uri))
+        self.assertEqual("PYRO",uri.protocol)
 
         # test some errors
         self.assertRaises(NamingError, Pyro4.naming.resolve, "PYRONAME:unknown_object@"+self.nsUri.host)

@@ -18,6 +18,8 @@ class ServerTestsThreadTimeout(servertests.ServerTestsThreadNoTimeout):
         pass
     def testProxySharing(self):
         pass
+    def testException(self):
+        pass
     
 if os.name!="java":
     class ServerTestsSelectTimeout(servertests.ServerTestsSelectNoTimeout):
@@ -27,6 +29,8 @@ if os.name!="java":
             # this test is not suitable on a server with timeout set
             pass
         def testProxySharing(self):
+            pass
+        def testException(self):
             pass
 
 
