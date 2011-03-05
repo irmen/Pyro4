@@ -67,14 +67,14 @@ class TestUtils(unittest.TestCase):
         try:
             crash("stringvalue")
         except Exception:
-            x=sys.exc_info()[1] 
-            setattr(x, Pyro4.constants.TRACEBACK_ATTRIBUTE, pyro_tb)
+            x=sys.exc_info()[1]
+            x._pyroTraceback=pyro_tb        # set the remote traceback info
             pyrotb="".join(Pyro4.util.getPyroTraceback())
             self.assertTrue("Remote traceback" in pyrotb)
             self.assertTrue("crash(\"stringvalue\")" in pyrotb)
             self.assertTrue("TypeError:" in pyrotb)
             self.assertTrue("ZeroDivisionError" in pyrotb)
-            delattr(x, Pyro4.constants.TRACEBACK_ATTRIBUTE)
+            del x._pyroTraceback
             pyrotb="".join(Pyro4.util.getPyroTraceback())
             self.assertFalse("Remote traceback" in pyrotb)
             self.assertFalse("ZeroDivisionError" in pyrotb)

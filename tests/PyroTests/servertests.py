@@ -24,6 +24,8 @@ class MyThing(object):
         return self.dictionary
     def multiply(self,x,y):
         return x*y
+    def divide(self,x,y):
+        return x//y
     def ping(self):
         pass
     def delay(self, delay):
@@ -234,6 +236,18 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         proxy._pyroRelease()
         proxy2._pyroRelease()
         proxy3._pyroRelease()
+
+    def testException(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            try:
+                p.divide(1,0)
+            except:
+                et,ev,tb=sys.exc_info()
+                self.assertEqual(ZeroDivisionError, et)
+                pyrotb="".join(Pyro4.util.getPyroTraceback(et,ev,tb))
+                self.assertTrue("Remote traceback" in pyrotb)
+                self.assertTrue("ZeroDivisionError" in pyrotb)
+                del tb
 
     def testTimeoutCall(self):
         Pyro4.config.COMMTIMEOUT=None

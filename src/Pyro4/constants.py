@@ -14,8 +14,5 @@ DAEMON_NAME = "Pyro.Daemon"
 # standard name for the Name server itself
 NAMESERVER_NAME = "Pyro.NameServer"
 
-# exception attribute for remote stacktrace info
-TRACEBACK_ATTRIBUTE = "_pyroTraceback"
-
 # wire protocol version
-PROTOCOL_VERSION = 43
+PROTOCOL_VERSION = 44

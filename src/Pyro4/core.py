@@ -508,7 +508,7 @@ class Daemon(object):
 
     def sendExceptionResponse(self, connection, seq, exc_value, tbinfo):
         """send an exception back including the local traceback info"""
-        setattr(exc_value, Pyro4.constants.TRACEBACK_ATTRIBUTE, tbinfo)
+        exc_value._pyroTraceback=tbinfo
         data,_=self.serializer.serialize(exc_value)
         msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, MessageFactory.FLAGS_EXCEPTION, seq)
         del data

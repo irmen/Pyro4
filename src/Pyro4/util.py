@@ -37,7 +37,7 @@ def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
         if ex_type is None and ex_tb is None:
             ex_type, ex_value, ex_tb=sys.exc_info()
         
-        remote_tb=getattr(ex_value,Pyro4.constants.TRACEBACK_ATTRIBUTE,None)
+        remote_tb=getattr(ex_value,"_pyroTraceback",None)
         local_tb=formatTraceback(ex_type, ex_value, ex_tb, Pyro4.config.DETAILED_TRACEBACK)
         if remote_tb:
             remote_tb=formatRemoteTraceback(remote_tb)
@@ -166,26 +166,18 @@ class Serializer(object):
     def serialize(self, data, compress=False):
         """Serialize the given data object, try to compress if told so.
         Returns a tuple of the serialized data and a bool indicating if it is compressed or not."""
-        version=struct.pack("!H",sys.hexversion>>16)
-        data=version+self.pickle.dumps(data, self.pickle.HIGHEST_PROTOCOL)
-        if compress and len(data)>200:       # don't waste time compressing small messages
-            compressed=zlib.compress(data)
-            if len(compressed)<len(data):
-                data=compressed     # compressed data is indeed smaller, use it
-                return data,True
-        return data,False
+        data=self.pickle.dumps(data, self.pickle.HIGHEST_PROTOCOL)
+        if not compress or len(data)<200:
+            return data,False # don't waste time compressing small messages
+        compressed=zlib.compress(data)
+        if len(compressed)<len(data):
+            return compressed,True
+        return data,False    
     def deserialize(self, data, compressed=False):
         """Deserializes the given data. Set compressed to True to decompress the data first."""
         if compressed:
             data=zlib.decompress(data)
-        # if the major version number differs, the pickle stream is incompatible
-        otherversion=struct.unpack("!H",data[0:2])[0]
-        othermajorv=otherversion>>8
-        if othermajorv!=sys.hexversion>>24:
-            otherminorv=otherversion&0xff
-            raise Pyro4.errors.CommunicationError("incompatible python version detected on other side: %d.%d" %(othermajorv,otherminorv))
-        # version is ok, can unpickle
-        return self.pickle.loads(data[2:])
+        return self.pickle.loads(data)
     def __eq__(self, other):
         """this is only for the unit tests. It is not required."""
         return type(other) is Serializer and vars(self)==vars(other)
