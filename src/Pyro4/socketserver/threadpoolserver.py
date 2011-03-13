@@ -123,7 +123,7 @@ class SocketServer_Threadpool(object):
     def __init__(self, callbackObject, host, port, timeout=None):
         log.info("starting thread pool socketserver")
         self.sock=None
-        self.sock=createSocket(bind=(host,port), timeout=timeout)
+        self.sock=createSocket(bind=(host,port), timeout=timeout, noinherit=True)
         self._socketaddr=self.sock.getsockname()
         if self._socketaddr[0].startswith("127."):
             if host is None or host.lower()!="localhost" and not host.startswith("127."):

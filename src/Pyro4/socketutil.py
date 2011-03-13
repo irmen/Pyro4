@@ -153,7 +153,7 @@ def sendData(sock, data):
                 retrydelay=__nextRetrydelay(retrydelay)                
 
 
-def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeout=None):
+def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeout=None, noinherit=False):
     """Create a socket. Default options are keepalives and reuseaddr."""
     if timeout==0:
         timeout=None
@@ -175,6 +175,8 @@ def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeou
         setReuseAddr(sock)
     if keepalive:
         setKeepalive(sock)
+    if noinherit:
+        setNoInherit(sock)
     sock.settimeout(timeout)
     return sock
 
@@ -226,6 +228,26 @@ def setKeepalive(sock):
     except Exception:
         log.info("cannot set SO_KEEPALIVE")
 
+# set socket to not inherit in subprocess
+try:
+    import fcntl
+    def setNoInherit(sock):
+        # Mark the given socket fd as non-inheritable (posix)
+        fd = sock.fileno() 
+        flags = fcntl.fcntl(fd, fcntl.F_GETFD) 
+        fcntl.fcntl(fd, fcntl.F_SETFD, flags | fcntl.FD_CLOEXEC)
+except ImportError:
+    # no fcntl available, try the windows version
+    try: 
+        from ctypes import windll, WinError 
+        def setNoInherit(sock): 
+            # mark the given socket fd as non-inheritable (Windows).
+            if not windll.kernel32.SetHandleInformation(sock.fileno(), 1, 0): 
+                raise WinError()    
+    except ImportError:
+        # nothing available, define a dummy function
+        def setNoInherit(sock):
+            pass
 
 class SocketConnection(object):
     """A connection wrapper for sockets"""

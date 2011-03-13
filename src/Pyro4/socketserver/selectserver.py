@@ -22,7 +22,7 @@ class SocketServer_Select(object):
             raise NotImplementedError("select-based server is not supported for Jython, use the threadpool server instead")
         log.info("starting select/poll socketserver")
         self.sock=None
-        self.sock=createSocket(bind=(host,port), timeout=timeout)
+        self.sock=createSocket(bind=(host,port), timeout=timeout, noinherit=True)
         self.clients=[]
         self.callback=callbackObject
         sockaddr=self.sock.getsockname()
