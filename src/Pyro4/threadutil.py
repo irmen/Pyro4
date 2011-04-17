@@ -13,5 +13,5 @@ if Pyro4.config.THREADING2:
         from threading2 import *
     except ImportError:
         from threading import *
-else:    
+else:
     from threading import *

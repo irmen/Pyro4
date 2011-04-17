@@ -15,6 +15,7 @@ import Pyro4.config
 
 log=logging.getLogger("Pyro.socketserver.select")
 
+
 class SocketServer_Select(object):
     """transport server for socket connections, select/poll loop multiplex version."""
     def __init__(self, callbackObject, host, port, timeout=None):
@@ -22,31 +23,32 @@ class SocketServer_Select(object):
             raise NotImplementedError("select-based server is not supported for Jython, use the threadpool server instead")
         log.info("starting select/poll socketserver")
         self.sock=None
-        self.sock=createSocket(bind=(host,port), timeout=timeout, noinherit=True)
+        self.sock=createSocket(bind=(host, port), timeout=timeout, noinherit=True)
         self.clients=[]
         self.callback=callbackObject
         sockaddr=self.sock.getsockname()
         if sockaddr[0].startswith("127."):
             if host is None or host.lower()!="localhost" and not host.startswith("127."):
-                log.warn("weird DNS setup: %s resolves to localhost (127.x.x.x)",host)
+                log.warn("weird DNS setup: %s resolves to localhost (127.x.x.x)", host)
         host=host or sockaddr[0]
         port=port or sockaddr[1]
-        self.locationStr="%s:%d" % (host,port)
+        self.locationStr="%s:%d" % (host, port)
+
     def __del__(self):
         if self.sock is not None:
             self.sock.close()
             self.sock=None
-    if hasattr(select,"poll"):
-        def requestLoop(self, loopCondition=lambda:True):
+    if hasattr(select, "poll"):
+        def requestLoop(self, loopCondition=lambda: True):
             log.debug("enter poll-based requestloop")
             try:
-                poll=select.poll()  #@UndefinedVariable (pydev)
+                poll=select.poll()
                 fileno2connection={}  # map fd to original connection object
-                poll.register(self.sock.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
+                poll.register(self.sock.fileno(), select.POLLIN | select.POLLPRI)
                 fileno2connection[self.sock.fileno()]=self.sock
                 while loopCondition():
                     polls=poll.poll(1000*Pyro4.config.POLLTIMEOUT)
-                    for (fd,mask) in polls:  #@UnusedVariable (pydev)
+                    for (fd, mask) in polls:
                         conn=fileno2connection[fd]
                         if conn is self.sock:
                             try:
@@ -55,17 +57,17 @@ class SocketServer_Select(object):
                                 log.info("server socket was closed, stopping requestloop")
                                 return
                             if conn:
-                                poll.register(conn.fileno(), select.POLLIN | select.POLLPRI) #@UndefinedVariable (pydev)
+                                poll.register(conn.fileno(), select.POLLIN | select.POLLPRI)
                                 fileno2connection[conn.fileno()]=conn
                         else:
                             try:
                                 self.callback.handleRequest(conn)
-                            except (socket.error,ConnectionClosedError):
+                            except (socket.error, ConnectionClosedError):
                                 # client went away.
                                 try:
                                     fn=conn.fileno()
                                 except socket.error:
-                                    pass  
+                                    pass
                                 else:
                                     poll.unregister(fn)
                                     del fileno2connection[fn]
@@ -79,14 +81,14 @@ class SocketServer_Select(object):
             log.debug("exit poll-based requestloop")
 
     else:
-        def requestLoop(self, loopCondition=lambda:True):
+        def requestLoop(self, loopCondition=lambda: True):
             log.debug("entering select-based requestloop")
             while loopCondition():
                 try:
                     rlist=self.clients[:]
                     rlist.append(self.sock)
                     try:
-                        rlist,_,_=select.select(rlist, [], [], Pyro4.config.POLLTIMEOUT)
+                        rlist, _, _=select.select(rlist, [], [], Pyro4.config.POLLTIMEOUT)
                     except select.error:
                         if loopCondition():
                             raise
@@ -109,7 +111,7 @@ class SocketServer_Select(object):
                             try:
                                 if self.callback:
                                     self.callback.handleRequest(conn)
-                            except (socket.error,ConnectionClosedError):
+                            except (socket.error, ConnectionClosedError):
                                 # client went away.
                                 conn.close()
                                 if conn in self.clients:
@@ -134,7 +136,7 @@ class SocketServer_Select(object):
                 try:
                     if self.callback:
                         self.callback.handleRequest(s)
-                except (socket.error,ConnectionClosedError):
+                except (socket.error, ConnectionClosedError):
                     # client went away.
                     s.close()
                     if s in self.clients:
@@ -143,12 +145,12 @@ class SocketServer_Select(object):
     def handleConnection(self, sock):
         try:
             csock, caddr=sock.accept()
-            log.debug("connection from %s",caddr)
+            log.debug("connection from %s", caddr)
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
         except socket.error:
             x=sys.exc_info()[1]
-            err=getattr(x,"errno",x.args[0])
+            err=getattr(x, "errno", x.args[0])
             if err in ERRNO_RETRIES:
                 # just ignore this error for now and continue
                 log.warn("accept() failed errno=%d, shouldn't happen", err)
@@ -163,11 +165,11 @@ class SocketServer_Select(object):
                 return conn
         except (socket.error, PyroError):
             x=sys.exc_info()[1]
-            log.warn("error during connect: %s",x)
+            log.warn("error during connect: %s", x)
             csock.close()
         return None
 
-    def close(self): 
+    def close(self):
         log.debug("closing socketserver")
         if self.sock:
             self.sock.close()
@@ -181,6 +183,7 @@ class SocketServer_Select(object):
 
     def fileno(self):
         return self.sock.fileno()
+
     def sockets(self):
         socks=[self.sock]
         socks.extend(self.clients)
@@ -189,7 +192,7 @@ class SocketServer_Select(object):
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
-            if sys.version_info<(3,0): 
+            if sys.version_info<(3, 0):
                 self.sock.send("!"*16)
             else:
                 self.sock.send(bytes([1]*16))

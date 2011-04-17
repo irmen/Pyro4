@@ -6,7 +6,7 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 import socket, os, errno, logging, time, sys
-from Pyro4.errors import ConnectionClosedError,TimeoutError,CommunicationError
+from Pyro4.errors import ConnectionClosedError, TimeoutError, CommunicationError
 
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.
@@ -23,9 +23,11 @@ if hasattr(errno, "WSAEBADF"):
 
 log=logging.getLogger("Pyro.socketutil")
 
+
 def getIpAddress(hostname=None):
     """returns the IP address for the current, or another, hostname"""
     return socket.gethostbyname(hostname or socket.gethostname())
+
 
 def getMyIpAddress(hostname=None, workaround127=False):
     """returns our own IP address. If you enable the workaround,
@@ -34,10 +36,11 @@ def getMyIpAddress(hostname=None, workaround127=False):
     ip=getIpAddress(hostname)
     if ip.startswith("127.") and workaround127:
         s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("4.2.2.2",53))   # 'abuse' a level 3 DNS server
+        s.connect(("4.2.2.2", 53))   # 'abuse' a level 3 DNS server
         ip=s.getsockname()[0]
         s.close()
     return ip
+
 
 def __nextRetrydelay(delay):
     # first try a few very short delays,
@@ -48,10 +51,12 @@ def __nextRetrydelay(delay):
         return 0.01
     return delay+0.1
 
-if sys.version_info<(3,0):
+
+if sys.version_info<(3, 0):
     EMPTY_BYTES=""
 else:
     EMPTY_BYTES=bytes([])
+
 
 def receiveData(sock, size):
     """Retrieve a given number of bytes from a socket.
@@ -64,7 +69,7 @@ def receiveData(sock, size):
         retrydelay=0.0
         msglen=0
         chunks=[]
-        if hasattr(socket,"MSG_WAITALL"):
+        if hasattr(socket, "MSG_WAITALL"):
             # waitall is very convenient and if a socket error occurs,
             # we can assume the receive has failed. No need for a loop,
             # unless it is a retryable error.
@@ -73,7 +78,7 @@ def receiveData(sock, size):
             # receive loop to finish the task.
             while True:
                 try:
-                    data=sock.recv(size, socket.MSG_WAITALL) #@UndefinedVariable (pydev)
+                    data=sock.recv(size, socket.MSG_WAITALL)
                     if len(data)==size:
                         return data
                     # less data than asked, drop down into normal receive loop to finish
@@ -84,17 +89,17 @@ def receiveData(sock, size):
                     raise TimeoutError("receiving: timeout")
                 except socket.error:
                     x=sys.exc_info()[1]
-                    err=getattr(x,"errno",x.args[0])
+                    err=getattr(x, "errno", x.args[0])
                     if err not in ERRNO_RETRIES:
                         raise ConnectionClosedError("receiving: connection lost: "+str(x))
                     time.sleep(0.00001+retrydelay)  # a slight delay to wait before retrying
-                    retrydelay=__nextRetrydelay(retrydelay)                
+                    retrydelay=__nextRetrydelay(retrydelay)
         # old fashioned recv loop, we gather chunks until the message is complete
         while True:
             try:
                 while msglen<size:
                     # 60k buffer limit avoids problems on certain OSes like VMS, Windows
-                    chunk=sock.recv(min(60000,size-msglen))
+                    chunk=sock.recv(min(60000, size-msglen))
                     if not chunk:
                         break
                     chunks.append(chunk)
@@ -110,15 +115,15 @@ def receiveData(sock, size):
                 raise TimeoutError("receiving: timeout")
             except socket.error:
                 x=sys.exc_info()[1]
-                err=getattr(x,"errno",x.args[0])
+                err=getattr(x, "errno", x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("receiving: connection lost: "+str(x))
                 time.sleep(0.00001+retrydelay)  # a slight delay to wait before retrying
-                retrydelay=__nextRetrydelay(retrydelay)                
+                retrydelay=__nextRetrydelay(retrydelay)
     except socket.timeout:
         raise TimeoutError("receiving: timeout")
-    
-            
+
+
 def sendData(sock, data):
     """Send some data over a socket."""
     # Some OS-es have problems with sendall when the socket is in non-blocking mode.
@@ -138,19 +143,19 @@ def sendData(sock, data):
     else:
         # Socket is in non-blocking mode, use regular send loop.
         retrydelay=0.0
-        while data: 
-            try: 
-                sent = sock.send(data) 
+        while data:
+            try:
+                sent = sock.send(data)
                 data = data[sent:]
             except socket.timeout:
                 raise TimeoutError("sending: timeout")
             except socket.error:
                 x=sys.exc_info()[1]
-                err=getattr(x,"errno",x.args[0])
+                err=getattr(x, "errno", x.args[0])
                 if err not in ERRNO_RETRIES:
                     raise ConnectionClosedError("sending: connection lost: "+str(x))
                 time.sleep(0.00001+retrydelay)  # a slight delay to wait before retrying
-                retrydelay=__nextRetrydelay(retrydelay)                
+                retrydelay=__nextRetrydelay(retrydelay)
 
 
 def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeout=None, noinherit=False):
@@ -179,6 +184,7 @@ def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeou
         setNoInherit(sock)
     sock.settimeout(timeout)
     return sock
+
 
 def createBroadcastSocket(bind=None, reuseaddr=True, timeout=None):
     """Create a udp broadcast socket."""
@@ -213,13 +219,15 @@ def createBroadcastSocket(bind=None, reuseaddr=True, timeout=None):
         sock.close()
         raise CommunicationError("cannot bind broadcast socket")
     return sock
-    
+
+
 def setReuseAddr(sock):
-    """sets the SO_REUSEADDR option on the socket.""" 
+    """sets the SO_REUSEADDR option on the socket."""
     try:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     except Exception:
         log.info("cannot set SO_REUSEADDR")
+
 
 def setKeepalive(sock):
     """sets the SO_KEEPALIVE option on the socket."""
@@ -231,48 +239,62 @@ def setKeepalive(sock):
 # set socket to not inherit in subprocess
 try:
     import fcntl
+
     def setNoInherit(sock):
         # Mark the given socket fd as non-inheritable (posix)
-        fd = sock.fileno() 
-        flags = fcntl.fcntl(fd, fcntl.F_GETFD) 
+        fd = sock.fileno()
+        flags = fcntl.fcntl(fd, fcntl.F_GETFD)
         fcntl.fcntl(fd, fcntl.F_SETFD, flags | fcntl.FD_CLOEXEC)
+
 except ImportError:
     # no fcntl available, try the windows version
-    try: 
-        from ctypes import windll, WinError 
-        def setNoInherit(sock): 
+    try:
+        from ctypes import windll, WinError
+
+        def setNoInherit(sock):
             # mark the given socket fd as non-inheritable (Windows).
-            if not windll.kernel32.SetHandleInformation(sock.fileno(), 1, 0): 
-                raise WinError()    
+            if not windll.kernel32.SetHandleInformation(sock.fileno(), 1, 0):
+                raise WinError()
+
     except ImportError:
         # nothing available, define a dummy function
         def setNoInherit(sock):
             pass
 
+
 class SocketConnection(object):
     """A connection wrapper for sockets"""
-    __slots__=["sock","objectId"]
+    __slots__=["sock", "objectId"]
+
     def __init__(self, sock, objectId=None):
         self.sock=sock
         self.objectId=objectId
+
     def __del__(self):
         self.close()
+
     def send(self, data):
         sendData(self.sock, data)
+
     def recv(self, size):
         return receiveData(self.sock, size)
+
     def close(self):
         self.sock.close()
+
     def fileno(self):
         return self.sock.fileno()
+
     def setTimeout(self, timeout):
         self.sock.settimeout(timeout)
+
     def getTimeout(self):
         return self.sock.gettimeout()
-    timeout=property(getTimeout,setTimeout)
+    timeout=property(getTimeout, setTimeout)
+
 
 def findUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
-    """Returns an unused port that should be suitable for binding. 
+    """Returns an unused port that should be suitable for binding.
     This code is copied from the stdlib's test.test_support module."""
     tempsock = socket.socket(family, socktype)
     port = bindOnUnusedPort(tempsock)
@@ -280,8 +302,9 @@ def findUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
     del tempsock
     return port
 
+
 def bindOnUnusedPort(sock, host='localhost'):
-    """Bind the socket to a free port and return the port number. 
+    """Bind the socket to a free port and return the port number.
     This code is based on the code in the stdlib's test.test_support module."""
     if os.name!="java" and sock.family == socket.AF_INET and sock.type == socket.SOCK_STREAM:
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
