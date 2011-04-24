@@ -52,6 +52,15 @@ class SerializeTests(unittest.TestCase):
         self.assertTrue(isinstance(e, Pyro4.errors.ProtocolError))
         self.assertEqual(repr(e3), repr(e))
     
+    def testSerializeException(self):
+        ex=ZeroDivisionError("test error")
+        ex._pyroTraceback=["test traceback payload"]
+        data,compressed=self.ser.serialize(ex)
+        ex2=self.ser.deserialize(data,compressed)
+        self.assertEqual(ZeroDivisionError, type(ex2))
+        self.assertTrue(hasattr(ex2, "_pyroTraceback")) # fails on ironpython...
+        self.assertEqual(["test traceback payload"], ex2._pyroTraceback)  # fails on ironpython...
+
     def testSerCoreOffline(self):
         uri=Pyro4.core.URI("PYRO:9999@host.com:4444")
         p,_=self.ser.serialize(uri)

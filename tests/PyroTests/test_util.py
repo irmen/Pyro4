@@ -100,43 +100,6 @@ class TestUtils(unittest.TestCase):
             self.assertRaises(TypeError, Pyro4.util.getPyroTraceback, x)
             self.assertRaises(TypeError, Pyro4.util.formatTraceback, x)
 
-    def testSerialize(self):
-        ser=Pyro4.util.Serializer()
-        before=(42, ["a","b","c"], {"henry": 998877, "suzie": 776655})
-        data,c=ser.serialize(before,compress=False)
-        after=ser.deserialize(data)
-        self.assertEqual(before,after)
-        self.assertEqual(bool,type(c))
-        data,c=ser.serialize(before,compress=True)
-        after=ser.deserialize(data,compressed=c)
-        self.assertEqual(before,after)
-        self.assertEqual(bool,type(c))
-
-    def testSerializeCompression(self):
-        smalldata=["wordwordword","blablabla","orangeorange"]
-        largedata=["wordwordword"+str(i) for i in range(30)]
-        ser=Pyro4.util.Serializer()
-        data1,compressed=ser.serialize(smalldata,compress=False)
-        self.assertFalse(compressed)
-        data2,compressed=ser.serialize(smalldata,compress=True)
-        self.assertFalse(compressed, "small messages should not be compressed")
-        self.assertEqual(len(data1),len(data2))
-        data1,compressed=ser.serialize(largedata,compress=False)
-        self.assertFalse(compressed)
-        data2,compressed=ser.serialize(largedata,compress=True)
-        self.assertTrue(compressed, "large messages should be compressed")
-        self.assertTrue(len(data1)>len(data2))
-
-    def testSerializeException(self):
-        ex=ZeroDivisionError("test error")
-        ex._pyroTraceback=["test traceback payload"]
-        ser=Pyro4.util.Serializer()
-        data,compressed=ser.serialize(ex)
-        ex2=ser.deserialize(data,compressed)
-        self.assertEqual(ZeroDivisionError, type(ex2))
-        self.assertTrue(hasattr(ex2, "_pyroTraceback")) # fails on ironpython...
-        self.assertEqual(["test traceback payload"], ex2._pyroTraceback)  # fails on ironpython...
-
     def testConfig(self):
         def clearEnv():
             if "PYRO_HOST" in os.environ: del os.environ["PYRO_HOST"]
