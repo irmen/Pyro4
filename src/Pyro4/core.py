@@ -348,10 +348,10 @@ class MessageFactory(object):
     def createMessage(cls, msgType, databytes, flags, seq):
         """creates a message containing a header followed by the given databytes"""
         databytes=databytes or cls.empty_bytes
-        headerchecksum=(msgType+Pyro4.constants.PROTOCOL_VERSION+len(databytes)+flags+seq+MessageFactory.MAGIC)&0xffff
         hmac_key = Pyro4.config.HMAC_KEY
         if sys.version_info>=(3, 0):
             hmac_key = bytes(hmac_key, "utf-8")
+        headerchecksum=(msgType+Pyro4.constants.PROTOCOL_VERSION+len(databytes)+flags+seq+MessageFactory.MAGIC)&0xffff
         bodyhmac=hmac.new(hmac_key, databytes, digestmod=hashlib.sha1).digest()
         msg=struct.pack(cls.headerFmt, cls.pyro_tag, Pyro4.constants.PROTOCOL_VERSION, msgType, flags, seq, len(databytes), headerchecksum, bodyhmac)
         return msg+databytes
@@ -471,7 +471,9 @@ class Daemon(object):
     def handshake(self, conn):
         """Perform connection handshake with new clients"""
         # For now, client is not sending anything. Just respond with a CONNECT_OK.
-        data="ok"  # need a minimal amount of data or the socket will remain blocked on some systems... (messages smaller than 40 bytes)
+        # We need a minimal amount of data or the socket will remain blocked
+        # on some systems... (messages smaller than 40 bytes)
+        data,_=self.serializer.serialize("ok",compress=False)
         msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK, data, 0, 1)
         conn.send(msg)
         return True
