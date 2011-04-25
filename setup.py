@@ -14,7 +14,7 @@ if __name__ == '__main__' :
         author = "Irmen de Jong",
         author_email="irmen@razorvine.net",
         keywords="distributed objects, middleware, network communication, RMI, IPC, DOT",
-        url = "http://www.razorvine.net/python/Pyro",
+        url = "http://www.xs4all.nl/~irmen/pyro4/",
         download_url="http://www.xs4all.nl/~irmen/pyro4/download/",
         package_dir={'':'src'},
         packages=['Pyro4', 'Pyro4.socketserver'],
@@ -31,6 +31,7 @@ if __name__ == '__main__' :
                 "Programming Language :: Python :: 2.6",
                 "Programming Language :: Python :: 2.7",
                 "Programming Language :: Python :: 3",
+                "Programming Language :: Python :: 3.2",
                 "Topic :: Software Development :: Object Brokering",
                 "Topic :: System :: Distributed Computing",
                 "Topic :: System :: Networking"
