@@ -267,12 +267,8 @@ class Proxy(object):
                     sock=Pyro4.socketutil.createSocket(connect=(uri.host, uri.port), timeout=self.__pyroTimeout)
                     conn=Pyro4.socketutil.SocketConnection(sock, uri.object)
                     # Do handshake. For now, no need to send anything.
-                    # self._pyroSeq=(self._pyroSeq+1)&0xffff
-                    # data=MessageFactory.createMessage(MessageFactory.MSG_CONNECT, None, 0, self._pyroSeq)
-                    # conn.send(data)
                     msgType, flags, seq, data = MessageFactory.getMessage(conn, None)
                     # any trailing data (dataLen>0) is an error message, if any
-                    # self.__pyroCheckSequence(seq)   # don't need this because we didn't send anything
             except Exception:
                 x=sys.exc_info()[1]
                 if conn:
@@ -475,7 +471,8 @@ class Daemon(object):
     def handshake(self, conn):
         """Perform connection handshake with new clients"""
         # For now, client is not sending anything. Just respond with a CONNECT_OK.
-        msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK, None, 0, 1)
+        data="ok"  # need a minimal amount of data or the socket will remain blocked on some systems... (messages smaller than 40 bytes)
+        msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK, data, 0, 1)
         conn.send(msg)
         return True
 
