@@ -21,6 +21,10 @@ else:
     from StringIO import StringIO
 
 class OfflineNameServerTests(unittest.TestCase):
+    def setUp(self):
+        Pyro4.config.HMAC_KEY="testsuite"
+    def tearDown(self):
+        Pyro4.config.HMAC_KEY=None
     def testRegister(self):
         ns=Pyro4.naming.NameServer()
         ns.ping()

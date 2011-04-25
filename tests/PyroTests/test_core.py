@@ -31,6 +31,11 @@ class Thing(object):
     __hash__=object.__hash__
 
 class CoreTests(unittest.TestCase):
+    def setUp(self):
+        Pyro4.config.HMAC_KEY="testsuite"
+    def tearDown(self):
+        Pyro4.config.HMAC_KEY=None
+
     def testConfig(self):
         self.assertTrue(type(Pyro4.config.COMPRESSION) is bool)
         self.assertTrue(type(Pyro4.config.NS_PORT) is int)
@@ -202,34 +207,37 @@ class CoreTests(unittest.TestCase):
         self.assertFalse(Pyro4.core.URI.isPipeOrUnixsockLocation("foobar"))
 
     def testMsgFactory(self):
-        
+        import hashlib, hmac
+        def pyrohmac(data):
+            return hmac.new(Pyro4.config.HMAC_KEY, data, digestmod=hashlib.sha1).digest()
         MF=Pyro4.core.MessageFactory
         MF.createMessage(99, None, 0,0) # doesn't check msg type here
         self.assertRaises(Pyro4.errors.ProtocolError, MF.parseMessageHeader, "FOOBAR")
         hdr=MF.createMessage(MF.MSG_CONNECT, tobytes("hello"),0,0)[:-5]
-        msgType,flags,seq,dataLen=MF.parseMessageHeader(hdr)
+        msgType,flags,seq,dataLen,datahmac=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_CONNECT, msgType)
         self.assertEqual(0, flags)
         self.assertEqual(5, dataLen)
+        self.assertEqual(pyrohmac("hello"), datahmac)
         hdr=MF.createMessage(MF.MSG_RESULT, None,0,0)
-        msgType,flags,seq,dataLen=MF.parseMessageHeader(hdr)
+        msgType,flags,seq,dataLen,datahmac=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_RESULT, msgType)
         self.assertEqual(0, flags)
         self.assertEqual(0, dataLen)
         hdr=MF.createMessage(MF.MSG_RESULT, tobytes("hello"), 42, 0)[:-5]
-        msgType,flags,seq,dataLen=MF.parseMessageHeader(hdr)
+        msgType,flags,seq,dataLen,datahmac=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_RESULT, msgType)
         self.assertEqual(42, flags)
         self.assertEqual(5, dataLen)
         msg=MF.createMessage(255,None,0,255)
-        expected=tobytes("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\xff\x00\x00\x00\xff\x00\x00\x00\x00\x37\x13")
-        self.assertEqual(expected,msg)
+        self.assertTrue(msg.startswith("PYRO"))
+        self.assertEqual(38,len(msg))
         msg=MF.createMessage(1,None,0,255)
-        expected=tobytes("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\x01\x00\x00\x00\xff\x00\x00\x00\x00\x36\x15")
-        self.assertEqual(expected,msg)
+        self.assertTrue(msg.startswith("PYRO"))
+        self.assertEqual(38,len(msg))
         msg=MF.createMessage(1,None,flags=253,seq=254)
-        expected=tobytes("PYRO\x00"+chr(Pyro4.constants.PROTOCOL_VERSION)+"\x00\x01\x00\xfd\x00\xfe\x00\x00\x00\x00\x37\x11")
-        self.assertEqual(expected,msg)
+        self.assertTrue(msg.startswith("PYRO"))
+        self.assertEqual(38,len(msg))
         # compression is a job of the code supplying the data, so the messagefactory should leave it untouched
         data=tobytes("x"*1000)
         msg=MF.createMessage(MF.MSG_INVOKE, data, 0,0)

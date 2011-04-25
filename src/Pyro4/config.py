@@ -21,7 +21,7 @@ DETAILED_TRACEBACK = False
 THREADPOOL_MINTHREADS = 4
 THREADPOOL_MAXTHREADS = 50
 THREADPOOL_IDLETIMEOUT = 5.0
-
+HMAC_KEY = None
 
 # Btw, env vars only used at package import time (see __init__.py):
 # PYRO_LOGLEVEL   (enable Pyro log config and set level)

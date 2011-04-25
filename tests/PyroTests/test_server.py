@@ -60,6 +60,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro4.config.COMMTIMEOUT=self.COMMTIMEOUT
         Pyro4.config.THREADPOOL_MINTHREADS=2
         Pyro4.config.THREADPOOL_MAXTHREADS=20
+        Pyro4.config.HMAC_KEY="testsuite"
         self.daemon=Pyro4.core.Daemon(port=0)
         obj=MyThing()
         uri=self.daemon.register(obj, "something")
@@ -73,6 +74,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         self.daemonthread.join()
         Pyro4.config.SERVERTYPE="thread"
         Pyro4.config.COMMTIMEOUT=None
+        Pyro4.config.HMAC_KEY=None
 
     def testNoDottedNames(self):
         Pyro4.config.DOTTEDNAMES=False

@@ -32,7 +32,10 @@ class DaemonTests(unittest.TestCase):
 
     def setUp(self):
         Pyro4.config.POLLTIMEOUT=0.1
-
+        Pyro4.config.HMAC_KEY="testsuite"
+    def tearDown(self):
+        Pyro4.config.HMAC_KEY=None
+        
     def testDaemon(self):
         freeport=Pyro4.socketutil.findUnusedPort()
         with Pyro4.core.Daemon(port=freeport) as d:

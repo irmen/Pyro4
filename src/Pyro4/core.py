@@ -8,6 +8,7 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 from __future__ import with_statement
 import re, struct, sys, time, os
 import logging, uuid
+import hashlib, hmac
 import Pyro4.config
 import Pyro4.socketutil
 import Pyro4.util
@@ -138,6 +139,9 @@ class Proxy(object):
     __pyroAttributes=frozenset(["__getnewargs__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway", "_pyroTimeout", "_pyroSeq"])
 
     def __init__(self, uri):
+        # check if hmac secret key is set
+        if Pyro4.config.HMAC_KEY in (None, ""):
+            raise Pyro4.errors.PyroError("you must set Pyro's HMAC_KEY config item to a valid shared secret key")
         if isinstance(uri, basestring):
             uri=URI(uri)
         elif not isinstance(uri, URI):
@@ -227,14 +231,8 @@ class Proxy(object):
                 if flags & MessageFactory.FLAGS_ONEWAY:
                     return None    # oneway call, no response data
                 else:
-                    header=self._pyroConnection.recv(MessageFactory.HEADERSIZE)
-                    msgType, flags, seq, dataLen=MessageFactory.parseMessageHeader(header)
-                    if msgType!=MessageFactory.MSG_RESULT:
-                        err="invoke: invalid msg type %d received" % msgType
-                        log.error(err)
-                        raise Pyro4.errors.ProtocolError(err)
+                    msgType, flags, seq, data = MessageFactory.getMessage(self._pyroConnection, MessageFactory.MSG_RESULT)
                     self.__pyroCheckSequence(seq)
-                    data=self._pyroConnection.recv(dataLen)
                     data=self._pyroSerializer.deserialize(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
                     if flags & MessageFactory.FLAGS_EXCEPTION:
                         raise data
@@ -272,8 +270,7 @@ class Proxy(object):
                     # self._pyroSeq=(self._pyroSeq+1)&0xffff
                     # data=MessageFactory.createMessage(MessageFactory.MSG_CONNECT, None, 0, self._pyroSeq)
                     # conn.send(data)
-                    data=conn.recv(MessageFactory.HEADERSIZE)
-                    msgType, flags, seq, dataLen=MessageFactory.parseMessageHeader(data)
+                    msgType, flags, seq, data = MessageFactory.getMessage(conn, None)
                     # any trailing data (dataLen>0) is an error message, if any
                     # self.__pyroCheckSequence(seq)   # don't need this because we didn't send anything
             except Exception:
@@ -289,8 +286,8 @@ class Proxy(object):
             else:
                 if msgType==MessageFactory.MSG_CONNECTFAIL:
                     error="connection rejected"
-                    if dataLen>0:
-                        error+=", reason: "+conn.recv(dataLen)
+                    if data:
+                        error+=", reason: "+data
                     conn.close()
                     log.error(error)
                     raise Pyro4.errors.CommunicationError(error)
@@ -325,7 +322,7 @@ class Proxy(object):
 
 class MessageFactory(object):
     """internal helper class to construct Pyro protocol messages"""
-    headerFmt = '!4sHHHHiH'    # header (id, version, msgtype, flags, sequencenumber, dataLen, checksum)
+    headerFmt = '!4sHHHHiH20s'    # header (id, version, msgtype, flags, sequencenumber, dataLen, checksum, hmac)
     # note: the sequencenumber is used to check if response messages correspond to the
     # actual request message. This prevents the situation where Pyro would perhaps return
     # the response data from another remote call (which would not result in an error otherwise!)
@@ -352,24 +349,38 @@ class MessageFactory(object):
         pyro_tag = "PYRO"
 
     @classmethod
-    def createMessage(cls, msgType, data, flags, seq):
-        """creates a message containing a header followed by the given data"""
-        data=data or cls.empty_bytes
-        checksum=(msgType+Pyro4.constants.PROTOCOL_VERSION+len(data)+flags+seq+MessageFactory.MAGIC)&0xffff
-        msg=struct.pack(cls.headerFmt, cls.pyro_tag, Pyro4.constants.PROTOCOL_VERSION, msgType, flags, seq, len(data), checksum)
-        return msg+data
+    def createMessage(cls, msgType, databytes, flags, seq):
+        """creates a message containing a header followed by the given databytes"""
+        databytes=databytes or cls.empty_bytes
+        headerchecksum=(msgType+Pyro4.constants.PROTOCOL_VERSION+len(databytes)+flags+seq+MessageFactory.MAGIC)&0xffff
+        bodyhmac=hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest()
+        msg=struct.pack(cls.headerFmt, cls.pyro_tag, Pyro4.constants.PROTOCOL_VERSION, msgType, flags, seq, len(databytes), headerchecksum, bodyhmac)
+        return msg+databytes
 
     @classmethod
     def parseMessageHeader(cls, headerData):
-        """Parses a message header. Returns a tuple of messagetype, messageflags, sequencenumber, datalength."""
+        """Parses a message header. Returns a tuple of messagetype, messageflags, sequencenumber, datalength, datahmac."""
         if not headerData or len(headerData)!=cls.HEADERSIZE:
             raise Pyro4.errors.ProtocolError("header data size mismatch")
-        tag, ver, msgType, flags, seq, dataLen, checksum = struct.unpack(cls.headerFmt, headerData)
+        tag, ver, msgType, flags, seq, dataLen, headerchecksum, datahmac = struct.unpack(cls.headerFmt, headerData)
         if tag!=cls.pyro_tag or ver!=Pyro4.constants.PROTOCOL_VERSION:
             raise Pyro4.errors.ProtocolError("invalid data or unsupported protocol version")
-        if checksum!=(msgType+ver+dataLen+flags+seq+MessageFactory.MAGIC)&0xffff:
+        if headerchecksum!=(msgType+ver+dataLen+flags+seq+MessageFactory.MAGIC)&0xffff:
             raise Pyro4.errors.ProtocolError("header checksum mismatch")
-        return msgType, flags, seq, dataLen
+        return msgType, flags, seq, dataLen, datahmac
+
+    @classmethod
+    def getMessage(cls, connection, requiredMsgType):
+        headerdata = connection.recv(cls.HEADERSIZE)
+        msgType, flags, seq, datalen, datahmac = cls.parseMessageHeader(headerdata)
+        if requiredMsgType is not None and msgType != requiredMsgType:
+            err="invalid msg type %d received" % msgType
+            log.error(err)
+            raise Pyro4.errors.ProtocolError(err)
+        databytes=connection.recv(datalen)
+        if datahmac != hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest():
+            raise Pyro4.errors.ProtocolError("message hmac mismatch")
+        return msgType, flags, seq, databytes
 
 
 class DaemonObject(object):
@@ -393,6 +404,9 @@ class Daemon(object):
     to the appropriate objects.
     """
     def __init__(self, host=None, port=0):
+        # check if hmac secret key is set
+        if Pyro4.config.HMAC_KEY in (None, ""):
+            raise Pyro4.errors.PyroError("you must set Pyro's HMAC_KEY config item to a valid shared secret key")
         if host is None:
             host=Pyro4.config.HOST
         if Pyro4.config.SERVERTYPE=="thread":
@@ -455,14 +469,6 @@ class Daemon(object):
     def handshake(self, conn):
         """Perform connection handshake with new clients"""
         # For now, client is not sending anything. Just respond with a CONNECT_OK.
-        # header=conn.recv(MessageFactory.HEADERSIZE)
-        # msgType, flags, seq, dataLen=MessageFactory.parseMessageHeader(header)
-        # if msgType!=MessageFactory.MSG_CONNECT:
-        #     err="expected MSG_CONNECT message, got %d" % msgType
-        #     log.warn(err)
-        #     raise Pyro4.errors.ProtocolError(err)
-        # if dataLen>0:
-        #     conn.recv(dataLen)  # read away any trailing data (unused at the moment)
         msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK, None, 0, 1)
         conn.send(msg)
         return True
@@ -477,13 +483,7 @@ class Daemon(object):
         isCallback=False
         seq=0
         try:
-            header=conn.recv(MessageFactory.HEADERSIZE)
-            msgType, flags, seq, dataLen=MessageFactory.parseMessageHeader(header)
-            if msgType!=MessageFactory.MSG_INVOKE:
-                err="handlerequest: invalid msg type %d received" % msgType
-                log.warn(err)
-                raise Pyro4.errors.ProtocolError(err)
-            data=conn.recv(dataLen)
+            msgType, flags, seq, data = MessageFactory.getMessage(conn, MessageFactory.MSG_INVOKE)
             objId, method, vargs, kwargs=self.serializer.deserialize(
                                            data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             obj=self.objectsById.get(objId)

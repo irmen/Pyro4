@@ -27,6 +27,10 @@ class NSLoopThread(threadutil.Thread):
         self.nameserver.requestLoop()
 
 class BCSetupTests(unittest.TestCase):
+    def setUp(self):
+        Pyro4.config.HMAC_KEY="testsuite"
+    def tearDown(self):
+        Pyro4.config.HMAC_KEY=None
     def testBCstart(self):
         myIpAddress=Pyro4.socketutil.getMyIpAddress(workaround127=True)
         nsUri, nameserver, bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=False)
@@ -42,6 +46,7 @@ class BCSetupTests(unittest.TestCase):
 class NameServerTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT=0.1
+        Pyro4.config.HMAC_KEY="testsuite"
         myIpAddress=Pyro4.socketutil.getMyIpAddress(workaround127=True)
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0)
         self.assertTrue(self.bcserver is not None,"expected a BC server to be running")
@@ -60,6 +65,7 @@ class NameServerTests(unittest.TestCase):
         self.nameserver.shutdown()
         self.bcserver.close()
         self.daemonthread.join()
+        Pyro4.config.HMAC_KEY=None
         Pyro4.config.NS_HOST=self.old_nsHost
         Pyro4.config.NS_PORT=self.old_nsPort
         Pyro4.config.NS_BCPORT=self.old_bcPort
