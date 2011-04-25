@@ -15,7 +15,6 @@ if __name__ == '__main__' :
         author_email="irmen@razorvine.net",
         keywords="distributed objects, middleware, network communication, RMI, IPC, DOT",
         url = "http://www.xs4all.nl/~irmen/pyro4/",
-        download_url="http://www.xs4all.nl/~irmen/pyro4/download/",
         package_dir={'':'src'},
         packages=['Pyro4', 'Pyro4.socketserver'],
         scripts = [],
