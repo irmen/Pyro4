@@ -268,17 +268,14 @@ class Proxy(object):
                 with self.__pyroLock:
                     sock=Pyro4.socketutil.createSocket(connect=(uri.host, uri.port), timeout=self.__pyroTimeout)
                     conn=Pyro4.socketutil.SocketConnection(sock, uri.object)
-                    if Pyro4.config.CONNECTHANDSHAKE:
-                        # handshake
-                        self._pyroSeq=(self._pyroSeq+1)&0xffff
-                        data=MessageFactory.createMessage(MessageFactory.MSG_CONNECT, None, 0, self._pyroSeq)
-                        conn.send(data)
-                        data=conn.recv(MessageFactory.HEADERSIZE)
-                        msgType, flags, seq, dataLen=MessageFactory.parseMessageHeader(data)
-                        # any trailing data (dataLen>0) is an error message, if any
-                        self.__pyroCheckSequence(seq)
-                    else:
-                        msgType=MessageFactory.MSG_CONNECTOK
+                    # Do handshake. For now, no need to send anything.
+                    # self._pyroSeq=(self._pyroSeq+1)&0xffff
+                    # data=MessageFactory.createMessage(MessageFactory.MSG_CONNECT, None, 0, self._pyroSeq)
+                    # conn.send(data)
+                    data=conn.recv(MessageFactory.HEADERSIZE)
+                    msgType, flags, seq, dataLen=MessageFactory.parseMessageHeader(data)
+                    # any trailing data (dataLen>0) is an error message, if any
+                    # self.__pyroCheckSequence(seq)   # don't need this because we didn't send anything
             except Exception:
                 x=sys.exc_info()[1]
                 if conn:
@@ -456,18 +453,17 @@ class Daemon(object):
         self.transportServer.pingConnection()
 
     def handshake(self, conn):
-        if not Pyro4.config.CONNECTHANDSHAKE:
-            return True
         """Perform connection handshake with new clients"""
-        header=conn.recv(MessageFactory.HEADERSIZE)
-        msgType, flags, seq, dataLen=MessageFactory.parseMessageHeader(header)
-        if msgType!=MessageFactory.MSG_CONNECT:
-            err="expected MSG_CONNECT message, got %d" % msgType
-            log.warn(err)
-            raise Pyro4.errors.ProtocolError(err)
-        if dataLen>0:
-            conn.recv(dataLen)  # read away any trailing data (unused at the moment)
-        msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK, None, 0, seq)
+        # For now, client is not sending anything. Just respond with a CONNECT_OK.
+        # header=conn.recv(MessageFactory.HEADERSIZE)
+        # msgType, flags, seq, dataLen=MessageFactory.parseMessageHeader(header)
+        # if msgType!=MessageFactory.MSG_CONNECT:
+        #     err="expected MSG_CONNECT message, got %d" % msgType
+        #     log.warn(err)
+        #     raise Pyro4.errors.ProtocolError(err)
+        # if dataLen>0:
+        #     conn.recv(dataLen)  # read away any trailing data (unused at the moment)
+        msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK, None, 0, 1)
         conn.send(msg)
         return True
 

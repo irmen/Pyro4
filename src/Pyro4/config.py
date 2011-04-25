@@ -18,7 +18,6 @@ POLLTIMEOUT = 2.0     # seconds
 THREADING2 = False    # use threading2 if available?
 ONEWAY_THREADED = True     # oneway calls run in their own thread
 DETAILED_TRACEBACK = False
-CONNECTHANDSHAKE = True    # should a connection handshake be done?
 THREADPOOL_MINTHREADS = 4
 THREADPOOL_MAXTHREADS = 50
 THREADPOOL_IDLETIMEOUT = 5.0
