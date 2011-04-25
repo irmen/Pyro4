@@ -353,7 +353,10 @@ class MessageFactory(object):
         """creates a message containing a header followed by the given databytes"""
         databytes=databytes or cls.empty_bytes
         headerchecksum=(msgType+Pyro4.constants.PROTOCOL_VERSION+len(databytes)+flags+seq+MessageFactory.MAGIC)&0xffff
-        bodyhmac=hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest()
+        hmac_key = Pyro4.config.HMAC_KEY
+        if sys.version_info>=(3, 0):
+            hmac_key = bytes(hmac_key, "utf-8")
+        bodyhmac=hmac.new(hmac_key, databytes, digestmod=hashlib.sha1).digest()
         msg=struct.pack(cls.headerFmt, cls.pyro_tag, Pyro4.constants.PROTOCOL_VERSION, msgType, flags, seq, len(databytes), headerchecksum, bodyhmac)
         return msg+databytes
 
@@ -378,7 +381,10 @@ class MessageFactory(object):
             log.error(err)
             raise Pyro4.errors.ProtocolError(err)
         databytes=connection.recv(datalen)
-        if datahmac != hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest():
+        hmac_key = Pyro4.config.HMAC_KEY
+        if sys.version_info>=(3, 0):
+            hmac_key = bytes(hmac_key, "utf-8")
+        if datahmac != hmac.new(hmac_key, databytes, digestmod=hashlib.sha1).digest():
             raise Pyro4.errors.ProtocolError("message hmac mismatch")
         return msgType, flags, seq, databytes
 
