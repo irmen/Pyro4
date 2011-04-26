@@ -7,10 +7,9 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 import unittest
 import os
-import test_server
+from .test_server import ServerTestsThreadNoTimeout, ServerTestsSelectNoTimeout
 
-
-class ServerTestsThreadTimeout(test_server.ServerTestsThreadNoTimeout):
+class ServerTestsThreadTimeout(ServerTestsThreadNoTimeout):
     SERVERTYPE="thread"
     COMMTIMEOUT=2.0
     def testServerParallelism(self):
@@ -22,7 +21,7 @@ class ServerTestsThreadTimeout(test_server.ServerTestsThreadNoTimeout):
         pass
     
 if os.name!="java":
-    class ServerTestsSelectTimeout(test_server.ServerTestsSelectNoTimeout):
+    class ServerTestsSelectTimeout(ServerTestsSelectNoTimeout):
         SERVERTYPE="select"
         COMMTIMEOUT=2.0
         def testServerParallelism(self):
