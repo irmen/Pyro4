@@ -16,7 +16,7 @@ if __name__ == '__main__' :
         keywords="distributed objects, middleware, network communication, RMI, IPC, DOT",
         url = "http://www.xs4all.nl/~irmen/pyro4/",
         package_dir={'':'src'},
-        packages=['Pyro4', 'Pyro4.socketserver'],
+        packages=['Pyro4', 'Pyro4.socketserver', 'Pyro4.test'],
         scripts = [],
         platforms="any",
         classifiers=[
