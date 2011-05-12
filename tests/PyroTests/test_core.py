@@ -44,6 +44,13 @@ class CoreTests(unittest.TestCase):
         self.assertTrue("COMPRESSION" in config)
         self.assertEqual(Pyro4.config.COMPRESSION, config["COMPRESSION"])
 
+    def testConfigValid(self):
+        try:
+            Pyro4.config.XYZ_FOOBAR=True  # don't want to allow weird config names
+            self.fail("expected exception for weird config item")
+        except Pyro4.errors.PyroError:
+            pass
+
     def testUriStrAndRepr(self):
         uri="PYRONAME:some_obj_name"
         p=Pyro4.core.URI(uri)
