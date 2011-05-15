@@ -346,6 +346,15 @@ class CoreTests(unittest.TestCase):
         a2=a.nestedattribute
         self.assertTrue(isinstance(a2, Pyro4.core._RemoteMethod), "nested attribute should just be another RemoteMethod")
 
+    def testNoConnect(self):
+        wrongUri=Pyro4.core.URI("PYRO:foobar@localhost:59999")
+        with Pyro4.core.Proxy(wrongUri) as p:
+            try:
+                p.ping()
+                self.fail("CommunicationError expected")
+            except Pyro4.errors.CommunicationError:
+                pass
+
     def testTimeoutGetSet(self):
         class ConnectionMock(object):
             def __init__(self):

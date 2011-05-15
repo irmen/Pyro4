@@ -261,6 +261,7 @@ class Proxy(object):
         uri=resolve(self._pyroUri)
         if uri.host and uri.port:
             # socket connection
+            conn=None
             log.debug("connecting to %s", uri)
             try:
                 with self.__pyroLock:
@@ -484,6 +485,8 @@ class Daemon(object):
         wraps it in a reply to the calling side, as to not make this server side loop
         terminate due to exceptions caused by remote invocations.
         """
+        flags=0
+        seq=0
         isCallback=False
         try:
             msgType, flags, seq, data = MessageFactory.getMessage(conn, MessageFactory.MSG_INVOKE)
