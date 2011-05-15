@@ -49,7 +49,7 @@ class TestEchoserver(unittest.TestCase):
                 self.fail("expected exception")
             except:
                 tb="".join(Pyro4.util.getPyroTraceback())
-                self.assertTrue("Remote traceback:" in tb)
+                self.assertTrue("Remote traceback" in tb)  # fails on ironpython...
                 self.assertTrue("ZeroDivisionError" in tb)
         finally:
             echo.shutdown()
