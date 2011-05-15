@@ -143,6 +143,8 @@ class Proxy(object):
         # check if hmac secret key is set
         if Pyro4.config.HMAC_KEY in (None, ""):
             raise errors.PyroError("you must set Pyro's HMAC_KEY config item to a valid shared secret key")
+        if sys.version_info>=(3,0) and type(Pyro4.config.HMAC_KEY) is not bytes:
+            raise errors.PyroError("HMAC_KEY must be bytes type")
         if isinstance(uri, basestring):
             uri=URI(uri)
         elif not isinstance(uri, URI):
@@ -349,11 +351,8 @@ class MessageFactory(object):
     def createMessage(cls, msgType, databytes, flags, seq):
         """creates a message containing a header followed by the given databytes"""
         databytes=databytes or cls.empty_bytes
-        hmac_key = Pyro4.config.HMAC_KEY
-        if sys.version_info>=(3, 0):
-            hmac_key = bytes(hmac_key, "utf-8")
         headerchecksum=(msgType+constants.PROTOCOL_VERSION+len(databytes)+flags+seq+MessageFactory.MAGIC)&0xffff
-        bodyhmac=hmac.new(hmac_key, databytes, digestmod=hashlib.sha1).digest()
+        bodyhmac=hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest()
         msg=struct.pack(cls.headerFmt, cls.pyro_tag, constants.PROTOCOL_VERSION, msgType, flags, seq, len(databytes), headerchecksum, bodyhmac)
         return msg+databytes
 
@@ -378,10 +377,7 @@ class MessageFactory(object):
             log.error(err)
             raise errors.ProtocolError(err)
         databytes=connection.recv(datalen)
-        hmac_key = Pyro4.config.HMAC_KEY
-        if sys.version_info>=(3, 0):
-            hmac_key = bytes(hmac_key, "utf-8")
-        if datahmac != hmac.new(hmac_key, databytes, digestmod=hashlib.sha1).digest():
+        if datahmac != hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest():
             raise errors.ProtocolError("message hmac mismatch")
         return msgType, flags, seq, databytes
 
@@ -410,6 +406,8 @@ class Daemon(object):
         # check if hmac secret key is set
         if Pyro4.config.HMAC_KEY in (None, ""):
             raise errors.PyroError("you must set Pyro's HMAC_KEY config item to a valid shared secret key")
+        if sys.version_info>=(3,0) and type(Pyro4.config.HMAC_KEY) is not bytes:
+            raise errors.PyroError("HMAC_KEY must be bytes type")
         if host is None:
             host=Pyro4.config.HOST
         if Pyro4.config.SERVERTYPE=="thread":

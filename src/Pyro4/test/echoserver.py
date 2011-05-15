@@ -9,6 +9,7 @@ import sys, os, time
 import Pyro4
 import Pyro4.threadutil
 
+
 class EchoServer(object):
     verbose=False
     must_shutdown=False
@@ -59,14 +60,17 @@ def main(args, returnWithoutLooping=False):
         options.quiet=False
     if not options.quiet:
         print ("Starting Pyro's built-in test echo server.")
-
-    if not Pyro4.config.HMAC_KEY:
-        Pyro4.config.HMAC_KEY="testkey"
-    if not options.quiet:
-        print("Using HMAC_KEY: %s" % Pyro4.config.HMAC_KEY)
     if os.name!="java":
         Pyro4.config.SERVERTYPE="select"
-    
+
+    if not Pyro4.config.HMAC_KEY:
+        if sys.version_info<(3,0):
+            Pyro4.config.HMAC_KEY="testkey"
+        else:
+            Pyro4.config.HMAC_KEY=bytes("testkey","utf-8")
+        if not options.quiet:
+            print("HMAC_KEY set to built-in default: %s" % Pyro4.config.HMAC_KEY)
+
     nameserver=None
     if options.nameserver:
         options.naming=True
@@ -90,8 +94,8 @@ def main(args, returnWithoutLooping=False):
         if options.verbose:
             print ("not using a name server.")
     if not options.quiet:
-        print ("object name = %s" % objectName)
-        print ("echo uri = %s" % uri)
+        print ("object name: %s" % objectName)
+        print ("echo uri: %s" % uri)
         print ("echoserver running.")
     
     if returnWithoutLooping:

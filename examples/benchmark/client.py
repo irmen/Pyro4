@@ -1,8 +1,15 @@
-import sys,os,time
+import sys,time
 import Pyro4
 import bench
 
-object = Pyro4.core.Proxy("PYRONAME:example.benchmark")
+if not Pyro4.config.HMAC_KEY:
+    Pyro4.config.HMAC_KEY="testbenchmarkkey"
+
+if sys.version_info<(3,0):
+    input=raw_input
+
+uri=input("Uri of benchmark server? ").strip()
+object = Pyro4.core.Proxy(uri)
 object._pyroOneway.add('oneway')
 object._pyroBind()
 

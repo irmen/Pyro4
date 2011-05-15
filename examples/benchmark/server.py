@@ -1,12 +1,11 @@
 import Pyro4
 import bench
 
-obj=bench.bench()
+if not Pyro4.config.HMAC_KEY:
+    Pyro4.config.HMAC_KEY="testbenchmarkkey"
 
-daemon=Pyro4.core.Daemon()
-ns=Pyro4.naming.locateNS()
-uri = daemon.register(obj)
-ns.remove("example.benchmark")
-ns.register("example.benchmark", uri)
-print("Server running.")
+obj=bench.bench()
+daemon=Pyro4.Daemon()
+uri = daemon.register(obj,"test.benchmark")
+print("Server running, uri = %s" % uri)
 daemon.requestLoop()

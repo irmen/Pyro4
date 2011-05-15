@@ -9,7 +9,8 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 # PYRO_LOGLEVEL   (enable Pyro log config and set level)
 # PYRO_LOGFILE    (the name of the logfile if you don't like the default)
 
-import os
+import os, sys
+
 
 class Configuration(object):
     __slots__=("HOST", "NS_HOST", "NS_PORT", "NS_BCPORT", "NS_BCHOST",
@@ -38,7 +39,7 @@ class Configuration(object):
         self.THREADPOOL_MINTHREADS = 4
         self.THREADPOOL_MAXTHREADS = 50
         self.THREADPOOL_IDLETIMEOUT = 5.0
-        self.HMAC_KEY = None
+        self.HMAC_KEY = None   # must be bytes type
 
         # process enviroment variables
         PREFIX="PYRO_"
@@ -60,6 +61,9 @@ class Configuration(object):
                     else:
                         envvalue=valuetype(envvalue)  # just cast the value to the appropriate type
                 setattr(self, symbol, envvalue)
+            if self.HMAC_KEY and sys.version_info>=(3,0):
+                if type(self.HMAC_KEY) is not bytes:
+                    self.HMAC_KEY=bytes(self.HMAC_KEY, "utf-8")     # convert to bytes
 
     def asDict(self):
         """returns the current config as a regular dictionary"""
@@ -70,7 +74,7 @@ class Configuration(object):
 
     def dump(self):
         # easy config diagnostics
-        from .constants import VERSION
+        from Pyro4.constants import VERSION
         import inspect
         print("Pyro version: %s" % VERSION)
         print("Loaded from: %s" % os.path.abspath(os.path.split(inspect.getfile(Configuration))[0]))
@@ -79,7 +83,7 @@ class Configuration(object):
         config["LOGFILE"]=os.environ.get("PYRO_LOGFILE")
         config["LOGLEVEL"]=os.environ.get("PYRO_LOGLEVEL")
         for n, v in sorted(config.items()):
-            print("%s=%s" % (n, v))
+            print("%s = %s" % (n, v))
 
 if __name__=="__main__":
     Configuration().dump()

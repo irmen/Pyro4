@@ -216,9 +216,8 @@ class CoreTests(unittest.TestCase):
     def testMsgFactory(self):
         import hashlib, hmac
         def pyrohmac(data):
-            hmac_key = tobytes(Pyro4.config.HMAC_KEY)
             data=tobytes(data)
-            return hmac.new(hmac_key, data, digestmod=hashlib.sha1).digest()
+            return hmac.new(Pyro4.config.HMAC_KEY, data, digestmod=hashlib.sha1).digest()
         MF=Pyro4.core.MessageFactory
         MF.createMessage(99, None, 0,0) # doesn't check msg type here
         self.assertRaises(Pyro4.errors.ProtocolError, MF.parseMessageHeader, "FOOBAR")
