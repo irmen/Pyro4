@@ -9,7 +9,6 @@ import unittest
 
 import sys, imp, os
 import Pyro4.util
-import Pyro4.config
 
 if not hasattr(imp,"reload"):
     imp.reload=reload   # python 2.5 doesn't have imp.reload
@@ -18,14 +17,14 @@ def crash(arg=100):
     pre1="black"
     pre2=999
     def nest(p1,p2):
-        s="white"+pre1 #@UnusedVariable
-        x=pre2 #@UnusedVariable
-        y=arg//2 #@UnusedVariable
+        s="white"+pre1
+        x=pre2
+        y=arg//2
         p3=p1//p2
         return p3
     a=10
     b=0
-    s="hello" #@UnusedVariable
+    s="hello"
     c=nest(a,b)
     return c
 
@@ -34,7 +33,8 @@ class TestUtils(unittest.TestCase):
     def testFormatTracebackNormal(self):
         try:
             crash()
-        except:
+            self.fail("must crash with ZeroDivisionError")
+        except ZeroDivisionError:
             tb="".join(Pyro4.util.formatTraceback(detailed=False))
             self.assertTrue("p3=p1//p2" in tb)
             self.assertTrue("ZeroDivisionError" in tb)
@@ -46,7 +46,8 @@ class TestUtils(unittest.TestCase):
     def testFormatTracebackDetail(self):
         try:
             crash()
-        except:
+            self.fail("must crash with ZeroDivisionError")
+        except ZeroDivisionError:
             tb="".join(Pyro4.util.formatTraceback(detailed=True))
             self.assertTrue("p3=p1//p2" in tb)
             self.assertTrue("ZeroDivisionError" in tb)
@@ -60,13 +61,15 @@ class TestUtils(unittest.TestCase):
     def testPyroTraceback(self):
         try:
             crash()
-        except:
+            self.fail("must crash with ZeroDivisionError")
+        except ZeroDivisionError:
             pyro_tb=Pyro4.util.formatTraceback(detailed=True)
             if sys.platform!="cli":
                 self.assertTrue(" Extended stacktrace follows (most recent call last)\n" in pyro_tb)
         try:
             crash("stringvalue")
-        except Exception:
+            self.fail("must crash with TypeError")
+        except TypeError:
             x=sys.exc_info()[1]
             x._pyroTraceback=pyro_tb        # set the remote traceback info
             pyrotb="".join(Pyro4.util.getPyroTraceback())
@@ -84,7 +87,8 @@ class TestUtils(unittest.TestCase):
     def testPyroTracebackArgs(self):
         try:
             crash()
-        except Exception:
+            self.fail("must crash with ZeroDivisionError")
+        except ZeroDivisionError:
             ex_type, ex_value, ex_tb = sys.exc_info()
             x=ex_value
             tb1=Pyro4.util.getPyroTraceback()
@@ -105,19 +109,19 @@ class TestUtils(unittest.TestCase):
             if "PYRO_HOST" in os.environ: del os.environ["PYRO_HOST"]
             if "PYRO_NS_PORT" in os.environ: del os.environ["PYRO_NS_PORT"]
             if "PYRO_COMPRESSION" in os.environ: del os.environ["PYRO_COMPRESSION"]
-            imp.reload(Pyro4.config)
+            Pyro4.config.refresh()
         clearEnv()
         try:
             self.assertEqual(9090, Pyro4.config.NS_PORT)
             self.assertEqual("localhost", Pyro4.config.HOST)
             self.assertEqual(False, Pyro4.config.COMPRESSION)
             os.environ["NS_PORT"]="4444"
-            imp.reload(Pyro4.config)
+            Pyro4.config.refresh()
             self.assertEqual(9090, Pyro4.config.NS_PORT)
             os.environ["PYRO_NS_PORT"]="4444"
             os.environ["PYRO_HOST"]="something.com"
             os.environ["PYRO_COMPRESSION"]="OFF"
-            imp.reload(Pyro4.config)
+            Pyro4.config.refresh()
             self.assertEqual(4444, Pyro4.config.NS_PORT)
             self.assertEqual("something.com", Pyro4.config.HOST)
             self.assertEqual(False, Pyro4.config.COMPRESSION)

@@ -14,10 +14,10 @@ try:
 except ImportError:
     import Queue as queue
 import time, os
-from Pyro4.socketutil import SocketConnection, createSocket
-from Pyro4.errors import ConnectionClosedError, PyroError
-import Pyro4.config
-from Pyro4 import threadutil
+from .. import socketutil
+from .. import errors
+from .. import threadutil
+import Pyro4
 
 log=logging.getLogger("Pyro.socketserver.threadpool")
 
@@ -44,14 +44,14 @@ class SocketWorker(threadutil.Thread):
                     self.running=False
                     break
                 log.debug("worker %s got a client connection %s", self.getName(), self.caddr)
-                self.csock=SocketConnection(self.csock)
+                self.csock=socketutil.SocketConnection(self.csock)
                 if self.handleConnection(self.csock):
                     self.server.threadpool.updateWorking(1)  # tell the pool we're working
                     try:
                         while self.running:   # loop over all requests during a single connection
                             try:
                                 self.callback.handleRequest(self.csock)
-                            except (socket.error, ConnectionClosedError):
+                            except (socket.error, errors.ConnectionClosedError):
                                 # client went away.
                                 log.debug("worker %s client disconnected %s", self.getName(), self.caddr)
                                 break
@@ -72,7 +72,7 @@ class SocketWorker(threadutil.Thread):
         try:
             if self.callback.handshake(conn):
                 return True
-        except (socket.error, PyroError):
+        except (socket.error, errors.PyroError):
             x=sys.exc_info()[1]
             log.warn("error during connect: %s", x)
             conn.close()
@@ -135,7 +135,7 @@ class SocketServer_Threadpool(object):
     def __init__(self, callbackObject, host, port, timeout=None):
         log.info("starting thread pool socketserver")
         self.sock=None
-        self.sock=createSocket(bind=(host, port), timeout=timeout, noinherit=True)
+        self.sock=socketutil.createSocket(bind=(host, port), timeout=timeout, noinherit=True)
         self._socketaddr=self.sock.getsockname()
         if self._socketaddr[0].startswith("127."):
             if host is None or host.lower()!="localhost" and not host.startswith("127."):
@@ -217,7 +217,7 @@ class SocketServer_Threadpool(object):
     def pingConnection(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
-            sock=createSocket(connect=self._socketaddr)
+            sock=socketutil.createSocket(connect=self._socketaddr)
             if sys.version_info<(3, 0):
                 sock.send("!"*16)
             else:

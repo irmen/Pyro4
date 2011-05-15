@@ -5,10 +5,9 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
-import sys, zlib, logging, struct
+import sys, zlib, logging
 import traceback, linecache
-import Pyro4.constants
-import Pyro4.errors
+import Pyro4
 
 log=logging.getLogger("Pyro.util")
 
@@ -19,8 +18,7 @@ def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
     Traceback information is automatically obtained via sys.exc_info() if
     you do not supply the objects yourself."""
     def formatRemoteTraceback(remote_tb_lines):
-        result=[]
-        result.append(" +--- This exception occured remotely (Pyro) - Remote traceback:")
+        result=[" +--- This exception occured remotely (Pyro) - Remote traceback:"]
         for line in remote_tb_lines:
             if line.endswith("\n"):
                 line=line[:-1]

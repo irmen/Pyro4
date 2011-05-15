@@ -5,9 +5,10 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
+from __future__ import print_function
 import sys
-import Pyro4.naming
-import Pyro4.errors
+from . import naming
+from . import errors
 
 if sys.version_info<(3, 0):
     input=raw_input
@@ -15,10 +16,10 @@ if sys.version_info<(3, 0):
 
 def handleCommand(nameserver, options, args):
     def printListResult(resultdict, title=""):
-        print("--------START LIST %s" % title)
+        print("--------START LIST", title)
         for name, uri in sorted(resultdict.items()):
             print("%s --> %s" % (name, uri))
-        print("--------END LIST %s" % title)
+        print("--------END LIST", title)
 
     def cmd_ping():
         nameserver.ping()
@@ -37,12 +38,12 @@ def handleCommand(nameserver, options, args):
 
     def cmd_register():
         nameserver.register(args[1], args[2])
-        print("Registered %s" % args[1])
+        print("Registered", args[1])
 
     def cmd_remove():
         count=nameserver.remove(args[1])
         if count>0:
-            print("Removed %s" % args[1])
+            print("Removed", args[1])
         else:
             print("Nothing removed")
 
@@ -52,7 +53,7 @@ def handleCommand(nameserver, options, args):
         sure=input("Potentially removing lots of items from the Name server. Are you sure (y/n)?")
         if sure in ('y', 'Y'):
             count=nameserver.remove(regex=args[1])
-            print("%d items removed." % count)
+            print(count, "items removed.")
 
     commands={
         "ping": cmd_ping,
@@ -66,7 +67,7 @@ def handleCommand(nameserver, options, args):
         commands[args[0]]()
     except Exception:
         x=sys.exc_info()[1]
-        print("Error: %s" % x)
+        print("Error:", x)
 
 
 def main(args):
@@ -84,13 +85,13 @@ def main(args):
     if options.verbose:
         print("Locating name server...")
     try:
-        nameserver=Pyro4.naming.locateNS(options.host, options.port)
-    except Pyro4.errors.PyroError:
+        nameserver=naming.locateNS(options.host, options.port)
+    except errors.PyroError:
         x=sys.exc_info()[1]
-        print("Failed to locate the name server: %s" % x)
+        print("Failed to locate the name server:", x)
         return
     if options.verbose:
-        print("Name server found: %s" % nameserver._pyroUri)
+        print("Name server found:", nameserver._pyroUri)
     handleCommand(nameserver, options, args)
     if options.verbose:
         print("Done.")

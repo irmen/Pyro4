@@ -7,11 +7,11 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 from __future__ import with_statement
 import unittest
-import time, socket
-import Pyro4.config
+import time
 import Pyro4.core
 import Pyro4.naming
 import Pyro4.socketutil
+import Pyro4.constants
 from Pyro4.errors import NamingError
 from Pyro4 import threadutil
 
@@ -141,20 +141,20 @@ class NameServerTests(unittest.TestCase):
         p._pyroBind()
         p._pyroRelease()
         daemonUri="PYRO:"+Pyro4.constants.DAEMON_NAME+"@"+uri.location
-        uri=Pyro4.naming.resolve(daemonUri)
-        uri=Pyro4.naming.resolve(daemonUri)
-        uri=Pyro4.naming.resolve(daemonUri)
-        uri=Pyro4.naming.resolve(daemonUri)
-        uri=Pyro4.naming.resolve(daemonUri)
-        uri=Pyro4.naming.resolve(daemonUri)
+        _=Pyro4.naming.resolve(daemonUri)
+        _=Pyro4.naming.resolve(daemonUri)
+        _=Pyro4.naming.resolve(daemonUri)
+        _=Pyro4.naming.resolve(daemonUri)
+        _=Pyro4.naming.resolve(daemonUri)
+        _=Pyro4.naming.resolve(daemonUri)
         uri=Pyro4.naming.resolve(daemonUri)
         pyronameUri="PYRONAME:"+Pyro4.constants.NAMESERVER_NAME+"@"+uri.location
-        uri=Pyro4.naming.resolve(pyronameUri)
-        uri=Pyro4.naming.resolve(pyronameUri)
-        uri=Pyro4.naming.resolve(pyronameUri)
-        uri=Pyro4.naming.resolve(pyronameUri)
-        uri=Pyro4.naming.resolve(pyronameUri)
-        uri=Pyro4.naming.resolve(pyronameUri)
+        _=Pyro4.naming.resolve(pyronameUri)
+        _=Pyro4.naming.resolve(pyronameUri)
+        _=Pyro4.naming.resolve(pyronameUri)
+        _=Pyro4.naming.resolve(pyronameUri)
+        _=Pyro4.naming.resolve(pyronameUri)
+        _=Pyro4.naming.resolve(pyronameUri)
     
     def testResolve(self):
         resolved1=Pyro4.naming.resolve(Pyro4.core.URI("PYRO:12345@host.com:4444"))

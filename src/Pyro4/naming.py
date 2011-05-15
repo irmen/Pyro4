@@ -5,13 +5,13 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 import re, logging, socket, sys
-from Pyro4.threadutil import RLock, Thread
-import Pyro4.core
-import Pyro4.constants
-import Pyro4.socketutil
-from Pyro4.errors import PyroError, NamingError
+from . import constants
+from .threadutil import RLock, Thread
+from .errors import PyroError, NamingError
+from . import core
+import Pyro4
 
 __all__=["locateNS", "resolve"]
 
@@ -30,17 +30,17 @@ class NameServer(object):
 
     def lookup(self, arg):
         try:
-            return Pyro4.core.URI(self.namespace[arg])
+            return core.URI(self.namespace[arg])
         except KeyError:
             raise NamingError("unknown name: "+arg)
 
     def register(self, name, uri):
-        if isinstance(uri, Pyro4.core.URI):
+        if isinstance(uri, core.URI):
             uri=uri.asString()
         elif not isinstance(uri, basestring):
             raise TypeError("only URIs or strings can be registered")
         else:
-            Pyro4.core.URI(uri)  # check if uri is valid
+            core.URI(uri)  # check if uri is valid
         if not isinstance(name, basestring):
             raise TypeError("name must be a str")
         if name in self.namespace:
@@ -49,23 +49,23 @@ class NameServer(object):
             self.namespace[name]=uri
 
     def remove(self, name=None, prefix=None, regex=None):
-        if name and name in self.namespace and name!=Pyro4.constants.NAMESERVER_NAME:
+        if name and name in self.namespace and name!=constants.NAMESERVER_NAME:
             with self.lock:
                 del self.namespace[name]
             return 1
         if prefix:
             with self.lock:
                 items=list(self.list(prefix=prefix).keys())
-                if Pyro4.constants.NAMESERVER_NAME in items:
-                    items.remove(Pyro4.constants.NAMESERVER_NAME)
+                if constants.NAMESERVER_NAME in items:
+                    items.remove(constants.NAMESERVER_NAME)
                 for item in items:
                     del self.namespace[item]
                 return len(items)
         if regex:
             with self.lock:
                 items=list(self.list(regex=regex).keys())
-                if Pyro4.constants.NAMESERVER_NAME in items:
-                    items.remove(Pyro4.constants.NAMESERVER_NAME)
+                if constants.NAMESERVER_NAME in items:
+                    items.remove(constants.NAMESERVER_NAME)
                 for item in items:
                     del self.namespace[item]
                 return len(items)
@@ -99,7 +99,7 @@ class NameServer(object):
         pass
 
 
-class NameServerDaemon(Pyro4.core.Daemon):
+class NameServerDaemon(core.Daemon):
     """Daemon that contains the Name Server."""
     def __init__(self, host=None, port=None):
         if Pyro4.config.DOTTEDNAMES:
@@ -110,8 +110,8 @@ class NameServerDaemon(Pyro4.core.Daemon):
             port=Pyro4.config.NS_PORT
         super(NameServerDaemon, self).__init__(host, port)
         self.nameserver=NameServer()
-        self.register(self.nameserver, Pyro4.constants.NAMESERVER_NAME)
-        self.nameserver.register(Pyro4.constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
+        self.register(self.nameserver, constants.NAMESERVER_NAME)
+        self.nameserver.register(constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
         log.info("nameserver daemon created")
 
     def close(self):
@@ -203,10 +203,10 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
     bcserver=None
     if enableBroadcast:
         bcserver=BroadcastServer(nsUri, bchost, bcport)
-        print("Broadcast server running on %s" % bcserver.locationStr)
+        print("Broadcast server running on", bcserver.locationStr)
         bcserver.runInThread()
     print("NS running on %s (%s)" % (daemon.locationStr, hostip))
-    print("URI = %s" % nsUri)
+    print("URI =", nsUri)
     try:
         daemon.requestLoop()
     finally:
@@ -236,9 +236,9 @@ def locateNS(host=None, port=None):
     if host is None:
         # first try localhost if we have a good chance of finding it there
         if Pyro4.config.NS_HOST=="localhost" or Pyro4.config.NS_HOST.startswith("127."):
-            uristring="PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, Pyro4.config.NS_HOST, port or Pyro4.config.NS_PORT)
+            uristring="PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, Pyro4.config.NS_HOST, port or Pyro4.config.NS_PORT)
             log.debug("locating the NS: %s", uristring)
-            proxy=Pyro4.core.Proxy(uristring)
+            proxy=core.Proxy(uristring)
             try:
                 proxy.ping()
                 log.debug("located NS")
@@ -257,7 +257,7 @@ def locateNS(host=None, port=None):
                 sock.close()
                 data=data.decode("iso-8859-1")
                 log.debug("located NS: %s", data)
-                return Pyro4.core.Proxy(data)
+                return core.Proxy(data)
             except socket.timeout:
                 continue
         sock.close()
@@ -268,13 +268,13 @@ def locateNS(host=None, port=None):
     # pyro direct lookup
     if not port:
         port=Pyro4.config.NS_PORT
-    if Pyro4.core.URI.isPipeOrUnixsockLocation(host):
-        uristring="PYRO:%s@%s" % (Pyro4.constants.NAMESERVER_NAME, host)
+    if core.URI.isPipeOrUnixsockLocation(host):
+        uristring="PYRO:%s@%s" % (constants.NAMESERVER_NAME, host)
     else:
-        uristring="PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port)
-    uri=Pyro4.core.URI(uristring)
+        uristring="PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, host, port)
+    uri=core.URI(uristring)
     log.debug("locating the NS: %s", uri)
-    proxy=Pyro4.core.Proxy(uri)
+    proxy=core.Proxy(uri)
     try:
         proxy.ping()
         log.debug("located NS")
@@ -286,8 +286,8 @@ def locateNS(host=None, port=None):
 def resolve(uri):
     """Resolve a 'magic' uri (PYRONAME) into the direct PYRO uri."""
     if isinstance(uri, basestring):
-        uri=Pyro4.core.URI(uri)
-    elif not isinstance(uri, Pyro4.core.URI):
+        uri=core.URI(uri)
+    elif not isinstance(uri, core.URI):
         raise TypeError("can only resolve Pyro URIs")
     if uri.protocol=="PYRO":
         return uri

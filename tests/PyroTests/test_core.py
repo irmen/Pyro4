@@ -10,8 +10,8 @@ import unittest
 import copy
 import sys
 import Pyro4.core
-import Pyro4.config
 import Pyro4.errors
+import Pyro4.constants
 
 if sys.version_info>=(3,0):
     unicode=str
@@ -48,7 +48,7 @@ class CoreTests(unittest.TestCase):
         try:
             Pyro4.config.XYZ_FOOBAR=True  # don't want to allow weird config names
             self.fail("expected exception for weird config item")
-        except Pyro4.errors.PyroError:
+        except AttributeError:
             pass
 
     def testUriStrAndRepr(self):
@@ -252,7 +252,7 @@ class CoreTests(unittest.TestCase):
 
     def testMsgFactoryProtocolVersion(self):
         version=Pyro4.constants.PROTOCOL_VERSION
-        Pyro4.constants.PROTOCOL_VERSION=0;     # fake invalid protocol version number
+        Pyro4.constants.PROTOCOL_VERSION=0     # fake invalid protocol version number
         msg=Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_RESULT, tobytes("result"), 0, 1)
         try:
             Pyro4.core.MessageFactory.parseMessageHeader(msg)
@@ -324,7 +324,6 @@ class CoreTests(unittest.TestCase):
             pass
         self.assertTrue(p._pyroConnection is None)
         self.assertTrue(connMock.closeCalled)
-        connMock=ConnectionMock()
         p=Pyro4.core.Proxy("PYRO:9999@localhost:15555")
         with p:
             self.assertTrue(p._pyroUri is not None)

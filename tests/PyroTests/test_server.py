@@ -7,9 +7,9 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 from __future__ import with_statement
 import unittest
-import Pyro4.config
 import Pyro4.core
 import Pyro4.errors
+import Pyro4.util
 import time, os, sys
 from Pyro4 import threadutil
 
@@ -120,8 +120,8 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         self.assertTrue(p2._pyroConnection is None)
         p1.ping()
         p2.ping()
-        x=p1.multiply(11,5)
-        x=p2.multiply(11,5)
+        _=p1.multiply(11,5)
+        _=p2.multiply(11,5)
         self.assertTrue(p1._pyroConnection is not None)
         self.assertTrue(p2._pyroConnection is not None)
         p1._pyroRelease()
@@ -131,8 +131,8 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         self.assertTrue(p1._pyroConnection is None)
         self.assertTrue(p2._pyroConnection is None)
         p1._pyroBind()
-        x=p1.multiply(11,5)
-        x=p2.multiply(11,5)
+        _=p1.multiply(11,5)
+        _=p2.multiply(11,5)
         self.assertTrue(p1._pyroConnection is not None)
         self.assertTrue(p2._pyroConnection is not None)
         self.assertEqual("PYRO",p1._pyroUri.protocol)

@@ -8,10 +8,10 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 import unittest
 import socket, os, sys
 import Pyro4.socketutil as SU
-import Pyro4.config
 from Pyro4 import threadutil
 from Pyro4.socketserver.selectserver import SocketServer_Select
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
+import Pyro4
 
 if sys.version_info<(3,0):
     def tobytes(string, encoding=None):

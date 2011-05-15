@@ -10,7 +10,6 @@ import os, time, sys
 import unittest
 import Pyro4.core
 import Pyro4.constants
-import Pyro4.config
 import Pyro4.socketutil
 from Pyro4.errors import DaemonError,PyroError
 
@@ -160,22 +159,22 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(4, len(d.objectsById))
             uri=d.uriFor(myobj1)
             self.assertEqual(uri1,uri)
-            p=Pyro4.core.Proxy(uri)
+            _=Pyro4.core.Proxy(uri)
             uri=d.uriFor(myobj2)
             self.assertEqual(uri2,uri)
-            p=Pyro4.core.Proxy(uri)
+            _=Pyro4.core.Proxy(uri)
             uri=d.uriFor(myobj3)
             self.assertEqual(uri3,uri)
-            p=Pyro4.core.Proxy(uri)
+            _=Pyro4.core.Proxy(uri)
             uri=d.uriFor("str_name")
             self.assertEqual(uri1,uri)
-            p=Pyro4.core.Proxy(uri)
+            _=Pyro4.core.Proxy(uri)
             uri=d.uriFor(unicode("unicode_name"))
             self.assertEqual(uri2,uri)
-            p=Pyro4.core.Proxy(uri)
+            _=Pyro4.core.Proxy(uri)
             uri=d.uriFor("unicode_"+unichr(0x20ac))
             self.assertEqual(uri3,uri)
-            p=Pyro4.core.Proxy(uri)
+            _=Pyro4.core.Proxy(uri)
 
     def testDaemonObject(self):
         with Pyro4.core.Daemon(port=0) as d:

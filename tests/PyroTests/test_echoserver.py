@@ -6,9 +6,8 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 import unittest
-import Pyro4
 import Pyro4.test.echoserver as echoserver
-import Pyro4.util
+import Pyro4
 from threading import Thread,Event
 
 

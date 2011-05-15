@@ -53,10 +53,10 @@ def _configLogging():
 _configLogging()
 del _configLogging
 
-# import the required Pyro packages to avoid import problems later on
-import Pyro4.util
-import Pyro4.errors
-import Pyro4.core
-import Pyro4.naming
-from Pyro4.core import *
-from Pyro4.naming import *
+# initialize Pyro's configuration
+from .configuration import Configuration
+config=Configuration()
+
+# import the required Pyro symbols into this package
+from .core import *
+from .naming import *

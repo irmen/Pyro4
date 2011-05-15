@@ -6,7 +6,7 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 import socket, os, errno, logging, time, sys
-from Pyro4.errors import ConnectionClosedError, TimeoutError, CommunicationError
+from .errors import ConnectionClosedError, TimeoutError, CommunicationError
 
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.

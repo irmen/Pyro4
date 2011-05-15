@@ -9,11 +9,12 @@ from __future__ import with_statement
 import re, struct, sys, time, os
 import logging, uuid
 import hashlib, hmac
-import Pyro4.config
-import Pyro4.socketutil
-import Pyro4.util
-import Pyro4.errors
-from Pyro4 import threadutil
+from . import constants
+from . import threadutil
+from . import errors
+from . import util
+from . import socketutil
+import Pyro4
 
 __all__=["URI", "Proxy", "Daemon", "callback"]
 
@@ -47,7 +48,7 @@ class URI(object):
         self.pipename=self.sockname=self.host=self.port=None
         match=self.uriRegEx.match(uri)
         if not match:
-            raise Pyro4.errors.PyroError("invalid uri")
+            raise errors.PyroError("invalid uri")
         self.protocol=match.group("protocol")
         self.object=match.group("object")
         location=match.group("location")
@@ -56,10 +57,10 @@ class URI(object):
             return
         if self.protocol=="PYRO":
             if not location:
-                raise Pyro4.errors.PyroError("invalid uri")
+                raise errors.PyroError("invalid uri")
             self._parseLocation(location, None)
         else:
-            raise Pyro4.errors.PyroError("invalid uri (protocol)")
+            raise errors.PyroError("invalid uri (protocol)")
 
     def _parseLocation(self, location, defaultPort):
         if not location:
@@ -67,11 +68,11 @@ class URI(object):
         if location.startswith("./p:"):
             self.pipename=location[4:]
             if (not self.pipename) or ':' in self.pipename or '/' in self.pipename:
-                raise Pyro4.errors.PyroError("invalid uri (location)")
+                raise errors.PyroError("invalid uri (location)")
         elif location.startswith("./u:"):
             self.sockname=location[4:]
             if (not self.sockname) or ':' in self.sockname or '/' in self.sockname:
-                raise Pyro4.errors.PyroError("invalid uri (location)")
+                raise errors.PyroError("invalid uri (location)")
         else:
             self.host, _, self.port=location.partition(":")
             if not self.port:
@@ -79,7 +80,7 @@ class URI(object):
             try:
                 self.port=int(self.port)
             except (ValueError, TypeError):
-                raise Pyro4.errors.PyroError("invalid uri (port)")
+                raise errors.PyroError("invalid uri (port)")
 
     @staticmethod
     def isPipeOrUnixsockLocation(location):
@@ -114,7 +115,7 @@ class URI(object):
     # but this way it helps pickle to make the representation smaller by omitting all attribute names.
 
     def __getstate__(self):
-        return (self.protocol, self.object, self.pipename, self.sockname, self.host, self.port)
+        return self.protocol, self.object, self.pipename, self.sockname, self.host, self.port
 
     def __setstate__(self, state):
         self.protocol, self.object, self.pipename, self.sockname, self.host, self.port = state
@@ -135,13 +136,13 @@ class _RemoteMethod(object):
 
 class Proxy(object):
     """Pyro proxy for a remote object. Intercepts method calls and dispatches them to the remote object."""
-    _pyroSerializer=Pyro4.util.Serializer()
+    _pyroSerializer=util.Serializer()
     __pyroAttributes=frozenset(["__getnewargs__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway", "_pyroTimeout", "_pyroSeq"])
 
     def __init__(self, uri):
         # check if hmac secret key is set
         if Pyro4.config.HMAC_KEY in (None, ""):
-            raise Pyro4.errors.PyroError("you must set Pyro's HMAC_KEY config item to a valid shared secret key")
+            raise errors.PyroError("you must set Pyro's HMAC_KEY config item to a valid shared secret key")
         if isinstance(uri, basestring):
             uri=URI(uri)
         elif not isinstance(uri, URI):
@@ -238,7 +239,7 @@ class Proxy(object):
                         raise data
                     else:
                         return data
-            except (Pyro4.errors.CommunicationError, KeyboardInterrupt):
+            except (errors.CommunicationError, KeyboardInterrupt):
                 # Communication error during read. To avoid corrupt transfers, we close the connection.
                 # Otherwise we might receive the previous reply as a result of a new methodcall!
                 # Special case for keyboardinterrupt: people pressing ^C to abort the client
@@ -252,20 +253,19 @@ class Proxy(object):
         if seq!=self._pyroSeq:
             err="invoke: reply sequence out of sync, got %d expected %d" % (seq, self._pyroSeq)
             log.error(err)
-            raise Pyro4.errors.ProtocolError(err)
+            raise errors.ProtocolError(err)
 
     def __pyroCreateConnection(self, replaceUri=False):
         """Connects this proxy to the remote Pyro daemon. Does connection handshake."""
-        # import Pyro4.naming # don't import globally because of cyclic dependancy
-        uri=Pyro4.naming.resolve(self._pyroUri)
+        from .naming import resolve  # don't import this globally because of cyclic dependancy
+        uri=resolve(self._pyroUri)
         if uri.host and uri.port:
             # socket connection
             log.debug("connecting to %s", uri)
-            conn=None
             try:
                 with self.__pyroLock:
-                    sock=Pyro4.socketutil.createSocket(connect=(uri.host, uri.port), timeout=self.__pyroTimeout)
-                    conn=Pyro4.socketutil.SocketConnection(sock, uri.object)
+                    sock=socketutil.createSocket(connect=(uri.host, uri.port), timeout=self.__pyroTimeout)
+                    conn=socketutil.SocketConnection(sock, uri.object)
                     # Do handshake. For now, no need to send anything.
                     msgType, flags, seq, data = MessageFactory.getMessage(conn, None)
                     # any trailing data (dataLen>0) is an error message, if any
@@ -275,10 +275,10 @@ class Proxy(object):
                     conn.close()
                 err="cannot connect: %s" % x
                 log.error(err)
-                if isinstance(x, Pyro4.errors.CommunicationError):
+                if isinstance(x, errors.CommunicationError):
                     raise
                 else:
-                    raise Pyro4.errors.CommunicationError(err)
+                    raise errors.CommunicationError(err)
             else:
                 if msgType==MessageFactory.MSG_CONNECTFAIL:
                     error="connection rejected"
@@ -286,7 +286,7 @@ class Proxy(object):
                         error+=", reason: "+data
                     conn.close()
                     log.error(error)
-                    raise Pyro4.errors.CommunicationError(error)
+                    raise errors.CommunicationError(error)
                 elif msgType==MessageFactory.MSG_CONNECTOK:
                     self._pyroConnection=conn
                     if replaceUri:
@@ -297,7 +297,7 @@ class Proxy(object):
                     conn.close()
                     err="connect: invalid msg type %d received" % msgType
                     log.error(err)
-                    raise Pyro4.errors.ProtocolError(err)
+                    raise errors.ProtocolError(err)
         else:
             raise NotImplementedError("non-socket uri connections not yet implemented")
 
@@ -307,13 +307,13 @@ class Proxy(object):
             try:
                 self.__pyroCreateConnection()
                 return
-            except Pyro4.errors.CommunicationError:
+            except errors.CommunicationError:
                 tries-=1
                 if tries:
                     time.sleep(2)
         msg="failed to reconnect"
         log.error(msg)
-        raise Pyro4.errors.ConnectionClosedError(msg)
+        raise errors.ConnectionClosedError(msg)
 
 
 class MessageFactory(object):
@@ -351,21 +351,21 @@ class MessageFactory(object):
         hmac_key = Pyro4.config.HMAC_KEY
         if sys.version_info>=(3, 0):
             hmac_key = bytes(hmac_key, "utf-8")
-        headerchecksum=(msgType+Pyro4.constants.PROTOCOL_VERSION+len(databytes)+flags+seq+MessageFactory.MAGIC)&0xffff
+        headerchecksum=(msgType+constants.PROTOCOL_VERSION+len(databytes)+flags+seq+MessageFactory.MAGIC)&0xffff
         bodyhmac=hmac.new(hmac_key, databytes, digestmod=hashlib.sha1).digest()
-        msg=struct.pack(cls.headerFmt, cls.pyro_tag, Pyro4.constants.PROTOCOL_VERSION, msgType, flags, seq, len(databytes), headerchecksum, bodyhmac)
+        msg=struct.pack(cls.headerFmt, cls.pyro_tag, constants.PROTOCOL_VERSION, msgType, flags, seq, len(databytes), headerchecksum, bodyhmac)
         return msg+databytes
 
     @classmethod
     def parseMessageHeader(cls, headerData):
         """Parses a message header. Returns a tuple of messagetype, messageflags, sequencenumber, datalength, datahmac."""
         if not headerData or len(headerData)!=cls.HEADERSIZE:
-            raise Pyro4.errors.ProtocolError("header data size mismatch")
+            raise errors.ProtocolError("header data size mismatch")
         tag, ver, msgType, flags, seq, dataLen, headerchecksum, datahmac = struct.unpack(cls.headerFmt, headerData)
-        if tag!=cls.pyro_tag or ver!=Pyro4.constants.PROTOCOL_VERSION:
-            raise Pyro4.errors.ProtocolError("invalid data or unsupported protocol version")
+        if tag!=cls.pyro_tag or ver!=constants.PROTOCOL_VERSION:
+            raise errors.ProtocolError("invalid data or unsupported protocol version")
         if headerchecksum!=(msgType+ver+dataLen+flags+seq+MessageFactory.MAGIC)&0xffff:
-            raise Pyro4.errors.ProtocolError("header checksum mismatch")
+            raise errors.ProtocolError("header checksum mismatch")
         return msgType, flags, seq, dataLen, datahmac
 
     @classmethod
@@ -375,13 +375,13 @@ class MessageFactory(object):
         if requiredMsgType is not None and msgType != requiredMsgType:
             err="invalid msg type %d received" % msgType
             log.error(err)
-            raise Pyro4.errors.ProtocolError(err)
+            raise errors.ProtocolError(err)
         databytes=connection.recv(datalen)
         hmac_key = Pyro4.config.HMAC_KEY
         if sys.version_info>=(3, 0):
             hmac_key = bytes(hmac_key, "utf-8")
         if datahmac != hmac.new(hmac_key, databytes, digestmod=hashlib.sha1).digest():
-            raise Pyro4.errors.ProtocolError("message hmac mismatch")
+            raise errors.ProtocolError("message hmac mismatch")
         return msgType, flags, seq, databytes
 
 
@@ -396,8 +396,8 @@ class DaemonObject(object):
     def ping(self):
         pass
 
-from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
-from Pyro4.socketserver.selectserver import SocketServer_Select
+from .socketserver.threadpoolserver import SocketServer_Threadpool
+from .socketserver.selectserver import SocketServer_Select
 
 
 class Daemon(object):
@@ -408,7 +408,7 @@ class Daemon(object):
     def __init__(self, host=None, port=0):
         # check if hmac secret key is set
         if Pyro4.config.HMAC_KEY in (None, ""):
-            raise Pyro4.errors.PyroError("you must set Pyro's HMAC_KEY config item to a valid shared secret key")
+            raise errors.PyroError("you must set Pyro's HMAC_KEY config item to a valid shared secret key")
         if host is None:
             host=Pyro4.config.HOST
         if Pyro4.config.SERVERTYPE=="thread":
@@ -416,12 +416,12 @@ class Daemon(object):
         elif Pyro4.config.SERVERTYPE=="select":
             self.transportServer=SocketServer_Select(self, host, port, Pyro4.config.COMMTIMEOUT)
         else:
-            raise Pyro4.errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
+            raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
         self.locationStr=self.transportServer.locationStr
         log.debug("created daemon on %s", self.locationStr)
-        self.serializer=Pyro4.util.Serializer()
+        self.serializer=util.Serializer()
         pyroObject=DaemonObject(self)
-        pyroObject._pyroId=Pyro4.constants.DAEMON_NAME
+        pyroObject._pyroId=constants.DAEMON_NAME
         self.objectsById={pyroObject._pyroId: pyroObject}
         self.__mustshutdown=False
         self.__loopstopped=threadutil.Event()
@@ -484,9 +484,7 @@ class Daemon(object):
         wraps it in a reply to the calling side, as to not make this server side loop
         terminate due to exceptions caused by remote invocations.
         """
-        flags=0
         isCallback=False
-        seq=0
         try:
             msgType, flags, seq, data = MessageFactory.getMessage(conn, MessageFactory.MSG_INVOKE)
             objId, method, vargs, kwargs=self.serializer.deserialize(
@@ -497,7 +495,7 @@ class Daemon(object):
                     # Python before 2.6.5 doesn't accept unicode keyword arguments
                     kwargs = dict((str(k), kwargs[k]) for k in kwargs)
                 #log.debug("calling %s.%s", obj.__class__.__name__, method)
-                obj=Pyro4.util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
+                obj=util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
                 if flags & MessageFactory.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:
                     # oneway call to be run inside its own thread
                     thread=threadutil.Thread(target=obj, args=vargs, kwargs=kwargs)
@@ -508,7 +506,7 @@ class Daemon(object):
                     data=obj(*vargs, **kwargs)   # this is the actual method call to the Pyro object
             else:
                 log.debug("unknown object requested: %s", objId)
-                raise Pyro4.errors.DaemonError("unknown object")
+                raise errors.DaemonError("unknown object")
             if flags & MessageFactory.FLAGS_ONEWAY:
                 return   # oneway call, don't send a response
             else:
@@ -519,7 +517,7 @@ class Daemon(object):
                 msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags, seq)
                 del data
                 conn.send(msg)
-        except Pyro4.errors.CommunicationError:
+        except errors.CommunicationError:
             # communication errors are not handled here (including TimeoutError)
             raise
         except Exception:
@@ -528,7 +526,7 @@ class Daemon(object):
             log.debug("Exception occurred while handling request: %s", x)
             if not flags & MessageFactory.FLAGS_ONEWAY:
                 # only return the error to the client if it wasn't a oneway call
-                tblines=Pyro4.util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
+                tblines=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
                 self.sendExceptionResponse(conn, seq, x, tblines)
             if isCallback:
                 raise       # re-raise if flagged as callback
@@ -553,9 +551,9 @@ class Daemon(object):
         else:
             objectId="obj_"+uuid.uuid4().hex   # generate a new objectId
         if hasattr(obj, "_pyroId"):
-            raise Pyro4.errors.DaemonError("object already has a Pyro id")
+            raise errors.DaemonError("object already has a Pyro id")
         if objectId in self.objectsById:
-            raise Pyro4.errors.DaemonError("object already registered")
+            raise errors.DaemonError("object already registered")
         obj._pyroId=objectId
         obj._pyroDaemon=self
         self.objectsById[obj._pyroId]=obj
@@ -571,11 +569,11 @@ class Daemon(object):
         if not isinstance(objectOrId, basestring):
             objectId=getattr(objectOrId, "_pyroId", None)
             if objectId is None:
-                raise Pyro4.errors.DaemonError("object isn't registered")
+                raise errors.DaemonError("object isn't registered")
         else:
             objectId=objectOrId
             objectOrId=None
-        if objectId==Pyro4.constants.DAEMON_NAME:
+        if objectId==constants.DAEMON_NAME:
             return
         if objectId in self.objectsById:
             del self.objectsById[objectId]
@@ -594,7 +592,7 @@ class Daemon(object):
         if not isinstance(objectOrId, basestring):
             objectOrId=getattr(objectOrId, "_pyroId", None)
             if objectOrId is None:
-                raise Pyro4.errors.DaemonError("object isn't registered")
+                raise errors.DaemonError("object isn't registered")
         return URI("PYRO:"+objectOrId+"@"+self.locationStr)
 
     def close(self):
@@ -613,7 +611,7 @@ class Daemon(object):
 
     def __enter__(self):
         if not self.transportServer:
-            raise Pyro4.errors.PyroError("cannot reuse this object")
+            raise errors.PyroError("cannot reuse this object")
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):

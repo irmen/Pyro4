@@ -9,9 +9,9 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 import select, socket, os, sys, logging
-from Pyro4.socketutil import SocketConnection, createSocket, ERRNO_RETRIES, ERRNO_BADF
-from Pyro4.errors import ConnectionClosedError, PyroError
-import Pyro4.config
+from .. import socketutil
+from .. import errors
+import Pyro4
 
 log=logging.getLogger("Pyro.socketserver.select")
 
@@ -23,7 +23,7 @@ class SocketServer_Select(object):
             raise NotImplementedError("select-based server is not supported for Jython, use the threadpool server instead")
         log.info("starting select/poll socketserver")
         self.sock=None
-        self.sock=createSocket(bind=(host, port), timeout=timeout, noinherit=True)
+        self.sock=socketutil.createSocket(bind=(host, port), timeout=timeout, noinherit=True)
         self.clients=[]
         self.callback=callbackObject
         sockaddr=self.sock.getsockname()
@@ -53,7 +53,7 @@ class SocketServer_Select(object):
                         if conn is self.sock:
                             try:
                                 conn=self.handleConnection(self.sock)
-                            except ConnectionClosedError:
+                            except errors.ConnectionClosedError:
                                 log.info("server socket was closed, stopping requestloop")
                                 return
                             if conn:
@@ -62,7 +62,7 @@ class SocketServer_Select(object):
                         else:
                             try:
                                 self.callback.handleRequest(conn)
-                            except (socket.error, ConnectionClosedError):
+                            except (socket.error, errors.ConnectionClosedError):
                                 # client went away.
                                 try:
                                     fn=conn.fileno()
@@ -102,7 +102,7 @@ class SocketServer_Select(object):
                             conn=self.handleConnection(self.sock)
                             if conn:
                                 self.clients.append(conn)
-                        except ConnectionClosedError:
+                        except errors.ConnectionClosedError:
                             log.info("server socket was closed, stopping requestloop")
                             return
                     for conn in rlist[:]:
@@ -111,7 +111,7 @@ class SocketServer_Select(object):
                             try:
                                 if self.callback:
                                     self.callback.handleRequest(conn)
-                            except (socket.error, ConnectionClosedError):
+                            except (socket.error, errors.ConnectionClosedError):
                                 # client went away.
                                 conn.close()
                                 if conn in self.clients:
@@ -136,7 +136,7 @@ class SocketServer_Select(object):
                 try:
                     if self.callback:
                         self.callback.handleRequest(s)
-                except (socket.error, ConnectionClosedError):
+                except (socket.error, errors.ConnectionClosedError):
                     # client went away.
                     s.close()
                     if s in self.clients:
@@ -151,19 +151,19 @@ class SocketServer_Select(object):
         except socket.error:
             x=sys.exc_info()[1]
             err=getattr(x, "errno", x.args[0])
-            if err in ERRNO_RETRIES:
+            if err in socketutil.ERRNO_RETRIES:
                 # just ignore this error for now and continue
                 log.warn("accept() failed errno=%d, shouldn't happen", err)
                 return None
-            if err in ERRNO_BADF:
+            if err in socketutil.ERRNO_BADF:
                 # our server socket got destroyed
-                raise ConnectionClosedError("server socket closed")
+                raise errors.ConnectionClosedError("server socket closed")
             raise
         try:
-            conn=SocketConnection(csock)
+            conn=socketutil.SocketConnection(csock)
             if self.callback.handshake(conn):
                 return conn
-        except (socket.error, PyroError):
+        except (socket.error, errors.PyroError):
             x=sys.exc_info()[1]
             log.warn("error during connect: %s", x)
             csock.close()

@@ -11,6 +11,8 @@ import sys, select, os
 import Pyro4.core
 import Pyro4.naming
 import Pyro4.nsc
+import Pyro4.constants
+import Pyro4.socketutil
 from Pyro4.errors import NamingError,PyroError
 
 if sys.version_info>=(3,0):
@@ -109,7 +111,7 @@ class OfflineNameServerTests(unittest.TestCase):
     def testRefuseDotted(self):
         try:
             Pyro4.config.DOTTEDNAMES=True
-            ns=Pyro4.naming.NameServerDaemon(port=0)
+            _=Pyro4.naming.NameServerDaemon(port=0)
             self.fail("should refuse to create name server")
         except PyroError:
             pass
@@ -155,7 +157,7 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertTrue(isinstance(bc2, Pyro4.naming.BroadcastServer))
         sock=bc2.sock
         self.assertTrue(hasattr(sock,"fileno"))
-        func=bc2.processRequest
+        _=bc2.processRequest
         ns1.close()
         ns2.close()
         bc2.close()
@@ -171,8 +173,8 @@ class OfflineNameServerTests(unittest.TestCase):
                 ns1.sock.setblocking(False)
                 bc1.sock.setblocking(False)
             for s in ns1.sockets():
-                p.register(s, select.POLLIN)  #@UndefinedVariable (pydev)
-            p.register(bc1.fileno(), select.POLLIN)  #@UndefinedVariable (pydev)
+                p.register(s, select.POLLIN)
+            p.register(bc1.fileno(), select.POLLIN)
             p.poll(100)
             if hasattr(p,"close"):
                 p.close()

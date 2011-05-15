@@ -6,9 +6,9 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
-import Pyro4.config
+from . import config
 
-if Pyro4.config.THREADING2:
+if config.THREADING2:
     try:
         from threading2 import *
     except ImportError:
