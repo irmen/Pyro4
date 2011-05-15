@@ -58,5 +58,5 @@ from .configuration import Configuration
 config=Configuration()
 
 # import the required Pyro symbols into this package
-from .core import *
-from .naming import *
+from .core import URI, Proxy, Daemon, callback
+from .naming import locateNS, resolve

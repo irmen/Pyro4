@@ -9,7 +9,6 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 # PYRO_LOGLEVEL   (enable Pyro log config and set level)
 # PYRO_LOGFILE    (the name of the logfile if you don't like the default)
 
-from __future__ import print_function
 import os
 
 class Configuration(object):
@@ -73,8 +72,8 @@ class Configuration(object):
         # easy config diagnostics
         from .constants import VERSION
         import inspect
-        print("Pyro version:", VERSION)
-        print("Loaded from:", os.path.abspath(os.path.split(inspect.getfile(Configuration))[0]))
+        print("Pyro version: %s" % VERSION)
+        print("Loaded from: %s" % os.path.abspath(os.path.split(inspect.getfile(Configuration))[0]))
         print("Active configuration settings:")
         config=self.asDict()
         config["LOGFILE"]=os.environ.get("PYRO_LOGFILE")

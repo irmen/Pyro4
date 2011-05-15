@@ -5,8 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
-import sys
-import time
+import sys, os, time
 import Pyro4
 import Pyro4.threadutil
 
@@ -65,7 +64,8 @@ def main(args, returnWithoutLooping=False):
         Pyro4.config.HMAC_KEY="testkey"
     if not options.quiet:
         print("Using HMAC_KEY: %s" % Pyro4.config.HMAC_KEY)
-    Pyro4.config.SERVERTYPE="select"
+    if os.name!="java":
+        Pyro4.config.SERVERTYPE="select"
     
     nameserver=None
     if options.nameserver:

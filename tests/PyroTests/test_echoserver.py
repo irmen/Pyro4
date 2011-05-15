@@ -6,6 +6,7 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 import unittest
+import time
 import Pyro4.test.echoserver as echoserver
 import Pyro4
 from threading import Thread,Event
@@ -31,6 +32,8 @@ class TestEchoserver(unittest.TestCase):
         self.echoserverthread.started.wait()
         self.uri=self.echoserverthread.uri
     def tearDown(self):
+        self.echoserverthread.echodaemon.shutdown()
+        time.sleep(0.01)
         self.echoserverthread.terminated.wait()
         Pyro4.config.HMAC_KEY=None
     def testEcho(self):

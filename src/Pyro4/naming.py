@@ -5,7 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
-from __future__ import with_statement, print_function
+from __future__ import with_statement
 import re, logging, socket, sys
 from . import constants
 from .threadutil import RLock, Thread
@@ -203,10 +203,10 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
     bcserver=None
     if enableBroadcast:
         bcserver=BroadcastServer(nsUri, bchost, bcport)
-        print("Broadcast server running on", bcserver.locationStr)
+        print("Broadcast server running on %s" % bcserver.locationStr)
         bcserver.runInThread()
     print("NS running on %s (%s)" % (daemon.locationStr, hostip))
-    print("URI =", nsUri)
+    print("URI = %s" % nsUri)
     try:
         daemon.requestLoop()
     finally:
