@@ -4,7 +4,9 @@ recursive-include tests *
 recursive-include examples *
 recursive-include docs *
 global-exclude */.svn/*
+global-exclude */.idea/*
 global-exclude *.class
 global-exclude *.pyc
 global-exclude *.pyo
 global-exclude *.coverage
+global-exclude nosetests.xml
