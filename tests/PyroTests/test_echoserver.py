@@ -10,6 +10,7 @@ import time
 import Pyro4.test.echoserver as echoserver
 import Pyro4
 from threading import Thread,Event
+from testsupport import *
 
 
 class EchoServerThread(Thread):
@@ -26,7 +27,7 @@ class EchoServerThread(Thread):
         
 class TestEchoserver(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY="test_echoserver"
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
         self.echoserverthread=EchoServerThread()
         self.echoserverthread.start()
         self.echoserverthread.started.wait()

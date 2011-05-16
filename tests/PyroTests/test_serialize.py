@@ -9,11 +9,13 @@ import unittest
 import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
+from testsupport import *
+
 
 class SerializeTests(unittest.TestCase):
     
     def setUp(self):
-        Pyro4.config.HMAC_KEY="testsuite"
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
         self.ser=Pyro4.util.Serializer()
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None

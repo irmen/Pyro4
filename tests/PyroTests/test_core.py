@@ -8,20 +8,11 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 from __future__ import with_statement
 import unittest
 import copy
-import sys
 import Pyro4.core
 import Pyro4.errors
 import Pyro4.constants
+from testsupport import *
 
-if sys.version_info>=(3,0):
-    unicode=str
-    unichr=chr
-if sys.version_info<(3,0):
-    def tobytes(string, encoding=None):
-        return string
-else:
-    def tobytes(string, encoding="iso-8859-1"):
-        return bytes(string,encoding)
 
 class Thing(object):
     def __init__(self, arg):
@@ -32,7 +23,7 @@ class Thing(object):
 
 class CoreTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY="testsuite"
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
 
@@ -301,6 +292,7 @@ class CoreTests(unittest.TestCase):
                 self.closeCalled=True
 
         connMock=ConnectionMock()
+        # first without a 'with' statement
         p=Pyro4.core.Proxy("PYRO:9999@localhost:15555")
         p._pyroConnection=connMock
         self.assertFalse(connMock.closeCalled)

@@ -14,6 +14,8 @@ import Pyro4.socketutil
 import Pyro4.constants
 from Pyro4.errors import NamingError
 from Pyro4 import threadutil
+from testsupport import *
+
 
 class NSLoopThread(threadutil.Thread):
     def __init__(self, nameserver):
@@ -28,7 +30,7 @@ class NSLoopThread(threadutil.Thread):
 
 class BCSetupTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY="testsuite"
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
     def testBCstart(self):
@@ -46,7 +48,7 @@ class BCSetupTests(unittest.TestCase):
 class NameServerTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT=0.1
-        Pyro4.config.HMAC_KEY="testsuite"
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
         myIpAddress=Pyro4.socketutil.getMyIpAddress(workaround127=True)
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0)
         self.assertTrue(self.bcserver is not None,"expected a BC server to be running")

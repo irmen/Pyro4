@@ -12,10 +12,8 @@ import Pyro4.errors
 import Pyro4.util
 import time, os, sys
 from Pyro4 import threadutil
+from testsupport import *
 
-if sys.version_info>=(3,0):
-    unicode=str
-    unichr=chr
 
 class MyThing(object):
     def __init__(self):
@@ -60,7 +58,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro4.config.COMMTIMEOUT=self.COMMTIMEOUT
         Pyro4.config.THREADPOOL_MINTHREADS=2
         Pyro4.config.THREADPOOL_MAXTHREADS=20
-        Pyro4.config.HMAC_KEY="testsuite"
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
         self.daemon=Pyro4.core.Daemon(port=0)
         obj=MyThing()
         uri=self.daemon.register(obj, "something")

@@ -6,21 +6,15 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 import unittest
-import socket, os, sys
+import socket, os
 import Pyro4.socketutil as SU
 from Pyro4 import threadutil
 from Pyro4.socketserver.selectserver import SocketServer_Select
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 import Pyro4
+from testsupport import *
 
-if sys.version_info<(3,0):
-    def tobytes(string, encoding=None):
-        return string
-else:
-    def tobytes(string, encoding="iso-8859-1"):
-        return bytes(string,encoding)
 
-        
 class TestSocketutil(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT=0.1

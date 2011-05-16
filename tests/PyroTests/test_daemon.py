@@ -6,17 +6,13 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 from __future__ import with_statement
-import os, time, sys
+import os, time
 import unittest
 import Pyro4.core
 import Pyro4.constants
 import Pyro4.socketutil
 from Pyro4.errors import DaemonError,PyroError
-
-if sys.version_info>=(3,0):
-    unicode=str
-    unichr=chr
-
+from testsupport import *
 
 class MyObj(object):
     def __init__(self, arg):
@@ -31,7 +27,7 @@ class DaemonTests(unittest.TestCase):
 
     def setUp(self):
         Pyro4.config.POLLTIMEOUT=0.1
-        Pyro4.config.HMAC_KEY="testsuite"
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
         

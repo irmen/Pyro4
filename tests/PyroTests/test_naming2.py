@@ -14,17 +14,12 @@ import Pyro4.nsc
 import Pyro4.constants
 import Pyro4.socketutil
 from Pyro4.errors import NamingError,PyroError
+from testsupport import *
 
-if sys.version_info>=(3,0):
-    from io import StringIO
-    unicode=str
-    unichr=chr
-else:
-    from StringIO import StringIO
 
 class OfflineNameServerTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY="testsuite"
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
     def testRegister(self):
