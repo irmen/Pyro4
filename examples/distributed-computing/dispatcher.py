@@ -20,7 +20,7 @@ class DispatcherQueue(object):
         return self.workqueue.qsize()
     def resultQueueSize(self):
         return self.resultqueue.qsize()
-        
+
 ######## main program
 
 ns=Pyro4.naming.locateNS()

@@ -25,15 +25,15 @@ class Robot(object):
         else:
             return Robot(self.name,(self.gridw,self.gridh),(self.x,self.y),(self.dx,self.dy),self.strength)
     def move(self, world=None):
-        # minmax to avoid moving off the sides 
-        x=min(self.gridw-1, max(0,self.x+self.dx) )
-        y=min(self.gridh-1, max(0,self.y+self.dy) )
+        # minmax to avoid moving off the sides
+        x=min(self.gridw-1, max(0,self.x+self.dx))
+        y=min(self.gridh-1, max(0,self.y+self.dy))
         if x==self.x and y==self.y:
             return
         if world and self.__process_collision(x,y,world):
             return
         self.x,self.y = x,y
-    def __process_collision(self, newx, newy, world):            
+    def __process_collision(self, newx, newy, world):
         other=world.collides(newx,newy)
         if not other:
             return False  # we didn't hit anything
@@ -96,4 +96,3 @@ class World(object):
         return (self.width,self.height,all,robots)
     def __setstate__(self, args):
         self.width,self.height,self.all,self.robots=args
-

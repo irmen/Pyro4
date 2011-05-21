@@ -34,4 +34,3 @@ print("Server started.")
 daemon.requestLoop()
 
 # note: we are not removing the name server registration!
-    

@@ -42,6 +42,6 @@ except Exception:
     print("Printing Pyro traceback >>>>>>")
     print("".join(Pyro4.util.getPyroTraceback()))
     print("<<<<<<< end of Pyro traceback")
-    
+
 print("*** invoking server method that crashes, not catching anything ***")
 print(test.complexerror())

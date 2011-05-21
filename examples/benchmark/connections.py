@@ -4,7 +4,7 @@ import Pyro4
 ns_uri=Pyro4.naming.resolve("PYRONAME:Pyro.NameServer")
 print("Name server location: %s" % ns_uri)
 
-NUM_PROXIES=10  # 
+NUM_PROXIES=10
 
 print("Timing raw rebind (connect) speed... %d proxies" % NUM_PROXIES)
 proxies=[Pyro4.core.Proxy(ns_uri) for i in range(NUM_PROXIES)]

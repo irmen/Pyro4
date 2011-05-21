@@ -27,7 +27,7 @@ proxy = Pyro4.core.Proxy("PYRONAME:example.proxysharing")
 # now create a handful of threads and give each of them the same two proxy objects
 threads = []
 for i in range(5):
-    thread=threadutil.Thread(target=myThread, args=(nsproxy, proxy) )
+    thread=threadutil.Thread(target=myThread, args=(nsproxy, proxy))
     # thread.setDaemon(True)
     thread.setDaemon(False)
     threads.append(thread)
@@ -54,11 +54,11 @@ stop=False
 proxy.reset_work()
 threads = []
 for i in range(10):
-    thread=threadutil.Thread(target=myThread2, args=[proxy] )
+    thread=threadutil.Thread(target=myThread2, args=[proxy])
     thread.setDaemon(False)
     threads.append(thread)
     thread.start()
-    
+
 print("waiting 5 seconds")
 start=time.time()
 time.sleep(5)
@@ -78,12 +78,12 @@ proxy.reset_work()
 stop=False
 threads = []
 for i in range(10):
-    proxy=Pyro4.core.Proxy(proxy._pyroUri) # create a new proxy
-    thread=threadutil.Thread(target=myThread2, args=[proxy] )
+    proxy=Pyro4.core.Proxy(proxy._pyroUri)  # create a new proxy
+    thread=threadutil.Thread(target=myThread2, args=[proxy])
     thread.setDaemon(False)
     threads.append(thread)
     thread.start()
-    
+
 print("waiting 5 seconds")
 start=time.time()
 time.sleep(5)

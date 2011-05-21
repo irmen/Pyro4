@@ -10,7 +10,7 @@ def randomname():
     for i in range(random.randint(1,10)):
         parts.append(partname())
     return ".".join(parts)
-    
+
 
 class NamingTrasher(threadutil.Thread):
     def __init__(self,nsuri,number):
@@ -39,14 +39,14 @@ class NamingTrasher(threadutil.Thread):
         entries=self.ns.list(prefix="stresstest.51")
     def listregex(self):
         entries=self.ns.list(regex=r"stresstest\.??\.41.*")
-    def run(self):  
+    def run(self):
         print("Name Server trasher running.")
         while not self.mustStop:
-            random.choice((self.list, self.register, self.remove, self.lookup, self.listregex, self.listprefix)) ()
+            random.choice((self.list, self.register, self.remove, self.lookup, self.listregex, self.listprefix))()
             sys.stdout.write("%d " % self.number)
             sys.stdout.flush()
             time.sleep(0.001)
-        print("Trasher exiting.")    
+        print("Trasher exiting.")
 
 def main():
     threads=[]

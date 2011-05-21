@@ -8,7 +8,7 @@ import Pyro4
 def approxEqual(x,y):
     return abs(x-y) < 0.2
 
-# disable timeout globally 
+# disable timeout globally
 Pyro4.config.COMMTIMEOUT=0
 
 obj=Pyro4.core.Proxy("PYRONAME:example.timeout")
@@ -75,7 +75,7 @@ start=time.time()
 try:
     result=obj.delay(5)
     print("!?should have raised TimeoutError!?")
-except Pyro4.errors.TimeoutError:    
+except Pyro4.errors.TimeoutError:
     print("Timeouterror! As expected!")
     duration=time.time()-start
     if sys.platform!="cli":

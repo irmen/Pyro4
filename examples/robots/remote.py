@@ -44,7 +44,7 @@ class LocalGameObserver(object):
             print("[%s] I DIED (%s did it)" % (self.name, killer.name))
         else:
             print("[%s] I DIED" % self.name)
-    
+
 class GameObserver(object):
     def world_update(self, iteration, world, robotdata):
         pass

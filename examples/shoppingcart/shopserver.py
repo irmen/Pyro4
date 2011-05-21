@@ -20,7 +20,7 @@ class Shop(object):
         }
 
     customersInStore={}
-    
+
     def enter(self, name):
         print("Customer %s enters the store." % name)
         print("Customer takes a shopping cart.")
@@ -60,7 +60,7 @@ class Shop(object):
         # delete the cart and unregister it with pyro
         del self.customersInStore[name]
         self.__unproxyfy(cart)
-    
+
     # utility methods:
     def __proxyfy(self, object):
         """register the object with the daemon and return a proxy"""

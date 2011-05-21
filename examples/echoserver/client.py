@@ -22,6 +22,6 @@ try:
 except:
     print("\ncaught an exception, traceback:")
     print("".join(Pyro4.util.getPyroTraceback()))
-    
+
 print ("\nshutting down the test echo server.")
 echoserver.shutdown()

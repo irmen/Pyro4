@@ -1,6 +1,7 @@
 
 # the bank uses this exception to say there's something wrong:
-class BankError(Exception): pass
+class BankError(Exception):
+    pass
 
 # Unrestricted account.
 class Account(object):
@@ -26,9 +27,9 @@ class Bank(object):
     def __init__(s):
         s.accounts={}
     def name(s):
-        pass # must override this!
+        pass  # must override this!
     def createAccount(s, name):
-        pass # must override this!
+        pass  # must override this!
     def deleteAccount(s, name):
         try:
             del s.accounts[name]

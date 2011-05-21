@@ -23,7 +23,7 @@ class Server(object):
         return "The result :)"
     def nothing(self):
         print("nothing got called, doing nothing")
-      
+
 
 ######## main program
 

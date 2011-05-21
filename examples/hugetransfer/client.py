@@ -7,7 +7,7 @@ basesize = 500000
 data='x'*basesize
 if sys.version_info>=(3,0):
     data=bytes(data,"ASCII")
-    
+
 totalsize=0
 
 obj=Pyro4.core.Proxy("PYRONAME:example.hugetransfer")
@@ -24,4 +24,3 @@ duration=time.time()-begin
 totalsize=float(totalsize)
 print("It took %.2f seconds to transfer %d kilobyte." % (duration, totalsize/1024))
 print("That is %.2f k/sec. = %.2f mb/sec." % (totalsize/1024/duration, totalsize/1024/1024/duration))
-

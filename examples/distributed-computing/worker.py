@@ -22,9 +22,9 @@ def factorize(n):
     while not primes and candidate in candidates:
         if n%candidate == 0 and isPrime(candidate):
             primes = primes + [candidate] + factorize(n//candidate)
-        candidate += 1            
+        candidate+=1
     return primes
-    
+
 def process(item):
     print("factorizing %s -->" % item.data)
     sys.stdout.flush()
@@ -44,6 +44,6 @@ def main():
         else:
             process(item)
             dispatcher.putResult(item)
-            
+
 if __name__=="__main__":
     main()

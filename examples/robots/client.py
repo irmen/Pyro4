@@ -20,7 +20,7 @@ class DrunkenGameObserver(remote.GameObserver):
 class AngryGameObserver(remote.GameObserver):
     def __init__(self):
         super(AngryGameObserver,self).__init__()
-        self.directions=[ (1,0), (0,1), (-1,0), (0,-1) ]  # clockwise motion
+        self.directions=[(1,0), (0,1), (-1,0), (0,-1)]  # clockwise motion
         self.directioncounter=0
     def world_update(self, iteration, world, robotdata):
         # move in a loop yelling angry stuff
@@ -29,7 +29,7 @@ class AngryGameObserver(remote.GameObserver):
         if iteration % 10 ==0:
             self.directioncounter=(self.directioncounter+1)%4
             self.robot.change_direction(self.directions[self.directioncounter])
-            
+
 class ScaredGameObserver(remote.GameObserver):
     def __init__(self):
         super(ScaredGameObserver,self).__init__()

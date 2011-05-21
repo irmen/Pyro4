@@ -20,7 +20,7 @@ with Pyro4.core.Daemon() as daemon:
     obj=CallbackHandler()
     uri=daemon.register(obj)
     callback=Pyro4.core.Proxy(uri)
-    
+
     # contact the server and put it to work
     print("creating a bunch of workers")
     with Pyro4.core.Proxy("PYRONAME:example.callback") as server:
@@ -28,7 +28,7 @@ with Pyro4.core.Daemon() as daemon:
             worker=server.addworker(callback)   # provide our callback handler!
             worker._pyroOneway.add("work")      # to be able to run in the background
             worker.work(random.randint(1,5))
-    
+
     print("waiting for all work complete...")
     daemon.requestLoop(loopCondition=lambda: CallbackHandler.workdone<NUM_WORKERS)
     print("done!")

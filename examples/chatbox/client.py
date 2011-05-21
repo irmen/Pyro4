@@ -7,7 +7,7 @@ if sys.version_info<(3,0):
     input=raw_input
 
 # The daemon is running in its own thread, to be able to deal with server
-# callback messages while the main thread is processing user input. 
+# callback messages while the main thread is processing user input.
 
 class Chatter(object):
     def __init__(self):

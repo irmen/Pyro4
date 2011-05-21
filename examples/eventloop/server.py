@@ -72,7 +72,7 @@ while True:
     if eventsForDaemon:
         print("Daemon received a request")
         pyrodaemon.events(eventsForDaemon)
-        
+
 
 nameserverDaemon.close()
 broadcastServer.close()

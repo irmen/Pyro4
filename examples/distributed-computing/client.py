@@ -10,7 +10,7 @@ from workitem import Workitem
 NUMBER_OF_ITEMS = 40
 
 
-def main():    
+def main():
     print("\nThis program will calculate Prime Factorials of a bunch of random numbers.")
     print("The more workers you will start (on different cpus/cores/machines),")
     print("the faster you will get the complete list of results!\n")
@@ -18,7 +18,7 @@ def main():
         placework(dispatcher)
         numbers=collectresults(dispatcher)
     printresults(numbers)
-        
+
 def placework(dispatcher):
     print("placing work items into dispatcher queue.")
     for i in range(NUMBER_OF_ITEMS):
@@ -37,7 +37,7 @@ def collectresults(dispatcher):
         except queue.Empty:
             print("Not all results available yet (got %d out of %d). Work queue size: %d" %  \
                     (len(numbers),NUMBER_OF_ITEMS,dispatcher.workQueueSize()))
-    
+
     if dispatcher.resultQueueSize()>0:
         print("there's still stuff in the dispatcher result queue, that is odd...")
     return numbers

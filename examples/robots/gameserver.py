@@ -72,7 +72,7 @@ class RobotGrid(Canvas):
         x=wall.x*self.squaresize
         y=wall.y*self.squaresize
         self.create_rectangle(x,y,x+self.squaresize,y+self.squaresize,fill=color,outline=color)
-        
+
 
 class GameEngine(object):
     def __init__(self, gui, world):
@@ -230,7 +230,7 @@ class PyroDaemonThread(threadutil.Thread):
                 self.ns.register("example.robotserver", uri)
                 print("Pyro server registered on %s" % self.pyrodaemon.locationStr)
                 self.pyrodaemon.requestLoop()
-       
+
 def main():
     width=25
     height=25

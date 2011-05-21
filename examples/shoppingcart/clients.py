@@ -22,9 +22,9 @@ for i in range(3):
     item=random.choice(goods)
     print("Shoplifter takes %s" % item)
     shoplifterCart.purchase(item)
-    
+
 print("Customers currently in the shop: %s" % shop.customers())
-    
+
 # Go to the counter to pay and get a receipt.
 # The shopping cart is still 'inside the shop' (=on the server)
 # so it knows what is in there for every customer in the store.

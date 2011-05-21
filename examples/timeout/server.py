@@ -1,6 +1,7 @@
 import time
 import Pyro4
 
+
 class TimeoutServer(object):
     def delay(self, amount):
         print("sleeping %d" % amount)

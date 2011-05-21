@@ -13,21 +13,36 @@ object = Pyro4.core.Proxy(uri)
 object._pyroOneway.add('oneway')
 object._pyroBind()
 
-def f1(): void=object.length('Irmen de Jong')
-def f2(): void=object.timestwo(21)
-def f3(): void=object.bigreply()
-def f4(): void=object.manyargs(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15)
-def f5(): void=object.noreply(99993333)
-def f6(): void=object.varargs('een',2,(3,),[4])
-def f7(): void=object.keywords(arg1='zork')
-def f8(): void=object.echo('een',2,(3,),[4])
-def f9(): void=object.meth1('stringetje')
-def fa(): void=object.meth2('stringetje')
-def fb(): void=object.meth3('stringetje')
-def fc(): void=object.meth4('stringetje')
-def fd(): void=object.bigarg('Argument'*50)
-def fe(): void=object.oneway('stringetje',432423434)
-def ff(): void=object.mapping( {"aap":42, "noot": 99, "mies": 987654} )
+def f1():
+    _=object.length('Irmen de Jong')
+def f2():
+    _=object.timestwo(21)
+def f3():
+    _=object.bigreply()
+def f4():
+    _=object.manyargs(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15)
+def f5():
+    _=object.noreply(99993333)
+def f6():
+    _=object.varargs('een',2,(3,),[4])
+def f7():
+    _=object.keywords(arg1='zork')
+def f8():
+    _=object.echo('een',2,(3,),[4])
+def f9():
+    _=object.meth1('stringetje')
+def fa():
+    _=object.meth2('stringetje')
+def fb():
+    _=object.meth3('stringetje')
+def fc():
+    _=object.meth4('stringetje')
+def fd():
+    _=object.bigarg('Argument'*50)
+def fe():
+    object.oneway('stringetje',432423434)
+def ff():
+    _=object.mapping({"aap":42, "noot": 99, "mies": 987654})
 
 funcs = (f1,f2,f3,f4,f5,f6,f7,f8,f9,fa,fb,fc,fd,fe,ff)
 

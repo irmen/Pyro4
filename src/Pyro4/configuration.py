@@ -18,6 +18,7 @@ class Configuration(object):
                "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED", "DETAILED_TRACEBACK",
                "THREADPOOL_MINTHREADS", "THREADPOOL_MAXTHREADS",
                "THREADPOOL_IDLETIMEOUT", "HMAC_KEY")
+
     def __init__(self):
         self.refresh()
 
