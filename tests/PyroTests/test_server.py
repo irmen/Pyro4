@@ -361,8 +361,8 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             self.assertFalse(t.error, "all threads should report no errors")
         del threads
         duration=time.time()-start
-        if Pyro4.config.SERVERTYPE=="select":
-            # select based server doesn't execute calls in parallel,
+        if Pyro4.config.SERVERTYPE=="multiplex":
+            # multiplex based server doesn't execute calls in parallel,
             # so 6 threads times 0.5 seconds =~ 3 seconds
             self.assertTrue(2.5<duration<3.5)
         else:
@@ -371,8 +371,8 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             self.assertTrue(0.3<duration<0.7)
 
 if os.name!="java":
-    class ServerTestsSelectNoTimeout(ServerTestsThreadNoTimeout):
-        SERVERTYPE="select"
+    class ServerTestsMultiplexNoTimeout(ServerTestsThreadNoTimeout):
+        SERVERTYPE="multiplex"
         COMMTIMEOUT=None
         def testProxySharing(self):
             pass

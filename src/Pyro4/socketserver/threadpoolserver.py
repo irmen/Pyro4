@@ -210,6 +210,7 @@ class SocketServer_Threadpool(object):
     def fileno(self):
         return self.sock.fileno()
 
+    @property
     def sockets(self):
         # the server socket is all we care about, all client sockets are running in their own threads
         return [self.sock]

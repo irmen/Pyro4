@@ -9,7 +9,7 @@ import unittest
 import socket, os
 import Pyro4.socketutil as SU
 from Pyro4 import threadutil
-from Pyro4.socketserver.selectserver import SocketServer_Select
+from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 import Pyro4
 from testsupport import *
@@ -172,10 +172,6 @@ class TestSocketServer(unittest.TestCase):
     def testServer_select(self):
         callback=ServerCallback()
         port=SU.findUnusedPort()
-        if os.name=="java":
-            # select-based server is not available in Jython
-            self.assertRaises(NotImplementedError, SocketServer_Select, callback, "localhost", port)
-            return
         serv=SocketServer_Select(callback,"localhost",port)
         self.assertEqual("localhost:"+str(port), serv.locationStr)
         self.assertTrue(serv.sock is not None)
@@ -189,7 +185,23 @@ class TestSocketServer(unittest.TestCase):
         serv.close()
         serv.close()
         self.assertTrue(serv.sock is None)
-        
+    def testServer_poll(self):
+        callback=ServerCallback()
+        port=SU.findUnusedPort()
+        serv=SocketServer_Poll(callback,"localhost",port)
+        self.assertEqual("localhost:"+str(port), serv.locationStr)
+        self.assertTrue(serv.sock is not None)
+        self.assertTrue(serv.fileno() > 0)
+        conn=SU.SocketConnection(serv.sock, "ID12345")
+        self.assertEqual("ID12345",conn.objectId)
+        self.assertTrue(conn.sock is not None)
+        conn.close()
+        conn.close()
+        self.assertFalse(conn.sock is None, "connections keep their socket object even if it's closed")
+        serv.close()
+        serv.close()
+        self.assertTrue(serv.sock is None)
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

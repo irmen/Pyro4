@@ -58,23 +58,21 @@ class DaemonTests(unittest.TestCase):
         Pyro4.config.SERVERTYPE="thread"
         with Pyro4.core.Daemon(port=0) as d:
             sock=d.sock
-            sockets=d.sockets()
-            self.assertTrue(sock in sockets, "daemon's socketlist should contain the server socket")
-            self.assertTrue(len(sockets)==1, "daemon without connections should have just 1 socket")
+            self.assertTrue(sock in d.sockets, "daemon's socketlist should contain the server socket")
+            self.assertTrue(len(d.sockets)==1, "daemon without connections should have just 1 socket")
         Pyro4.config.SERVERTYPE=old_servertype
 
-    def testServertypeSelect(self):
+    def testServertypeMultiplex(self):
         old_servertype=Pyro4.config.SERVERTYPE
-        Pyro4.config.SERVERTYPE="select"
+        Pyro4.config.SERVERTYPE="multiplex"
         # this type is not supported in Jython
         if os.name=="java":
             self.assertRaises(NotImplementedError, Pyro4.core.Daemon, port=0)
         else:
             with Pyro4.core.Daemon(port=0) as d:
                 sock=d.sock
-                sockets=d.sockets()
-                self.assertTrue(sock in sockets, "daemon's socketlist should contain the server socket")
-                self.assertTrue(len(sockets)==1, "daemon without connections should have just 1 socket")
+                self.assertTrue(sock in d.sockets, "daemon's socketlist should contain the server socket")
+                self.assertTrue(len(d.sockets)==1, "daemon without connections should have just 1 socket")
         Pyro4.config.SERVERTYPE=old_servertype
                 
     def testServertypeFoobar(self):

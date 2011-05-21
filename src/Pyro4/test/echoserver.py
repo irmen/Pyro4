@@ -61,7 +61,7 @@ def main(args, returnWithoutLooping=False):
     if not options.quiet:
         print ("Starting Pyro's built-in test echo server.")
     if os.name!="java":
-        Pyro4.config.SERVERTYPE="select"
+        Pyro4.config.SERVERTYPE="multiplex"
 
     if not Pyro4.config.HMAC_KEY:
         if sys.version_info<(3,0):

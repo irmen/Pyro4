@@ -167,7 +167,7 @@ class OfflineNameServerTests(unittest.TestCase):
                 # jython requires nonblocking sockets for poll
                 ns1.sock.setblocking(False)
                 bc1.sock.setblocking(False)
-            for s in ns1.sockets():
+            for s in ns1.sockets:
                 p.register(s, select.POLLIN)
             p.register(bc1.fileno(), select.POLLIN)
             p.poll(100)
@@ -175,7 +175,7 @@ class OfflineNameServerTests(unittest.TestCase):
                 p.close()
         else:
             rs=[bc1]
-            rs.extend(ns1.sockets())
+            rs.extend(ns1.sockets)
             _,_,_=select.select(rs,[],[],0.1)
         ns1.close()
         bc1.close()

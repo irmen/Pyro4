@@ -21,8 +21,8 @@ class ServerTestsThreadTimeout(test_server.ServerTestsThreadNoTimeout):
         pass
     
 if os.name!="java":
-    class ServerTestsSelectTimeout(test_server.ServerTestsSelectNoTimeout):
-        SERVERTYPE="select"
+    class ServerTestsMultiplexTimeout(test_server.ServerTestsMultiplexNoTimeout):
+        SERVERTYPE="multiplex"
         COMMTIMEOUT=2.0
         def testServerParallelism(self):
             # this test is not suitable on a server with timeout set

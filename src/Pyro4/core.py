@@ -394,8 +394,7 @@ class DaemonObject(object):
         pass
 
 from .socketserver.threadpoolserver import SocketServer_Threadpool
-from .socketserver.selectserver import SocketServer_Select
-
+from .socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
 
 class Daemon(object):
     """
@@ -412,8 +411,15 @@ class Daemon(object):
             host=Pyro4.config.HOST
         if Pyro4.config.SERVERTYPE=="thread":
             self.transportServer=SocketServer_Threadpool(self, host, port, Pyro4.config.COMMTIMEOUT)
-        elif Pyro4.config.SERVERTYPE=="select":
-            self.transportServer=SocketServer_Select(self, host, port, Pyro4.config.COMMTIMEOUT)
+        elif Pyro4.config.SERVERTYPE=="multiplex":
+            # choose the 'best' multiplexing implementation
+            if os.name=="java":
+                raise NotImplementedError("select or poll-based server is not supported for jython, use thread server instead")
+            import select
+            if hasattr(select,"poll"):
+                self.transportServer=SocketServer_Poll(self, host, port, Pyro4.config.COMMTIMEOUT)
+            else:
+                self.transportServer=SocketServer_Select(self, host, port, Pyro4.config.COMMTIMEOUT)
         else:
             raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
         self.locationStr=self.transportServer.locationStr
@@ -430,8 +436,9 @@ class Daemon(object):
     def sock(self):
         return self.transportServer.sock
 
+    @property
     def sockets(self):
-        return self.transportServer.sockets()
+        return self.transportServer.sockets
 
     def requestLoop(self, loopCondition=lambda: True):
         """

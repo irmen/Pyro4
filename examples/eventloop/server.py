@@ -1,5 +1,4 @@
 import socket
-import time
 import select
 import sys
 import Pyro4.core
@@ -9,11 +8,11 @@ if sys.version_info<(3,0):
     input=raw_input
 
 print("Make sure that you don't have a name server running already.")
-servertype=input("Servertype thread/select (t/s)?")
+servertype=input("Servertype thread/multiplex (t/m)?")
 if servertype=='t':
     Pyro4.config.SERVERTYPE="thread"
 else:
-    Pyro4.config.SERVERTYPE="select"
+    Pyro4.config.SERVERTYPE="multiplex"
 
 hostname=socket.gethostname()
 
@@ -29,13 +28,13 @@ assert broadcastServer is not None, "expect a broadcast server to be created"
 
 print("got a Nameserver, uri=%s" % nameserverUri)
 print("ns daemon location string=%s" % nameserverDaemon.locationStr)
-print("ns daemon sockets=%s" % nameserverDaemon.sockets())
+print("ns daemon sockets=%s" % nameserverDaemon.sockets)
 print("bc server socket=%s (fileno %d)" % (broadcastServer.sock, broadcastServer.fileno()))
 
 # create a Pyro daemon
 pyrodaemon=Pyro4.core.Daemon(host=hostname)
 print("daemon location string=%s" % pyrodaemon.locationStr)
-print("daemon sockets=%s" % pyrodaemon.sockets())
+print("daemon sockets=%s" % pyrodaemon.sockets)
 
 # register a server object with the daemon
 serveruri=pyrodaemon.register(EmbeddedServer())
@@ -51,8 +50,8 @@ while True:
     print("Waiting for events...")
     # create sets of the socket objects we will be waiting on
     # (a set provides fast lookup compared to a list)
-    nameserverSockets = set(nameserverDaemon.sockets())
-    pyroSockets = set(pyrodaemon.sockets())
+    nameserverSockets = set(nameserverDaemon.sockets)
+    pyroSockets = set(pyrodaemon.sockets)
     rs=[broadcastServer]  # only the broadcast server is directly usable as a select() object
     rs.extend(nameserverSockets)
     rs.extend(pyroSockets)

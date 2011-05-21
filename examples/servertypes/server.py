@@ -34,11 +34,11 @@ class Server(object):
 ######## main program
 
 Pyro4.config.SERVERTYPE="undefined"
-servertype=input("Servertype threaded or select (t/s)?")
+servertype=input("Servertype threaded or multiplex (t/m)?")
 if servertype=="t":
     Pyro4.config.SERVERTYPE="thread"
-if servertype=="s":
-    Pyro4.config.SERVERTYPE="select"
+else:
+    Pyro4.config.SERVERTYPE="multiplex"
 
 daemon=Pyro4.core.Daemon()
 obj=Server()
