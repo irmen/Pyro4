@@ -606,11 +606,7 @@ class Daemon(object):
     def close(self):
         """Close down the server and release resources"""
         log.debug("daemon closing")
-        self.__del__()
-
-    def __del__(self):
-        ts=getattr(self, "transportServer", None)
-        if ts is not None:
+        if self.transportServer:
             self.transportServer.close()
             self.transportServer=None
 
