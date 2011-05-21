@@ -45,8 +45,8 @@ class MultiplexedSocketServerBase(object):
                 # must be client socket, means remote call
                 try:
                     self.daemon.handleRequest(s)
-                except (socket.error, errors.ConnectionClosedError):
-                    # client went away.
+                except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
+                    # client went away or caused a security error
                     s.close()
                     if s in self.clients:
                         self.clients.remove(s)
@@ -133,8 +133,8 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
                     else:
                         try:
                             self.daemon.handleRequest(conn)
-                        except (socket.error, errors.ConnectionClosedError):
-                            # client went away.
+                        except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
+                            # client went away or caused a security error
                             try:
                                 fn=conn.fileno()
                             except socket.error:
@@ -184,8 +184,8 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                         rlist.remove(conn)
                         try:
                             self.daemon.handleRequest(conn)
-                        except (socket.error, errors.ConnectionClosedError):
-                            # client went away.
+                        except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
+                            # client went away or caused a security error
                             conn.close()
                             if conn in self.clients:
                                 self.clients.remove(conn)

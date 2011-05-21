@@ -32,3 +32,7 @@ class NamingError(PyroError):
 
 class DaemonError(PyroError):
     pass
+
+
+class SecurityError(PyroError):
+    pass

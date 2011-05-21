@@ -376,7 +376,7 @@ class MessageFactory(object):
             raise errors.ProtocolError(err)
         databytes=connection.recv(datalen)
         if datahmac != hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest():
-            raise errors.ProtocolError("message hmac mismatch")
+            raise errors.SecurityError("message hmac mismatch")
         return msgType, flags, seq, databytes
 
 
@@ -518,19 +518,15 @@ class Daemon(object):
                 msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags, seq)
                 del data
                 conn.send(msg)
-        except errors.CommunicationError:
-            # communication errors are not handled here (including TimeoutError)
-            raise
         except Exception:
-            x=sys.exc_info()[1]
-            # all other errors are caught
-            log.debug("Exception occurred while handling request: %s", x)
+            xt,xv=sys.exc_info()[0:2]
+            log.debug("Exception occurred while handling request: %s", xv)
             if not flags & MessageFactory.FLAGS_ONEWAY:
                 # only return the error to the client if it wasn't a oneway call
                 tblines=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
-                self.sendExceptionResponse(conn, seq, x, tblines)
-            if isCallback:
-                raise       # re-raise if flagged as callback
+                self.sendExceptionResponse(conn, seq, xv, tblines)
+            if isCallback or xt in (errors.CommunicationError, errors.SecurityError):
+                raise       # re-raise if flagged as callback, communication or security error.
 
     def sendExceptionResponse(self, connection, seq, exc_value, tbinfo):
         """send an exception back including the local traceback info"""

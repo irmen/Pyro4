@@ -53,6 +53,9 @@ class SocketWorker(threadutil.Thread):
                                 # client went away.
                                 log.debug("worker %s client disconnected %s", self.getName(), self.caddr)
                                 break
+                            except errors.SecurityError:
+                                log.debug("worker %s client security error %s", self.getName(), self.caddr)
+                                break
                         self.csock.close()
                     finally:
                         # make sure we tell the pool that we are no longer working
