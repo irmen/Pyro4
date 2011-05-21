@@ -68,10 +68,10 @@ while True:
             eventsForDaemon.append(s)
     if eventsForNameserver:
         print("Nameserver received a request")
-        nameserverDaemon.handleRequests(eventsForNameserver)
+        nameserverDaemon.events(eventsForNameserver)
     if eventsForDaemon:
         print("Daemon received a request")
-        pyrodaemon.handleRequests(eventsForDaemon)
+        pyrodaemon.events(eventsForDaemon)
         
 
 nameserverDaemon.close()

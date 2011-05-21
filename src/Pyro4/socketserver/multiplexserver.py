@@ -15,12 +15,12 @@ log=logging.getLogger("Pyro.socketserver.multiplexed")
 
 class MultiplexedSocketServerBase(object):
     """base class for multiplexed transport server for socket connections"""
-    def __init__(self, callbackObject, host, port, timeout=None):
+    def init(self, daemon, host, port):
         log.info("starting multiplexed socketserver")
         self.sock=None
-        self.sock=socketutil.createSocket(bind=(host, port), timeout=timeout, noinherit=True)
+        self.sock=socketutil.createSocket(bind=(host, port), timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
         self.clients=[]
-        self.callback=callbackObject
+        self.daemon=daemon
         sockaddr=self.sock.getsockname()
         if sockaddr[0].startswith("127."):
             if host is None or host.lower()!="localhost" and not host.startswith("127."):
@@ -34,26 +34,25 @@ class MultiplexedSocketServerBase(object):
             self.sock.close()
             self.sock=None
 
-    def handleRequests(self, eventsockets):
+    def events(self, eventsockets):
         """used for external event loops: handle events that occur on one of the sockets of this server"""
         for s in eventsockets:
             if s is self.sock:
                 # server socket, means new connection
-                conn=self.handleConnection(self.sock)
+                conn=self._handleConnection(self.sock)
                 if conn:
                     self.clients.append(conn)
             else:
                 # must be client socket, means remote call
                 try:
-                    if self.callback:
-                        self.callback.handleRequest(s)
+                    self.daemon.handleRequest(s)
                 except (socket.error, errors.ConnectionClosedError):
                     # client went away.
                     s.close()
                     if s in self.clients:
                         self.clients.remove(s)
 
-    def handleConnection(self, sock):
+    def _handleConnection(self, sock):
         try:
             csock, caddr=sock.accept()
             log.debug("connection from %s", caddr)
@@ -72,7 +71,7 @@ class MultiplexedSocketServerBase(object):
             raise
         try:
             conn=socketutil.SocketConnection(csock)
-            if self.callback.handshake(conn):
+            if self.daemon.handshake(conn):
                 return conn
         except (socket.error, errors.PyroError):
             x=sys.exc_info()[1]
@@ -92,16 +91,13 @@ class MultiplexedSocketServerBase(object):
                 pass
         self.clients=[]
 
-    def fileno(self):
-        return self.sock.fileno()
-
     @property
     def sockets(self):
         socks=[self.sock]
         socks.extend(self.clients)
         return socks
 
-    def pingConnection(self):
+    def wakeup(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
             if sys.version_info<(3, 0):
@@ -115,7 +111,7 @@ class MultiplexedSocketServerBase(object):
 class SocketServer_Poll(MultiplexedSocketServerBase):
     """transport server for socket connections, poll loop multiplex version."""
 
-    def requestLoop(self, loopCondition=lambda: True):
+    def loop(self, loopCondition=lambda: True):
         log.debug("enter poll-based requestloop")
         poll=select.poll()
         try:
@@ -128,7 +124,7 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
                     conn=fileno2connection[fd]
                     if conn is self.sock:
                         try:
-                            conn=self.handleConnection(self.sock)
+                            conn=self._handleConnection(self.sock)
                         except errors.ConnectionClosedError:
                             log.info("server socket was closed, stopping requestloop")
                             return
@@ -137,7 +133,7 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
                             fileno2connection[conn.fileno()]=conn
                     else:
                         try:
-                            self.callback.handleRequest(conn)
+                            self.daemon.handleRequest(conn)
                         except (socket.error, errors.ConnectionClosedError):
                             # client went away.
                             try:
@@ -160,7 +156,7 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
 class SocketServer_Select(MultiplexedSocketServerBase):
     """transport server for socket connections, select loop version."""
 
-    def requestLoop(self, loopCondition=lambda: True):
+    def loop(self, loopCondition=lambda: True):
         log.debug("entering select-based requestloop")
         while loopCondition():
             try:
@@ -178,7 +174,7 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                 if self.sock in rlist:
                     rlist.remove(self.sock)
                     try:
-                        conn=self.handleConnection(self.sock)
+                        conn=self._handleConnection(self.sock)
                         if conn:
                             self.clients.append(conn)
                     except errors.ConnectionClosedError:
@@ -188,8 +184,7 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                     if conn in self.clients:
                         rlist.remove(conn)
                         try:
-                            if self.callback:
-                                self.callback.handleRequest(conn)
+                            self.daemon.handleRequest(conn)
                         except (socket.error, errors.ConnectionClosedError):
                             # client went away.
                             conn.close()

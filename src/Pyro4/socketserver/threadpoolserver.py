@@ -24,11 +24,11 @@ log=logging.getLogger("Pyro.socketserver.threadpool")
 
 class SocketWorker(threadutil.Thread):
     """worker thread to process requests"""
-    def __init__(self, server, callback):
+    def __init__(self, server, daemon):
         super(SocketWorker, self).__init__()
         self.setDaemon(True)
         self.server=server
-        self.callback=callback
+        self.callbackDaemon=daemon
         if os.name=="java":
             # jython names every thread 'Thread', so we improve that a little
             self.setName("Thread-%d"%id(self))
@@ -50,7 +50,7 @@ class SocketWorker(threadutil.Thread):
                     try:
                         while self.running:   # loop over all requests during a single connection
                             try:
-                                self.callback.handleRequest(self.csock)
+                                self.callbackDaemon.handleRequest(self.csock)
                             except (socket.error, errors.ConnectionClosedError):
                                 # client went away.
                                 log.debug("worker %s client disconnected %s", self.getName(), self.caddr)
@@ -70,7 +70,7 @@ class SocketWorker(threadutil.Thread):
 
     def handleConnection(self, conn):
         try:
-            if self.callback.handshake(conn):
+            if self.callbackDaemon.handshake(conn):
                 return True
         except (socket.error, errors.PyroError):
             x=sys.exc_info()[1]
@@ -80,11 +80,11 @@ class SocketWorker(threadutil.Thread):
 
 
 class ThreadPool(object):
-    def __init__(self, server, callback):
+    def __init__(self, server, daemon):
         self.lock=threadutil.Lock()
         self.pool=set()
         self.__server=server
-        self.__callback=callback
+        self.__daemon=daemon
         self.__working=0
         self.__lastshrink=time.time()
 
@@ -105,7 +105,7 @@ class ThreadPool(object):
     def attemptSpawn(self):
         with self.lock:
             if len(self.pool)<Pyro4.config.THREADPOOL_MAXTHREADS:
-                worker=SocketWorker(self.__server, self.__callback)
+                worker=SocketWorker(self.__server, self.__daemon)
                 self.pool.add(worker)
                 worker.start()
                 return True
@@ -132,10 +132,10 @@ class ThreadPool(object):
 
 class SocketServer_Threadpool(object):
     """transport server for socket connections, worker thread pool version."""
-    def __init__(self, callbackObject, host, port, timeout=None):
+    def init(self, daemon, host, port):
         log.info("starting thread pool socketserver")
         self.sock=None
-        self.sock=socketutil.createSocket(bind=(host, port), timeout=timeout, noinherit=True)
+        self.sock=socketutil.createSocket(bind=(host, port), timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
         self._socketaddr=self.sock.getsockname()
         if self._socketaddr[0].startswith("127."):
             if host is None or host.lower()!="localhost" and not host.startswith("127."):
@@ -143,7 +143,7 @@ class SocketServer_Threadpool(object):
         host=host or self._socketaddr[0]
         port=port or self._socketaddr[1]
         self.locationStr="%s:%d" % (host, port)
-        self.threadpool=ThreadPool(self, callbackObject)
+        self.threadpool=ThreadPool(self, daemon)
         self.workqueue=queue.Queue()
         for _ in range(Pyro4.config.THREADPOOL_MINTHREADS):
             self.threadpool.attemptSpawn()
@@ -153,11 +153,11 @@ class SocketServer_Threadpool(object):
         if self.sock is not None:
             self.sock.close()
 
-    def requestLoop(self, loopCondition=lambda: True):
+    def loop(self, loopCondition=lambda: True):
         log.debug("threadpool server requestloop")
         while (self.sock is not None) and loopCondition():
             try:
-                self.handleRequests(None)
+                self.events([self.sock])
             except socket.error:
                 if not loopCondition():
                     # swallow the socket error if loop terminates anyway
@@ -170,10 +170,12 @@ class SocketServer_Threadpool(object):
                 break
         log.debug("threadpool server exits requestloop")
 
-    def handleRequests(self, eventsockets):
+    def events(self, eventsockets):
+        """used for external event loops: handle events that occur on one of the sockets of this server"""
+        # we only react on events on our own server socket.
+        # all other (client) sockets are owned by their individual threads.
+        assert self.sock in eventsockets
         try:
-            # we only react on events on our own server socket.
-            # all other (client) sockets are owned by their individual threads.
             csock, caddr=self.sock.accept()
             log.debug("connection from %s", caddr)
             if Pyro4.config.COMMTIMEOUT:
@@ -207,15 +209,12 @@ class SocketServer_Threadpool(object):
             else:
                 worker.join()
 
-    def fileno(self):
-        return self.sock.fileno()
-
     @property
     def sockets(self):
         # the server socket is all we care about, all client sockets are running in their own threads
         return [self.sock]
 
-    def pingConnection(self):
+    def wakeup(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
             sock=socketutil.createSocket(connect=self._socketaddr)

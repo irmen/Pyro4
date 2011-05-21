@@ -410,25 +410,26 @@ class Daemon(object):
         if host is None:
             host=Pyro4.config.HOST
         if Pyro4.config.SERVERTYPE=="thread":
-            self.transportServer=SocketServer_Threadpool(self, host, port, Pyro4.config.COMMTIMEOUT)
+            self.transportServer=SocketServer_Threadpool()
         elif Pyro4.config.SERVERTYPE=="multiplex":
             # choose the 'best' multiplexing implementation
             if os.name=="java":
                 raise NotImplementedError("select or poll-based server is not supported for jython, use thread server instead")
             import select
             if hasattr(select,"poll"):
-                self.transportServer=SocketServer_Poll(self, host, port, Pyro4.config.COMMTIMEOUT)
+                self.transportServer=SocketServer_Poll()
             else:
-                self.transportServer=SocketServer_Select(self, host, port, Pyro4.config.COMMTIMEOUT)
+                self.transportServer=SocketServer_Select()
         else:
             raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
+        self.transportServer.init(self, host, port)
         self.locationStr=self.transportServer.locationStr
         log.debug("created daemon on %s", self.locationStr)
         self.serializer=util.Serializer()
         pyroObject=DaemonObject(self)
         pyroObject._pyroId=constants.DAEMON_NAME
         self.objectsById={pyroObject._pyroId: pyroObject}
-        self.__mustshutdown=False
+        self.__mustshutdown=threadutil.Event()
         self.__loopstopped=threadutil.Event()
         self.__loopstopped.set()
 
@@ -445,34 +446,30 @@ class Daemon(object):
         Goes in a loop to service incoming requests, until someone breaks this
         or calls shutdown from another thread.
         """
-        self.__mustshutdown=False
+        self.__mustshutdown.clear()
         log.info("daemon %s entering requestloop", self.locationStr)
         try:
             self.__loopstopped.clear()
-            condition=lambda: not self.__mustshutdown and loopCondition()
-            self.transportServer.requestLoop(loopCondition=condition)
+            condition=lambda: not self.__mustshutdown.isSet() and loopCondition()
+            self.transportServer.loop(loopCondition=condition)
         finally:
             self.__loopstopped.set()
         log.debug("daemon exits requestloop")
 
-    def handleRequests(self, eventsockets):
+    def events(self, eventsockets):
         """for use in an external event loop: handle any requests that are pending for this daemon"""
-        return self.transportServer.handleRequests(eventsockets)
+        return self.transportServer.events(eventsockets)
 
     def shutdown(self):
         """Cleanly terminate a deamon that is running in the requestloop. It must be running
         in a different thread, or this method will deadlock."""
         log.debug("daemon shutting down")
-        self.__mustshutdown=True
-        self.pingConnection()
+        self.__mustshutdown.set()
+        self.transportServer.wakeup()
         time.sleep(0.05)
         self.close()
         self.__loopstopped.wait()
         log.info("daemon %s shut down", self.locationStr)
-
-    def pingConnection(self):
-        """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
-        self.transportServer.pingConnection()
 
     def handshake(self, conn):
         """Perform connection handshake with new clients"""
