@@ -6,7 +6,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
-from . import config
+from Pyro4 import config
 
 if config.THREADING2:
     try:

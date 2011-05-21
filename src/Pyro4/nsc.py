@@ -6,8 +6,7 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 import sys
-from . import naming
-from . import errors
+from Pyro4 import naming, errors
 
 if sys.version_info<(3, 0):
     input=raw_input

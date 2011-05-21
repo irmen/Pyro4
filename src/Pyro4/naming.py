@@ -7,10 +7,9 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 from __future__ import with_statement
 import re, logging, socket, sys
-from . import constants
-from .threadutil import RLock, Thread
-from .errors import PyroError, NamingError
-from . import core
+from Pyro4 import constants, core
+from Pyro4.threadutil import RLock, Thread
+from Pyro4.errors import PyroError, NamingError
 import Pyro4
 
 __all__=["locateNS", "resolve"]

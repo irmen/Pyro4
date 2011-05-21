@@ -6,8 +6,8 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 """
 
 import sys, os, time
-import Pyro4
 import Pyro4.threadutil
+import Pyro4
 
 
 class EchoServer(object):

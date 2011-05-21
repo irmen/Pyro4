@@ -7,7 +7,7 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 
 import unittest
 import os
-from . import test_server
+import test_server
 
 class ServerTestsThreadTimeout(test_server.ServerTestsThreadNoTimeout):
     SERVERTYPE="thread"

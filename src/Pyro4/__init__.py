@@ -54,9 +54,9 @@ _configLogging()
 del _configLogging
 
 # initialize Pyro's configuration
-from .configuration import Configuration
+from Pyro4.configuration import Configuration
 config=Configuration()
 
 # import the required Pyro symbols into this package
-from .core import URI, Proxy, Daemon, callback
-from .naming import locateNS, resolve
+from Pyro4.core import URI, Proxy, Daemon, callback
+from Pyro4.naming import locateNS, resolve

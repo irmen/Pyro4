@@ -9,11 +9,9 @@ from __future__ import with_statement
 import re, struct, sys, time, os
 import logging, uuid
 import hashlib, hmac
-from . import constants
-from . import threadutil
-from . import errors
-from . import util
-from . import socketutil
+from Pyro4 import constants, threadutil, util, socketutil, errors
+from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
+from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
 import Pyro4
 
 __all__=["URI", "Proxy", "Daemon", "callback"]
@@ -259,7 +257,7 @@ class Proxy(object):
 
     def __pyroCreateConnection(self, replaceUri=False):
         """Connects this proxy to the remote Pyro daemon. Does connection handshake."""
-        from .naming import resolve  # don't import this globally because of cyclic dependancy
+        from Pyro4.naming import resolve  # don't import this globally because of cyclic dependancy
         uri=resolve(self._pyroUri)
         if uri.host and uri.port:
             # socket connection
@@ -393,8 +391,6 @@ class DaemonObject(object):
     def ping(self):
         pass
 
-from .socketserver.threadpoolserver import SocketServer_Threadpool
-from .socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
 
 class Daemon(object):
     """

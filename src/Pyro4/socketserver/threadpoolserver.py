@@ -14,9 +14,7 @@ try:
 except ImportError:
     import Queue as queue
 import time, os
-from .. import socketutil
-from .. import errors
-from .. import threadutil
+from Pyro4 import socketutil, threadutil, errors
 import Pyro4
 
 log=logging.getLogger("Pyro.socketserver.threadpool")
