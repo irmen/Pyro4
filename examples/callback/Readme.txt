@@ -33,7 +33,7 @@ of setting a PYRO_COMMTIMEOUT, because that one already breaks periodically.
 
 2) second example: server2.py + client2.py
 
-This example shows how to use the @Pyro.callback decorator to flag a method
+This example shows how to use the @Pyro4.callback decorator to flag a method
 to be a callback method. This makes Pyro raise any exceptions that occur in
 this method also on the side where the method is running. Otherwise it would
 just silently pass the exception back to the side that was calling the
