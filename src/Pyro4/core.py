@@ -136,7 +136,7 @@ def _check_hmac():
     if Pyro4.config.HMAC_KEY is None or len(Pyro4.config.HMAC_KEY)==0:
         import warnings
         warnings.warn("HMAC_KEY not set, protocol data may not be secure")
-    if sys.version_info>=(3,0) and type(Pyro4.config.HMAC_KEY) is not bytes:
+    elif sys.version_info>=(3,0) and type(Pyro4.config.HMAC_KEY) is not bytes:
         raise errors.PyroError("HMAC_KEY must be bytes type")
 
 class Proxy(object):
