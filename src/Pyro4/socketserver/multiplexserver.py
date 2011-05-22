@@ -54,7 +54,6 @@ class MultiplexedSocketServerBase(object):
     def _handleConnection(self, sock):
         try:
             csock, caddr=sock.accept()
-            log.debug("connection from %s", caddr)
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
         except socket.error:

@@ -34,14 +34,12 @@ class SocketWorker(threadutil.Thread):
     def run(self):
         self.running=True
         try:
-            log.debug("new worker %s", self.getName())
             while self.running:  # loop over all connections in the queue
                 self.csock, self.caddr = self.server.workqueue.get()
                 if self.csock is None and self.caddr is None:
                     # this was a 'stop' sentinel
                     self.running=False
                     break
-                log.debug("worker %s got a client connection %s", self.getName(), self.caddr)
                 self.csock=socketutil.SocketConnection(self.csock)
                 if self.handleConnection(self.csock):
                     self.server.threadpool.updateWorking(1)  # tell the pool we're working

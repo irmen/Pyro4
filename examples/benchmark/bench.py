@@ -12,6 +12,8 @@ class sub4(sub3,sub2):
         return 'This is sub4.meth4'
 
 class bench(sub4):
+    def ping(self):
+        pass
     def length(self, string):
         return len(string)
     def timestwo(self, value):

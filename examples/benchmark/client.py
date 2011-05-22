@@ -2,9 +2,6 @@ import sys,time
 import Pyro4
 import bench
 
-if not Pyro4.config.HMAC_KEY:
-    Pyro4.config.HMAC_KEY="testbenchmarkkey"
-
 if sys.version_info<(3,0):
     input=raw_input
 
@@ -60,9 +57,10 @@ for f in funcs:
     sys.stdout.flush()
 duration = time.time()-begin
 print('total time %.4f seconds' % duration)
-print('total method calls: %d' % (len(funcs)*iters))
-avg_pyro_msec = 1000.0*duration/(len(funcs)*iters)
-print('avg. time per method call: %.4f msec' % avg_pyro_msec)
+amount=len(funcs)*iters
+print('total method calls: %d' % (amount))
+avg_pyro_msec = 1000.0*duration/amount
+print('avg. time per method call: %.4f msec (%d/sec)' % (avg_pyro_msec,amount/duration))
 
 print('-------- BENCHMARK LOCAL OBJECT ---------')
 object=bench.bench()
@@ -77,7 +75,8 @@ for f in funcs:
     sys.stdout.flush()
 duration = time.time()-begin
 print('total time %.4f seconds' % duration)
-print('total method calls: %d' % (len(funcs)*iters))
-avg_normal_msec = 1000.0*duration/(len(funcs)*iters)
-print('avg. time per method call: %.4f msec' % avg_normal_msec)
+amount=len(funcs)*iters
+print('total method calls: %d' % (amount))
+avg_normal_msec = 1000.0*duration/amount
+print('avg. time per method call: %.4f msec (%d/sec)' % (avg_normal_msec,amount/duration))
 print('Normal method call is %.2f times faster than Pyro method call.'%(avg_pyro_msec/avg_normal_msec))

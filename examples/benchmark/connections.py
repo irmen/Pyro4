@@ -1,35 +1,44 @@
-import time
+import time, sys
 import Pyro4
 
-ns_uri=Pyro4.naming.resolve("PYRONAME:Pyro.NameServer")
-print("Name server location: %s" % ns_uri)
+if sys.version_info<(3,0):
+    input=raw_input
 
-NUM_PROXIES=10
+uri=input("Uri of benchmark server? ").strip()
 
-print("Timing raw rebind (connect) speed... %d proxies" % NUM_PROXIES)
-proxies=[Pyro4.core.Proxy(ns_uri) for i in range(NUM_PROXIES)]
-for p in proxies:
-    p.ping()
-begin=time.time()
-ITERATIONS=100
-for loop in range(ITERATIONS):
-    if loop%25==0:
-        print(loop*len(proxies))
-    for p in proxies:
-        p._pyroRelease()
-        p._pyroBind()
-duration=time.time()-begin
-print("%d connections in %s sec = %.2f conn/sec" % (ITERATIONS*len(proxies), duration, ITERATIONS*len(proxies)/duration))
-del proxies
-
-print("Timing proxy connect speed...")
-ITERATIONS=1000
+print("Timing raw connect speed (no method call)...")
+p=Pyro4.core.Proxy(uri)
+p.ping()
+ITERATIONS=2000
 begin=time.time()
 for loop in range(ITERATIONS):
-    if loop%250==0:
+    if loop%500==0:
         print(loop)
-    p=Pyro4.core.Proxy(ns_uri)
-    p.ping()
     p._pyroRelease()
+    p._pyroBind()
+duration=time.time()-begin
+print("%d connections in %s sec = %.2f conn/sec" % (ITERATIONS, duration, ITERATIONS/duration))
+del p
+
+print("Timing proxy creation+connect+methodcall speed...")
+ITERATIONS=2000
+begin=time.time()
+for loop in range(ITERATIONS):
+    if loop%500==0:
+        print(loop)
+    with Pyro4.core.Proxy(uri) as p:
+        p.ping()
 duration=time.time()-begin
 print("%d new proxy calls in %s sec = %.2f calls/sec" % (ITERATIONS, duration, ITERATIONS/duration))
+
+print("Timing proxy methodcall speed...")
+p=Pyro4.core.Proxy(uri)
+p.ping()
+ITERATIONS=10000
+begin=time.time()
+for loop in range(ITERATIONS):
+    if loop%1000==0:
+        print(loop)
+    p.ping()
+duration=time.time()-begin
+print("%d calls in %s sec = %.2f calls/sec" % (ITERATIONS, duration, ITERATIONS/duration))
