@@ -48,7 +48,42 @@ class DaemonLoopThread(threadutil.Thread):
             self.pyrodaemon.requestLoop()
         except:
             print("Swallow exception from terminated daemon")
-        
+
+
+class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
+    def handshake(self, conn):
+        # a bit of a hack, overriding this internal method to return a CONNECTFAIL...
+        data=tobytes("rigged connection failure")
+        msg=Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_CONNECTFAIL, data, 0, 1)
+        conn.send(msg)
+        return False
+    
+class ServerTestsSingle(unittest.TestCase):
+    def setUp(self):
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        self.daemon=DaemonWithSabotagedHandshake(port=0)
+        obj=MyThing()
+        uri=self.daemon.register(obj, "something")
+        self.objectUri=uri
+        self.daemonthread=DaemonLoopThread(self.daemon)
+        self.daemonthread.start()
+        self.daemonthread.running.wait()
+    def tearDown(self):
+        time.sleep(0.05)
+        self.daemon.shutdown()
+        self.daemonthread.join()
+        Pyro4.config.HMAC_KEY=None
+    def testDaemonConnectFail(self):
+        # check what happens when the daemon responds with a failed connection msg
+        with Pyro4.Proxy(self.objectUri) as p:
+            try:
+                p.ping()
+                self.fail("expected CommunicationError")
+            except Pyro4.errors.CommunicationError:
+                xv=sys.exc_info()[1]
+                message=str(xv)
+                self.assertTrue("rigged connection failure" in message)
+
 class ServerTestsThreadNoTimeout(unittest.TestCase):
     SERVERTYPE="thread"
     COMMTIMEOUT=None
@@ -96,7 +131,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 result=p.testargs(1, **{unichr(0x20ac):2})
                 key=list(result[2].keys())[0]
                 self.assertTrue(key==unichr(0x20ac))
-
 
     def testDottedNames(self):
         try:

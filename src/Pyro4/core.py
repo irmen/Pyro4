@@ -287,6 +287,8 @@ class Proxy(object):
                 if msgType==MessageFactory.MSG_CONNECTFAIL:
                     error="connection rejected"
                     if data:
+                        if sys.version_info>=(3,0):
+                            data=str(data,"utf-8")
                         error+=", reason: "+data
                     conn.close()
                     log.error(error)
@@ -485,7 +487,10 @@ class Daemon(object):
         # For now, client is not sending anything. Just respond with a CONNECT_OK.
         # We need a minimal amount of data or the socket will remain blocked
         # on some systems... (messages smaller than 40 bytes)
-        data,_=self.serializer.serialize("ok",compress=False)
+        # Return True for successful handshake, False if something was wrong.
+        data="ok"
+        if sys.version_info>=(3,0):
+            data=bytes(data,"utf-8")
         msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK, data, 0, 1)
         conn.send(msg)
         return True
