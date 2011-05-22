@@ -77,14 +77,15 @@ class Configuration(object):
         # easy config diagnostics
         from Pyro4.constants import VERSION
         import inspect
-        print("Pyro version: %s" % VERSION)
-        print("Loaded from: %s" % os.path.abspath(os.path.split(inspect.getfile(Configuration))[0]))
-        print("Active configuration settings:")
         config=self.asDict()
         config["LOGFILE"]=os.environ.get("PYRO_LOGFILE")
         config["LOGLEVEL"]=os.environ.get("PYRO_LOGLEVEL")
+        result= ["Pyro version: %s" % VERSION,
+                 "Loaded from: %s" % os.path.abspath(os.path.split(inspect.getfile(Configuration))[0]),
+                 "Active configuration settings:"]
         for n, v in sorted(config.items()):
-            print("%s = %s" % (n, v))
+            result.append("%s = %s" % (n, v))
+        return "\n".join(result)
 
 if __name__=="__main__":
-    Configuration().dump()
+    print(Configuration().dump())

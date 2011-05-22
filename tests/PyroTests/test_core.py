@@ -8,6 +8,9 @@ irmen@razorvine.net - http://www.razorvine.net/python/Pyro
 from __future__ import with_statement
 import unittest
 import copy
+import logging
+import os
+import Pyro4.configuration
 import Pyro4.core
 import Pyro4.errors
 import Pyro4.constants
@@ -41,6 +44,35 @@ class CoreTests(unittest.TestCase):
             self.fail("expected exception for weird config item")
         except AttributeError:
             pass
+
+    def testConfigParseBool(self):
+        config=Pyro4.configuration.Configuration()
+        self.assertTrue(type(config.COMPRESSION) is bool)
+        os.environ["PYRO_COMPRESSION"]="yes"
+        config.refresh()
+        self.assertTrue(config.COMPRESSION)
+        os.environ["PYRO_COMPRESSION"]="off"
+        config.refresh()
+        self.assertFalse(config.COMPRESSION)
+        os.environ["PYRO_COMPRESSION"]="foobar"
+        self.assertRaises(ValueError, config.refresh)
+        del os.environ["PYRO_COMPRESSION"]
+
+    def testConfigDump(self):
+        config=Pyro4.configuration.Configuration()
+        dump=config.dump()
+        self.assertTrue("version:" in dump)
+        self.assertTrue("LOGLEVEL" in dump)
+
+    def testLogInit(self):
+        _=logging.getLogger("Pyro")
+        os.environ["PYRO_LOGLEVEL"]="DEBUG"
+        os.environ["PYRO_LOGFILE"]="{stderr}"
+        reload(Pyro4)
+        _=logging.getLogger("Pyro")
+        del os.environ["PYRO_LOGLEVEL"]
+        del os.environ["PYRO_LOGFILE"]
+        reload(Pyro4)
 
     def testUriStrAndRepr(self):
         uri="PYRONAME:some_obj_name"
