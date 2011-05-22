@@ -9,13 +9,16 @@ from __future__ import with_statement
 import unittest
 import copy
 import logging
-import os
+import os, sys
 import Pyro4.configuration
 import Pyro4.core
 import Pyro4.errors
 import Pyro4.constants
 from testsupport import *
 
+if sys.version_info>=(3,0):
+    import imp
+    reload=imp.reload
 
 class Thing(object):
     def __init__(self, arg):
@@ -23,6 +26,17 @@ class Thing(object):
     def __eq__(self,other):
         return self.arg==other.arg
     __hash__=object.__hash__
+
+class CoreTestsWithoutHmac(unittest.TestCase):
+    def testProxy(self):
+        Pyro4.config.HMAC_KEY=None
+        # check that proxy without hmac is possible
+        _=Pyro4.Proxy("PYRO:object@host:9999")
+    def testDaemon(self):
+        Pyro4.config.HMAC_KEY=None
+        # check that daemon without hmac is possible
+        d=Pyro4.Daemon()
+        d.shutdown()
 
 class CoreTests(unittest.TestCase):
     def setUp(self):
