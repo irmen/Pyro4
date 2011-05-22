@@ -132,17 +132,20 @@ class _RemoteMethod(object):
         return self.__send(self.__name, args, kwargs)
 
 
+def _check_hmac():
+    if Pyro4.config.HMAC_KEY is None or len(Pyro4.config.HMAC_KEY)==0:
+        import warnings
+        warnings.warn("HMAC_KEY not set, protocol data may not be secure")
+    if sys.version_info>=(3,0) and type(Pyro4.config.HMAC_KEY) is not bytes:
+        raise errors.PyroError("HMAC_KEY must be bytes type")
+
 class Proxy(object):
     """Pyro proxy for a remote object. Intercepts method calls and dispatches them to the remote object."""
     _pyroSerializer=util.Serializer()
     __pyroAttributes=frozenset(["__getnewargs__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway", "_pyroTimeout", "_pyroSeq"])
 
     def __init__(self, uri):
-        # check if hmac secret key is set
-        if Pyro4.config.HMAC_KEY in (None, ""):
-            raise errors.PyroError("you must set Pyro's HMAC_KEY config item to a valid shared secret key")
-        if sys.version_info>=(3,0) and type(Pyro4.config.HMAC_KEY) is not bytes:
-            raise errors.PyroError("HMAC_KEY must be bytes type")
+        _check_hmac()  # check if hmac secret key is set
         if isinstance(uri, basestring):
             uri=URI(uri)
         elif not isinstance(uri, URI):
@@ -337,20 +340,27 @@ class MessageFactory(object):
     FLAGS_EXCEPTION = 1<<0
     FLAGS_COMPRESSED = 1<<1
     FLAGS_ONEWAY = 1<<2
+    FLAGS_HMAC = 1<<3
     MAGIC = 0x34E9
     if sys.version_info>=(3, 0):
         empty_bytes = bytes([])
         pyro_tag = bytes("PYRO", "ASCII")
+        empty_hmac = bytes(hashlib.sha1().digest_size)
     else:
         empty_bytes = ""
         pyro_tag = "PYRO"
+        empty_hmac = "\0"*hashlib.sha1().digest_size
 
     @classmethod
     def createMessage(cls, msgType, databytes, flags, seq):
         """creates a message containing a header followed by the given databytes"""
         databytes=databytes or cls.empty_bytes
+        if Pyro4.config.HMAC_KEY:
+            flags|=MessageFactory.FLAGS_HMAC
+            bodyhmac=hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest()
+        else:
+            bodyhmac=MessageFactory.empty_hmac
         headerchecksum=(msgType+constants.PROTOCOL_VERSION+len(databytes)+flags+seq+MessageFactory.MAGIC)&0xffff
-        bodyhmac=hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest()
         msg=struct.pack(cls.headerFmt, cls.pyro_tag, constants.PROTOCOL_VERSION, msgType, flags, seq, len(databytes), headerchecksum, bodyhmac)
         return msg+databytes
 
@@ -375,8 +385,15 @@ class MessageFactory(object):
             log.error(err)
             raise errors.ProtocolError(err)
         databytes=connection.recv(datalen)
-        if datahmac != hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest():
-            raise errors.SecurityError("message hmac mismatch")
+        local_hmac_set=Pyro4.config.HMAC_KEY is not None and len(Pyro4.config.HMAC_KEY) > 0
+        if flags&MessageFactory.FLAGS_HMAC and local_hmac_set:
+            if datahmac != hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest():
+                raise errors.SecurityError("message hmac mismatch")
+        elif flags&MessageFactory.FLAGS_HMAC != local_hmac_set:
+            # Message contains hmac and local HMAC_KEY not set, or vice versa. This is not allowed.
+            err="hmac key config not symmetric"
+            log.warn(err)
+            raise errors.SecurityError(err)
         return msgType, flags, seq, databytes
 
 
@@ -398,11 +415,7 @@ class Daemon(object):
     to the appropriate objects.
     """
     def __init__(self, host=None, port=0):
-        # check if hmac secret key is set
-        if Pyro4.config.HMAC_KEY in (None, ""):
-            raise errors.PyroError("you must set Pyro's HMAC_KEY config item to a valid shared secret key")
-        if sys.version_info>=(3,0) and type(Pyro4.config.HMAC_KEY) is not bytes:
-            raise errors.PyroError("HMAC_KEY must be bytes type")
+        _check_hmac()  # check if hmac secret key is set
         if host is None:
             host=Pyro4.config.HOST
         if Pyro4.config.SERVERTYPE=="thread":
