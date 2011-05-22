@@ -215,13 +215,13 @@ class CoreTests(unittest.TestCase):
         hdr=MF.createMessage(MF.MSG_CONNECT, tobytes("hello"),0,0)[:-5]
         msgType,flags,seq,dataLen,datahmac=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_CONNECT, msgType)
-        self.assertEqual(0, flags)
+        self.assertEqual(MF.FLAGS_HMAC, flags)
         self.assertEqual(5, dataLen)
         self.assertEqual(pyrohmac("hello"), datahmac)
         hdr=MF.createMessage(MF.MSG_RESULT, None,0,0)
         msgType,flags,seq,dataLen,datahmac=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_RESULT, msgType)
-        self.assertEqual(0, flags)
+        self.assertEqual(MF.FLAGS_HMAC, flags)
         self.assertEqual(0, dataLen)
         hdr=MF.createMessage(MF.MSG_RESULT, tobytes("hello"), 42, 0)[:-5]
         msgType,flags,seq,dataLen,datahmac=MF.parseMessageHeader(hdr)
