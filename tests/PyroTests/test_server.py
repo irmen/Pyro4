@@ -58,7 +58,7 @@ class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
         conn.send(msg)
         return False
     
-class ServerTestsSingle(unittest.TestCase):
+class ServerTestsBrokenHandshake(unittest.TestCase):
     def setUp(self):
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
         self.daemon=DaemonWithSabotagedHandshake(port=0)
@@ -84,15 +84,9 @@ class ServerTestsSingle(unittest.TestCase):
                 message=str(xv)
                 self.assertTrue("rigged connection failure" in message)
 
-class ServerTestsThreadNoTimeout(unittest.TestCase):
-    SERVERTYPE="thread"
-    COMMTIMEOUT=None
+class ServerTestsSingle(unittest.TestCase):
+    """tests that are fine to run with just a single server type"""
     def setUp(self):
-        Pyro4.config.POLLTIMEOUT=0.1
-        Pyro4.config.SERVERTYPE=self.SERVERTYPE
-        Pyro4.config.COMMTIMEOUT=self.COMMTIMEOUT
-        Pyro4.config.THREADPOOL_MINTHREADS=2
-        Pyro4.config.THREADPOOL_MAXTHREADS=20
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
         self.daemon=Pyro4.core.Daemon(port=0)
         obj=MyThing()
@@ -105,8 +99,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         time.sleep(0.05)
         self.daemon.shutdown()
         self.daemonthread.join()
-        Pyro4.config.SERVERTYPE="thread"
-        Pyro4.config.COMMTIMEOUT=None
         Pyro4.config.HMAC_KEY=None
 
     def testNoDottedNames(self):
@@ -144,6 +136,48 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 self.assertEqual({"number":42, "more":666}, x)  # eek, it got updated!
         finally:
             Pyro4.config.DOTTEDNAMES=False
+
+    def testNormalProxy(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            self.assertEqual(42,p.multiply(7,6))
+
+    def testBatchProxy(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            batch=Pyro4.core.BatchProxy(p)
+            self.assertEqual(None,batch.multiply(7,6))
+            self.assertEqual(None,batch.divide(999,3))
+            self.assertEqual(None,batch.ping())
+            results=batch()
+            self.assertEqual(42,results.next())
+            self.assertEqual(333,results.next())
+            self.assertEqual(None,results.next())
+            self.assertRaises(StopIteration, results.next)
+
+
+class ServerTestsThreadNoTimeout(unittest.TestCase):
+    SERVERTYPE="thread"
+    COMMTIMEOUT=None
+    def setUp(self):
+        Pyro4.config.POLLTIMEOUT=0.1
+        Pyro4.config.SERVERTYPE=self.SERVERTYPE
+        Pyro4.config.COMMTIMEOUT=self.COMMTIMEOUT
+        Pyro4.config.THREADPOOL_MINTHREADS=2
+        Pyro4.config.THREADPOOL_MAXTHREADS=20
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        self.daemon=Pyro4.core.Daemon(port=0)
+        obj=MyThing()
+        uri=self.daemon.register(obj, "something")
+        self.objectUri=uri
+        self.daemonthread=DaemonLoopThread(self.daemon)
+        self.daemonthread.start()
+        self.daemonthread.running.wait()
+    def tearDown(self):
+        time.sleep(0.05)
+        self.daemon.shutdown()
+        self.daemonthread.join()
+        Pyro4.config.SERVERTYPE="thread"
+        Pyro4.config.COMMTIMEOUT=None
+        Pyro4.config.HMAC_KEY=None
 
     def testConnectionStuff(self):
         p1=Pyro4.core.Proxy(self.objectUri)

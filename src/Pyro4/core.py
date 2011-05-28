@@ -120,7 +120,7 @@ class URI(object):
 
 
 class _RemoteMethod(object):
-    """method call abstraction, adapted from Python's xmlrpclib, but without nested calls at the moment"""
+    """method call abstraction"""
     def __init__(self, send, name):
         self.__send = send
         self.__name = name
@@ -131,13 +131,13 @@ class _RemoteMethod(object):
     def __call__(self, *args, **kwargs):
         return self.__send(self.__name, args, kwargs)
 
-
 def _check_hmac():
     if Pyro4.config.HMAC_KEY is None or len(Pyro4.config.HMAC_KEY)==0:
         import warnings
         warnings.warn("HMAC_KEY not set, protocol data may not be secure")
     elif sys.version_info>=(3,0) and type(Pyro4.config.HMAC_KEY) is not bytes:
         raise errors.PyroError("HMAC_KEY must be bytes type")
+
 
 class Proxy(object):
     """Pyro proxy for a remote object. Intercepts method calls and dispatches them to the remote object."""
@@ -227,6 +227,8 @@ class Proxy(object):
             flags |= MessageFactory.FLAGS_COMPRESSED
         if methodname in self._pyroOneway:
             flags |= MessageFactory.FLAGS_ONEWAY
+        if methodname == "<<batch>>":       # magic method name that indicates a batched method call
+            flags |= MessageFactory.FLAGS_BATCH
         with self.__pyroLock:
             self._pyroSeq=(self._pyroSeq+1)&0xffff
             data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags, self._pyroSeq)
@@ -321,6 +323,45 @@ class Proxy(object):
         log.error(msg)
         raise errors.ConnectionClosedError(msg)
 
+    def _pyroBatch(self):
+        return _BatchProxy(self.__pyroInvokeBatch)
+
+    def __pyroInvokeBatch(self, calls):
+        return self.__pyroInvoke("<<batch>>", calls, None)
+
+
+class _BatchedRemoteMethod(object):
+    """method call abstraction that is used with batched calls"""
+    def __init__(self, calls, name):
+        self.__calls = calls
+        self.__name = name
+
+    def __getattr__(self, name):
+        return _BatchedRemoteMethod(self.__calls, "%s.%s" % (self.__name, name))
+
+    def __call__(self, *args, **kwargs):
+        self.__calls.append((self.__name, args, kwargs))
+
+
+class _BatchProxy(object):
+    """Helper class that lets you batch multiple method calls into one.
+    It is constructed with a reference to the method of the normal proxy that will
+    carry out the batched calls. Call methods on this object thatyou want to batch,
+    and finally call the batch proxy itself. That call will return a generator
+    for the results of every method call in the batch (in sequence)."""
+    def __init__(self, batchmethod):
+        self.__batchmethod=batchmethod
+        self.__calls=[]
+
+    def __getattr__(self, name):
+        return _BatchedRemoteMethod(self.__calls, name)
+
+    def __call__(self):
+        results=self.__batchmethod(self.__calls)
+        del self.__calls
+        for result in results:
+            yield result
+
 
 class MessageFactory(object):
     """internal helper class to construct Pyro protocol messages"""
@@ -343,6 +384,7 @@ class MessageFactory(object):
     FLAGS_COMPRESSED = 1<<1
     FLAGS_ONEWAY = 1<<2
     FLAGS_HMAC = 1<<3
+    FLAGS_BATCH = 1<<4
     MAGIC = 0x34E9
     if sys.version_info>=(3, 0):
         empty_bytes = bytes([])
@@ -513,16 +555,23 @@ class Daemon(object):
                 if kwargs and sys.version_info<(2, 6, 5) and os.name!="java":
                     # Python before 2.6.5 doesn't accept unicode keyword arguments
                     kwargs = dict((str(k), kwargs[k]) for k in kwargs)
-                #log.debug("calling %s.%s", obj.__class__.__name__, method)
-                obj=util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
-                if flags & MessageFactory.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:
-                    # oneway call to be run inside its own thread
-                    thread=threadutil.Thread(target=obj, args=vargs, kwargs=kwargs)
-                    thread.setDaemon(True)
-                    thread.start()
+                if flags & MessageFactory.FLAGS_BATCH:
+                    # batched method calls, loop over them all and collect all results
+                    data=[]
+                    for method,vargs,kwargs in vargs:
+                        method=util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
+                        data.append(method(*vargs, **kwargs))   # this is the actual method call to the Pyro object
                 else:
-                    isCallback=getattr(obj, "_pyroCallback", False)
-                    data=obj(*vargs, **kwargs)   # this is the actual method call to the Pyro object
+                    # normal single method call
+                    method=util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
+                    if flags & MessageFactory.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:
+                        # oneway call to be run inside its own thread
+                        thread=threadutil.Thread(target=method, args=vargs, kwargs=kwargs)
+                        thread.setDaemon(True)
+                        thread.start()
+                    else:
+                        isCallback=getattr(method, "_pyroCallback", False)
+                        data=method(*vargs, **kwargs)   # this is the actual method call to the Pyro object
             else:
                 log.debug("unknown object requested: %s", objId)
                 raise errors.DaemonError("unknown object")

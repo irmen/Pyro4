@@ -27,6 +27,7 @@ class Thing(object):
         return self.arg==other.arg
     __hash__=object.__hash__
 
+
 class CoreTestsWithoutHmac(unittest.TestCase):
     def testProxy(self):
         Pyro4.config.HMAC_KEY=None
@@ -37,6 +38,7 @@ class CoreTestsWithoutHmac(unittest.TestCase):
         # check that daemon without hmac is possible
         d=Pyro4.Daemon()
         d.shutdown()
+
 
 class CoreTests(unittest.TestCase):
     def setUp(self):
@@ -365,23 +367,7 @@ class CoreTests(unittest.TestCase):
         with p:
             self.assertTrue(p._pyroUri is not None)
         with p:
-            self.assertTrue(p._pyroUri is not None)            
-
-    def testRemoteMethod(self):
-        class Proxy(object):
-            def invoke(self, name, args, kwargs):
-                return "INVOKED name=%s args=%s kwargs=%s" % (name,args,kwargs)
-            def __getattr__(self, name):
-                return Pyro4.core._RemoteMethod(self.invoke, name)
-        o=Proxy()
-        self.assertEqual("INVOKED name=foo args=(1,) kwargs={}", o.foo(1)) #normal
-        self.assertEqual("INVOKED name=foo.bar args=(1,) kwargs={}", o.foo.bar(1)) #dotted
-        self.assertEqual("INVOKED name=foo.bar args=(1, 'hello') kwargs={'a': True}", o.foo.bar(1,"hello",a=True))
-        p=Pyro4.core.Proxy("PYRO:obj@host:666")
-        a=p.someattribute
-        self.assertTrue(isinstance(a, Pyro4.core._RemoteMethod), "attribute access should just be a RemoteMethod")
-        a2=a.nestedattribute
-        self.assertTrue(isinstance(a2, Pyro4.core._RemoteMethod), "nested attribute should just be another RemoteMethod")
+            self.assertTrue(p._pyroUri is not None)
 
     def testNoConnect(self):
         wrongUri=Pyro4.core.URI("PYRO:foobar@localhost:59999")
@@ -431,8 +417,49 @@ class CoreTests(unittest.TestCase):
         t=Test()
         self.assertEqual(True, getattr(t.method,"_pyroCallback"))
         self.assertEqual(False, getattr(t.method2,"_pyroCallback", False))
-        
-        
+
+
+class RemoteMethodTests(unittest.TestCase):
+    def testRemoteMethod(self):
+        class ProxyMock(object):
+            def invoke(self, name, args, kwargs):
+                return "INVOKED name=%s args=%s kwargs=%s" % (name,args,kwargs)
+            def __getattr__(self, name):
+                return Pyro4.core._RemoteMethod(self.invoke, name)
+        o=ProxyMock()
+        self.assertEqual("INVOKED name=foo args=(1,) kwargs={}", o.foo(1)) #normal
+        self.assertEqual("INVOKED name=foo.bar args=(1,) kwargs={}", o.foo.bar(1)) #dotted
+        self.assertEqual("INVOKED name=foo.bar args=(1, 'hello') kwargs={'a': True}", o.foo.bar(1,"hello",a=True))
+        p=Pyro4.core.Proxy("PYRO:obj@host:666")
+        a=p.someattribute
+        self.assertTrue(isinstance(a, Pyro4.core._RemoteMethod), "attribute access should just be a RemoteMethod")
+        a2=a.nestedattribute
+        self.assertTrue(isinstance(a2, Pyro4.core._RemoteMethod), "nested attribute should just be another RemoteMethod")
+
+    def testBatchMethod(self):
+        class ProxyMock(object):
+            def _pyroBatch(self):
+                return Pyro4.core._BatchProxy(self.pyroInvokeBatch)
+            def pyroInvokeBatch(self, calls):
+                result=[]
+                for name, args, kwargs in calls:
+                    result.append("INVOKED {0} args={1} kwargs={2}".format(name,args,kwargs))
+                return result
+        proxy=ProxyMock()
+        batch=proxy._pyroBatch()
+        self.assertEqual(None, batch.foo(42))
+        self.assertEqual(None, batch.bar("abc"))
+        self.assertEqual(None, batch.baz(42,"abc",arg=999))
+        results=batch()
+        result=results.next()
+        self.assertEqual("INVOKED foo args=(42,) kwargs={}",result)
+        result=results.next()
+        self.assertEqual("INVOKED bar args=('abc',) kwargs={}",result)
+        result=results.next()
+        self.assertEqual("INVOKED baz args=(42, 'abc') kwargs={'arg': 999}",result)
+        self.assertRaises(StopIteration, results.next)
+
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
