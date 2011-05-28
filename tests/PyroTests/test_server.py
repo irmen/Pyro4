@@ -148,10 +148,10 @@ class ServerTestsSingle(unittest.TestCase):
             self.assertEqual(None,batch.divide(999,3))
             self.assertEqual(None,batch.ping())
             results=batch()
-            self.assertEqual(42,results.next())
-            self.assertEqual(333,results.next())
-            self.assertEqual(None,results.next())
-            self.assertRaises(StopIteration, results.next)
+            self.assertEqual(42,next(results))
+            self.assertEqual(333,next(results))
+            self.assertEqual(None,next(results))
+            self.assertRaises(StopIteration, next, results)
 
 
 class ServerTestsThreadNoTimeout(unittest.TestCase):

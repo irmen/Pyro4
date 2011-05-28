@@ -443,7 +443,7 @@ class RemoteMethodTests(unittest.TestCase):
             def pyroInvokeBatch(self, calls):
                 result=[]
                 for name, args, kwargs in calls:
-                    result.append("INVOKED {0} args={1} kwargs={2}".format(name,args,kwargs))
+                    result.append("INVOKED %s args=%s kwargs=%s" % (name,args,kwargs))
                 return result
         proxy=ProxyMock()
         batch=proxy._pyroBatch()
@@ -451,13 +451,13 @@ class RemoteMethodTests(unittest.TestCase):
         self.assertEqual(None, batch.bar("abc"))
         self.assertEqual(None, batch.baz(42,"abc",arg=999))
         results=batch()
-        result=results.next()
+        result=next(results)
         self.assertEqual("INVOKED foo args=(42,) kwargs={}",result)
-        result=results.next()
+        result=next(results)
         self.assertEqual("INVOKED bar args=('abc',) kwargs={}",result)
-        result=results.next()
+        result=next(results)
         self.assertEqual("INVOKED baz args=(42, 'abc') kwargs={'arg': 999}",result)
-        self.assertRaises(StopIteration, results.next)
+        self.assertRaises(StopIteration, next, results)
 
 
 if __name__ == "__main__":
