@@ -143,7 +143,7 @@ class ServerTestsSingle(unittest.TestCase):
 
     def testBatchProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch=Pyro4.core.BatchProxy(p)
+            batch=p._pyroBatch()
             self.assertEqual(None,batch.multiply(7,6))
             self.assertEqual(None,batch.divide(999,3))
             self.assertEqual(None,batch.ping())
