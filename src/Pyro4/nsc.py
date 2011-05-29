@@ -48,7 +48,7 @@ def handleCommand(nameserver, options, args):
     def cmd_removeregex():
         if len(args)<2:
             raise SystemExit("missing regex argument")
-        sure=input("Potentially removing lots of items from the Name server. Are you sure (y/n)?")
+        sure=input("Potentially removing lots of items from the Name server. Are you sure (y/n)?").strip()
         if sure in ('y', 'Y'):
             count=nameserver.remove(regex=args[1])
             print("%d items removed." % count)

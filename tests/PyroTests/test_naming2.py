@@ -212,6 +212,32 @@ class OfflineNameServerTests(unittest.TestCase):
             sys.stdout=oldstdout
             sys.stderr=oldstderr
             
+    def testNSCfunctions(self):
+        oldstdout=sys.stdout
+        oldstderr=sys.stderr
+        try:
+            sys.stdout=StringIO()
+            sys.stderr=StringIO()
+            ns=Pyro4.naming.NameServer()
+            Pyro4.nsc.handleCommand(ns, None, ["foo"])
+            self.assertTrue(sys.stdout.getvalue().endswith("Error: 'foo'\n"))
+            Pyro4.nsc.handleCommand(ns, None, ["ping"])
+            self.assertTrue(sys.stdout.getvalue().endswith("ping ok.\n"))
+            Pyro4.nsc.handleCommand(ns, None, ["list"])
+            self.assertTrue(sys.stdout.getvalue().endswith("END LIST \n"))
+            Pyro4.nsc.handleCommand(ns, None, ["listmatching", "name.$"])
+            self.assertTrue(sys.stdout.getvalue().endswith("END LIST - regex 'name.$'\n"))
+            self.assertFalse("name1" in sys.stdout.getvalue())
+            Pyro4.nsc.handleCommand(ns, None, ["register", "name1", "PYRO:obj1@hostname:9999"])
+            self.assertTrue(sys.stdout.getvalue().endswith("Registered name1\n"))
+            Pyro4.nsc.handleCommand(ns, None, ["remove", "name2"])
+            self.assertTrue(sys.stdout.getvalue().endswith("Nothing removed\n"))
+            Pyro4.nsc.handleCommand(ns, None, ["listmatching", "name.$"])
+            self.assertTrue("name1 --> PYRO:obj1@hostname:9999" in sys.stdout.getvalue())
+            #Pyro4.nsc.handleCommand(ns, None, ["removematching","name?"])
+        finally:
+            sys.stdout=oldstdout
+            sys.stderr=oldstderr
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
