@@ -358,9 +358,24 @@ class _BatchProxy(object):
 
     def __call__(self):
         results=self.__batchmethod(self.__calls)
-        del self.__calls
+        self.__calls=[]   # clear for re-use
         for result in results:
-            yield result
+            if isinstance(result, _ExceptionWrapper):
+                result.raiseIt()   # re-raise the remote exception locally.
+            else:
+                yield result   # it is a regular result object, yield that and continue.
+
+
+class _ExceptionWrapper(object):
+    """Class that wraps a remote exception. If this is returned, Pyro will
+    re-throw the exception on the receiving side. Usually this is taken care of
+    by a special response message flag, but in the case of batched calls this
+    flag is useless and another mechanism was needed."""
+    def __init__(self, exception):
+        self.exception=exception
+
+    def raiseIt(self):
+        raise self.exception
 
 
 class MessageFactory(object):
@@ -545,6 +560,7 @@ class Daemon(object):
         """
         flags=0
         seq=0
+        wasBatched=False
         isCallback=False
         try:
             msgType, flags, seq, data = MessageFactory.getMessage(conn, MessageFactory.MSG_INVOKE)
@@ -560,7 +576,17 @@ class Daemon(object):
                     data=[]
                     for method,vargs,kwargs in vargs:
                         method=util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
-                        data.append(method(*vargs, **kwargs))   # this is the actual method call to the Pyro object
+                        try:
+                            result=method(*vargs, **kwargs)   # this is the actual method call to the Pyro object
+                        except Exception:
+                            xt,xv=sys.exc_info()[0:2]
+                            log.debug("Exception occurred while handling batched request: %s", xv)
+                            xv._pyroTraceback=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
+                            data.append(_ExceptionWrapper(xv))
+                            break   # stop processing the rest of the batch
+                        else:
+                            data.append(result)
+                    wasBatched=True
                 else:
                     # normal single method call
                     method=util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
@@ -582,6 +608,8 @@ class Daemon(object):
                 flags=0
                 if compressed:
                     flags |= MessageFactory.FLAGS_COMPRESSED
+                if wasBatched:
+                    flags |= MessageFactory.FLAGS_BATCH
                 msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags, seq)
                 del data
                 conn.send(msg)

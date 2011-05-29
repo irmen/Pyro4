@@ -1,6 +1,7 @@
 from __future__ import print_function
 import sys
 import time
+from Pyro4.util import getPyroTraceback
 import Pyro4
 
 if sys.version_info<(3,0):
@@ -45,3 +46,21 @@ duration=time.time()-begin
 assert total==(NUMBER_OF_ITERATIONS*(7*6 + 10+20))   # check
 print("total time taken {0:.4f} seconds ({1:.0f} calls/sec)".format(duration, NUMBER_OF_ITERATIONS*2/duration))
 print("batched calls were {0:.2f} times faster than normal remote calls".format(duration_normal/duration))
+
+# Show what happens when one of the methods in a batch generates an error.
+# (the batch is aborted and the error is raised locally again).
+# Btw, you can re-use a batch proxy once you've called it and processed the results.
+print("\nBatch with an error. Dividing a number by decreasing divisors...")
+for d in range(3,-3,-1):    #  divide by 3,2,1,0,-1,-2,-3... but 0 will be a problem ;-)
+    batch.divide(100,d)
+print("getting results...")
+divisor=3
+try:
+    for result in batch():
+        print("100//%d = %d" % (divisor,result))
+        divisor-=1
+        # this will raise the proper zerodivision exception once we're about
+        # to process the batch result from the divide by 0 call.
+except Exception:
+    print("An error occurred during the batch!")
+    print("".join(getPyroTraceback()))

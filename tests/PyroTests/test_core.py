@@ -420,6 +420,19 @@ class CoreTests(unittest.TestCase):
 
 
 class RemoteMethodTests(unittest.TestCase):
+    class BatchProxyMock(object):
+        def _pyroBatch(self):
+            return Pyro4.core._BatchProxy(self.pyroInvokeBatch)
+        def pyroInvokeBatch(self, calls):
+            self.result=[]
+            for name, args, kwargs in calls:
+                if name=="error":
+                    self.result.append(Pyro4.core._ExceptionWrapper(ValueError("some exception")))
+                    break  # stop processing the rest, this is what Pyro should do in case of an error in a batch
+                else:
+                    self.result.append("INVOKED %s args=%s kwargs=%s" % (name,args,kwargs))
+            return self.result
+
     def testRemoteMethod(self):
         class ProxyMock(object):
             def invoke(self, name, args, kwargs):
@@ -437,19 +450,13 @@ class RemoteMethodTests(unittest.TestCase):
         self.assertTrue(isinstance(a2, Pyro4.core._RemoteMethod), "nested attribute should just be another RemoteMethod")
 
     def testBatchMethod(self):
-        class ProxyMock(object):
-            def _pyroBatch(self):
-                return Pyro4.core._BatchProxy(self.pyroInvokeBatch)
-            def pyroInvokeBatch(self, calls):
-                result=[]
-                for name, args, kwargs in calls:
-                    result.append("INVOKED %s args=%s kwargs=%s" % (name,args,kwargs))
-                return result
-        proxy=ProxyMock()
+        proxy=self.BatchProxyMock()
         batch=proxy._pyroBatch()
         self.assertEqual(None, batch.foo(42))
         self.assertEqual(None, batch.bar("abc"))
         self.assertEqual(None, batch.baz(42,"abc",arg=999))
+        self.assertEqual(None, batch.error())   # generate an exception
+        self.assertEqual(None, batch.foo(42))   # this call should not be performed after the error
         results=batch()
         result=next(results)
         self.assertEqual("INVOKED foo args=(42,) kwargs={}",result)
@@ -457,7 +464,24 @@ class RemoteMethodTests(unittest.TestCase):
         self.assertEqual("INVOKED bar args=('abc',) kwargs={}",result)
         result=next(results)
         self.assertEqual("INVOKED baz args=(42, 'abc') kwargs={'arg': 999}",result)
-        self.assertRaises(StopIteration, next, results)
+        self.assertRaises(ValueError, next, results)  # the call to error() should generate an exception
+        self.assertRaises(StopIteration, next, results)   # and now there should not be any more results
+        self.assertEqual(4, len(proxy.result))   # should have done 4 calls, not 5
+
+    def testBatchMethodReuse(self):
+        proxy=self.BatchProxyMock()
+        batch=proxy._pyroBatch()
+        batch.foo(1)
+        batch.foo(2)
+        results=batch()
+        self.assertEqual(['INVOKED foo args=(1,) kwargs={}', 'INVOKED foo args=(2,) kwargs={}'], list(results))
+        # re-use the batch proxy:
+        batch.foo(3)
+        batch.foo(4)
+        results=batch()
+        self.assertEqual(['INVOKED foo args=(3,) kwargs={}', 'INVOKED foo args=(4,) kwargs={}'], list(results))
+        results=batch()
+        self.assertEqual(0, len(list(results)))
 
 
 if __name__ == "__main__":

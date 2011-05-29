@@ -147,11 +147,14 @@ class ServerTestsSingle(unittest.TestCase):
             self.assertEqual(None,batch.multiply(7,6))
             self.assertEqual(None,batch.divide(999,3))
             self.assertEqual(None,batch.ping())
+            self.assertEqual(None,batch.divide(999,0))      # force an exception here
+            self.assertEqual(None,batch.multiply(3,4))      # this call should not be performed after the error
             results=batch()
             self.assertEqual(42,next(results))
             self.assertEqual(333,next(results))
             self.assertEqual(None,next(results))
-            self.assertRaises(StopIteration, next, results)
+            self.assertRaises(ZeroDivisionError, next, results)     # 999//0 should raise this error
+            self.assertRaises(StopIteration, next, results)     # no more results should be available after the error
 
 
 class ServerTestsThreadNoTimeout(unittest.TestCase):
