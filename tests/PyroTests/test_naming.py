@@ -45,6 +45,12 @@ class BCSetupTests(unittest.TestCase):
         nameserver.close()
         bcserver.close()
 
+
+class NameServerNotRunningTests(unittest.TestCase):
+	def testLocate(self):
+		self.assertRaises(NamingError, Pyro4.naming.locateNS)
+
+
 class NameServerTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT=0.1
