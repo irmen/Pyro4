@@ -214,7 +214,7 @@ class Proxy(object):
             self._pyroConnection.timeout=timeout
     _pyroTimeout=property(__pyroGetTimeout, __pyroSetTimeout)
 
-    def __pyroInvoke(self, methodname, vargs, kwargs):
+    def __pyroInvoke(self, methodname, vargs, kwargs, flags=0):
         """perform the remote method call communication"""
         if not self._pyroConnection:
             # rebind here, don't do it from inside the invoke because deadlock will occur
@@ -222,13 +222,10 @@ class Proxy(object):
         data, compressed=self._pyroSerializer.serialize(
             (self._pyroConnection.objectId, methodname, vargs, kwargs),
             compress=Pyro4.config.COMPRESSION)
-        flags=0
         if compressed:
             flags |= MessageFactory.FLAGS_COMPRESSED
         if methodname in self._pyroOneway:
             flags |= MessageFactory.FLAGS_ONEWAY
-        if methodname == "<<batch>>":       # magic method name that indicates a batched method call
-            flags |= MessageFactory.FLAGS_BATCH
         with self.__pyroLock:
             self._pyroSeq=(self._pyroSeq+1)&0xffff
             data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags, self._pyroSeq)
@@ -326,8 +323,11 @@ class Proxy(object):
     def _pyroBatch(self):
         return _BatchProxy(self.__pyroInvokeBatch)
 
-    def __pyroInvokeBatch(self, calls):
-        return self.__pyroInvoke("<<batch>>", calls, None)
+    def __pyroInvokeBatch(self, calls, oneway=False):
+        flags=MessageFactory.FLAGS_BATCH
+        if oneway:
+            flags|=MessageFactory.FLAGS_ONEWAY
+        return self.__pyroInvoke("<batch>", calls, None, flags)
 
 
 class _BatchedRemoteMethod(object):
@@ -356,14 +356,18 @@ class _BatchProxy(object):
     def __getattr__(self, name):
         return _BatchedRemoteMethod(self.__calls, name)
 
-    def __call__(self):
-        results=self.__batchmethod(self.__calls)
-        self.__calls=[]   # clear for re-use
+    def __resultsgenerator(self, results):
         for result in results:
             if isinstance(result, _ExceptionWrapper):
                 result.raiseIt()   # re-raise the remote exception locally.
             else:
                 yield result   # it is a regular result object, yield that and continue.
+
+    def __call__(self, oneway=False):
+        results=self.__batchmethod(self.__calls, oneway)
+        self.__calls=[]   # clear for re-use
+        if not oneway:
+            return self.__resultsgenerator(results)
 
 
 class _ExceptionWrapper(object):

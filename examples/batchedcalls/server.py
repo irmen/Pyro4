@@ -11,6 +11,9 @@ class Thingy(object):
         return a//b
     def error(self):
         return 1//0
+    def printmessage(self,message):
+        print(message)
+        return 0
 
 d=Pyro4.Daemon(host=getMyIpAddress(workaround127=True), port=0)
 uri=d.register(Thingy())
