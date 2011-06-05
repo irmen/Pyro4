@@ -9,6 +9,7 @@ import unittest
 
 import sys, imp, os
 import Pyro4.util
+from testsupport import *
 
 if not hasattr(imp,"reload"):
     imp.reload=reload   # python 2.5 doesn't have imp.reload
@@ -103,6 +104,31 @@ class TestUtils(unittest.TestCase):
             # old call syntax, should get an error now:
             self.assertRaises(TypeError, Pyro4.util.getPyroTraceback, x)
             self.assertRaises(TypeError, Pyro4.util.formatTraceback, x)
+
+    def testExcepthook(self):
+        # simply test the excepthook by calling it the way Python would
+        try:
+            crash()
+            self.fail("must crash with ZeroDivisionError")
+        except ZeroDivisionError:
+            pyro_tb=Pyro4.util.formatTraceback()
+        try:
+            crash("stringvalue")
+            self.fail("must crash with TypeError")
+        except TypeError:
+            ex_type,ex_value,ex_tb=sys.exc_info()
+            ex_value._pyroTraceback=pyro_tb        # set the remote traceback info
+            oldstderr=sys.stderr
+            try:
+                sys.stderr=StringIO()
+                Pyro4.util.excepthook(ex_type, ex_value, ex_tb)
+                output=sys.stderr.getvalue()
+                self.assertTrue("Remote traceback" in output)
+                self.assertTrue("crash(\"stringvalue\")" in output)
+                self.assertTrue("TypeError:" in output)
+                self.assertTrue("ZeroDivisionError" in output)
+            finally:
+                sys.stderr=oldstderr
 
     def testConfig(self):
         def clearEnv():

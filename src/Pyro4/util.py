@@ -26,7 +26,7 @@ def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
             for line in lines:
                 result.append("\n | ")
                 result.append(line)
-        result.append("\n +--- End of remote traceback")
+        result.append("\n +--- End of remote traceback\n")
         return result
     try:
         if ex_type is not None and ex_value is None and ex_tb is None:
@@ -202,3 +202,8 @@ def resolveDottedAttribute(obj, attr, allowDotted):
         return obj
     else:
         return getattr(obj, attr)
+
+
+def excepthook(ex_type, ex_value, ex_tb):
+    traceback="".join(getPyroTraceback(ex_type, ex_value, ex_tb))
+    sys.stderr.write(traceback)
