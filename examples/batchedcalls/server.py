@@ -18,5 +18,5 @@ class Thingy(object):
 d=Pyro4.Daemon(host=getMyIpAddress(workaround127=True), port=0)
 uri=d.register(Thingy())
 print("server object uri:",uri)
-print("server running.")
+print("batched calls server running.")
 d.requestLoop()

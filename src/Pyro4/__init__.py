@@ -56,6 +56,7 @@ del _configLogging
 # initialize Pyro's configuration
 from Pyro4.configuration import Configuration
 config=Configuration()
+del Configuration
 
 # import the required Pyro symbols into this package
 from Pyro4.core import URI, Proxy, Daemon, callback
