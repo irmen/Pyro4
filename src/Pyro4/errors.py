@@ -36,3 +36,7 @@ class DaemonError(PyroError):
 
 class SecurityError(PyroError):
     pass
+
+
+class AsyncResultTimeout(PyroError):
+    pass

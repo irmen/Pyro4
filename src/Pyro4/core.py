@@ -131,6 +131,7 @@ class _RemoteMethod(object):
     def __call__(self, *args, **kwargs):
         return self.__send(self.__name, args, kwargs)
 
+
 def _check_hmac():
     if Pyro4.config.HMAC_KEY is None or len(Pyro4.config.HMAC_KEY)==0:
         import warnings
@@ -329,6 +330,9 @@ class Proxy(object):
             flags|=MessageFactory.FLAGS_ONEWAY
         return self.__pyroInvoke("<batch>", calls, None, flags)
 
+    def _pyroAsync(self, callback=None):
+        return _AsyncProxy(self.__pyroInvoke, callback)
+
 
 class _BatchedRemoteMethod(object):
     """method call abstraction that is used with batched calls"""
@@ -368,6 +372,68 @@ class _BatchProxy(object):
         self.__calls=[]   # clear for re-use
         if not oneway:
             return self.__resultsgenerator(results)
+
+
+class _AsyncProxy(object):
+    def __init__(self, invokemethod, callback):
+        self.__invokemethod=invokemethod
+        self.__callback=callback
+
+    def __getattr__(self, name):
+        return _AsyncRemoteMethod(self.__invokemethod, self.__callback, name)
+
+
+class _AsyncRemoteMethod(object):
+    """async method call abstraction (call will run in a background thread)"""
+    def __init__(self, send, callback, name):
+        self.__send = send
+        self.__name = name
+        self.__callback = callback
+
+    def __getattr__(self, name):
+        return _AsyncRemoteMethod(self.__send, self.__callback, "%s.%s" % (self.__name, name))
+
+    def __call__(self, *args, **kwargs):
+        asyncresult=_AsyncResult()
+        thread=threadutil.Thread(target=self.__asynccall, args=(asyncresult, self.__callback, args, kwargs))
+        thread.setDaemon(True)
+        thread.start()
+        return asyncresult
+
+    def __asynccall(self, asyncresult, callback, args, kwargs):
+        try:
+            value = self.__send(self.__name, args, kwargs)
+            asyncresult.value=value
+            if callback:
+                callback(value)
+        except:
+            log.warn("exception occurred in async call, ignored")
+            asyncresult.value=_ExceptionWrapper(sys.exc_info()[1])
+
+
+class _AsyncResult(object):
+    def __init__(self):
+        self.__ready=threadutil.Event()
+    def ready(self, timeout=None):
+        if timeout is None:
+            return self.__ready.is_set()
+        else:
+            self.__ready.wait(timeout)
+            if self.__ready.is_set():
+                return True
+            else:
+                raise Pyro4.errors.AsyncResultTimeout("async result didn't arrive in time")
+    @property
+    def value(self):
+        self.__ready.wait()
+        if isinstance(self.__value, _ExceptionWrapper):
+            self.__value.raiseIt()
+        else:
+            return self.__value
+    @value.setter
+    def value(self, value):
+        self.__value=value
+        self.__ready.set()
 
 
 class _ExceptionWrapper(object):
