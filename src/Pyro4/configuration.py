@@ -2,7 +2,7 @@
 Configuration settings.
 
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
 """
 
 # Env vars used at package import time (see __init__.py):

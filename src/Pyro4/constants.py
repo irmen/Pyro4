@@ -2,7 +2,7 @@
 Definitions of various hard coded constants.
 
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-irmen@razorvine.net - http://www.razorvine.net/python/Pyro
+irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
 """
 
 # Pyro version
