@@ -156,6 +156,34 @@ class ServerTestsSingle(unittest.TestCase):
             self.assertRaises(ZeroDivisionError, next, results)     # 999//0 should raise this error
             self.assertRaises(StopIteration, next, results)     # no more results should be available after the error
 
+    def testPyroTracebackNormal(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            try:
+                p.divide(999,0)  # force error here
+                self.fail("expected error")
+            except ZeroDivisionError:
+                # going to check if the magic pyro traceback attribute is available for batch methods too
+                tb="".join(Pyro4.util.getPyroTraceback())
+                self.assertTrue("Remote traceback:" in tb)  # validate if remote tb is present
+                self.assertTrue("ZeroDivisionError" in tb)  # the error
+                self.assertTrue("return x//y" in tb)  # the statement
+
+    def testPyroTracebackBatch(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            batch=p._pyroBatch()
+            self.assertEqual(None,batch.divide(999,0))      # force an exception here
+            results=batch()
+            try:
+                next(results)
+                self.fail("expected error")
+            except ZeroDivisionError:
+                # going to check if the magic pyro traceback attribute is available for batch methods too
+                tb="".join(Pyro4.util.getPyroTraceback())
+                self.assertTrue("Remote traceback:" in tb)  # validate if remote tb is present
+                self.assertTrue("ZeroDivisionError" in tb)  # the error
+                self.assertTrue("return x//y" in tb)  # the statement
+            self.assertRaises(StopIteration, next, results)     # no more results should be available after the error
+
 
 class ServerTestsThreadNoTimeout(unittest.TestCase):
     SERVERTYPE="thread"
