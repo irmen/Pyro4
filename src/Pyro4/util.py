@@ -71,7 +71,7 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                 frame_stack = []
                 line_number_stack = []
 
-                while 1:
+                while True:
                     line_num = ex_tb.tb_lineno
                     line_number_stack.append(line_num)
                     if not ex_tb.tb_next:
@@ -114,7 +114,7 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                         res.append('    %s\n' % code_line.strip())
 
                     if not seen_crap:
-                        seen_crap = 1
+                        seen_crap = True
                         continue
 
                     res.append("Local values:\n")
