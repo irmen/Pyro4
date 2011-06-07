@@ -65,7 +65,7 @@ def handleCommand(nameserver, options, args):
         commands[args[0]]()
     except Exception:
         x=sys.exc_info()[1]
-        print("Error: %s" % x)
+        print("Error: %s" % repr(x))
 
 
 def main(args):

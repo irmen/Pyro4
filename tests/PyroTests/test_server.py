@@ -344,7 +344,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 et,ev,tb=sys.exc_info()
                 self.assertEqual(ZeroDivisionError, et)
                 pyrotb="".join(Pyro4.util.getPyroTraceback(et,ev,tb))
-                self.assertTrue("Remote traceback" in pyrotb)    # fails on ironpython...
+                self.assertTrue("Remote traceback" in pyrotb)
                 self.assertTrue("ZeroDivisionError" in pyrotb)
                 del tb
 
@@ -363,7 +363,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             if sys.platform!="cli":
                 self.assertAlmostEqual(0.1, duration, places=1)
             else:
-                # ironpython's time is wonky
+                # ironpython's time is weird
                 self.assertTrue(0.0<duration<0.7)
 
     def testTimeoutConnect(self):

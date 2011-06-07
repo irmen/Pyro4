@@ -239,6 +239,8 @@ class Proxy(object):
                     self.__pyroCheckSequence(seq)
                     data=self._pyroSerializer.deserialize(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
                     if flags & MessageFactory.FLAGS_EXCEPTION:
+                        if sys.platform=="cli":
+                            fixIronPythonExceptionForPickle(data, False) # extract
                         raise data
                     else:
                         return data
@@ -444,6 +446,8 @@ class _ExceptionWrapper(object):
         self.exception=exception
 
     def raiseIt(self):
+        if sys.platform=="cli":
+            fixIronPythonExceptionForPickle(self.exception, False) # extract attributes
         raise self.exception
 
 
@@ -651,6 +655,8 @@ class Daemon(object):
                             xt,xv=sys.exc_info()[0:2]
                             log.debug("Exception occurred while handling batched request: %s", xv)
                             xv._pyroTraceback=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
+                            if sys.platform=="cli":
+                                fixIronPythonExceptionForPickle(xv, True)  # piggyback attributes
                             data.append(_ExceptionWrapper(xv))
                             break   # stop processing the rest of the batch
                         else:
@@ -695,6 +701,8 @@ class Daemon(object):
     def sendExceptionResponse(self, connection, seq, exc_value, tbinfo):
         """send an exception back including the local traceback info"""
         exc_value._pyroTraceback=tbinfo
+        if sys.platform=="cli":
+            fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
         data, _=self.serializer.serialize(exc_value)
         msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, MessageFactory.FLAGS_EXCEPTION, seq)
         del data
@@ -773,6 +781,28 @@ class Daemon(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
+
+
+
+class __IronPythonExceptionArgs(object):
+    def __init__(self,data):
+        self.data=data
+
+def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
+    """function to hack around a bug in IronPython where it doesn't pickle
+    exception attributes. We piggyback them into the exception's args."""
+    if hasattr(exceptionObject, "args"):
+        if addAttributes:
+            # piggyback the attributes on the exception args instead.
+            exceptionObject.args+=(__IronPythonExceptionArgs(vars(exceptionObject)),)
+        else:
+            # check if there is a piggybacked object in the args
+            # if there is, extract the exception attributes from it.
+            if len(exceptionObject.args) > 0:
+                piggyback = exceptionObject.args[-1]
+                if isinstance(piggyback, __IronPythonExceptionArgs):
+                    exceptionObject.args = exceptionObject.args[:-1]
+                    exceptionObject.__dict__.update(piggyback.data)
 
 
 # decorators
