@@ -30,7 +30,9 @@ async=proxy._pyroAsync(callback=asyncCallback)   # provide a callback function t
 asyncresult=async.divide(100,5)
 print("sleeping 5 seconds")
 time.sleep(5)   # the callback will occur in this sleep period
-print("back from sleep, resultvalue=",asyncresult.value)   # can access result value here as well
+print("back from sleep!")
+# remember; you cannot access asyncresult.value when using a callback!
+assert asyncresult.ready()==False
 
 print("\n* async call with exception:")
 async=proxy._pyroAsync()

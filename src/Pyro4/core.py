@@ -369,11 +369,22 @@ class _BatchProxy(object):
             else:
                 yield result   # it is a regular result object, yield that and continue.
 
-    def __call__(self, oneway=False):
-        results=self.__batchmethod(self.__calls, oneway)
+    def __call__(self, oneway=False, async=False, callback=None):
+        if oneway and async:
+            raise ValueError("async oneway calls make no sense")
+        if async:
+            return _AsyncRemoteMethod(self.__call_async, callback, "<asyncbatch>")()
+        else:
+            results=self.__batchmethod(self.__calls, oneway)
+            self.__calls=[]   # clear for re-use
+            if not oneway:
+                return self.__resultsgenerator(results)
+
+    def __call_async(self,name,args,kwargs):
+        # ignore all parameters, we just need to execute the batch
+        results=self.__batchmethod(self.__calls)
         self.__calls=[]   # clear for re-use
-        if not oneway:
-            return self.__resultsgenerator(results)
+        return self.__resultsgenerator(results)
 
 
 class _AsyncProxy(object):
@@ -405,9 +416,10 @@ class _AsyncRemoteMethod(object):
     def __asynccall(self, asyncresult, callback, args, kwargs):
         try:
             value = self.__send(self.__name, args, kwargs)
-            asyncresult.value=value
             if callback:
-                callback(value)
+                callback(value)  # only provide the result value through the callback
+            else:
+                asyncresult.value=value
         except:
             log.warn("exception occurred in async call, ignored")
             asyncresult.value=_ExceptionWrapper(sys.exc_info()[1])
