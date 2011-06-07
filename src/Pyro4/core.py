@@ -423,17 +423,16 @@ class _AsyncResult(object):
                 return True
             else:
                 raise Pyro4.errors.AsyncResultTimeout("async result didn't arrive in time")
-    @property
-    def value(self):
+    def get_value(self):
         self.__ready.wait()
         if isinstance(self.__value, _ExceptionWrapper):
             self.__value.raiseIt()
         else:
             return self.__value
-    @value.setter
-    def value(self, value):
+    def set_value(self, value):
         self.__value=value
         self.__ready.set()
+    value=property(get_value, set_value)
 
 
 class _ExceptionWrapper(object):
