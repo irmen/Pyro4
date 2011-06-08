@@ -14,7 +14,7 @@ from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
 import Pyro4
 
-__all__=["URI", "Proxy", "Daemon", "callback"]
+__all__=["URI", "Proxy", "Daemon", "callback", "batch", "async"]
 
 if sys.version_info>(3, 0):
     basestring=str
@@ -463,6 +463,15 @@ class _ExceptionWrapper(object):
         raise self.exception
 
 
+def batch(proxy):
+    """convenience method to get a batch proxy"""
+    return proxy._pyroBatch()
+
+def async(proxy, callback=None):
+    """convenience method to get an async proxy"""
+    return proxy._pyroAsync(callback)
+
+
 class MessageFactory(object):
     """internal helper class to construct Pyro protocol messages"""
     headerFmt = '!4sHHHHiH20s'    # header (id, version, msgtype, flags, sequencenumber, dataLen, checksum, hmac)
@@ -827,3 +836,4 @@ def callback(object):
     """
     object._pyroCallback=True
     return object
+

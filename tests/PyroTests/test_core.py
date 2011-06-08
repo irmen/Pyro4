@@ -454,7 +454,7 @@ class RemoteMethodTests(unittest.TestCase):
 
     def testBatchMethod(self):
         proxy=self.BatchProxyMock()
-        batch=proxy._pyroBatch()
+        batch=Pyro4.batch(proxy)
         self.assertEqual(None, batch.foo(42))
         self.assertEqual(None, batch.bar("abc"))
         self.assertEqual(None, batch.baz(42,"abc",arg=999))
@@ -473,7 +473,7 @@ class RemoteMethodTests(unittest.TestCase):
 
     def testBatchMethodOneway(self):
         proxy=self.BatchProxyMock()
-        batch=proxy._pyroBatch()
+        batch=Pyro4.batch(proxy)
         self.assertEqual(None, batch.foo(42))
         self.assertEqual(None, batch.bar("abc"))
         self.assertEqual(None, batch.baz(42,"abc",arg=999))
@@ -485,7 +485,7 @@ class RemoteMethodTests(unittest.TestCase):
 
     def testBatchMethodReuse(self):
         proxy=self.BatchProxyMock()
-        batch=proxy._pyroBatch()
+        batch=Pyro4.batch(proxy)
         batch.foo(1)
         batch.foo(2)
         results=batch()

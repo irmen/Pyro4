@@ -143,7 +143,7 @@ class ServerTestsSingle(unittest.TestCase):
 
     def testBatchProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch=p._pyroBatch()
+            batch=Pyro4.batch(p)
             self.assertEqual(None,batch.multiply(7,6))
             self.assertEqual(None,batch.divide(999,3))
             self.assertEqual(None,batch.ping())
@@ -170,7 +170,7 @@ class ServerTestsSingle(unittest.TestCase):
 
     def testPyroTracebackBatch(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch=p._pyroBatch()
+            batch=Pyro4.batch(p)
             self.assertEqual(None,batch.divide(999,0))      # force an exception here
             results=batch()
             try:

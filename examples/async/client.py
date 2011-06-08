@@ -18,7 +18,7 @@ print("* normal call: (notice the delay)")
 print("result=", proxy.divide(100,5))
 
 print("\n* async call:")
-async=proxy._pyroAsync()
+async=Pyro4.async(proxy)
 asyncresult=async.divide(100,5)   # returns immediately
 print("result value available?",asyncresult.ready())   # returns False because the server is still 'busy'
 print("client can do other stuff here.")
@@ -26,7 +26,7 @@ print("getting result value...(will block until available)")
 print("resultvalue=",asyncresult.value)   # blocks until the result is available
 
 print("\n* async call with callback:")
-async=proxy._pyroAsync(callback=asyncCallback)   # provide a callback function to be called when the result is available
+async=Pyro4.async(proxy, callback=asyncCallback)   # provide a callback function to be called when the result is available
 asyncresult=async.divide(100,5)
 print("sleeping 5 seconds")
 time.sleep(5)   # the callback will occur in this sleep period
@@ -35,7 +35,7 @@ print("back from sleep!")
 assert asyncresult.ready()==False
 
 print("\n* async call with exception:")
-async=proxy._pyroAsync()
+async=Pyro4.async(proxy)
 asyncresult=async.divide(100,0)   # will trigger a zero division error, 100//0
 print("getting result value...")
 try:
@@ -45,7 +45,7 @@ except ZeroDivisionError:
     print("got exception (expected):",repr(sys.exc_info()[1]))
 
 print("\n* async call with timeout:")
-async=proxy._pyroAsync()
+async=Pyro4.async(proxy)
 asyncresult=async.divide(100,5)
 print("checking if ready within 2 seconds...")
 try:

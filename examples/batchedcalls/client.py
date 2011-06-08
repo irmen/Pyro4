@@ -36,7 +36,7 @@ duration_normal=duration
 # (but it has a few limitations and requires changes to your code)
 print("\nBatched remote calls...")
 begin=time.time()
-batch=p._pyroBatch()        # get a batched call proxy for 'p'
+batch=Pyro4.batch(p)        # get a batched call proxy for 'p'
 batch.printmessage("beginning batch #1")
 for i in range(NUMBER_OF_LOOPS):
     batch.multiply(7,6)         # queue a call, note that it returns 'None' immediately
@@ -55,7 +55,7 @@ print("batched calls were {0:.2f} times faster than normal remote calls".format(
 # Now we do another loop of batched calls, but this time oneway (no results).
 print("\nOneway batched remote calls...")
 begin=time.time()
-batch=p._pyroBatch()        # get a batched call proxy for 'p'
+batch=Pyro4.batch(p)        # get a batched call proxy for 'p'
 batch.printmessage("beginning batch #2")
 for i in range(NUMBER_OF_LOOPS):
     batch.multiply(7,6)         # queue a call, note that it returns 'None' immediately

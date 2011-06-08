@@ -15,7 +15,7 @@ uri=input("enter async server object uri: ").strip()
 proxy=Pyro4.Proxy(uri)
 
 print("\n* batch async call:")
-batch=proxy._pyroBatch()
+batch=Pyro4.batch(proxy)
 batch.divide(100,5)
 batch.divide(99,9)
 batch.divide(555,2)
@@ -33,7 +33,7 @@ results=asyncresults.value   # blocks until the result is available
 print("resultvalues=",list(results))
 
 print("\n* batch async call with callback:")
-batch=proxy._pyroBatch()
+batch=Pyro4.batch(proxy)
 batch.divide(100,5)
 batch.divide(99,9)
 batch.divide(555,2)
@@ -45,7 +45,7 @@ print("back from sleep!")
 assert asyncresults.ready()==False
 
 print("\n* batch async call with exception:")
-batch=proxy._pyroBatch()
+batch=Pyro4.batch(proxy)
 batch.divide(1,1)   # first call is ok
 batch.divide(100,0)   # second call will trigger a zero division error, 100//0
 asyncresults = batch(async=True)  # returns immediately
@@ -57,7 +57,7 @@ except ZeroDivisionError:
     print("got exception (expected):",repr(sys.exc_info()[1]))
 
 print("\n* batch async call with timeout:")
-batch=proxy._pyroBatch()
+batch=Pyro4.batch(proxy)
 batch.divide(100,5)
 batch.divide(99,9)
 batch.divide(555,2)
