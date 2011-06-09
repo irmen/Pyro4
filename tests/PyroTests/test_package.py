@@ -22,6 +22,8 @@ class TestPackage(unittest.TestCase):
         self.assertEqual(Pyro4.core.Proxy, Pyro4.Proxy)
         self.assertEqual(Pyro4.core.URI, Pyro4.URI)
         self.assertEqual(Pyro4.core.callback, Pyro4.callback)
+        self.assertEqual(Pyro4.core.async, Pyro4.async)
+        self.assertEqual(Pyro4.core.batch, Pyro4.batch)
         self.assertEqual(Pyro4.naming.locateNS, Pyro4.locateNS)
         self.assertEqual(Pyro4.naming.resolve, Pyro4.resolve)
 
