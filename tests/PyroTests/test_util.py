@@ -7,7 +7,7 @@ irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
 
 import unittest
 
-import sys, imp, os
+import sys, imp, os, platform
 import Pyro4.util
 from testsupport import *
 
@@ -187,6 +187,15 @@ class TestUtils(unittest.TestCase):
         self.assertRaises(AttributeError,Pyro4.util.resolveDottedAttribute, obj,"a._p",True)    #private
         self.assertRaises(AttributeError,Pyro4.util.resolveDottedAttribute, obj,"a._p.q",True)    #private
         self.assertRaises(AttributeError,Pyro4.util.resolveDottedAttribute, obj,"a.__p.q",True)    #private
+
+    def testUnicodeKwargs(self):
+        # test the way the interpreter deals with unicode function kwargs
+        # those are supported by Python after 2.6.5, but not by PyPy
+        def function(*args, **kwargs):
+            return args, kwargs
+        if sys.version_info>=(2,6,5) and platform.python_implementation()!="PyPy":
+            processed_args=function(*(1,2,3), **{ unichr(0x20ac): 42 })
+            self.assertEqual( ((1,2,3), { unichr(0x20ac): 42}), processed_args)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

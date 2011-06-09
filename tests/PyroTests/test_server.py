@@ -10,7 +10,7 @@ import unittest
 import Pyro4.core
 import Pyro4.errors
 import Pyro4.util
-import time, os, sys
+import time, os, sys, platform
 from Pyro4 import threadutil
 from testsupport import *
 
@@ -118,8 +118,8 @@ class ServerTestsSingle(unittest.TestCase):
             self.assertEqual((1,(),{}), p.testargs(1))
             self.assertEqual((1,(2,3),{'a':4}), p.testargs(1,2,3,a=4))
             self.assertEqual((1,(),{'a':2}), p.testargs(1, **{'a':2}))
-            if sys.version_info>=(2,6,5):
-                # python 2.6.5 and later support unicode keyword args
+            if sys.version_info>=(2,6,5) and platform.python_implementation()!="PyPy":
+                # python 2.6.5 and later support unicode keyword args, but not PyPY
                 result=p.testargs(1, **{unichr(0x20ac):2})
                 key=list(result[2].keys())[0]
                 self.assertTrue(key==unichr(0x20ac))
