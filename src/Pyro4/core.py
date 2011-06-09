@@ -430,10 +430,10 @@ class _AsyncResult(object):
         self.__ready=threadutil.Event()
     def ready(self, timeout=None):
         if timeout is None:
-            return self.__ready.is_set()
+            return self.__ready.isSet()
         else:
             self.__ready.wait(timeout)
-            if self.__ready.is_set():
+            if self.__ready.isSet():
                 return True
             else:
                 raise Pyro4.errors.AsyncResultTimeout("async result didn't arrive in time")

@@ -156,6 +156,18 @@ class ServerTestsSingle(unittest.TestCase):
             self.assertRaises(ZeroDivisionError, next, results)     # 999//0 should raise this error
             self.assertRaises(StopIteration, next, results)     # no more results should be available after the error
 
+    def testAsyncProxy(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            async=Pyro4.async(p)
+            begin=time.time()
+            result=async.delayAndId(1,42)
+            duration=time.time()-begin
+            self.assertTrue(duration<0.1)
+            self.assertFalse(result.ready())
+            self.assertRaises(Pyro4.errors.AsyncResultTimeout, result.ready, 0.5)
+            self.assertEqual("slept for 42",result.value)
+            self.assertTrue(result.ready())
+
     def testPyroTracebackNormal(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
             try:

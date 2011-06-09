@@ -9,7 +9,7 @@ from __future__ import with_statement
 import unittest
 import copy
 import logging
-import os, sys
+import os, sys, time
 import Pyro4.configuration
 import Pyro4.core
 import Pyro4.errors
@@ -436,6 +436,16 @@ class RemoteMethodTests(unittest.TestCase):
             else:
                 return self.result
 
+    class AsyncProxyMock(object):
+        def _pyroAsync(self, callback=None):
+            return Pyro4.core._AsyncProxy(self.pyroInvoke, callback)
+        def pyroInvoke(self, methodname, vargs, kwargs, flags=0):
+            if methodname=="pause_and_divide":
+                time.sleep(vargs[0])
+                return vargs[1]//vargs[2]
+            else:
+                raise NotImplementedError(methodname)
+
     def testRemoteMethod(self):
         class ProxyMock(object):
             def invoke(self, name, args, kwargs):
@@ -497,6 +507,36 @@ class RemoteMethodTests(unittest.TestCase):
         self.assertEqual(['INVOKED foo args=(3,) kwargs={}', 'INVOKED foo args=(4,) kwargs={}'], list(results))
         results=batch()
         self.assertEqual(0, len(list(results)))
+
+    def testAsyncMethod(self):
+        proxy=self.AsyncProxyMock()
+        async=Pyro4.async(proxy)
+        begin=time.time()
+        result=async.pause_and_divide(1,10,2)  # returns immediately
+        duration=time.time()-begin
+        self.assertTrue(duration<0.1)
+        self.assertFalse(result.ready())
+        _=result.value
+        self.assertTrue(result.ready())
+
+    def testAsyncCallbackMethod(self):
+        def asyncCallback(value):
+            self.assertEqual(5,value)
+
+        proxy=self.AsyncProxyMock()
+        async=Pyro4.async(proxy, callback=asyncCallback)
+        result=async.pause_and_divide(1,10,2)  # returns immediately
+        self.assertFalse(result.ready())
+        # can't use result.value here because we're using a callback.
+
+    def testAsyncMethodTimeout(self):
+        proxy=self.AsyncProxyMock()
+        async=Pyro4.async(proxy)
+        result=async.pause_and_divide(1,10,2)  # returns immediately
+        self.assertFalse(result.ready())
+        self.assertRaises(Pyro4.errors.AsyncResultTimeout, result.ready, 0.5)  # won't be ready after 0.5 sec
+        self.assertTrue(result.ready(2))  # will be ready within 2 seconds
+        self.assertEqual(5,result.value)
 
 
 if __name__ == "__main__":
