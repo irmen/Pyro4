@@ -205,5 +205,6 @@ def resolveDottedAttribute(obj, attr, allowDotted):
 
 
 def excepthook(ex_type, ex_value, ex_tb):
+    """An exception hook you can set sys.excepthook to, to automatically print remote Pyro tracebacks"""
     traceback="".join(getPyroTraceback(ex_type, ex_value, ex_tb))
     sys.stderr.write(traceback)
