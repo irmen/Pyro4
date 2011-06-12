@@ -30,7 +30,7 @@ def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
         return result
     try:
         if ex_type is not None and ex_value is None and ex_tb is None:
-            # possible old call syntax where caller is only providing exception object
+            # possible old (3.x) call syntax where caller is only providing exception object
             if type(ex_type) is not type:
                 raise TypeError("invalid argument: ex_type should be an exception type, or just supply no arguments at all")
         if ex_type is None and ex_tb is None:
@@ -55,98 +55,62 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
     You don't have to provide the exception info objects, if you omit them,
     this function will obtain them itself using sys.exc_info()."""
     if ex_type is not None and ex_value is None and ex_tb is None:
-        # possible old call syntax where caller is only providing exception object
+        # possible old (3.x) call syntax where caller is only providing exception object
         if type(ex_type) is not type:
             raise TypeError("invalid argument: ex_type should be an exception type, or just supply no arguments at all")
     if ex_type is None and ex_tb is None:
         ex_type, ex_value, ex_tb=sys.exc_info()
-    if detailed and sys.platform!="cli":    # detailed tracebacks don't work in ironpython
-        res = ['-'*50+ "\n",
-               " <%s> RAISED : %s\n" % (str(ex_type), str(ex_value)),
-               " Extended stacktrace follows (most recent call last)\n",
-               '-'*50+'\n']
-
+    if detailed and sys.platform!="cli":    # detailed tracebacks don't work in ironpython (most of the local vars are omitted)
+        def makeStrValue(value):
+            try:
+                return repr(value)
+            except:
+                try:
+                    return str(value)
+                except:
+                    return "<ERROR>"
         try:
-            if ex_tb != None:
-                frame_stack = []
-                line_number_stack = []
-
-                while True:
-                    line_num = ex_tb.tb_lineno
-                    line_number_stack.append(line_num)
-                    if not ex_tb.tb_next:
-                        break
-                    ex_tb = ex_tb.tb_next
-
-                f = ex_tb.tb_frame
-                for _ in line_number_stack:
-                    frame_stack.append(f)
-                    f = f.f_back
-                    if f is None:
-                        break
-
-                frame_stack.reverse()
-
-                lines = iter(line_number_stack)
-                seen_crap = 0
-                for frame in frame_stack:
-                    # Get items
-                    flocals = list(frame.f_locals.items())
-
-                    if sys.version_info>=(2, 6):
-                        line_num = next(lines)
-                    else:
-                        line_num = lines.next()
-                    filename = frame.f_code.co_filename
-
-                    name = None
-                    for key, value, in flocals:
-                        if key == "self":
-                            name = "%s::%s" % (value.__class__.__name__, frame.f_code.co_name)
-                    if name == None:
-                        name = frame.f_code.co_name
-
-                    res.append('File "%s", line (%s), in %s\n' % (filename, line_num, name))
-                    res.append("Source code:\n")
-
-                    code_line = linecache.getline(filename, line_num)
-                    if code_line:
-                        res.append('    %s\n' % code_line.strip())
-
-                    if not seen_crap:
-                        seen_crap = True
-                        continue
-
-                    res.append("Local values:\n")
-                    flocals.sort()
-                    fcode=frame.f_code
-                    for key, value, in flocals:
-                        co_names=getattr(fcode, "co_names", [])
-                        co_varnames=getattr(fcode, "co_varnames", [])
-                        co_cellvars=getattr(fcode, "co_cellvars", [])
-                        if key in co_names or key in co_varnames or key in co_cellvars:
-                            local_res="  %20s = " % key
-                            try:
-                                local_res += repr(value)
-                            except Exception:
-                                try:
-                                    local_res += str(value)
-                                except Exception:
-                                    local_res += "<ERROR>"
-
-                            res.append(local_res+"\n")
-
-                    res.append('-'*50 + '\n')
-            res.append(" <%s> RAISED : %s\n" % (str(ex_type), str(ex_value)))
-            res.append('-'*50+'\n')
-            return res
-
+            result=["-"*52+"\n"]
+            result.append(" EXCEPTION %s: %s\n" % (ex_type,ex_value))
+            result.append(" Extended stacktrace follows (most recent call last)\n")
+            skipLocals=True  # don't print the locals of the very first stackframe
+            while ex_tb:
+                frame=ex_tb.tb_frame
+                sourceFileName=frame.f_code.co_filename
+                if "self" in frame.f_locals:
+                    location="%s.%s" % (frame.f_locals["self"].__class__.__name__, frame.f_code.co_name)
+                else:
+                    location=frame.f_code.co_name
+                result.append("-"*52+"\n")
+                result.append("File \"%s\", line %d, in %s\n" % (sourceFileName, ex_tb.tb_lineno, location))
+                result.append("Source code:\n")
+                result.append("    "+linecache.getline(sourceFileName, ex_tb.tb_lineno).strip()+"\n")
+                if not skipLocals:
+                    names=set()
+                    names.update(getattr(frame.f_code,"co_varnames",()))
+                    names.update(getattr(frame.f_code,"co_names",()))
+                    names.update(getattr(frame.f_code,"co_cellvars",()))
+                    names.update(getattr(frame.f_code,"co_freevars",()))
+                    result.append("Local values:\n")
+                    for name in sorted(names):
+                        if name in frame.f_locals:
+                            value=frame.f_locals[name]
+                            result.append("    %s = %s\n" % (name,makeStrValue(value)))
+                            if name=="self":
+                                # print the local variables of the class instance
+                                for name,value in vars(value).items():
+                                    result.append("        self.%s = %s\n" % (name,makeStrValue(value)))
+                skipLocals=False
+                ex_tb=ex_tb.tb_next
+            result.append("-"*52+"\n")
+            result.append(" EXCEPTION %s: %s\n" % (ex_type, ex_value))
+            result.append("-"*52+"\n")
+            return result
         except Exception:
-            return ["-"*50+"\nError building extended traceback!!! :\n",
-                  "".join(traceback.format_exception(*sys.exc_info())) + '-'*50 + '\n',
+            return ["-"*52+"\nError building extended traceback!!! :\n",
+                  "".join(traceback.format_exception(*sys.exc_info())) + '-'*52 + '\n',
                   "Original Exception follows:\n",
                   "".join(traceback.format_exception(ex_type, ex_value, ex_tb))]
-
     else:
         # default traceback format.
         return traceback.format_exception(ex_type, ex_value, ex_tb)
