@@ -26,6 +26,8 @@ class MyThing(object):
         return x//y
     def ping(self):
         pass
+    def echo(self, obj):
+        return obj
     def delay(self, delay):
         time.sleep(delay)
         return "slept %d seconds" % delay
@@ -200,6 +202,16 @@ class ServerTestsSingle(unittest.TestCase):
                 self.assertTrue("ZeroDivisionError" in tb)  # the error
                 self.assertTrue("return x//y" in tb)  # the statement
             self.assertRaises(StopIteration, next, results)     # no more results should be available after the error
+
+    def testSendPyroObject(self):
+        obj=MyThing()
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            result=p.echo(obj)
+            self.assertTrue(isinstance(result,MyThing))
+            self.daemon.register(obj)
+            # trying to use it now will fail because the object can no
+            # longer be serialized (it contains a ref to the daemon)
+            self.assertRaises(Pyro4.errors.PyroError, p.echo, obj)
 
 
 class ServerTestsThreadNoTimeout(unittest.TestCase):

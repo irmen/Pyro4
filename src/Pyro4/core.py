@@ -803,6 +803,9 @@ class Daemon(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
+    def __getstate__(self):
+        raise errors.PyroError("a Pyro Daemon cannot be serialized. Are you trying to use a Pyro "
+                               "object directly in a remote call? Maybe you need to use a Proxy instead.")
 
 
 class __IronPythonExceptionArgs(object):
