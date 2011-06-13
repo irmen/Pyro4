@@ -114,15 +114,20 @@ class ServerTestsSingle(unittest.TestCase):
                 pass
             x=p.getDict()
             self.assertEqual({"number":42}, x)
-            # also test some argument type things
+
+    def testSomeArgumentTypes(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
             self.assertEqual((1,(),{}), p.testargs(1))
             self.assertEqual((1,(2,3),{'a':4}), p.testargs(1,2,3,a=4))
             self.assertEqual((1,(),{'a':2}), p.testargs(1, **{'a':2}))
-            if sys.version_info>=(2,6,5) and platform.python_implementation()!="PyPy":
-                # python 2.6.5 and later support unicode keyword args, but not PyPY
-                result=p.testargs(1, **{unichr(0x20ac):2})
-                key=list(result[2].keys())[0]
-                self.assertTrue(key==unichr(0x20ac))
+            if sys.version_info>=(2,6,5):
+                # python 2.6.5 and later support unicode keyword args
+                self.assertEqual((1,(),{unichr(65):2}), p.testargs(1, **{unichr(65):2}))
+                if platform.python_implementation()!="PyPy":
+                    # PyPy doesn't accept unicode kwargs that cannot be encoded to ascii, see https://bugs.pypy.org/issue751
+                    result=p.testargs(1, **{unichr(0x20ac):2})
+                    key=list(result[2].keys())[0]
+                    self.assertTrue(key==unichr(0x20ac))
 
     def testDottedNames(self):
         try:

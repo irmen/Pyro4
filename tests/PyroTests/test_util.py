@@ -190,12 +190,16 @@ class TestUtils(unittest.TestCase):
 
     def testUnicodeKwargs(self):
         # test the way the interpreter deals with unicode function kwargs
-        # those are supported by Python after 2.6.5, but not by PyPy
+        # those are supported by Python after 2.6.5, but not (all) by PyPy
+        # see https://bugs.pypy.org/issue751
         def function(*args, **kwargs):
             return args, kwargs
-        if sys.version_info>=(2,6,5) and platform.python_implementation()!="PyPy":
-            processed_args=function(*(1,2,3), **{ unichr(0x20ac): 42 })
-            self.assertEqual( ((1,2,3), { unichr(0x20ac): 42}), processed_args)
+        if sys.version_info>=(2,6,5):
+            processed_args=function(*(1,2,3), **{ unichr(65): 42 })
+            self.assertEqual( ((1,2,3), { unichr(65): 42}), processed_args)
+            if platform.python_implementation()!="PyPy":
+                processed_args=function(*(1,2,3), **{ unichr(0x20ac): 42 })
+                self.assertEqual( ((1,2,3), { unichr(0x20ac): 42}), processed_args)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
