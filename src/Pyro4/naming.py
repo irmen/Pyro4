@@ -27,13 +27,15 @@ class NameServer(object):
         self.namespace={}
         self.lock=RLock()
 
-    def lookup(self, arg):
+    def lookup(self, name):
+        """Lookup the given name, returns an URI if found"""
         try:
-            return core.URI(self.namespace[arg])
+            return core.URI(self.namespace[name])
         except KeyError:
-            raise NamingError("unknown name: "+arg)
+            raise NamingError("unknown name: "+name)
 
     def register(self, name, uri):
+        """Register a name with an URI. name cannot be registered twice. uri can be a string or an URI object."""
         if isinstance(uri, core.URI):
             uri=uri.asString()
         elif not isinstance(uri, basestring):
@@ -48,6 +50,7 @@ class NameServer(object):
             self.namespace[name]=uri
 
     def remove(self, name=None, prefix=None, regex=None):
+        """Remove a registration. returns the number of items removed."""
         if name and name in self.namespace and name!=constants.NAMESERVER_NAME:
             with self.lock:
                 del self.namespace[name]
@@ -71,6 +74,9 @@ class NameServer(object):
         return 0
 
     def list(self, prefix=None, regex=None):
+        """Retrieve the registered items as a dictionary name-to-URI. The URIs
+        in the resulting dict are strings, not URI objects.
+        You can filter by prefix or by regex."""
         with self.lock:
             if prefix:
                 result={}
@@ -95,6 +101,7 @@ class NameServer(object):
                 return self.namespace.copy()
 
     def ping(self):
+        """A simple test method to check if the name server is running correctly."""
         pass
 
 
