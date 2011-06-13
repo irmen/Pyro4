@@ -17,7 +17,7 @@ class Configuration(object):
                "COMPRESSION", "SERVERTYPE", "DOTTEDNAMES", "COMMTIMEOUT",
                "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED", "DETAILED_TRACEBACK",
                "THREADPOOL_MINTHREADS", "THREADPOOL_MAXTHREADS",
-               "THREADPOOL_IDLETIMEOUT", "HMAC_KEY")
+               "THREADPOOL_IDLETIMEOUT", "HMAC_KEY", "AUTOPROXY")
 
     def __init__(self):
         self.refresh()
@@ -41,6 +41,7 @@ class Configuration(object):
         self.THREADPOOL_MAXTHREADS = 50
         self.THREADPOOL_IDLETIMEOUT = 5.0
         self.HMAC_KEY = None   # must be bytes type
+        self.AUTOPROXY = True
 
         # process enviroment variables
         PREFIX="PYRO_"

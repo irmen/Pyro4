@@ -12,6 +12,10 @@ import Pyro4.core
 from testsupport import *
 
 
+class Something(object):
+    pass
+
+
 class SerializeTests(unittest.TestCase):
     
     def setUp(self):
@@ -86,7 +90,27 @@ class SerializeTests(unittest.TestCase):
         self.assertEqual(proxy2._pyroUri, proxy._pyroUri)
         self.assertEqual(proxy2._pyroSerializer, proxy._pyroSerializer)
         self.assertEqual(42, proxy2._pyroTimeout)
-        
+
+    def testSerDaemonHack(self):
+        # This tests the hack that a Daemon should be serializable,
+        # but only to support serializing Pyro objects.
+        # The serialized form of a Daemon should be empty (and thus, useless)
+        with Pyro4.core.Daemon(port=0) as daemon:
+            d,_=self.ser.serialize(daemon)
+            d2=self.ser.deserialize(d)
+            self.assertTrue(len(d2.__dict__)==0, "deserialized daemon should be empty")
+            try:
+                Pyro4.config.AUTOPROXY=False
+                obj=Something()
+                obj.name="hello"
+                daemon.register(obj)
+                o,_=self.ser.serialize(obj)
+                o2=self.ser.deserialize(o)
+                self.assertEqual("hello", o2.name)
+            finally:
+                Pyro4.config.AUTOPROXY=True
+
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

@@ -203,15 +203,30 @@ class ServerTestsSingle(unittest.TestCase):
                 self.assertTrue("return x//y" in tb)  # the statement
             self.assertRaises(StopIteration, next, results)     # no more results should be available after the error
 
-    def testSendPyroObject(self):
+    def testAutoProxy(self):
         obj=MyThing()
-        with Pyro4.core.Proxy(self.objectUri) as p:
-            result=p.echo(obj)
-            self.assertTrue(isinstance(result,MyThing))
-            self.daemon.register(obj)
-            # trying to use it now will fail because the object can no
-            # longer be serialized (it contains a ref to the daemon)
-            self.assertRaises(Pyro4.errors.PyroError, p.echo, obj)
+        try:
+            with Pyro4.core.Proxy(self.objectUri) as p:
+                Pyro4.config.AUTOPROXY=True   # make sure autoproxying is enabled
+                result=p.echo(obj)
+                self.assertTrue(isinstance(result,MyThing))
+                self.daemon.register(obj)
+                result=p.echo(obj)
+                self.assertTrue(isinstance(result, Pyro4.core.Proxy),"serialized pyro object must be a proxy")
+                self.daemon.unregister(obj)
+                result=p.echo(obj)
+                self.assertTrue(isinstance(result,MyThing), "serialized object must be normal again")
+                Pyro4.config.AUTOPROXY=False   # try again without auto proxying
+                result=p.echo(obj)
+                self.assertTrue(isinstance(result,MyThing))
+                self.daemon.register(obj)
+                result=p.echo(obj)
+                self.assertTrue(isinstance(result,MyThing), "with autoproxy off the object should be an instance of the class")
+                self.daemon.unregister(obj)
+                result=p.echo(obj)
+                self.assertTrue(isinstance(result,MyThing), "serialized object must be normal again")
+        finally:
+            Pyro4.config.AUTOPROXY=True
 
 
 class ServerTestsThreadNoTimeout(unittest.TestCase):

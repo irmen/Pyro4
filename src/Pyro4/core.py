@@ -9,6 +9,10 @@ from __future__ import with_statement
 import re, struct, sys, time, os
 import logging, uuid
 import hashlib, hmac
+try:
+    import copyreg
+except ImportError:
+    import copy_reg as copyreg
 from Pyro4 import constants, threadutil, util, socketutil, errors
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
@@ -550,6 +554,20 @@ class MessageFactory(object):
         return msgType, flags, seq, databytes
 
 
+def pyroObjectSerializer(self):
+    """reduce function that automatically replaces Pyro objects by a Proxy"""
+    daemon=getattr(self,"_pyroDaemon",None)
+    if daemon:
+        return Pyro4.core.Proxy, (daemon.uriFor(self),)
+    else:
+        return self.__reduce__()
+
+
+def defaultObjectSerializer(self):
+    """reduce function that uses the default implementation"""
+    return self.__reduce__()
+
+
 class DaemonObject(object):
     """The part of the daemon that is exposed as a Pyro object."""
     def __init__(self, daemon):
@@ -744,8 +762,16 @@ class Daemon(object):
             raise errors.DaemonError("object already has a Pyro id")
         if objectId in self.objectsById:
             raise errors.DaemonError("object already registered")
+        # set some pyro attributes
         obj._pyroId=objectId
         obj._pyroDaemon=self
+        if Pyro4.config.AUTOPROXY:
+            # register a custom serializer for the type to automatically return proxies
+            try:
+                copyreg.pickle(type(obj),pyroObjectSerializer)
+            except TypeError:
+                pass
+        # register the object in the mapping
         self.objectsById[obj._pyroId]=obj
         return self.uriFor(objectId)
 
@@ -770,6 +796,12 @@ class Daemon(object):
             if objectOrId is not None:
                 del objectOrId._pyroId
                 del objectOrId._pyroDaemon
+                if Pyro4.config.AUTOPROXY:
+                    # remove the custom type serializer
+                    try:
+                        copyreg.pickle(type(objectOrId),defaultObjectSerializer)
+                    except TypeError:
+                        pass
 
     def uriFor(self, objectOrId=None):
         """
@@ -804,8 +836,7 @@ class Daemon(object):
         self.close()
 
     def __getstate__(self):
-        raise errors.PyroError("a Pyro Daemon cannot be serialized. Are you trying to use a Pyro "
-                               "object directly in a remote call? Maybe you need to use a Proxy instead.")
+        return {}   # a little hack to make it possible to serialize Pyro objects.
 
 
 class __IronPythonExceptionArgs(object):

@@ -117,8 +117,9 @@ class DaemonTests(unittest.TestCase):
             self.assertTrue(objectid in d.objectsById)
             self.assertEqual(2, len(d.objectsById))
             d.unregister(o2)
-            self.assertFalse(hasattr(o2, "_pyroId"))
-            self.assertFalse(hasattr(o2, "_pyroDaemon"))
+            # no more _pyro attributs must remain after unregistering
+            for attr in vars(o2):
+                self.assertFalse(attr.startswith("_pyro"))
             self.assertEqual(1, len(d.objectsById))
             self.assertFalse(objectid in d.objectsById)
             self.assertRaises(DaemonError, d.unregister, [1,2,3])
