@@ -4,7 +4,7 @@ There are 2 examples.
 1) first example: server.py + client.py
 
 The client creates some worker objects on the server. It provides them
-with (a proxy of) a callback object that lives in the client.
+with a callback object that lives in the client.
 When a worker is done with its task, it will invoke a method on the
 callback object. That means that this time, the client gets a call
 from the server that notifies it that a worker has completed its job.
@@ -38,4 +38,10 @@ to be a callback method. This makes Pyro raise any exceptions that occur in
 this method also on the side where the method is running. Otherwise it would
 just silently pass the exception back to the side that was calling the
 callback method.
- 
+
+
+Also note that this example makes use of Pyro's AutoProxy feature. Sending
+pyro objects 'over the wire' will automatically convert them into proxies so
+that the other side will talk to the actual object, instead of a local copy.
+So the client just sends a callback object to the server, and the server can
+just return a worker object, as if it was a normal method call.

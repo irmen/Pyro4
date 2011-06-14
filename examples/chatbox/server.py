@@ -1,5 +1,4 @@
 from __future__ import with_statement
-import sys
 import Pyro4
 
 # Chat box administration server.
@@ -20,10 +19,10 @@ class ChatBox(object):
         if channel not in self.channels:
             print('CREATING NEW CHANNEL %s' % channel)
             self.channels[channel]=[]
-        self.channels[channel].append((nick,callback))
+        self.channels[channel].append((nick, callback))
         self.nicks.append(nick)
         callback._pyroOneway.add('message')    # don't wait for results for this method
-        print("%s JOINED %s" % (nick,channel))
+        print("%s JOINED %s" % (nick, channel))
         self.publish(channel,'SERVER','** '+nick+' joined **')
         return [nick for (nick,c) in self.channels[channel]]  # return all nicks in this channel
     def leave(self,channel,nick):
@@ -32,14 +31,14 @@ class ChatBox(object):
             return
         for (n,c) in self.channels[channel]:
             if n==nick:
-                self.channels[channel].remove((n,c))
+                self.channels[channel].remove((n, c))
                 break
         self.publish(channel,'SERVER','** '+nick+' left **')
         if len(self.channels[channel])<1:
             del self.channels[channel]
             print('REMOVED CHANNEL %s' % channel)
         self.nicks.remove(nick)
-        print("%s LEFT %s" % (nick,channel))
+        print("%s LEFT %s" % (nick, channel))
     def publish(self, channel, nick, msg):
         if not channel in self.channels:
             print('IGNORED UNKNOWN CHANNEL %s' % channel)
@@ -51,8 +50,8 @@ class ChatBox(object):
                 # connection dropped, remove the listener if it's still there
                 # check for existence because other thread may have killed it already
                 if (n,c) in self.channels[channel]:
-                    self.channels[channel].remove((n,c))
-                    print('Removed dead listener %s %s' % (n,c))
+                    self.channels[channel].remove((n, c))
+                    print('Removed dead listener %s %s' % (n, c))
 
 with Pyro4.core.Daemon() as daemon:
     with Pyro4.naming.locateNS() as ns:

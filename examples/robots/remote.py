@@ -1,3 +1,4 @@
+from __future__ import print_function
 import random
 import Pyro4
 
@@ -6,8 +7,8 @@ class GameServer(object):
         self.engine=engine
     def register(self, name, observer):
         robot=self.engine.signup_robot(name, observer)
-        uri=self._pyroDaemon.register(robot)
-        return Pyro4.Proxy(uri)
+        self._pyroDaemon.register(robot)    # make the robot a pyro object
+        return robot
 
 class RemoteBot(object):
     def __init__(self, robot, engine):
@@ -55,4 +56,4 @@ class GameObserver(object):
     def death(self, killer):
         print("I DIED")
         if killer:
-            print ("%s KILLED ME :(" % killer.name)
+            print("%s KILLED ME :(" % killer.name)

@@ -24,18 +24,18 @@ class Aggregator(object):
 
 
 def main():
-    agg=Aggregator()
+    aggregator=Aggregator()
     daemon=Pyro4.Daemon()
-    agg_uri=daemon.register(agg)
+    agg_uri=daemon.register(aggregator)
     ns=Pyro4.locateNS()
     ns.remove("stockquote.aggregator")
     ns.register("stockquote.aggregator", agg_uri)
     for market, market_uri in ns.list(prefix="stockmarket.").items():
         print("joining market", market)
         stockmarket=Pyro4.Proxy(market_uri)
-        stockmarket.listener(Pyro4.Proxy(agg_uri))
-        agg.add_symbols(stockmarket.symbols())
-    print("Aggregator running. Symbols:", agg.available_symbols())
+        stockmarket.listener(aggregator)
+        aggregator.add_symbols(stockmarket.symbols())
+    print("Aggregator running. Symbols:", aggregator.available_symbols())
     daemon.requestLoop()
 
 if __name__ == "__main__":

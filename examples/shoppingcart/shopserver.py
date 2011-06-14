@@ -1,3 +1,4 @@
+from __future__ import print_function
 import time
 import Pyro4
 from shoppingcart import ShoppingCart
@@ -27,7 +28,8 @@ class Shop(object):
         # create a cart and return it as a pyro object to the client
         cart=ShoppingCart()
         self.customersInStore[name]=cart
-        return self.__proxyfy(cart)
+        self._pyroDaemon.register(cart)   # make cart a pyro object
+        return cart
     def customers(self):
         return list(self.customersInStore.keys())
     def goods(self):
@@ -59,16 +61,7 @@ class Shop(object):
             raise Exception("attempt to steal a full cart prevented")
         # delete the cart and unregister it with pyro
         del self.customersInStore[name]
-        self.__unproxyfy(cart)
-
-    # utility methods:
-    def __proxyfy(self, object):
-        """register the object with the daemon and return a proxy"""
-        uri=self._pyroDaemon.register(object)
-        return Pyro4.Proxy(uri)
-    def __unproxyfy(self, object):
-        """unregister the object with the daemon"""
-        self._pyroDaemon.unregister(object)
+        self._pyroDaemon.unregister(cart)
 
 
 ######## main program

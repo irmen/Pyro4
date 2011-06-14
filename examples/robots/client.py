@@ -57,9 +57,9 @@ def main(args):
     observertype=args[2]
     with Pyro4.Daemon() as daemon:
         observer=observers[observertype]()
-        uri=daemon.register(observer)
+        daemon.register(observer)
         gameserver=Pyro4.Proxy("PYRONAME:example.robotserver")
-        robot=gameserver.register(name, Pyro4.Proxy(uri))
+        robot=gameserver.register(name, observer)
         robot.emote("Hi there! I'm here to kick your ass")
         observer.robot=robot
         print("Pyro server registered on %s" % daemon.locationStr)

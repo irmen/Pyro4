@@ -1,5 +1,6 @@
 # The server that doesn't use the Name Server.
 
+from __future__ import print_function
 import os
 import Pyro4
 

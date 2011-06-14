@@ -2,7 +2,7 @@
 #   The banks server
 #
 
-import sys
+from __future__ import print_function
 import Pyro4
 import banks
 

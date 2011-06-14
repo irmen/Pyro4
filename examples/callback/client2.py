@@ -1,3 +1,4 @@
+from __future__ import print_function
 import Pyro4
 
 class CallbackHandler(object):
@@ -17,9 +18,8 @@ class CallbackHandler(object):
 
 
 daemon=Pyro4.core.Daemon()
-obj=CallbackHandler()
-uri=daemon.register(obj)
-callback=Pyro4.core.Proxy(uri)
+callback=CallbackHandler()
+daemon.register(callback)
 
 with Pyro4.core.Proxy("PYRONAME:example.callback2") as server:
     server._pyroOneway.add("doCallback")

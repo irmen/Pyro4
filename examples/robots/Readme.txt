@@ -25,3 +25,6 @@ The most interesting parts of this example are perhaps these:
    (it did require a few minor tweaks to work around serialization requirements)
  - Pyro used together with an interactive GUI application (Tkinter)
  - game state handled by the server, influenced by the clients (robot behavior)
+ - this example makes use of Pyro's AutoProxy feature. Registering
+   observers and getting a robot object back is done via proxies
+   automatically because those are Pyro objects.

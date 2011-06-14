@@ -1,6 +1,6 @@
+from __future__ import print_function
 import sys
 import array
-import random
 
 class Wall(object):
     """an obstructing static wall"""

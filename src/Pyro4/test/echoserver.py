@@ -17,17 +17,17 @@ class EchoServer(object):
 
     def echo(self, args):
         if self.verbose:
-            print ("%s - echo: %s" % (time.asctime(), args))
+            print("%s - echo: %s" % (time.asctime(), args))
         return args
 
     def error(self):
         if self.verbose:
-            print ("%s - error: generating exception" % time.asctime())
+            print("%s - error: generating exception" % time.asctime())
         return 1//0   # division by zero error
 
     def shutdown(self):
         if self.verbose:
-            print ("%s - shutting down" % time.asctime())
+            print("%s - shutting down" % time.asctime())
         self.must_shutdown=True
 
 
@@ -65,7 +65,7 @@ def main(args, returnWithoutLooping=False):
     if options.verbose:
         options.quiet=False
     if not options.quiet:
-        print ("Starting Pyro's built-in test echo server.")
+        print("Starting Pyro's built-in test echo server.")
     if os.name!="java":
         Pyro4.config.SERVERTYPE="multiplex"
 
@@ -95,14 +95,14 @@ def main(args, returnWithoutLooping=False):
         ns.remove(objectName)
         ns.register(objectName, uri)
         if options.verbose:
-            print ("using name server at %s" % ns._pyroUri)
+            print("using name server at %s" % ns._pyroUri)
     else:
         if options.verbose:
-            print ("not using a name server.")
+            print("not using a name server.")
     if not options.quiet:
-        print ("object name: %s" % objectName)
-        print ("echo uri: %s" % uri)
-        print ("echoserver running.")
+        print("object name: %s" % objectName)
+        print("echo uri: %s" % uri)
+        print("echoserver running.")
 
     if returnWithoutLooping:
         return d,echo,uri        # for unit testing

@@ -15,7 +15,7 @@ class Chatter(object):
         self.abort=0
     def message(self, nick, msg):
         if nick!=self.nick:
-            print('[%s] %s' % (nick,msg))
+            print('[{0}] {1}'.format(nick, msg))
     def start(self):
         nicks=self.chatbox.getNicks()
         if nicks:
@@ -23,24 +23,23 @@ class Chatter(object):
         channels=sorted(self.chatbox.getChannels())
         if channels:
             print('The following channels already exist: %s' % (', '.join(channels)))
-            self.channel=input('Choose a channel or create a new one: ')
+            self.channel=input('Choose a channel or create a new one: ').strip()
         else:
             print('The server has no active channels.')
-            self.channel=input('Name for new channel: ')
-        self.nick=input('Choose a nickname: ')
-        proxy=Pyro4.core.Proxy(self._pyroDaemon.uriFor(self))
-        people=self.chatbox.join(self.channel,self.nick,proxy)
-        print('Joined channel %s as %s' % (self.channel,self.nick))
+            self.channel=input('Name for new channel: ').strip()
+        self.nick=input('Choose a nickname: ').strip()
+        people=self.chatbox.join(self.channel, self.nick, self)
+        print('Joined channel %s as %s' % (self.channel, self.nick))
         print('People on this channel: %s' % (', '.join(people)))
         print('Ready for input! Type /quit to quit')
         try:
             try:
                 while not self.abort:
-                    line=input('> ')
+                    line=input('> ').strip()
                     if line=='/quit':
                         break
                     if line:
-                        self.chatbox.publish(self.channel,self.nick,line)
+                        self.chatbox.publish(self.channel ,self.nick ,line)
             except EOFError:
                 pass
         finally:

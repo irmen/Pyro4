@@ -14,12 +14,12 @@ class Viewer(object):
 def main():
     viewer=Viewer()
     daemon=Pyro4.Daemon()
-    viewer_uri=daemon.register(viewer)
-    agg=Pyro4.Proxy("PYRONAME:stockquote.aggregator")
-    print("Available stock symbols:",agg.available_symbols())
+    daemon.register(viewer)
+    aggregator=Pyro4.Proxy("PYRONAME:stockquote.aggregator")
+    print("Available stock symbols:",aggregator.available_symbols())
     symbols=input("Enter symbols you want to view (comma separated):")
     symbols=[symbol.strip() for symbol in symbols.split(",")]
-    agg.view(Pyro4.Proxy(viewer_uri), symbols)
+    aggregator.view(viewer, symbols)
     print("Viewer listening on symbols",symbols)
     daemon.requestLoop()
 

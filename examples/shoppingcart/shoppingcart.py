@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 class ShoppingCart(object):
     def __init__(self):
         self.contents=[]

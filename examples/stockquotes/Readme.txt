@@ -49,3 +49,8 @@ one or more of the viewers quits (error handling and unregistration),
 what to do when a new stockmarket is opening when we have a system
 running already, what if a viewer is blocking the processing of the stock
 quote updates, etc.
+
+
+Note that phase 3 of this example makes use of Pyro's AutoProxy feature. Sending
+pyro objects 'over the wire' will automatically convert them into proxies so
+that the other side will talk to the actual object, instead of a local copy.

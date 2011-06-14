@@ -1,5 +1,6 @@
 # Client that doesn't use the Name Server. Uses URI directly.
 
+from __future__ import print_function
 import sys
 import Pyro4
 

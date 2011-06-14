@@ -1,3 +1,4 @@
+from __future__ import print_function
 import Pyro4
 
 # a Chain member. Passes messages to the next link,

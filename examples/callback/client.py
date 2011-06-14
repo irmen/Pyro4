@@ -17,9 +17,8 @@ class CallbackHandler(object):
 
 with Pyro4.core.Daemon() as daemon:
     # register our callback handler
-    obj=CallbackHandler()
-    uri=daemon.register(obj)
-    callback=Pyro4.core.Proxy(uri)
+    callback=CallbackHandler()
+    daemon.register(callback)
 
     # contact the server and put it to work
     print("creating a bunch of workers")

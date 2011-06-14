@@ -5,6 +5,7 @@
 #    (the banks are searched simply by listing a namespace prefix path)
 #
 
+from __future__ import print_function
 import sys
 import Pyro4
 from banks import BankError
@@ -65,7 +66,7 @@ if not banknames:
     raise RuntimeError('There are no banks to do business with!')
 
 banks=[]    # list of banks (proxies)
-print
+print()
 for name in banknames:
     print("Contacting bank: %s" % name)
     uri=ns.lookup(name)
@@ -80,7 +81,7 @@ for bank in banks:
     suzy.doBusiness(bank)
 
 # List all accounts
-print
+print()
 for bank in banks:
     print("The accounts in the %s:" % bank.name())
     accounts = bank.allAccounts()

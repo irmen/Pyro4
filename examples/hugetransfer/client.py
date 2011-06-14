@@ -1,4 +1,5 @@
-import sys, os, time
+from __future__ import print_function
+import sys, time
 import Pyro4
 
 #Pyro4.config.COMMTIMEOUT=2
