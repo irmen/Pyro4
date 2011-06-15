@@ -25,13 +25,18 @@ class OfflineNameServerTests(unittest.TestCase):
     def testRegister(self):
         ns=Pyro4.naming.NameServer()
         ns.ping()
-        ns.register("test.object1","PYRO:111111@host.com:4444")
+        ns.register("test.object1","PYRO:000000@host.com:4444")
         ns.register("test.object2","PYRO:222222@host.com:4444")
         ns.register("test.object3","PYRO:333333@host.com:4444")
+        self.assertEqual("PYRO:000000@host.com:4444",str(ns.lookup("test.object1")))
+        ns.register("test.object1","PYRO:111111@host.com:4444")  # registering again should be ok by default
+        self.assertEqual("PYRO:111111@host.com:4444",str(ns.lookup("test.object1")), "should be new uri")
         ns.register("test.sub.objectA",Pyro4.core.URI("PYRO:AAAAAA@host.com:4444"))
         ns.register("test.sub.objectB",Pyro4.core.URI("PYRO:BBBBBB@host.com:4444"))
 
-        self.assertRaises(NamingError, ns.register, "test.object1", "PYRO:X@Y:5555")
+        # if safe=True, a registration of an existing name shoould give a NamingError
+        self.assertRaises(NamingError, ns.register, "test.object1", "PYRO:X@Y:5555", safe=True)
+
         self.assertRaises(TypeError, ns.register, None, None)
         self.assertRaises(TypeError, ns.register, 4444, 4444)
         self.assertRaises(TypeError, ns.register, "test.wrongtype", 4444)
