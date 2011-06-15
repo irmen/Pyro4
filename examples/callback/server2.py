@@ -21,7 +21,6 @@ with Pyro4.core.Daemon() as daemon:
     with Pyro4.naming.locateNS() as ns:
         obj=CallbackServer()
         uri=daemon.register(obj)
-        ns.remove("example.callback2")
         ns.register("example.callback2",uri)
     print("Server ready.")
     daemon.requestLoop()

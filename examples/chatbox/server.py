@@ -56,7 +56,6 @@ class ChatBox(object):
 with Pyro4.core.Daemon() as daemon:
     with Pyro4.naming.locateNS() as ns:
         uri=daemon.register(ChatBox())
-        ns.remove("example.chatbox.server")
         ns.register("example.chatbox.server",uri)
     # enter the service loop.
     print('Chatbox open.')

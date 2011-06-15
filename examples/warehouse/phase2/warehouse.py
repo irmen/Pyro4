@@ -21,7 +21,7 @@ class Warehouse(object):
 def main():
     daemon=Pyro4.Daemon()
     warehouse=Warehouse()
-    uri=daemon.register(warehouse)
+    uri=daemon.register(warehouse, "example.warehouse")
     print("Warehouse is open.")
     print("uri=",uri)
     daemon.requestLoop()

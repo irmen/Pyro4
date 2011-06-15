@@ -8,7 +8,7 @@ from person import Person
 sys.excepthook=Pyro4.util.excepthook
 
 def main():
-    warehouse=Pyro4.Proxy("PYRONAME:warehouse")
+    warehouse=Pyro4.Proxy("PYRONAME:example.warehouse")
     janet=Person("Janet")
     henry=Person("Henry")
     janet.visit(warehouse)

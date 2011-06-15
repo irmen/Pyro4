@@ -8,8 +8,6 @@ import banks
 
 ns=Pyro4.naming.locateNS()
 daemon=Pyro4.core.Daemon()
-ns.remove("example.banks.rabobank")
-ns.remove("example.banks.abn")
 
 uri=daemon.register(banks.Rabobank())
 ns.register("example.banks.rabobank",uri)

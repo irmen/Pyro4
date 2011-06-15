@@ -36,7 +36,7 @@ class SimpleProxy(object):
 d=Pyro4.Daemon()
 stdin_uri=d.register(SimpleProxy(sys.stdin),"inputoutput.stdin")        # remote stdin
 stdout_uri=d.register(SimpleProxy(sys.stdout),"inputoutput.stdout")     # remote stdout
-uri=d.register(RemoteIOManager(stdin_uri, stdout_uri),"inputoutput.manager")
+uri=d.register(RemoteIOManager(stdin_uri, stdout_uri),"example.inputoutput.manager")
 print("object uri=",uri)
 print("server running.")
 d.requestLoop()

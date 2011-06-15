@@ -37,7 +37,7 @@ class Thingy(object):
         return something
 
 d=Pyro4.Daemon()
-uri=d.register(Thingy())
+uri=d.register(Thingy(), "example.attributes")
 print("server object uri:",uri)
 print("DOTTEDNAMES=",Pyro4.config.DOTTEDNAMES)
 print("attributes server running.")

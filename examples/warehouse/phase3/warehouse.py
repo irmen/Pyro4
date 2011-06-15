@@ -23,7 +23,7 @@ def main():
     warehouse=Warehouse()
     uri=daemon.register(warehouse)
     ns=Pyro4.locateNS()
-    ns.register("warehouse",uri)
+    ns.register("example.warehouse",uri)
     print("Warehouse is open.")
     daemon.requestLoop()
 

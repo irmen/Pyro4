@@ -11,7 +11,6 @@ daemon=Pyro4.core.Daemon()
 obj=chain.Chain(this,next)
 uri=daemon.register(obj)
 ns=Pyro4.naming.locateNS()
-ns.remove(servername)
 ns.register(servername,uri)
 
 # enter the service loop.

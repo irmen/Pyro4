@@ -9,7 +9,7 @@ class Thingy(object):
         return a//b
 
 d=Pyro4.Daemon()
-uri=d.register(Thingy())
+uri=d.register(Thingy(), "example.async")
 print("server object uri:",uri)
 print("async server running.")
 d.requestLoop()

@@ -47,10 +47,8 @@ def main():
     nasdaq_uri=daemon.register(nasdaq)
     newyork_uri=daemon.register(newyork)
     ns=Pyro4.locateNS()
-    ns.remove("stockmarket.nasdaq")
-    ns.remove("stockmarket.newyork")
-    ns.register("stockmarket.nasdaq",nasdaq_uri)
-    ns.register("stockmarket.newyork",newyork_uri)
+    ns.register("example.stockmarket.nasdaq",nasdaq_uri)
+    ns.register("example.stockmarket.newyork",newyork_uri)
 
     nasdaq.run()
     newyork.run()

@@ -226,7 +226,6 @@ class PyroDaemonThread(threadutil.Thread):
         with self.pyrodaemon:
             with self.ns:
                 uri=self.pyrodaemon.register(self.pyroserver)
-                self.ns.remove("example.robotserver")
                 self.ns.register("example.robotserver", uri)
                 print("Pyro server registered on %s" % self.pyrodaemon.locationStr)
                 self.pyrodaemon.requestLoop()

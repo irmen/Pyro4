@@ -22,7 +22,7 @@ obj=TestClass()
 # By default Pyro will select a random port so we specify a fixed port.
 
 daemon = Pyro4.core.Daemon(port=7777)
-uri = daemon.register(obj,objectId="autoreconnect_fixed_objectid")
+uri = daemon.register(obj,objectId="example.autoreconnect_fixed_objectid")
 
 print("Server started, uri=%s" % uri)
 daemon.requestLoop()

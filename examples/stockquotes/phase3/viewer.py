@@ -15,7 +15,7 @@ def main():
     viewer=Viewer()
     daemon=Pyro4.Daemon()
     daemon.register(viewer)
-    aggregator=Pyro4.Proxy("PYRONAME:stockquote.aggregator")
+    aggregator=Pyro4.Proxy("PYRONAME:example.stockquote.aggregator")
     print("Available stock symbols:",aggregator.available_symbols())
     symbols=input("Enter symbols you want to view (comma separated):")
     symbols=[symbol.strip() for symbol in symbols.split(",")]
