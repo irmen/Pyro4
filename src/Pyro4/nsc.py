@@ -35,7 +35,7 @@ def handleCommand(nameserver, options, args):
         printListResult(nameserver.list(regex=args[1]), "- regex '%s'" % args[1])
 
     def cmd_register():
-        nameserver.register(args[1], args[2])
+        nameserver.register(args[1], args[2], safe=True)
         print("Registered %s" % args[1])
 
     def cmd_remove():

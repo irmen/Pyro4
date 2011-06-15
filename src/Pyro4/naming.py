@@ -34,8 +34,9 @@ class NameServer(object):
         except KeyError:
             raise NamingError("unknown name: "+name)
 
-    def register(self, name, uri):
-        """Register a name with an URI. name cannot be registered twice. uri can be a string or an URI object."""
+    def register(self, name, uri, safe=False):
+        """Register a name with an URI. If safe is true, name cannot be registered twice.
+        The uri can be a string or an URI object."""
         if isinstance(uri, core.URI):
             uri=uri.asString()
         elif not isinstance(uri, basestring):
@@ -44,7 +45,7 @@ class NameServer(object):
             core.URI(uri)  # check if uri is valid
         if not isinstance(name, basestring):
             raise TypeError("name must be a str")
-        if name in self.namespace:
+        if safe and name in self.namespace:
             raise NamingError("name already registered: "+name)
         with self.lock:
             self.namespace[name]=uri

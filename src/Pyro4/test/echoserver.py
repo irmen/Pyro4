@@ -60,6 +60,7 @@ def main(args, returnWithoutLooping=False):
     parser.add_option("-N","--nameserver", action="store_true", default=False, help="also start a nameserver")
     parser.add_option("-v","--verbose", action="store_true", default=False, help="verbose output")
     parser.add_option("-q","--quiet", action="store_true", default=False, help="don't output anything")
+    parser.add_option("-k","--key", help="the HMAC key to use")
     options,args = parser.parse_args(args)
 
     if options.verbose:
@@ -69,13 +70,12 @@ def main(args, returnWithoutLooping=False):
     if os.name!="java":
         Pyro4.config.SERVERTYPE="multiplex"
 
-    if not Pyro4.config.HMAC_KEY:
-        if sys.version_info<(3,0):
-            Pyro4.config.HMAC_KEY="testkey"
-        else:
-            Pyro4.config.HMAC_KEY=bytes("testkey","utf-8")
-        if not options.quiet:
-            print("HMAC_KEY set to built-in default: %s" % Pyro4.config.HMAC_KEY)
+    hmac=options.key
+    if hmac and sys.version_info>=(3,0):
+        hmac=bytes(hmac,"utf-8")
+    Pyro4.config.HMAC_KEY=hmac or Pyro4.config.HMAC_KEY
+    if not options.quiet and Pyro4.config.HMAC_KEY:
+        print("HMAC_KEY set to: %s" % Pyro4.config.HMAC_KEY)
 
     nameserver=None
     if options.nameserver:
@@ -92,7 +92,6 @@ def main(args, returnWithoutLooping=False):
         if nameserver is not None:
             host,port=nameserver.uri.host, nameserver.uri.port
         ns=naming.locateNS(host,port)
-        ns.remove(objectName)
         ns.register(objectName, uri)
         if options.verbose:
             print("using name server at %s" % ns._pyroUri)
