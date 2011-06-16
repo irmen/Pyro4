@@ -621,6 +621,35 @@ class Daemon(object):
     def sockets(self):
         return self.transportServer.sockets
 
+    @staticmethod
+    def serveSimple(objects, daemon=None, ns=True, verbose=True):
+        """
+        Very basic method to fire up a daemon (or supply one yourself).
+        objects is a dict containing objects to register as keys, and
+        their names (or None) as values. If ns is true they will be registered
+        in the naming server as well, otherwise they just stay local.
+        """
+        if not daemon:
+            daemon=Daemon()
+        with daemon:
+            if ns:
+                ns=Pyro4.naming.locateNS()
+            for obj, name in objects.items():
+                if ns:
+                    localname=None   # name is used for the name server
+                else:
+                    localname=name   # no name server, use name in daemon
+                uri=daemon.register(obj, localname)
+                if verbose:
+                    print("Object {0}:\n    uri = {1}".format(repr(obj), uri))
+                if name and ns:
+                    ns.register(name, uri)
+                    if verbose:
+                        print("    name = {0}".format(name))
+            if verbose:
+                print("Pyro daemon running.")
+            daemon.requestLoop()
+
     def requestLoop(self, loopCondition=lambda: True):
         """
         Goes in a loop to service incoming requests, until someone breaks this

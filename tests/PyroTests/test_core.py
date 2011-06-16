@@ -539,6 +539,28 @@ class RemoteMethodTests(unittest.TestCase):
         self.assertEqual(5,result.value)
 
 
+class TestSimpleServe(unittest.TestCase):
+    class DaemonMock(object):
+        def __init__(self):
+            self.objects={}
+        def register(self, object, name):
+            self.objects[object]=name
+        def __enter__(self):
+            pass
+        def __exit__(self, *args):
+            pass
+        def requestLoop(self, *args):
+            pass
+
+    def testSimpleServe(self):
+        d=TestSimpleServe.DaemonMock()
+        o1=Thing(1)
+        o2=Thing(2)
+        objects={ o1: "test.o1", o2: None }
+        Pyro4.core.Daemon.serveSimple(objects,daemon=d, ns=False, verbose=False)
+        self.assertEqual( {o1: "test.o1", o2: None}, d.objects)
+
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
