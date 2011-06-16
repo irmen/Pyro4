@@ -1,5 +1,9 @@
-from distutils.core import setup
 import sys
+try:
+    # try setuptools first, to get access to build_sphinx command
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 
 if __name__ == '__main__' :
     sys.path.insert(0, "src")
@@ -10,7 +14,15 @@ if __name__ == '__main__' :
         version= Pyro4.constants.VERSION,
         license="MIT",
         description = "distributed object middleware for Python (RPC)",
-        long_description = """Pyro stands for PYthon Remote Objects. It is an advanced and powerful Distributed Object Technology system written entirely in Python, that is designed to be fast and very easy to use.""",
+        long_description = """Pyro means PYthon Remote Objects. 
+It is a library that enables you to build applications in which
+objects can talk to eachother over the network, with minimal programming effort.
+You can just use normal Python method calls, with almost every possible parameter
+and return value type, and Pyro takes care of locating the right object on the right
+computer to execute the method. It is designed to be very easy to use, and to 
+generally stay out of your way. But it also provides a set of powerful features that
+enables you to build distributed applications rapidly and effortlessly.
+Pyro is written in 100% pure Python and therefore runs on many platforms and Python versions.""",
         author = "Irmen de Jong",
         author_email="irmen@razorvine.net",
         keywords="distributed objects, middleware, network communication, remote method call, IPC",

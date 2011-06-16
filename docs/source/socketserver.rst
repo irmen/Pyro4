@@ -1,4 +1,6 @@
-Pyro socket server API contract.
+Pyro socket server API contract
+*******************************
+
 For now, this is an internal API, used by the Pyro Daemon.
 The various servers in Pyro4.socketserver implement this.
 
