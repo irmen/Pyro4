@@ -24,8 +24,9 @@ Pyro is copyright © Irmen de Jong (irmen@razorvine.net).
 
 .. warning::
  This manual is still being written. It is incomplete and may contain errors.
- For the time being it may be helpful to read the `Pyro 3 manual <http://irmen.home.xs4all.nl/pyro3/manual/PyroManual.html>`_ as well.
-
+ For the time being it may be helpful to read the `Pyro 3 manual <http://packages.python.org/Pyro/>`_ as well.
+ Also in the source archive there is a directory :file:`examples` that contains a truckload 
+ of example programs that show the various features.
 
 Contents
 --------
