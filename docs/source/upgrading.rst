@@ -47,7 +47,7 @@ So depending on your requirements of maturity and API stability you might choose
 Differences
 ===========
 
-Here you can find what is different in Pyro4 compared to Pyro3.
+*Here you can find what is different in Pyro4 compared to Pyro3.
 This should help with converting existing Pyro3 applications to Pyro4.
 It also serves as a quick overview for developers that are used to Pyro3,
-to see what the new API and features of Pyro4 are like.
+to see what the new API and features of Pyro4 are like.*

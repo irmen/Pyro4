@@ -39,8 +39,9 @@ Contents
    Installation and configuration <config>
    Upgrading from Pyro 3 <upgrading>
    Other stuff <other>
-   Change log <changelog>
    Socketserver API <socketserver>
+   Running on alternative Python implementations <alternative>
+   Change log <changelog>
    License and disclaimer <licensedisclaimer>
 
 

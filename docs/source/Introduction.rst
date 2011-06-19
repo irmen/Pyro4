@@ -36,7 +36,7 @@ Simple Example
 ==============
 
 This example will show you in a nutshell what it's like to use Pyro in your programs.
-A much more extensive introduction is found in the :doc:`tutorial`.
+A much more extensive introduction is found in the :doc:`Tutorial`.
 
 We're going to write a simple greeting service that will return a personalized greeting message to its callers.
 
@@ -163,3 +163,33 @@ the command :command:`python -m Pyro4.nsc list`, which will produce::
 
 (Once again the uri for our object will be random)
 This concludes this simple Pyro example.
+
+Performance
+===========
+Pyro4 is really fast at what it does. This is due to its low overhead and use of native Python serialization (pickle).
+Here are some measurements done between two processes running on a Core 2 Duo 3Ghz, Windows 7 machine.
+
+:benchmark/connections.py:
+    | 2000 connections in 1.09000015259 sec = 1834.86 conn/sec
+    | 2000 new proxy calls in 1.3220000267 sec = 1512.86 calls/sec
+    | 10000 calls in 0.939999818802 sec = 10638.30 calls/sec
+
+:benchmark/client.py:
+    | total time 1.6140 seconds
+    | total method calls: 15000
+    | avg. time per method call: 0.1076 msec (9293/sec)
+
+:hugetransfer/client.py:
+    | It took 0.50 seconds to transfer 51269 kilobyte.
+    | That is 102539.06 k/sec. = 100.14 mb/sec.
+
+:batchedcalls/client.py:
+    | Batched remote calls...
+    | processing the results...
+    | total time taken 0.1110 seconds (180180 calls/sec)
+    | batched calls were 17.18 times faster than normal remote calls
+    |
+    | Oneway batched remote calls...
+    | executing batch, there will be no result values. Check server to see printed messages...
+    | total time taken 0.1620 seconds (246913 calls/sec)
+    | oneway batched calls were 23.06 times faster than normal remote calls
