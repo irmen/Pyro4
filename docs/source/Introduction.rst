@@ -10,7 +10,7 @@ Here's a quick overview of Pyro's features:
 
 - written in 100% Python so extremely portable.
 - support for all Python datatypes that are pickleable.
-- runs on normal CPython 2.x, CPython 3.x, IronPython, Jython, Pypy.
+- runs on normal Python 2.x, Python **3.x**, IronPython, Jython, Pypy.
 - works between systems on different architectures and operating systems (64-bit, 32-bit, Intel, PowerPC...)
 - designed to be very easy to use and get out of your way as much as possible.
 - name server that keeps track of your object's actual locations so you can move them around transparently.
