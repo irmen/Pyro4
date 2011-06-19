@@ -34,13 +34,14 @@ Contents
 .. toctree::
    :maxdepth: 2
    
-   intro
-   tutorial
-   installation and configuration <config>
-   other stuff <other>
-   change log <changelog>
-   socketserver API <socketserver>
-   license and disclaimer <licensedisclaimer>
+   Introduction
+   Tutorial
+   Installation and configuration <config>
+   Upgrading from Pyro 3 <upgrading>
+   Other stuff <other>
+   Change log <changelog>
+   Socketserver API <socketserver>
+   License and disclaimer <licensedisclaimer>
 
 
 Indices and tables
