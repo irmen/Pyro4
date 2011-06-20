@@ -25,4 +25,7 @@ if __name__=="__main__":
         suite.addTest(testcases)
 
     print("\nRUNNING UNIT TESTS...")
-    unittest.TextTestRunner(verbosity=1).run(suite)
+    result=unittest.TextTestRunner(verbosity=1).run(suite)
+    if not result.wasSuccessful():
+        sys.exit(10)
+

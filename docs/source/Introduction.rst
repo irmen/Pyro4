@@ -46,7 +46,7 @@ Let's start by just writing it in normal Python first (create two files)::
     class GreetingMaker(object):
         def get_fortune(self, name):
             return "Hello, {0}. Here is your fortune message:\n" \
-                   "Behold the warranty -- the bold print giveth and the fine print taketh away.'".format(name)
+                   "Behold the warranty -- the bold print giveth and the fine print taketh away.".format(name)
 
     # save this as client.py
     import greeting
@@ -59,7 +59,7 @@ If you then run it with :command:`python client.py` a session looks like this::
     $ python client.py
     What is your name? Irmen
     Hello, Irmen. Here is your fortune message:
-    Behold the warranty -- the bold print giveth and the fine print taketh away.'
+    Behold the warranty -- the bold print giveth and the fine print taketh away.
 
 Right that works like a charm but we are now going to use Pyro to make this into a greeting server that you
 can access easily from anywhere. The :file:`greeting.py` is going to be our server. We'll need to import the
@@ -71,7 +71,7 @@ Pyro package, start up a Pyro daemon (server) and connect a GreetingMaker object
     class GreetingMaker(object):
         def get_fortune(self, name):
             return "Hello, {0}. Here is your fortune message:\n" \
-                   "Behold the warranty -- the bold print giveth and the fine print taketh away.'".format(name)
+                   "Behold the warranty -- the bold print giveth and the fine print taketh away.".format(name)
 
     greeting_maker=GreetingMaker()
 
@@ -103,7 +103,7 @@ Open a console window and start the greeting server::
     What is the Pyro uri of the greeting object?  <<paste the printed uri from the server>>
     What is your name?  <<type your name, Irmen in this example>>
     Hello, Irmen. Here is your fortune message:
-    Behold the warranty -- the bold print giveth and the fine print taketh away.'
+    Behold the warranty -- the bold print giveth and the fine print taketh away.
 
 This covers the most basic use of Pyro! As you can see, all there is to it is starting a daemon,
 registering one or more objects with it, and getting a proxy to these objects to call methods on
@@ -125,7 +125,7 @@ We'll have to modify a few lines in :file:`greeting.py` to make it register the 
     class GreetingMaker(object):
         def get_fortune(self, name):
             return "Hello, {0}. Here is your fortune message:\n" \
-                   "Behold the warranty -- the bold print giveth and the fine print taketh away.'".format(name)
+                   "Behold the warranty -- the bold print giveth and the fine print taketh away.".format(name)
 
     greeting_maker=GreetingMaker()
 
