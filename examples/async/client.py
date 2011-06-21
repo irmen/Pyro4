@@ -25,6 +25,14 @@ print("client can do other stuff here.")
 print("getting result value...(will block until available)")
 print("resultvalue=",asyncresult.value)   # blocks until the result is available
 
+print("\n* async call, with normal call inbetween:")
+async=Pyro4.async(proxy)
+asyncresult=async.divide(100,5)   # returns immediately
+print("client does normal call: ",proxy.multiply_no_sleep(5,20))
+print("client does normal call: ",proxy.multiply_no_sleep(5,30))
+print("getting result value of async call...(will block until available)")
+print("resultvalue=",asyncresult.value)   # blocks until the result is available
+
 print("\n* async call with callback:")
 async=Pyro4.async(proxy, callback=asyncCallback)   # provide a callback function to be called when the result is available
 asyncresult=async.divide(100,5)
@@ -57,5 +65,16 @@ print("checking again if ready within 5 seconds...(should be ok now)")
 ready=asyncresult.ready(timeout=5)   # wait 5 seconds now (but server will be done within 1 more second)
 print("available=",ready)
 print("resultvalue=",asyncresult.value)
+
+print("\n* a few async calls at the same time (sharing a proxy so they'll be serialized):")
+async=Pyro4.async(proxy)
+results=[
+    async.divide(100,5),
+    async.divide(100,4),
+    async.divide(100,3),
+    ]
+print("getting values...")
+for result in results:
+    print("result=",result.value)
 
 print("\ndone.")

@@ -7,6 +7,9 @@ class Thingy(object):
         print("dividing {0} by {1} after a slight delay".format(a,b))
         time.sleep(3)       # artificial delay
         return a//b
+    def multiply_no_sleep(self, a, b):
+        print("multiply {0} by {1}, no delay".format(a,b))
+        return a*b
 
 d=Pyro4.Daemon()
 uri=d.register(Thingy(), "example.async")

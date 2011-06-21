@@ -337,7 +337,8 @@ class Proxy(object):
         return self.__pyroInvoke("<batch>", calls, None, flags)
 
     def _pyroAsync(self, callback=None):
-        return _AsyncProxy(self.__pyroInvoke, callback)
+        proxycopy=self.__copy__()   # use a copy of the proxy otherwise calls would be serialized
+        return _AsyncProxy(proxycopy.__pyroInvoke, callback)
 
 
 class _BatchedRemoteMethod(object):
