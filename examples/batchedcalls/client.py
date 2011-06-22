@@ -60,6 +60,7 @@ batch.printmessage("beginning batch #2")
 for i in range(NUMBER_OF_LOOPS):
     batch.multiply(7,6)         # queue a call, note that it returns 'None' immediately
     batch.add(10,20)            # queue a call, note that it returns 'None' immediately
+batch.delay(2)     # queue a delay of 2 seconds (but we won't notice)
 batch.printmessage("end of batch #2")
 print("executing batch, there will be no result values. Check server to see printed messages...")
 result=batch(oneway=True)      # execute the batch of remote calls, oneway, will return None
@@ -67,6 +68,21 @@ assert result is None
 duration=time.time()-begin
 print("total time taken {0:.4f} seconds ({1:.0f} calls/sec)".format(duration, NUMBER_OF_LOOPS*2.0/duration))
 print("oneway batched calls were {0:.2f} times faster than normal remote calls".format(duration_normal/duration))
+
+# Batches can be executed async as well
+print("\nBatched remote calls, async...")
+batch=Pyro4.batch(p)        # get a batched call proxy for 'p'
+batch.printmessage("beginning batch #3")
+batch.multiply(7,6)         # queue a call, note that it returns 'None' immediately
+batch.add(10,20)            # queue a call, note that it returns 'None' immediately
+batch.delay(2)      # queue a delay, but this doesn't matter with async
+batch.printmessage("end of batch #3")
+print("executing the batch... (should return immediately because async)")
+asyncresult=batch(async=True)     # execute the batch, async (return immediately)
+print("processing the results...(should wait until async results become available)")
+results=list(asyncresult.value)
+print("results=",results)
+
 
 # Show what happens when one of the methods in a batch generates an error.
 # (the batch is aborted and the error is raised locally again).

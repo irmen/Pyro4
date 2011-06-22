@@ -170,7 +170,7 @@ class Proxy(object):
         if name in Proxy.__pyroAttributes:
             # allows it to be safely pickled
             raise AttributeError(name)
-        return _RemoteMethod(self.__pyroInvoke, name)
+        return _RemoteMethod(self._pyroInvoke, name)
 
     def __str__(self):
         return "<Pyro Proxy for "+str(self._pyroUri)+">"
@@ -219,7 +219,7 @@ class Proxy(object):
             self._pyroConnection.timeout=timeout
     _pyroTimeout=property(__pyroGetTimeout, __pyroSetTimeout)
 
-    def __pyroInvoke(self, methodname, vargs, kwargs, flags=0):
+    def _pyroInvoke(self, methodname, vargs, kwargs, flags=0):
         """perform the remote method call communication"""
         if not self._pyroConnection:
             # rebind here, don't do it from inside the invoke because deadlock will occur
@@ -328,17 +328,16 @@ class Proxy(object):
         raise errors.ConnectionClosedError(msg)
 
     def _pyroBatch(self):
-        return _BatchProxy(self.__pyroInvokeBatch)
+        return _BatchProxyAdapter(self)
 
-    def __pyroInvokeBatch(self, calls, oneway=False):
+    def _pyroInvokeBatch(self, calls, oneway=False):
         flags=MessageFactory.FLAGS_BATCH
         if oneway:
             flags|=MessageFactory.FLAGS_ONEWAY
-        return self.__pyroInvoke("<batch>", calls, None, flags)
+        return self._pyroInvoke("<batch>", calls, None, flags)
 
     def _pyroAsync(self, callback=None):
-        proxycopy=self.__copy__()   # use a copy of the proxy otherwise calls would be serialized
-        return _AsyncProxy(proxycopy.__pyroInvoke, callback)
+        return _AsyncProxyAdapter(self, callback)
 
 
 class _BatchedRemoteMethod(object):
@@ -354,18 +353,27 @@ class _BatchedRemoteMethod(object):
         self.__calls.append((self.__name, args, kwargs))
 
 
-class _BatchProxy(object):
+class _BatchProxyAdapter(object):
     """Helper class that lets you batch multiple method calls into one.
-    It is constructed with a reference to the method of the normal proxy that will
+    It is constructed with a reference to the normal proxy that will
     carry out the batched calls. Call methods on this object thatyou want to batch,
     and finally call the batch proxy itself. That call will return a generator
     for the results of every method call in the batch (in sequence)."""
-    def __init__(self, batchmethod):
-        self.__batchmethod=batchmethod
+    def __init__(self, proxy):
+        self.__proxy=proxy
         self.__calls=[]
 
     def __getattr__(self, name):
         return _BatchedRemoteMethod(self.__calls, name)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+    def __copy__(self):
+        return self
 
     def __resultsgenerator(self, results):
         for result in results:
@@ -376,40 +384,40 @@ class _BatchProxy(object):
 
     def __call__(self, oneway=False, async=False, callback=None):
         if oneway and async:
-            raise ValueError("async oneway calls make no sense")
+            raise errors.PyroError("async oneway calls make no sense")
         if async:
-            return _AsyncRemoteMethod(self.__call_async, callback, "<asyncbatch>")()
+            return _AsyncRemoteMethod(self, callback, "<asyncbatch>")()
         else:
-            results=self.__batchmethod(self.__calls, oneway)
+            results=self.__proxy._pyroInvokeBatch(self.__calls, oneway)
             self.__calls=[]   # clear for re-use
             if not oneway:
                 return self.__resultsgenerator(results)
 
-    def __call_async(self,name,args,kwargs):
+    def _pyroInvoke(self,name,args,kwargs):
         # ignore all parameters, we just need to execute the batch
-        results=self.__batchmethod(self.__calls)
+        results=self.__proxy._pyroInvokeBatch(self.__calls)
         self.__calls=[]   # clear for re-use
         return self.__resultsgenerator(results)
 
 
-class _AsyncProxy(object):
-    def __init__(self, invokemethod, callback):
-        self.__invokemethod=invokemethod
+class _AsyncProxyAdapter(object):
+    def __init__(self, proxy, callback):
+        self.__proxy=proxy
         self.__callback=callback
 
     def __getattr__(self, name):
-        return _AsyncRemoteMethod(self.__invokemethod, self.__callback, name)
+        return _AsyncRemoteMethod(self.__proxy, self.__callback, name)
 
 
 class _AsyncRemoteMethod(object):
     """async method call abstraction (call will run in a background thread)"""
-    def __init__(self, send, callback, name):
-        self.__send = send
+    def __init__(self, proxy, callback, name):
+        self.__proxy = proxy
         self.__name = name
         self.__callback = callback
 
     def __getattr__(self, name):
-        return _AsyncRemoteMethod(self.__send, self.__callback, "%s.%s" % (self.__name, name))
+        return _AsyncRemoteMethod(self.__proxy, self.__callback, "%s.%s" % (self.__name, name))
 
     def __call__(self, *args, **kwargs):
         asyncresult=_AsyncResult()
@@ -420,7 +428,10 @@ class _AsyncRemoteMethod(object):
 
     def __asynccall(self, asyncresult, callback, args, kwargs):
         try:
-            value = self.__send(self.__name, args, kwargs)
+            # use a copy of the proxy otherwise calls would be serialized,
+            # and use contextmanager to close the proxy after we're done
+            with self.__proxy.__copy__() as proxy:
+                value = proxy._pyroInvoke(self.__name, args, kwargs)
             if callback:
                 callback(value)  # only provide the result value through the callback
             else:
@@ -900,4 +911,3 @@ def callback(object):
     """
     object._pyroCallback=True
     return object
-

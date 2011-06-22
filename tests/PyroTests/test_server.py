@@ -86,7 +86,7 @@ class ServerTestsBrokenHandshake(unittest.TestCase):
                 message=str(xv)
                 self.assertTrue("rigged connection failure" in message)
 
-class ServerTestsSingle(unittest.TestCase):
+class ServerTestsOnce(unittest.TestCase):
     """tests that are fine to run with just a single server type"""
     def setUp(self):
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
@@ -174,6 +174,34 @@ class ServerTestsSingle(unittest.TestCase):
             self.assertRaises(Pyro4.errors.AsyncResultTimeout, result.ready, 0.5)
             self.assertEqual("slept for 42",result.value)
             self.assertTrue(result.ready())
+
+    def testBatchOneway(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            batch=Pyro4.batch(p)
+            self.assertEqual(None,batch.multiply(7,6))
+            self.assertEqual(None,batch.delay(1))           # a delay shouldn't matter with oneway
+            self.assertEqual(None,batch.multiply(3,4))
+            begin=time.time()
+            results=batch(oneway=True)
+            duration=time.time()-begin
+            self.assertLess(duration,0.1,"oneway batch with delay should return almost immediately")
+            self.assertEqual(None,results)
+
+    def testBatchAsync(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            batch=Pyro4.batch(p)
+            self.assertEqual(None,batch.multiply(7,6))
+            self.assertEqual(None,batch.delay(1))           # a delay shouldn't matter with async
+            self.assertEqual(None,batch.multiply(3,4))
+            begin=time.time()
+            asyncresult=batch(async=True)
+            duration=time.time()-begin
+            self.assertLess(duration,0.1,"async batch with delay should return almost immediately")
+            results=asyncresult.value
+            self.assertEqual(42,next(results))
+            self.assertEqual("slept 1 seconds",next(results))
+            self.assertEqual(12,next(results))
+            self.assertRaises(StopIteration, next, results)     # no more results should be available
 
     def testPyroTracebackNormal(self):
         with Pyro4.core.Proxy(self.objectUri) as p:

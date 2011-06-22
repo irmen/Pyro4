@@ -1,4 +1,5 @@
 from __future__ import print_function
+import time
 import Pyro4
 from Pyro4.socketutil import getMyIpAddress
 
@@ -11,6 +12,9 @@ class Thingy(object):
         return a//b
     def error(self):
         return 1//0
+    def delay(self, seconds):
+        time.sleep(seconds)
+        return seconds
     def printmessage(self,message):
         print(message)
         return 0

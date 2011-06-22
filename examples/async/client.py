@@ -66,9 +66,11 @@ ready=asyncresult.ready(timeout=5)   # wait 5 seconds now (but server will be do
 print("available=",ready)
 print("resultvalue=",asyncresult.value)
 
-print("\n* a few async calls at the same time (sharing a proxy so they'll be serialized):")
+print("\n* a few async calls at the same time:")
 async=Pyro4.async(proxy)
 results=[
+    async.divide(100,7),
+    async.divide(100,6),
     async.divide(100,5),
     async.divide(100,4),
     async.divide(100,3),

@@ -421,25 +421,38 @@ class CoreTests(unittest.TestCase):
 
 class RemoteMethodTests(unittest.TestCase):
     class BatchProxyMock(object):
+        def __copy__(self):
+            return self
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
         def _pyroBatch(self):
-            return Pyro4.core._BatchProxy(self.pyroInvokeBatch)
-        def pyroInvokeBatch(self, calls, oneway=False):
+            return Pyro4.core._BatchProxyAdapter(self)
+        def _pyroInvokeBatch(self, calls, oneway=False):
             self.result=[]
-            for name, args, kwargs in calls:
-                if name=="error":
+            for methodname, args, kwargs in calls:
+                if methodname=="error":
                     self.result.append(Pyro4.core._ExceptionWrapper(ValueError("some exception")))
                     break  # stop processing the rest, this is what Pyro should do in case of an error in a batch
-                else:
-                    self.result.append("INVOKED %s args=%s kwargs=%s" % (name,args,kwargs))
+                elif methodname=="pause":
+                    time.sleep(args[0])
+                self.result.append("INVOKED %s args=%s kwargs=%s" % (methodname,args,kwargs))
             if oneway:
                 return
             else:
                 return self.result
 
     class AsyncProxyMock(object):
+        def __copy__(self):
+            return self
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
         def _pyroAsync(self, callback=None):
-            return Pyro4.core._AsyncProxy(self.pyroInvoke, callback)
-        def pyroInvoke(self, methodname, vargs, kwargs, flags=0):
+            return Pyro4.core._AsyncProxyAdapter(self, callback)
+        def _pyroInvoke(self, methodname, vargs, kwargs, flags=0):
             if methodname=="pause_and_divide":
                 time.sleep(vargs[0])
                 return vargs[1]//vargs[2]
@@ -492,6 +505,30 @@ class RemoteMethodTests(unittest.TestCase):
         results=batch(oneway=True)
         self.assertEqual(None, results)          # oneway always returns None
         self.assertEqual(4, len(proxy.result))   # should have done 4 calls, not 5
+        self.assertRaises(Pyro4.errors.PyroError, batch, oneway=True, async=True)   # oneway+async=booboo
+
+    def testBatchMethodAsync(self):
+        proxy=self.BatchProxyMock()
+        batch=Pyro4.batch(proxy)
+        self.assertEqual(None, batch.foo(42))
+        self.assertEqual(None, batch.bar("abc"))
+        self.assertEqual(None, batch.pause(0.5))    # pause shouldn't matter with async
+        self.assertEqual(None, batch.baz(42,"abc",arg=999))
+        begin=time.time()
+        asyncresult=batch(async=True)
+        duration=time.time()-begin
+        self.assertTrue(duration<0.1, "batch oneway with pause should still return almost immediately")
+        results=asyncresult.value
+        self.assertEqual(4, len(proxy.result))   # should have done 4 calls
+        result=next(results)
+        self.assertEqual("INVOKED foo args=(42,) kwargs={}",result)
+        result=next(results)
+        self.assertEqual("INVOKED bar args=('abc',) kwargs={}",result)
+        result=next(results)
+        self.assertEqual("INVOKED pause args=(0.5,) kwargs={}",result)
+        result=next(results)
+        self.assertEqual("INVOKED baz args=(42, 'abc') kwargs={'arg': 999}",result)
+        self.assertRaises(StopIteration, next, results)   # and now there should not be any more results
 
     def testBatchMethodReuse(self):
         proxy=self.BatchProxyMock()
