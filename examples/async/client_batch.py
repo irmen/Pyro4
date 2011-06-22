@@ -7,8 +7,10 @@ if sys.version_info<(3,0):
     input=raw_input
 
 
-def asyncCallback(values):
-    print(">>> async batch callback received:",list(values))
+def asyncFunction(values):
+    results=[value+1 for value in values]
+    print(">>> async batch function called, returning:",results)
+    return results
 
 
 uri=input("enter async server object uri: ").strip()
@@ -32,17 +34,17 @@ print("getting result values...(will block until available)")
 results=asyncresults.value   # blocks until the result is available
 print("resultvalues=",list(results))
 
-print("\n* batch async call with callback:")
+print("\n* batch async call with chained function:")
 batch=Pyro4.batch(proxy)
 batch.divide(100,5)
 batch.divide(99,9)
 batch.divide(555,2)
-asyncresults = batch(async=True, callback=asyncCallback)  # returns immediately
-print("sleeping 12 seconds...")
-time.sleep(12)   # the callback will occur in this sleep period
-print("back from sleep!")
-# remember; you cannot access asyncresult.value when using a callback!
-assert asyncresults.ready()==False
+asyncresults = batch(async=True)  # returns immediately
+asyncresults.then(asyncFunction) \
+            .then(asyncFunction) \
+            .then(asyncFunction)
+print("getting result values...(will block until available)")
+print("final value=",asyncresults.value)
 
 print("\n* batch async call with exception:")
 batch=Pyro4.batch(proxy)

@@ -7,10 +7,6 @@ if sys.version_info<(3,0):
     input=raw_input
 
 
-def asyncCallback(value):
-    print(">>> async callback received:",value)
-
-
 uri=input("enter async server object uri: ").strip()
 proxy=Pyro4.Proxy(uri)
 
@@ -28,19 +24,10 @@ print("resultvalue=",asyncresult.value)   # blocks until the result is available
 print("\n* async call, with normal call inbetween:")
 async=Pyro4.async(proxy)
 asyncresult=async.divide(100,5)   # returns immediately
-print("client does normal call: ",proxy.multiply_no_sleep(5,20))
-print("client does normal call: ",proxy.multiply_no_sleep(5,30))
+print("client does normal call: ",proxy.multiply(5,20))
+print("client does normal call: ",proxy.multiply(5,30))
 print("getting result value of async call...(will block until available)")
 print("resultvalue=",asyncresult.value)   # blocks until the result is available
-
-print("\n* async call with callback:")
-async=Pyro4.async(proxy, callback=asyncCallback)   # provide a callback function to be called when the result is available
-asyncresult=async.divide(100,5)
-print("sleeping 5 seconds")
-time.sleep(5)   # the callback will occur in this sleep period
-print("back from sleep!")
-# remember; you cannot access asyncresult.value when using a callback!
-assert asyncresult.ready()==False
 
 print("\n* async call with exception:")
 async=Pyro4.async(proxy)

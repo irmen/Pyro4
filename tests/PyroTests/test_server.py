@@ -175,6 +175,27 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual("slept for 42",result.value)
             self.assertTrue(result.ready())
 
+    def testAsyncProxyCallchain(self):
+        class FuncHolder(object):
+            count=0
+            def function(self, value, increase=1):
+                self.count+=1
+                return value+increase
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            async=Pyro4.async(p)
+            holder=FuncHolder()
+            begin=time.time()
+            result=async.multiply(2,3)
+            result.then(holder.function, increase=10) \
+                  .then(holder.function, increase=5) \
+                  .then(holder.function)
+            duration=time.time()-begin
+            self.assertTrue(duration<0.1)
+            value=result.value
+            self.assertTrue(result.ready())
+            self.assertEqual(22,value)
+            self.assertEqual(3,holder.count)
+
     def testBatchOneway(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
             batch=Pyro4.batch(p)
@@ -202,6 +223,25 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual("slept 1 seconds",next(results))
             self.assertEqual(12,next(results))
             self.assertRaises(StopIteration, next, results)     # no more results should be available
+
+    def testBatchAsyncCallchain(self):
+        class FuncHolder(object):
+            count=0
+            def function(self, values):
+                result=[value+1 for value in values]
+                self.count+=1
+                return result
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            batch=Pyro4.batch(p)
+            self.assertEqual(None,batch.multiply(7,6))
+            self.assertEqual(None,batch.multiply(3,4))
+            result=batch(async=True)
+            holder=FuncHolder()
+            result.then(holder.function).then(holder.function)
+            value=result.value
+            self.assertTrue(result.ready())
+            self.assertEqual([44,14],value)
+            self.assertEqual(2,holder.count)
 
     def testPyroTracebackNormal(self):
         with Pyro4.core.Proxy(self.objectUri) as p:

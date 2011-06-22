@@ -450,8 +450,8 @@ class RemoteMethodTests(unittest.TestCase):
             return self
         def __exit__(self, *args):
             pass
-        def _pyroAsync(self, callback=None):
-            return Pyro4.core._AsyncProxyAdapter(self, callback)
+        def _pyroAsync(self):
+            return Pyro4.core._AsyncProxyAdapter(self)
         def _pyroInvoke(self, methodname, vargs, kwargs, flags=0):
             if methodname=="pause_and_divide":
                 time.sleep(vargs[0])
@@ -557,14 +557,21 @@ class RemoteMethodTests(unittest.TestCase):
         self.assertTrue(result.ready())
 
     def testAsyncCallbackMethod(self):
-        def asyncCallback(value):
-            self.assertEqual(5,value)
-
+        class AsyncFunctionHolder(object):
+            asyncFunctionCount=0
+            def asyncFunction(self, value, amount=1):
+                self.asyncFunctionCount+=1
+                return value+amount
         proxy=self.AsyncProxyMock()
-        async=Pyro4.async(proxy, callback=asyncCallback)
+        async=Pyro4.async(proxy)
         result=async.pause_and_divide(1,10,2)  # returns immediately
-        self.assertFalse(result.ready())
-        # can't use result.value here because we're using a callback.
+        holder=AsyncFunctionHolder()
+        result.then(holder.asyncFunction, amount=2) \
+              .then(holder.asyncFunction, amount=4) \
+              .then(holder.asyncFunction)
+        value=result.value
+        self.assertEqual(10//2+2+4+1,value)
+        self.assertEqual(3,holder.asyncFunctionCount)
 
     def testAsyncMethodTimeout(self):
         proxy=self.AsyncProxyMock()

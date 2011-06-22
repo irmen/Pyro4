@@ -330,14 +330,15 @@ class Proxy(object):
     def _pyroBatch(self):
         return _BatchProxyAdapter(self)
 
+    def _pyroAsync(self):
+        return _AsyncProxyAdapter(self)
+
     def _pyroInvokeBatch(self, calls, oneway=False):
         flags=MessageFactory.FLAGS_BATCH
         if oneway:
             flags|=MessageFactory.FLAGS_ONEWAY
         return self._pyroInvoke("<batch>", calls, None, flags)
 
-    def _pyroAsync(self, callback=None):
-        return _AsyncProxyAdapter(self, callback)
 
 
 class _BatchedRemoteMethod(object):
@@ -382,11 +383,11 @@ class _BatchProxyAdapter(object):
             else:
                 yield result   # it is a regular result object, yield that and continue.
 
-    def __call__(self, oneway=False, async=False, callback=None):
+    def __call__(self, oneway=False, async=False):
         if oneway and async:
             raise errors.PyroError("async oneway calls make no sense")
         if async:
-            return _AsyncRemoteMethod(self, callback, "<asyncbatch>")()
+            return _AsyncRemoteMethod(self, "<asyncbatch>")()
         else:
             results=self.__proxy._pyroInvokeBatch(self.__calls, oneway)
             self.__calls=[]   # clear for re-use
@@ -401,41 +402,36 @@ class _BatchProxyAdapter(object):
 
 
 class _AsyncProxyAdapter(object):
-    def __init__(self, proxy, callback):
+    def __init__(self, proxy):
         self.__proxy=proxy
-        self.__callback=callback
 
     def __getattr__(self, name):
-        return _AsyncRemoteMethod(self.__proxy, self.__callback, name)
+        return _AsyncRemoteMethod(self.__proxy, name)
 
 
 class _AsyncRemoteMethod(object):
     """async method call abstraction (call will run in a background thread)"""
-    def __init__(self, proxy, callback, name):
+    def __init__(self, proxy, name):
         self.__proxy = proxy
         self.__name = name
-        self.__callback = callback
 
     def __getattr__(self, name):
-        return _AsyncRemoteMethod(self.__proxy, self.__callback, "%s.%s" % (self.__name, name))
+        return _AsyncRemoteMethod(self.__proxy, "%s.%s" % (self.__name, name))
 
     def __call__(self, *args, **kwargs):
         asyncresult=_AsyncResult()
-        thread=threadutil.Thread(target=self.__asynccall, args=(asyncresult, self.__callback, args, kwargs))
+        thread=threadutil.Thread(target=self.__asynccall, args=(asyncresult, args, kwargs))
         thread.setDaemon(True)
         thread.start()
         return asyncresult
 
-    def __asynccall(self, asyncresult, callback, args, kwargs):
+    def __asynccall(self, asyncresult, args, kwargs):
         try:
             # use a copy of the proxy otherwise calls would be serialized,
             # and use contextmanager to close the proxy after we're done
             with self.__proxy.__copy__() as proxy:
                 value = proxy._pyroInvoke(self.__name, args, kwargs)
-            if callback:
-                callback(value)  # only provide the result value through the callback
-            else:
-                asyncresult.value=value
+            asyncresult.value=value
         except:
             log.warn("exception occurred in async call, ignored")
             asyncresult.value=_ExceptionWrapper(sys.exc_info()[1])
@@ -444,6 +440,8 @@ class _AsyncRemoteMethod(object):
 class _AsyncResult(object):
     def __init__(self):
         self.__ready=threadutil.Event()
+        self.callchain=[]
+        self.valueLock=threadutil.Lock()
     def ready(self, timeout=None):
         if timeout is None:
             return self.__ready.isSet()
@@ -460,9 +458,22 @@ class _AsyncResult(object):
         else:
             return self.__value
     def set_value(self, value):
-        self.__value=value
-        self.__ready.set()
+        with self.valueLock:
+            self.__value=value
+            for call, kwargs in self.callchain:
+                self.__value=call(self.__value, **kwargs)
+            self.callchain=[]
+            self.__ready.set()
     value=property(get_value, set_value)
+    def then(self, call, **kwargs):
+        if self.__ready.isSet():
+            # value is already known, we need to process it immediately (can't use the callchain anymore)
+            self.__value=call(self.__value, **kwargs)
+        else:
+            # add the call to the callchain, it will be processed later when the result arrives
+            with self.valueLock:
+                self.callchain.append((call,kwargs))
+        return self
 
 
 class _ExceptionWrapper(object):
@@ -480,12 +491,12 @@ class _ExceptionWrapper(object):
 
 
 def batch(proxy):
-    """convenience method to get a batch proxy"""
+    """convenience method to get a batch proxy adapter"""
     return proxy._pyroBatch()
 
-def async(proxy, callback=None):
-    """convenience method to get an async proxy"""
-    return proxy._pyroAsync(callback)
+def async(proxy):
+    """convenience method to get an async proxy adapter"""
+    return proxy._pyroAsync()
 
 
 class MessageFactory(object):
