@@ -139,8 +139,9 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
                             except socket.error:
                                 pass
                             else:
-                                poll.unregister(fn)
-                                del fileno2connection[fn]
+                                if fn in fileno2connection:
+                                    poll.unregister(fn)
+                                    del fileno2connection[fn]
                                 conn.close()
         except KeyboardInterrupt:
             log.debug("stopping on break signal")
