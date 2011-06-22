@@ -184,7 +184,7 @@ class ServerTestsOnce(unittest.TestCase):
             begin=time.time()
             results=batch(oneway=True)
             duration=time.time()-begin
-            self.assertLess(duration,0.1,"oneway batch with delay should return almost immediately")
+            self.assertTrue(duration<0.1,"oneway batch with delay should return almost immediately")
             self.assertEqual(None,results)
 
     def testBatchAsync(self):
@@ -196,7 +196,7 @@ class ServerTestsOnce(unittest.TestCase):
             begin=time.time()
             asyncresult=batch(async=True)
             duration=time.time()-begin
-            self.assertLess(duration,0.1,"async batch with delay should return almost immediately")
+            self.assertTrue(duration<0.1,"async batch with delay should return almost immediately")
             results=asyncresult.value
             self.assertEqual(42,next(results))
             self.assertEqual("slept 1 seconds",next(results))
