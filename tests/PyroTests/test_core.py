@@ -10,6 +10,7 @@ import unittest
 import copy
 import logging
 import os, sys, time
+import warnings
 import Pyro4.configuration
 import Pyro4.core
 import Pyro4.errors
@@ -29,6 +30,8 @@ class Thing(object):
 
 
 class CoreTestsWithoutHmac(unittest.TestCase):
+    def setUp(self):
+        warnings.simplefilter("ignore")
     def testProxy(self):
         Pyro4.config.HMAC_KEY=None
         # check that proxy without hmac is possible
@@ -458,6 +461,11 @@ class RemoteMethodTests(unittest.TestCase):
                 return vargs[1]//vargs[2]
             else:
                 raise NotImplementedError(methodname)
+
+    def setUp(self):
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+    def tearDown(self):
+        Pyro4.config.HMAC_KEY=None
 
     def testRemoteMethod(self):
         class ProxyMock(object):

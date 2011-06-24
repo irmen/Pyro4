@@ -47,8 +47,10 @@ class BCSetupTests(unittest.TestCase):
 
 
 class NameServerNotRunningTests(unittest.TestCase):
-	def testLocate(self):
-		self.assertRaises(NamingError, Pyro4.naming.locateNS)
+    def testLocate(self):
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        self.assertRaises(NamingError, Pyro4.naming.locateNS)
+        Pyro4.config.HMAC_KEY=None
 
 
 class NameServerTests(unittest.TestCase):
@@ -196,6 +198,37 @@ class NameServerTests(unittest.TestCase):
             self.assertRaises(AttributeError, ns.namespace.keys)
             self.assertTrue(ns._pyroConnection is not None)
         self.assertTrue(ns._pyroConnection is None)
+
+
+class NameServerTests0000(unittest.TestCase):
+    def setUp(self):
+        Pyro4.config.POLLTIMEOUT=0.1
+        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host="", port=0, bcport=0)
+        self.assertEqual("0.0.0.0", self.nsUri.host, "for hostname \"\" the resulting ip must be 0.0.0.0")
+        self.assertTrue(self.bcserver is not None,"expected a BC server to be running")
+        self.bcserver.runInThread()
+        self.old_bcPort=Pyro4.config.NS_BCPORT
+        self.old_nsPort=Pyro4.config.NS_PORT
+        self.old_nsHost=Pyro4.config.NS_HOST
+        Pyro4.config.NS_PORT=self.nsUri.port
+        Pyro4.config.NS_HOST=self.nsUri.host
+        Pyro4.config.NS_BCPORT=self.bcserver.getPort()
+    def tearDown(self):
+        time.sleep(0.01)
+        self.nameserver.shutdown()
+        self.bcserver.close()
+        Pyro4.config.NS_HOST=self.old_nsHost
+        Pyro4.config.NS_PORT=self.old_nsPort
+        Pyro4.config.NS_BCPORT=self.old_bcPort
+        Pyro4.config.HMAC_KEY=None
+
+    def testBCLookup0000(self):
+        ns=Pyro4.naming.locateNS()  # broadcast lookup
+        self.assertTrue(isinstance(ns, Pyro4.core.Proxy))
+        self.assertNotEqual("0.0.0.0", ns._pyroUri.host, "returned location must not be 0.0.0.0 when running on 0.0.0.0")
+        ns._pyroRelease()
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

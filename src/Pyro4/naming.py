@@ -7,7 +7,7 @@ irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
 
 from __future__ import with_statement
 import re, logging, socket, sys
-from Pyro4 import constants, core
+from Pyro4 import constants, core, socketutil
 from Pyro4.threadutil import RLock, Thread
 from Pyro4.errors import PyroError, NamingError
 import Pyro4
@@ -142,7 +142,7 @@ class BroadcastServer(object):
         REQUEST_NSURI="GET_NSURI"
 
     def __init__(self, nsUri, bchost=None, bcport=None):
-        self.nsUri=str(nsUri)
+        self.nsUri=nsUri
         if bcport is None:
             bcport=Pyro4.config.NS_BCPORT
         if bchost is None:
@@ -183,8 +183,16 @@ class BroadcastServer(object):
         try:
             data, addr=self.sock.recvfrom(100)
             if data==self.REQUEST_NSURI:
-                log.debug("responding to broadcast request from %s", addr)
-                responsedata=self.nsUri
+                responsedata=core.URI(self.nsUri)
+                if responsedata.host=="0.0.0.0":
+                    # replace INADDR_ANY address by the interface IP adress that connects to the requesting client
+                    try:
+                        interface_ip=socketutil.getInterfaceAddress(addr[0])
+                        responsedata.host=interface_ip
+                    except socket.error:
+                        pass
+                log.debug("responding to broadcast request from %s: interface %s", addr[0], responsedata.host)
+                responsedata=str(responsedata)
                 if sys.version_info>=(3, 0):
                     responsedata=bytes(responsedata, "iso-8859-1")
                 self.sock.sendto(responsedata, 0, addr)
@@ -262,7 +270,8 @@ def locateNS(host=None, port=None):
                 sock.sendto(BroadcastServer.REQUEST_NSURI, 0, ("<broadcast>", port))
                 data, _=sock.recvfrom(100)
                 sock.close()
-                data=data.decode("iso-8859-1")
+                if sys.version_info>=(3,0):
+                    data=data.decode("iso-8859-1")
                 log.debug("located NS: %s", data)
                 return core.Proxy(data)
             except socket.timeout:
@@ -313,7 +322,7 @@ def main(args):
     parser=OptionParser()
     parser.add_option("-n", "--host", dest="host", help="hostname to bind server on")
     parser.add_option("-p", "--port", dest="port", type="int", help="port to bind server on (0=random)")
-    parser.add_option("", "--bchost", dest="bchost", help="hostname to bind broadcast server on")
+    parser.add_option("", "--bchost", dest="bchost", help="hostname to bind broadcast server on (default is \"\")")
     parser.add_option("", "--bcport", dest="bcport", type="int",
                       help="port to bind broadcast server on (0=random)")
     parser.add_option("-x", "--nobc", dest="enablebc", action="store_false", default=True,

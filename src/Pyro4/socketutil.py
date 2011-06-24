@@ -35,10 +35,16 @@ def getMyIpAddress(hostname=None, workaround127=False):
     as being localhost (this is often the case on Linux)"""
     ip=getIpAddress(hostname)
     if ip.startswith("127.") and workaround127:
-        s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("4.2.2.2", 53))   # 'abuse' a level 3 DNS server
-        ip=s.getsockname()[0]
-        s.close()
+        ip=getInterfaceAddress("4.2.2.2")   # 'abuse' a level 3 DNS server
+    return ip
+
+
+def getInterfaceAddress(peer_ip_address):
+    """tries to find the ip address of the interface that connects to a given host"""
+    s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect((peer_ip_address, 53))   # 53=dns
+    ip=s.getsockname()[0]
+    s.close()
     return ip
 
 

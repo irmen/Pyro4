@@ -781,12 +781,12 @@ class Daemon(object):
                 conn.send(msg)
         except Exception:
             xt,xv=sys.exc_info()[0:2]
-            log.debug("Exception occurred while handling request: %s", xv)
+            log.debug("Exception occurred while handling request: %r", xv)
             if not flags & MessageFactory.FLAGS_ONEWAY:
                 # only return the error to the client if it wasn't a oneway call
                 tblines=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
                 self.sendExceptionResponse(conn, seq, xv, tblines)
-            if isCallback or xt in (errors.CommunicationError, errors.SecurityError):
+            if isCallback or isinstance(xv, (errors.CommunicationError, errors.SecurityError)):
                 raise       # re-raise if flagged as callback, communication or security error.
 
     def sendExceptionResponse(self, connection, seq, exc_value, tbinfo):
