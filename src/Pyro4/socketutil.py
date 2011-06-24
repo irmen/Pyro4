@@ -203,38 +203,29 @@ def createBroadcastSocket(bind=None, reuseaddr=True, timeout=None):
         else:
             sock.settimeout(timeout)
     if bind:
-        if bind[0]:
-            hosts=[bind[0]]
+        host,port=bind
+        host=host or ""
+        if port==0:
+            bindOnUnusedPort(sock, host)
         else:
-            hosts=["<broadcast>", "", "255.255.255.255"]
-        for host in hosts:
-            try:
-                if bind[1]==0:
-                    bindOnUnusedPort(sock, host)
-                else:
-                    sock.bind((host, bind[1]))
-                return sock
-            except socket.error:
-                continue
-        sock.close()
-        raise CommunicationError("cannot bind broadcast socket")
+            sock.bind((host,port))
     return sock
 
 
 def setReuseAddr(sock):
-    """sets the SO_REUSEADDR option on the socket."""
+    """sets the SO_REUSEADDR option on the socket, if possible."""
     try:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     except Exception:
-        log.info("cannot set SO_REUSEADDR")
+        pass
 
 
 def setKeepalive(sock):
-    """sets the SO_KEEPALIVE option on the socket."""
+    """sets the SO_KEEPALIVE option on the socket, if possible."""
     try:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     except Exception:
-        log.info("cannot set SO_KEEPALIVE")
+        pass
 
 # set socket to not inherit in subprocess
 try:
