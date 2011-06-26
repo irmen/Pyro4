@@ -131,17 +131,21 @@ class ThreadPool(object):
 
 class SocketServer_Threadpool(object):
     """transport server for socket connections, worker thread pool version."""
-    def init(self, daemon, host, port):
+    def init(self, daemon, host, port, unixsocket=None):
         log.info("starting thread pool socketserver")
         self.sock=None
-        self.sock=socketutil.createSocket(bind=(host, port), timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
+        bind_location=unixsocket if unixsocket else (host,port)
+        self.sock=socketutil.createSocket(bind=bind_location, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
         self._socketaddr=self.sock.getsockname()
         if self._socketaddr[0].startswith("127."):
             if host is None or host.lower()!="localhost" and not host.startswith("127."):
                 log.warn("weird DNS setup: %s resolves to localhost (127.x.x.x)", host)
-        host=host or self._socketaddr[0]
-        port=port or self._socketaddr[1]
-        self.locationStr="%s:%d" % (host, port)
+        if unixsocket:
+            self.locationStr="./u:"+unixsocket
+        else:
+            host=host or self._socketaddr[0]
+            port=port or self._socketaddr[1]
+            self.locationStr="%s:%d" % (host, port)
         self.threadpool=ThreadPool(self, daemon)
         self.workqueue=queue.Queue()
         for _ in range(Pyro4.config.THREADPOOL_MINTHREADS):
@@ -189,7 +193,12 @@ class SocketServer_Threadpool(object):
         log.debug("closing threadpool server")
         if self.sock:
             try:
+                sockname=self.sock.getsockname()
                 self.sock.close()
+                if type(sockname) is str:
+                    # it was a unix domain socket, remove it from the filesystem
+                    if os.path.exists(sockname):
+                        os.remove(sockname)
             except Exception:
                 pass
             self.sock=None

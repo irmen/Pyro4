@@ -268,13 +268,14 @@ class Proxy(object):
         """Connects this proxy to the remote Pyro daemon. Does connection handshake."""
         from Pyro4.naming import resolve  # don't import this globally because of cyclic dependancy
         uri=resolve(self._pyroUri)
-        if uri.host and uri.port:
-            # socket connection
+        if (uri.host and uri.port) or uri.sockname:
+            # socket connection (normal or unix domain socket)
             conn=None
             log.debug("connecting to %s", uri)
+            connect_location=uri.sockname if uri.sockname else (uri.host, uri.port)
             try:
                 with self.__pyroLock:
-                    sock=socketutil.createSocket(connect=(uri.host, uri.port), timeout=self.__pyroTimeout)
+                    sock=socketutil.createSocket(connect=connect_location, timeout=self.__pyroTimeout)
                     conn=socketutil.SocketConnection(sock, uri.object)
                     # Do handshake. For now, no need to send anything.
                     msgType, flags, seq, data = MessageFactory.getMessage(conn, None)
@@ -608,7 +609,7 @@ class Daemon(object):
     Pyro daemon. Contains server side logic and dispatches incoming remote method calls
     to the appropriate objects.
     """
-    def __init__(self, host=None, port=0):
+    def __init__(self, host=None, port=0, unixsocket=None):
         _check_hmac()  # check if hmac secret key is set
         if host is None:
             host=Pyro4.config.HOST
@@ -625,7 +626,7 @@ class Daemon(object):
                 self.transportServer=SocketServer_Select()
         else:
             raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
-        self.transportServer.init(self, host, port)
+        self.transportServer.init(self, host, port, unixsocket)
         self.locationStr=self.transportServer.locationStr
         log.debug("created daemon on %s", self.locationStr)
         self.serializer=util.Serializer()
