@@ -69,11 +69,11 @@ class URI(object):
             return
         if location.startswith("./p:"):
             self.pipename=location[4:]
-            if (not self.pipename) or ':' in self.pipename or '/' in self.pipename:
+            if (not self.pipename) or ':' in self.pipename:
                 raise errors.PyroError("invalid uri (location)")
         elif location.startswith("./u:"):
             self.sockname=location[4:]
-            if (not self.sockname) or ':' in self.sockname or '/' in self.sockname:
+            if (not self.sockname) or ':' in self.sockname:
                 raise errors.PyroError("invalid uri (location)")
         else:
             self.host, _, self.port=location.partition(":")
