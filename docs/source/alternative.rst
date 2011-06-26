@@ -45,3 +45,6 @@ of Pypy work fine with Pyro. There are a lot of problems on Windows however whic
 due to the fact that the windows build of Pypy is quite old and misses a lot of bug fixes). So *don't use
 Pypy on Windows with Pyro*.
 
+There is one problem with running the unit tests on Pypy: one of the tests freezes and Pypy cannot complete
+the test suite. I hope to fix this in the near future (or maybe it's a bug in Pypy?)
+
