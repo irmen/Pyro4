@@ -48,7 +48,7 @@ class TestSocketutil(unittest.TestCase):
         self.assertTrue(port1>0)
         self.assertNotEqual(port1,port2)
         sockname=sock1.getsockname()
-        self.assertEquals(("127.0.0.1",port1), sockname)
+        self.assertEqual(("127.0.0.1",port1), sockname)
         sock1.close()
         sock2.close()
 
@@ -87,8 +87,7 @@ class TestSocketutil(unittest.TestCase):
             self.assertEqual(SOCKNAME,s.getsockname())
             s.close()
             if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
-            self.assertRaises(ZeroDivisionError, SU.createSocket, bind=SOCKNAME, connect=SOCKNAME)
-            if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
+            self.assertRaises(ValueError, SU.createSocket, bind=SOCKNAME, connect=SOCKNAME)
 
     def testSend(self):
         ss=SU.createSocket(bind=("localhost",0))
