@@ -63,7 +63,7 @@ class DaemonTests(unittest.TestCase):
                 # check the string representations
                 self.assertEqual("<Pyro Daemon on "+locationstr+">",str(d))
                 self.assertEqual(SOCKNAME,d.sock.getsockname())
-                self.assertEqual(AF_UNIX,d.sock.family)
+                self.assertEqual(socket.AF_UNIX,d.sock.family)
 
     def testServertypeThread(self):
         old_servertype=Pyro4.config.SERVERTYPE
