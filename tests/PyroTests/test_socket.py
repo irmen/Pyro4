@@ -104,6 +104,23 @@ class TestSocketutil(unittest.TestCase):
         ss.close()
         cs.close()
 
+    def testSendUnix(self):
+        if hasattr(socket,"AF_UNIX"):
+            SOCKNAME="test_unixsocket"
+            ss=SU.createSocket(bind=SOCKNAME)
+            cs=SU.createSocket(connect=SOCKNAME)
+            SU.sendData(cs,tobytes("foobar!"*10))
+            cs.shutdown(socket.SHUT_WR)
+            a=ss.accept()
+            data=SU.receiveData(a[0], 5)
+            self.assertEqual(tobytes("fooba"),data)
+            data=SU.receiveData(a[0], 5)
+            self.assertEqual(tobytes("r!foo"),data)
+            a[0].close()
+            ss.close()
+            cs.close()
+            if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
+
     def testBroadcast(self):
         ss=SU.createBroadcastSocket((None, 0))
         port=ss.getsockname()[1]
