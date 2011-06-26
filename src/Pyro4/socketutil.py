@@ -165,14 +165,19 @@ def sendData(sock, data):
 
 
 def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeout=None, noinherit=False):
-    """Create a socket. Default options are keepalives and reuseaddr."""
+    """
+    Create a socket. Default options are keepalives and reuseaddr.
+    If 'bind' is a string, it is assumed a unix domain socket is requested.
+    Otherwise, a normal tcp/ip socket is used.
+    """
     if timeout==0:
         timeout=None
     if bind and connect:
         raise ValueError("bind and connect cannot both be specified at the same time")
-    sock=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    family=socket.AF_UNIX if type(bind) is str else socket.AF_INET
+    sock=socket.socket(family, socket.SOCK_STREAM)
     if bind:
-        if bind[1]==0:
+        if type(bind) is tuple and bind[1]==0:
             bindOnUnusedPort(sock, bind[0])
         else:
             sock.bind(bind)

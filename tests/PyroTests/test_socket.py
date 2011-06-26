@@ -51,6 +51,7 @@ class TestSocketutil(unittest.TestCase):
         self.assertEquals(("127.0.0.1",port1), sockname)
         sock1.close()
         sock2.close()
+
     def testCreateUnboundSockets(self):
         s=SU.createSocket()
         bs=SU.createBroadcastSocket()
@@ -67,6 +68,7 @@ class TestSocketutil(unittest.TestCase):
             pass
         s.close()
         bs.close()
+
     def testCreateBoundSockets(self):
         s=SU.createSocket(bind=('localhost',0))
         bs=SU.createBroadcastSocket(bind=('localhost',0))
@@ -76,6 +78,18 @@ class TestSocketutil(unittest.TestCase):
         bs.close()
         self.assertRaises(ValueError, SU.createSocket, bind=('localhost',12345), connect=('localhost',1234))
             
+    def testCreateBoundUnixSockets(self):
+        if hasattr(socket,"AF_UNIX"):
+            SOCKNAME="test_unixsocket"
+            if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
+            s=SU.createSocket(bind=SOCKNAME)
+            self.assertEqual(socket.AF_UNIX, s.family)
+            self.assertEqual(SOCKNAME,s.getsockname())
+            s.close()
+            if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
+            self.assertRaises(ZeroDivisionError, SU.createSocket, bind=SOCKNAME, connect=SOCKNAME)
+            if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
+
     def testSend(self):
         ss=SU.createSocket(bind=("localhost",0))
         port=ss.getsockname()[1]
@@ -90,6 +104,7 @@ class TestSocketutil(unittest.TestCase):
         a[0].close()
         ss.close()
         cs.close()
+
     def testBroadcast(self):
         ss=SU.createBroadcastSocket((None, 0))
         port=ss.getsockname()[1]

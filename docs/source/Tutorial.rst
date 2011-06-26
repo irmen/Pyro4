@@ -437,7 +437,7 @@ call taking place inside Pyro...
 .. _stockmarket-simulator:
 
 Building a Stock market simulator
-================================
+=================================
 
 .. hint:: The code of this part of the tutorial can be found in the :file:`examples/stockquotes` directory.
 
