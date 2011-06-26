@@ -9,7 +9,7 @@ Pyro - Python Remote Objects - |version|
 What is Pyro?
 -------------
 It is a library that enables you to build applications in which
-objects can talk to eachother over the network, with minimal programming effort.
+objects can talk to each other over the network, with minimal programming effort.
 You can just use normal Python method calls, with almost every possible parameter
 and return value type, and Pyro takes care of locating the right object on the right
 computer to execute the method. It is designed to be very easy to use, and to 

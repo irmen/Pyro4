@@ -3,7 +3,7 @@ Tutorial
 
 This tutorial will explain a couple of basic Pyro concepts,
 a little bit about the name server, and you'll learn to write a simple Pyro application.
-You'll do this by writing a warehouse system and a stockmarket simulator,
+You'll do this by writing a warehouse system and a stock market simulator,
 that demonstrate some key Pyro techniques.
 
 Warm-up
@@ -40,7 +40,7 @@ Pyro enables code to call methods on objects even if that object is running on a
 
 Pyro is mainly used as a library in your code but it also has several supporting command line tools [#commandline]_.
 We won't explain every one of them here as you will only need the "name server" for this tutorial.
-The name server is a utility that provides a phonebook for Pyro applications: you use it to look up a "number" by a "name". 
+The name server is a utility that provides a phone book for Pyro applications: you use it to look up a "number" by a "name".
 The name in Pyro's case is the logical name of a remote object. The number is the exact location where Pyro can contact the object.
 We will see later what both actually look like, and why having a name server can be useful.
 
@@ -85,7 +85,7 @@ in the background for the rest of this tutorial.
 Interacting with the name server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-There's another command line tool that let you interact with the name server: "nsc" (name server controltool).
+There's another command line tool that let you interact with the name server: "nsc" (name server control tool).
 You can use it, amongst other things, to see what all known registered objects in the naming server are.
 Let's do that right now. Type:
 
@@ -118,7 +118,7 @@ a broadcast responder that will respond "Yeah hi I'm here").  So in many cases y
 to be able to discover the name server. If nobody answers though, Pyro tries the configured default or custom location.
 If still nobody answers it prints a sad message and exits.
 However if it found the name server, it is then possible to talk to it and get the location of any other registered object.
-. This means that you won't have to hardcode any object locations in your code,
+. This means that you won't have to hard code any object locations in your code,
 and that the code is capable of dynamically discovering everything at runtime.
 
 *But enough of that.* We need to start looking at how to actually write some code ourselves that uses Pyro!
@@ -129,11 +129,11 @@ Building a Warehouse
 .. hint:: All code of this part of the tutorial can be found in the :file:`examples/warehouse` directory.
 
 You'll build build a simple warehouse that stores items, and that everyone can visit.
-Visitors can store items and retrieve other items from the wharehouse (if they've been stored there).
+Visitors can store items and retrieve other items from the warehouse (if they've been stored there).
 
-In this tutorial you'll first write a normal Python program that more or less implements the complete warehous system,
+In this tutorial you'll first write a normal Python program that more or less implements the complete warehouse system,
 but in vanilla Python code. After that you'll add Pyro support to it, to make it a distributed warehouse system,
-where you can visit the central warehouse from many different pc's.
+where you can visit the central warehouse from many different computers.
 
 phase 1: a simple prototype
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -229,7 +229,7 @@ phase 2: first Pyro version
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 That wasn't very exciting but you now have working code for the basics of the warehouse system.
 Now you'll use Pyro to turn the warehouse into a standalone component, that people from other
-pc's can visit. You'll need to add a couple of lines to the :file:`warehouse.py` file so that it will
+computers can visit. You'll need to add a couple of lines to the :file:`warehouse.py` file so that it will
 start a Pyro server for the warehouse object. The easiest way to do this is to create the object
 that you want to make available as Pyro object, and register it with a 'Pyro daemon' (the server that
 listens for and processes incoming remote method calls)::
@@ -345,7 +345,7 @@ but is a bit cumbersome because you need to copy-paste the warehouse URI all the
 You will simplify it a bit in this phase by using the Pyro name server.
 Also, you will use the Pyro excepthook to print a nicer exception message
 if anything goes wrong (by taking something from the warehouse that is not present! Try that now with the code
-from phase 2. You will get a ``ValueError: list.remove(x): x not in list`` but with a not so useful stacktrace).
+from phase 2. You will get a ``ValueError: list.remove(x): x not in list`` but with a not so useful stack trace).
 
 .. Note::
   Once again you can leave code of the ``Warehouse`` and ``Person`` classes **unchanged**. As you can see,
@@ -360,12 +360,12 @@ This tells Pyro to use a name server to register the objects in.
 You will learn about another way of starting a server in :ref:`stockmarket-simulator`).
 
 In :file:`visit.py` remove the input statement that asks for the warehouse uri, and change the way the warehouse proxy
-is created. Becase you are now using a name server you can ask Pyro to locate the warehouse object automatically::
+is created. Because you are now using a name server you can ask Pyro to locate the warehouse object automatically::
 
     warehouse=Pyro4.Proxy("PYRONAME:example.warehouse")
 
 Finally, install the ``Pyro4.util.excepthook`` as excepthook. You'll soon see what this does to the exceptions and
-stacktraces your program produces when something goes wrong with a Pyro object.
+stack traces your program produces when something goes wrong with a Pyro object.
 So the code should look something like this (:file:`visit.py`)::
 
     # This is the code that visits the warehouse.
@@ -436,7 +436,7 @@ call taking place inside Pyro...
 
 .. _stockmarket-simulator:
 
-Building a Stockmarket simulator
+Building a Stock market simulator
 ================================
 
 .. hint:: The code of this part of the tutorial can be found in the :file:`examples/stockquotes` directory.
@@ -447,7 +447,7 @@ quotes. There is an aggregator that combines the quotes from all stock
 markets. Finally there are multiple viewers that can register themselves
 by the aggregator and let it know what stock symbols they're interested in.
 The viewers will then receive near-real-time stock quote updates for the
-symbols they selected.  (Everything is fictional, ofcourse)::
+symbols they selected.  (Everything is fictional, of course)::
 
     Stockmarket  ->-----\                /----> Viewer
     Stockmarket  ->------>  Aggregator ->-----> Viewer
@@ -458,7 +458,7 @@ phase 1: simple prototype
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 *Simple prototype code where everything is running in a single process.
 Main.py creates all object, connects them together, and contains a loop
-that drives the stockmarket quote generation.
+that drives the stock market quote generation.
 This code is fully operational but contains no Pyro code at all and
 shows what the system is going to look like later on.*
 
@@ -467,7 +467,7 @@ phase 2: separation
 ^^^^^^^^^^^^^^^^^^^
 *Still no Pyro code, but the components are now more autonomous.
 They each have a main function that starts up the component and connects
-it to the other component(s). As the Stockmarket is the source of the
+it to the other component(s). As the Stock market is the source of the
 data, it now contains a thread that produces stock quote changes.
 Main.py now only starts the various components and then sits to wait
 for an exit signal.
@@ -479,9 +479,9 @@ phase 3: Pyro version
 ^^^^^^^^^^^^^^^^^^^^^
 *The components are now fully distributed and we used Pyro to make them
 talk to each other. There is no main.py anymore because you have to start
-every component by itself: (in seperate console windows for instance)*
+every component by itself: (in separate console windows for instance)*
 
 - start a Pyro name server (python -m Pyro4.naming)
-- start the stockmarket
+- start the stock market
 - start the aggregator
 - start one or more of the viewers.

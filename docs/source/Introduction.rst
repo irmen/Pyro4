@@ -9,13 +9,13 @@ About Pyro
 Here's a quick overview of Pyro's features:
 
 - written in 100% Python so extremely portable.
-- support for all Python datatypes that are pickleable.
+- support for all Python data types that are pickleable.
 - runs on normal Python 2.x, Python **3.x**, IronPython, Jython, Pypy.
 - works between systems on different architectures and operating systems (64-bit, 32-bit, Intel, PowerPC...)
 - designed to be very easy to use and get out of your way as much as possible.
 - name server that keeps track of your object's actual locations so you can move them around transparently.
 - support for automatic reconnection to servers in case of interruptions.
-- automatic proxying of Pyro objects which means you can return references to remote objects just as if it were normal objects.
+- automatic proxy-ing of Pyro objects which means you can return references to remote objects just as if it were normal objects.
 - one-way invocations for enhanced performance.
 - batched invocations for greatly enhanced performance of many calls on the same object.
 - you can define timeouts on network communications to prevent a call blocking forever if there's something wrong.
@@ -33,7 +33,7 @@ Pyro's history
 Pyro was started in 1998, more than ten years ago, when remote method invocation technology such as Java's RMI
 and CORBA were quite popular. I wanted something like that in Python and there was nothing available, so I decided
 to write my own. Over the years it slowly gained features till it reached version 3.10 or so.
-At that point it was clear that the codebase had become quite ancient and couldn't reliably support any new features,
+At that point it was clear that the code base had become quite ancient and couldn't reliably support any new features,
 so Pyro4 was born in early 2010, written from scratch. After a couple of versions Pyro4 became stable enough to be considered
 the new 'main' Pyro version to be preferred over Pyro 3.x (unless you have specific requirements that force you
 to stick with Pyro3). See :doc:`upgrading` for more information on the different versions and how to upgrade old code to Pyro4.
@@ -123,7 +123,7 @@ With a name server
 ^^^^^^^^^^^^^^^^^^
 While the example above works, it could become tiresome to work with object uris like that.
 There's already a big issue, *how is the client supposed to get the uri, if we're not copy-pasting it?*
-Thankfully Pyro provides a *name server* that works like an automatic phonebook.
+Thankfully Pyro provides a *name server* that works like an automatic phone book.
 You can name your objects using logical names and use the name server to search for the
 corresponding uri.
 
