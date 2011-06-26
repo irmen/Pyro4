@@ -200,8 +200,6 @@ class CoreTests(unittest.TestCase):
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYRONAME:objname@nameserver:7766:bogus")
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "FOOBAR:")
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "FOOBAR:objid@hostname:7766")
-        self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYRO:12345@./p:pipename/slash")
-        self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYRO:12345@./u:sockname/slash")
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYRO:12345@./p:pipename:9999")
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYRO:12345@./u:sockname:9999")
 

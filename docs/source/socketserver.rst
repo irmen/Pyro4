@@ -7,12 +7,14 @@ The various servers in Pyro4.socketserver implement this.
 
 METHODS:
 
-    def init(self, daemon, host, port):
+    def init(self, daemon, host, port, unixsocket=None):
         Must bind the server on the given host and port (can be None).
         daemon is the object that will receive Pyro invocation calls (see below).
         When host or port is None, the server can select something appropriate itself.
         If possible, use Pyro4.config.COMMTIMEOUT on the sockets.
         Set self.sock to the daemon server socket.
+        If unixsocket is given the name of a unix domain socket, that type of socket
+        will be created instead of a regular tcp/ip socket.
 
     def loop(self, loopCondition):
         Start an endless loop that serves Pyro requests.
@@ -42,3 +44,4 @@ PROPERTIES:
         must be a string of the form "serverhostname:serverport"
         can be different from the host:port arguments passed to initServer.
         because either of those can be None and the server will choose something appropriate.
+        If the socket is a unix domain socket, it should be of the form "./u:socketname".

@@ -6,7 +6,7 @@ irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
 """
 
 from __future__ import with_statement
-import os, time
+import os, time, socket
 import unittest
 import Pyro4.core
 import Pyro4.constants
@@ -52,6 +52,18 @@ class DaemonTests(unittest.TestCase):
                 self.fail("should not succeed to call unexposed method")
             except AttributeError:
                 pass
+
+    def testDaemonUnixSocket(self):
+        if hasattr(socket,"AF_UNIX"):
+            SOCKNAME="test_unixsocket"
+            with Pyro4.core.Daemon(unixsocket=SOCKNAME) as d:
+                locationstr="./u:"+SOCKNAME
+                self.assertEqual(locationstr, d.locationStr)
+                self.assertEqual("PYRO:"+Pyro4.constants.DAEMON_NAME+"@"+locationstr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
+                # check the string representations
+                self.assertEqual("<Pyro Daemon on "+locationstr+">",str(d))
+                self.assertEqual(SOCKNAME,d.sock.getsockname())
+                self.assertEqual(AF_UNIX,d.sock.family)
 
     def testServertypeThread(self):
         old_servertype=Pyro4.config.SERVERTYPE

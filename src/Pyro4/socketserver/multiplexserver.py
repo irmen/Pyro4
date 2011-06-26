@@ -84,7 +84,11 @@ class MultiplexedSocketServerBase(object):
     def close(self):
         log.debug("closing socketserver")
         if self.sock:
-            sockname=self.sock.getsockname()
+            sockname=None
+            try:
+                sockname=self.sock.getsockname()
+            except socket.error:
+                pass
             self.sock.close()
             if type(sockname) is str:
                 # it was a unix domain socket, remove it from the filesystem
