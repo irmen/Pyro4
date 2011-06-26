@@ -31,14 +31,13 @@ class URI(object):
     PYRO uri format: PYRO:objectid@location
         where location is one of:
           hostname:port  (tcp/ip socket on given port)
-          ./p:pipename   (named pipe on localhost)
           ./u:sockname   (unix domain socket on localhost)
 
     MAGIC URI format for simple name resolution using Name server:
       PYRONAME:objectname[@location]  (optional name server location, can also omit location port)
     """
     uriRegEx=re.compile(r"(?P<protocol>PYRO[A-Z]*):(?P<object>\S+?)(@(?P<location>\S+))?$")
-    __slots__=("protocol", "object", "pipename", "sockname", "host", "port", "object")
+    __slots__=("protocol", "object", "sockname", "host", "port", "object")
 
     def __init__(self, uri):
         if isinstance(uri, URI):
@@ -47,7 +46,7 @@ class URI(object):
             return
         if not isinstance(uri, basestring):
             raise TypeError("uri parameter object is of wrong type")
-        self.pipename=self.sockname=self.host=self.port=None
+        self.sockname=self.host=self.port=None
         match=self.uriRegEx.match(uri)
         if not match:
             raise errors.PyroError("invalid uri")
@@ -67,11 +66,7 @@ class URI(object):
     def _parseLocation(self, location, defaultPort):
         if not location:
             return
-        if location.startswith("./p:"):
-            self.pipename=location[4:]
-            if (not self.pipename) or ':' in self.pipename:
-                raise errors.PyroError("invalid uri (location)")
-        elif location.startswith("./u:"):
+        if location.startswith("./u:"):
             self.sockname=location[4:]
             if (not self.sockname) or ':' in self.sockname:
                 raise errors.PyroError("invalid uri (location)")
@@ -85,8 +80,8 @@ class URI(object):
                 raise errors.PyroError("invalid uri (port)")
 
     @staticmethod
-    def isPipeOrUnixsockLocation(location):
-        return location.startswith("./p:") or location.startswith("./u:")
+    def isUnixsockLocation(location):
+        return location.startswith("./u:")
 
     @property
     def location(self):
@@ -94,8 +89,6 @@ class URI(object):
             return "%s:%d" % (self.host, self.port)
         elif self.sockname:
             return "./u:"+self.sockname
-        elif self.pipename:
-            return "./p:"+self.pipename
         else:
             return None
 
@@ -110,17 +103,17 @@ class URI(object):
         return self.asString()
 
     def __eq__(self, other):
-        return (self.protocol, self.object, self.pipename, self.sockname, self.host, self.port) \
-                == (other.protocol, other.object, other.pipename, other.sockname, other.host, other.port)
+        return (self.protocol, self.object, self.sockname, self.host, self.port) \
+                == (other.protocol, other.object, other.sockname, other.host, other.port)
     __hash__=object.__hash__
     # note: getstate/setstate are not needed if we use pickle protocol 2,
     # but this way it helps pickle to make the representation smaller by omitting all attribute names.
 
     def __getstate__(self):
-        return self.protocol, self.object, self.pipename, self.sockname, self.host, self.port
+        return self.protocol, self.object, self.sockname, self.host, self.port
 
     def __setstate__(self, state):
-        self.protocol, self.object, self.pipename, self.sockname, self.host, self.port = state
+        self.protocol, self.object, self.sockname, self.host, self.port = state
 
 
 class _RemoteMethod(object):
@@ -268,51 +261,48 @@ class Proxy(object):
         """Connects this proxy to the remote Pyro daemon. Does connection handshake."""
         from Pyro4.naming import resolve  # don't import this globally because of cyclic dependancy
         uri=resolve(self._pyroUri)
-        if (uri.host and uri.port) or uri.sockname:
-            # socket connection (normal or unix domain socket)
-            conn=None
-            log.debug("connecting to %s", uri)
-            connect_location=uri.sockname if uri.sockname else (uri.host, uri.port)
-            try:
-                with self.__pyroLock:
-                    sock=socketutil.createSocket(connect=connect_location, timeout=self.__pyroTimeout)
-                    conn=socketutil.SocketConnection(sock, uri.object)
-                    # Do handshake. For now, no need to send anything.
-                    msgType, flags, seq, data = MessageFactory.getMessage(conn, None)
-                    # any trailing data (dataLen>0) is an error message, if any
-            except Exception:
-                x=sys.exc_info()[1]
-                if conn:
-                    conn.close()
-                err="cannot connect: %s" % x
-                log.error(err)
-                if isinstance(x, errors.CommunicationError):
-                    raise
-                else:
-                    raise errors.CommunicationError(err)
+        # socket connection (normal or unix domain socket)
+        conn=None
+        log.debug("connecting to %s", uri)
+        connect_location=uri.sockname if uri.sockname else (uri.host, uri.port)
+        try:
+            with self.__pyroLock:
+                sock=socketutil.createSocket(connect=connect_location, timeout=self.__pyroTimeout)
+                conn=socketutil.SocketConnection(sock, uri.object)
+                # Do handshake. For now, no need to send anything.
+                msgType, flags, seq, data = MessageFactory.getMessage(conn, None)
+                # any trailing data (dataLen>0) is an error message, if any
+        except Exception:
+            x=sys.exc_info()[1]
+            if conn:
+                conn.close()
+            err="cannot connect: %s" % x
+            log.error(err)
+            if isinstance(x, errors.CommunicationError):
+                raise
             else:
-                if msgType==MessageFactory.MSG_CONNECTFAIL:
-                    error="connection rejected"
-                    if data:
-                        if sys.version_info>=(3,0):
-                            data=str(data,"utf-8")
-                        error+=", reason: "+data
-                    conn.close()
-                    log.error(error)
-                    raise errors.CommunicationError(error)
-                elif msgType==MessageFactory.MSG_CONNECTOK:
-                    self._pyroConnection=conn
-                    if replaceUri:
-                        log.debug("replacing uri with bound one")
-                        self._pyroUri=uri
-                    log.debug("connected to %s", self._pyroUri)
-                else:
-                    conn.close()
-                    err="connect: invalid msg type %d received" % msgType
-                    log.error(err)
-                    raise errors.ProtocolError(err)
+                raise errors.CommunicationError(err)
         else:
-            raise NotImplementedError("non-socket uri connections not yet implemented")
+            if msgType==MessageFactory.MSG_CONNECTFAIL:
+                error="connection rejected"
+                if data:
+                    if sys.version_info>=(3,0):
+                        data=str(data,"utf-8")
+                    error+=", reason: "+data
+                conn.close()
+                log.error(error)
+                raise errors.CommunicationError(error)
+            elif msgType==MessageFactory.MSG_CONNECTOK:
+                self._pyroConnection=conn
+                if replaceUri:
+                    log.debug("replacing uri with bound one")
+                    self._pyroUri=uri
+                log.debug("connected to %s", self._pyroUri)
+            else:
+                conn.close()
+                err="connect: invalid msg type %d received" % msgType
+                log.error(err)
+                raise errors.ProtocolError(err)
 
     def _pyroReconnect(self, tries=100000000):
         self._pyroRelease()

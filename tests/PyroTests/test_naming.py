@@ -104,13 +104,6 @@ class NameServerTests(unittest.TestCase):
         self.assertEqual(Pyro4.core.URI("PYRO:55555@host.com:4444"), ns.lookup("unittest.object2"))
         ns.register("unittest.object3", Pyro4.core.URI("PYRO:66666@host.com:4444"))
         self.assertEqual(Pyro4.core.URI("PYRO:66666@host.com:4444"), ns.lookup("unittest.object3"))
-        
-        # check that the non-socket locations are not yet supported  
-        self.assertRaises(NotImplementedError, Pyro4.naming.locateNS, "./p:pipename")
-        #ns=Pyro4.naming.locateNS("./p:pipename")
-        #uri=ns._pyroUri
-        #self.assertEqual("PYRO",uri.protocol)
-        #self.assertEqual("pipename",uri.pipename)
         ns._pyroRelease()
 
     def testDaemonPyroObj(self):

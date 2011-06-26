@@ -108,9 +108,6 @@ class CoreTests(unittest.TestCase):
         p=Pyro4.core.URI(uri)
         self.assertEqual(uri,str(p))
         self.assertEqual(uri,p.asString())
-        uri="PYRO:12345@./p:pipename"
-        p=Pyro4.core.URI(uri)
-        self.assertEqual(uri,str(p))
         uri="PYRO:12345@./u:sockname"
         p=Pyro4.core.URI(uri)
         self.assertEqual(uri,str(p))
@@ -126,7 +123,6 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("PYRONAME",p.protocol)
         self.assertEqual("some_obj_name",p.object)
         self.assertEqual(None,p.host)
-        self.assertEqual(None,p.pipename)
         self.assertEqual(None,p.sockname)
         self.assertEqual(None,p.port)
         p=Pyro4.core.URI("PYRONAME:some_obj_name@host.com:9999")
@@ -139,18 +135,8 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("PYRO",p.protocol)
         self.assertEqual("12345",p.object)
         self.assertEqual("host.com",p.host)
-        self.assertEqual(None,p.pipename)
         self.assertEqual(None,p.sockname)
         self.assertEqual(4444,p.port)
-        p=Pyro4.core.URI("PYRO:12345@./p:pipename")
-        self.assertEqual("12345",p.object)
-        self.assertEqual("pipename",p.pipename)
-        p=Pyro4.core.URI("PYRO:12345@./p:/tmp/pipename")
-        self.assertEqual("12345",p.object)
-        self.assertEqual("/tmp/pipename",p.pipename)
-        p=Pyro4.core.URI("PYRO:12345@./p:../pipename")
-        self.assertEqual("12345",p.object)
-        self.assertEqual("../pipename",p.pipename)
         p=Pyro4.core.URI("PYRO:12345@./u:sockname")
         self.assertEqual("12345",p.object)
         self.assertEqual("sockname",p.sockname)
@@ -200,7 +186,6 @@ class CoreTests(unittest.TestCase):
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYRONAME:objname@nameserver:7766:bogus")
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "FOOBAR:")
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "FOOBAR:objid@hostname:7766")
-        self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYRO:12345@./p:pipename:9999")
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYRO:12345@./u:sockname:9999")
 
     def testUriUnicode(self):
@@ -211,7 +196,6 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(type(p.protocol) is unicode)
         self.assertTrue(type(p.object) is unicode)
         self.assertTrue(type(p.host) is unicode)
-        self.assertEqual(None,p.pipename)
         self.assertEqual(None,p.sockname)
         self.assertEqual(4444,p.port)
 
@@ -260,10 +244,10 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(p2,p3)
         
     def testLocation(self):
-        self.assertTrue(Pyro4.core.URI.isPipeOrUnixsockLocation("./p:name"))
-        self.assertTrue(Pyro4.core.URI.isPipeOrUnixsockLocation("./u:name"))
-        self.assertFalse(Pyro4.core.URI.isPipeOrUnixsockLocation("./x:name"))
-        self.assertFalse(Pyro4.core.URI.isPipeOrUnixsockLocation("foobar"))
+        self.assertTrue(Pyro4.core.URI.isUnixsockLocation("./u:name"))
+        self.assertFalse(Pyro4.core.URI.isUnixsockLocation("./p:name"))
+        self.assertFalse(Pyro4.core.URI.isUnixsockLocation("./x:name"))
+        self.assertFalse(Pyro4.core.URI.isUnixsockLocation("foobar"))
 
     def testMsgFactory(self):
         import hashlib, hmac

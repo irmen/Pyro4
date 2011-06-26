@@ -108,14 +108,14 @@ class NameServer(object):
 
 class NameServerDaemon(core.Daemon):
     """Daemon that contains the Name Server."""
-    def __init__(self, host=None, port=None):
+    def __init__(self, host=None, port=None, unixsocket=None):
         if Pyro4.config.DOTTEDNAMES:
             raise PyroError("Name server won't start with DOTTEDNAMES enabled because of security reasons")
         if host is None:
             host=Pyro4.config.HOST
         if port is None:
             port=Pyro4.config.NS_PORT
-        super(NameServerDaemon, self).__init__(host, port)
+        super(NameServerDaemon, self).__init__(host, port, unixsocket)
         self.nameserver=NameServer()
         self.register(self.nameserver, constants.NAMESERVER_NAME)
         self.nameserver.register(constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
@@ -206,20 +206,23 @@ class BroadcastServer(object):
         self.close()
 
 
-def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
+def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None):
     """utility function that starts a new Name server and enters its requestloop."""
-    daemon=NameServerDaemon(host, port)
-    hostip=daemon.sock.getsockname()[0]
+    daemon=NameServerDaemon(host, port, unixsocket)
     nsUri=daemon.uriFor(daemon.nameserver)
-    if hostip.startswith("127."):
-        print("Not starting broadcast server for localhost.")
-        log.info("Not starting NS broadcast server because NS is bound to localhost")
-        enableBroadcast=False
     bcserver=None
-    if enableBroadcast:
-        bcserver=BroadcastServer(nsUri, bchost, bcport)
-        print("Broadcast server running on %s" % bcserver.locationStr)
-        bcserver.runInThread()
+    if unixsocket:
+        hostip="unix domain socket"
+    else:
+        hostip=daemon.sock.getsockname()[0]
+        if hostip.startswith("127."):
+            print("Not starting broadcast server for localhost.")
+            log.info("Not starting NS broadcast server because NS is bound to localhost")
+            enableBroadcast=False
+        if enableBroadcast:
+            bcserver=BroadcastServer(nsUri, bchost, bcport)
+            print("Broadcast server running on %s" % bcserver.locationStr)
+            bcserver.runInThread()
     print("NS running on %s (%s)" % (daemon.locationStr, hostip))
     print("URI = %s" % nsUri)
     try:
@@ -231,18 +234,19 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
     print("NS shut down.")
 
 
-def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None):
+def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None):
     """utility fuction to quickly get a Name server daemon to be used in your own event loops.
     Returns (nameserverUri, nameserverDaemon, broadcastServer)."""
-    daemon=NameServerDaemon(host, port)
-    nsUri=daemon.uriFor(daemon.nameserver)
-    hostip=daemon.sock.getsockname()[0]
-    if hostip.startswith("127."):
-        # not starting broadcast server for localhost.
-        enableBroadcast=False
+    daemon=NameServerDaemon(host, port, unixsocket)
     bcserver=None
-    if enableBroadcast:
-        bcserver=BroadcastServer(nsUri, bchost, bcport)
+    nsUri=daemon.uriFor(daemon.nameserver)
+    if not unixsocket:
+        hostip=daemon.sock.getsockname()[0]
+        if hostip.startswith("127."):
+            # not starting broadcast server for localhost.
+            enableBroadcast=False
+        if enableBroadcast:
+            bcserver=BroadcastServer(nsUri, bchost, bcport)
     return nsUri, daemon, bcserver
 
 
@@ -284,7 +288,7 @@ def locateNS(host=None, port=None):
     # pyro direct lookup
     if not port:
         port=Pyro4.config.NS_PORT
-    if core.URI.isPipeOrUnixsockLocation(host):
+    if core.URI.isUnixsockLocation(host):
         uristring="PYRO:%s@%s" % (constants.NAMESERVER_NAME, host)
     else:
         uristring="PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, host, port)
@@ -322,6 +326,7 @@ def main(args):
     parser=OptionParser()
     parser.add_option("-n", "--host", dest="host", help="hostname to bind server on")
     parser.add_option("-p", "--port", dest="port", type="int", help="port to bind server on (0=random)")
+    parser.add_option("-u","--unixsocket", help="unix domain socket name to bind server on")
     parser.add_option("", "--bchost", dest="bchost", help="hostname to bind broadcast server on (default is \"\")")
     parser.add_option("", "--bcport", dest="bcport", type="int",
                       help="port to bind broadcast server on (0=random)")
@@ -329,7 +334,7 @@ def main(args):
                       help="don't start a broadcast server")
     options, args = parser.parse_args(args)
     startNSloop(options.host, options.port, enableBroadcast=options.enablebc,
-            bchost=options.bchost, bcport=options.bcport)
+            bchost=options.bchost, bcport=options.bcport, unixsocket=options.unixsocket)
 
 if __name__=="__main__":
     main(sys.argv[1:])
