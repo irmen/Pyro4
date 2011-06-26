@@ -2,6 +2,7 @@ from __future__ import print_function
 import Pyro4
 import person
 
+
 class Warehouse(object):
     def __init__(self):
         self.contents=["chair","bike","flashlight","laptop","couch"]
@@ -19,13 +20,12 @@ class Warehouse(object):
 
 
 def main():
-    daemon=Pyro4.Daemon()
     warehouse=Warehouse()
-    uri=daemon.register(warehouse)
-    ns=Pyro4.locateNS()
-    ns.register("example.warehouse",uri)
-    print("Warehouse is open.")
-    daemon.requestLoop()
+    Pyro4.Daemon.serveSimple(
+            {
+                warehouse: "example.warehouse"
+            },
+            ns=True)
 
 if __name__=="__main__":
     main()

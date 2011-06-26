@@ -30,7 +30,17 @@ Here's a quick overview of Pyro's features:
 
 Pyro's history
 ^^^^^^^^^^^^^^
-Little bit of history? (how Pyro came to be, Pyro 3, Pyro4)
+Pyro was started in 1998, more than ten years ago, when remote method invocation technology such as Java's RMI
+and CORBA were quite popular. I wanted something like that in Python and there was nothing available, so I decided
+to write my own. Over the years it slowly gained features till it reached version 3.10 or so.
+At that point it was clear that the codebase had become quite ancient and couldn't reliably support any new features,
+so Pyro4 was born in early 2010, written from scratch. After a couple of versions Pyro4 became stable enough to be considered
+the new 'main' Pyro version to be preferred over Pyro 3.x (unless you have specific requirements that force you
+to stick with Pyro3). See :doc:`upgrading` for more information on the different versions and how to upgrade old code to Pyro4.
+
+``Pyro`` is the package name of the older, 3.x version of Pyro.
+``Pyro4`` is the package name of the new, current version. Its API and behavior is similar to Pyro 3.x but it is not
+backwards compatible. So to avoid conflicts, this new version has a different package name.
 
 Simple Example
 ==============
