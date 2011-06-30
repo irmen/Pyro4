@@ -20,7 +20,7 @@ Pyro is written in 100% pure Python and therefore runs on many platforms and Pyt
 
 Pyro is copyright © Irmen de Jong (irmen@razorvine.net | http://www.razorvine.net).
 
-`Pyro homepage <http://irmen.home.xs4all.nl/pyro4/>`_ | `Pyro on Python package index <http://pypi.python.org/pypi/Pyro4/>`_ |
+`Pyro homepage <http://irmen.home.xs4all.nl/pyro/>`_ | `Pyro on Python package index <http://pypi.python.org/pypi/Pyro4/>`_ |
 `Pyro mailing list <http://lists.sourceforge.net/lists/listinfo/pyro-core>`_ | :doc:`licensedisclaimer`
 
 .. warning::
