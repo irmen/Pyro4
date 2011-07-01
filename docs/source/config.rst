@@ -31,8 +31,6 @@ It contains:
     a setup script and other miscellaneous files such as the license.
 
 
-.. _config-config:
-
 Configuration
 =============
 

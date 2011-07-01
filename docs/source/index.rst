@@ -39,7 +39,7 @@ Contents
    Tutorial
    Installation and configuration <config>
    Upgrading from Pyro 3 <upgrading>
-   Other stuff <other>
+   Other stuff (TODO) <other>
    Socketserver API <socketserver>
    Running on alternative Python implementations <alternative>
    Change log <changelog>

@@ -58,6 +58,8 @@ Let's start by just writing it in normal Python first (create two files)::
             return "Hello, {0}. Here is your fortune message:\n" \
                    "Behold the warranty -- the bold print giveth and the fine print taketh away.".format(name)
 
+::
+
     # save this as client.py
     import greeting
     name=raw_input("What is your name? ")
