@@ -53,3 +53,7 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`search`
 
+.. figure:: _static/tf_pyrotaunt.png
+   :target: http://wiki.teamfortress.com/wiki/Pyro
+   :alt: PYYYRRRROOOO
+   :align:  center

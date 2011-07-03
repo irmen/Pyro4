@@ -28,3 +28,10 @@ This is the `MIT Software License <http://www.opensource.org/licenses/mit-licens
 which is OSI-certified, and GPL-compatible. 
 
 
+
+.. figure:: _static/tf_pyrotaunt.png
+   :target: http://wiki.teamfortress.com/wiki/Pyro
+   :alt: PYYYRRRROOOO
+   :align:  center
+
+
