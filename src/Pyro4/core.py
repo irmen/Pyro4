@@ -27,14 +27,15 @@ log=logging.getLogger("Pyro.core")
 
 
 class URI(object):
-    """Pyro object URI (universal resource identifier)
-    PYRO uri format: PYRO:objectid@location
-        where location is one of:
-          hostname:port  (tcp/ip socket on given port)
-          ./u:sockname   (unix domain socket on localhost)
+    """
+    Pyro object URI (universal resource identifier).
+    The uri format is like this: ``PYRO:objectid@location`` where location is one of:
 
-    MAGIC URI format for simple name resolution using Name server:
-      PYRONAME:objectname[@location]  (optional name server location, can also omit location port)
+    - ``hostname:port`` (tcp/ip socket on given port)
+    - ``./u:sockname`` (unix domain socket on localhost)
+
+    There is also a 'Magic format' for simple name resolution using Name server:
+      ``PYRONAME:objectname[@location]``  (optional name server location, can also omit location port)
     """
     uriRegEx=re.compile(r"(?P<protocol>PYRO[A-Z]*):(?P<object>\S+?)(@(?P<location>\S+))?$")
     __slots__=("protocol", "object", "sockname", "host", "port", "object")
@@ -694,7 +695,7 @@ class Daemon(object):
         self.__loopstopped.wait()
         log.info("daemon %s shut down", self.locationStr)
 
-    def handshake(self, conn):
+    def _handshake(self, conn):
         """Perform connection handshake with new clients"""
         # For now, client is not sending anything. Just respond with a CONNECT_OK.
         # We need a minimal amount of data or the socket will remain blocked
@@ -776,11 +777,11 @@ class Daemon(object):
             if not flags & MessageFactory.FLAGS_ONEWAY:
                 # only return the error to the client if it wasn't a oneway call
                 tblines=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
-                self.sendExceptionResponse(conn, seq, xv, tblines)
+                self._sendExceptionResponse(conn, seq, xv, tblines)
             if isCallback or isinstance(xv, (errors.CommunicationError, errors.SecurityError)):
                 raise       # re-raise if flagged as callback, communication or security error.
 
-    def sendExceptionResponse(self, connection, seq, exc_value, tbinfo):
+    def _sendExceptionResponse(self, connection, seq, exc_value, tbinfo):
         """send an exception back including the local traceback info"""
         exc_value._pyroTraceback=tbinfo
         if sys.platform=="cli":

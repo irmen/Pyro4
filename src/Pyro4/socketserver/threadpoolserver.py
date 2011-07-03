@@ -69,7 +69,7 @@ class SocketWorker(threadutil.Thread):
 
     def handleConnection(self, conn):
         try:
-            if self.callbackDaemon.handshake(conn):
+            if self.callbackDaemon._handshake(conn):
                 return True
         except (socket.error, errors.PyroError):
             x=sys.exc_info()[1]

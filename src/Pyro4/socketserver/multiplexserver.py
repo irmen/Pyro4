@@ -73,7 +73,7 @@ class MultiplexedSocketServerBase(object):
             raise
         try:
             conn=socketutil.SocketConnection(csock)
-            if self.daemon.handshake(conn):
+            if self.daemon._handshake(conn):
                 return conn
         except (socket.error, errors.PyroError):
             x=sys.exc_info()[1]

@@ -131,10 +131,12 @@ def receiveData(sock, size):
 
 
 def sendData(sock, data):
-    """Send some data over a socket."""
-    # Some OS-es have problems with sendall when the socket is in non-blocking mode.
-    # For instance, Mac OS X seems to be happy to throw EAGAIN errors too often.
-    # We fall back to using a regular send loop if needed.
+    """
+    Send some data over a socket.
+    Some systems have problems with ``sendall()`` when the socket is in non-blocking mode.
+    For instance, Mac OS X seems to be happy to throw EAGAIN errors too often.
+    This function falls back to using a regular send loop if needed.
+    """
     if sock.gettimeout() is None:
         # socket is in blocking mode, we can use sendall normally.
         while True:
@@ -240,12 +242,11 @@ def setKeepalive(sock):
     except Exception:
         pass
 
-# set socket to not inherit in subprocess
 try:
     import fcntl
 
     def setNoInherit(sock):
-        # Mark the given socket fd as non-inheritable (posix)
+        """Mark the given socket fd as non-inheritable to child processes"""
         fd = sock.fileno()
         flags = fcntl.fcntl(fd, fcntl.F_GETFD)
         fcntl.fcntl(fd, fcntl.F_SETFD, flags | fcntl.FD_CLOEXEC)
@@ -256,18 +257,19 @@ except ImportError:
         from ctypes import windll, WinError
 
         def setNoInherit(sock):
-            # mark the given socket fd as non-inheritable (Windows).
+            """Mark the given socket fd as non-inheritable to child processes"""
             if not windll.kernel32.SetHandleInformation(sock.fileno(), 1, 0):
                 raise WinError()
 
     except ImportError:
         # nothing available, define a dummy function
         def setNoInherit(sock):
+            """Mark the given socket fd as non-inheritable to child processes (dummy)"""
             pass
 
 
 class SocketConnection(object):
-    """A connection wrapper for sockets"""
+    """A wrapper class for plain sockets, containing various methods such as :meth:`send` and :meth:`recv`"""
     __slots__=["sock", "objectId"]
 
     def __init__(self, sock, objectId=None):

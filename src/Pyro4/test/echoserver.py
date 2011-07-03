@@ -1,5 +1,11 @@
 """
 Echo server for test purposes.
+This is usually invoked by starting this module as a script:
+
+  :command:`python -m Pyro4.test.echoserver`
+
+It is also possible to use the :class:`EchoServer` in user code
+but that is not terribly useful.
 
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
@@ -10,22 +16,30 @@ from Pyro4 import threadutil
 from Pyro4 import naming
 import Pyro4
 
+__all__=["EchoServer"]
 
 class EchoServer(object):
+    """
+    The echo server object that is provided as a Pyro object by this module.
+    If its :attr:`verbose` attribute is set to ``True``, it will print messages as it receives calls.
+    """
     verbose=False
     must_shutdown=False
 
     def echo(self, args):
+        """return the args"""
         if self.verbose:
             print("%s - echo: %s" % (time.asctime(), args))
         return args
 
     def error(self):
+        """generates a simple exception (division by zero)"""
         if self.verbose:
             print("%s - error: generating exception" % time.asctime())
         return 1//0   # division by zero error
 
     def shutdown(self):
+        """called to signal the echo server to shut down"""
         if self.verbose:
             print("%s - shutting down" % time.asctime())
         self.must_shutdown=True

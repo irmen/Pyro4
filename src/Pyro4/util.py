@@ -13,9 +13,9 @@ log=logging.getLogger("Pyro.util")
 
 
 def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
-    """return a list of strings that form the traceback information of a
+    """Returns a list of strings that form the traceback information of a
     Pyro exception. Any remote Pyro exception information is included.
-    Traceback information is automatically obtained via sys.exc_info() if
+    Traceback information is automatically obtained via ``sys.exc_info()`` if
     you do not supply the objects yourself."""
     def formatRemoteTraceback(remote_tb_lines):
         result=[" +--- This exception occured remotely (Pyro) - Remote traceback:"]
@@ -50,10 +50,10 @@ def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
 
 
 def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
-    """format an exception traceback. If you ask for detailed formatting,
+    """Formats an exception traceback. If you ask for detailed formatting,
     the result will contain info on the variables in each stack frame.
     You don't have to provide the exception info objects, if you omit them,
-    this function will obtain them itself using sys.exc_info()."""
+    this function will obtain them itself using ``sys.exc_info()``."""
     if ex_type is not None and ex_value is None and ex_tb is None:
         # possible old (3.x) call syntax where caller is only providing exception object
         if type(ex_type) is not type:
@@ -117,8 +117,11 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
 
 
 class Serializer(object):
-    """(de)serializer that wraps a certain serialization protocol.
-    Currently it only supports standard pickle. It should be threadsafe."""
+    """
+    A (de)serializer that wraps a certain serialization protocol.
+    Currently it only supports the standard pickle protocol.
+    It can optionally compress the serialized data, and is thread safe.
+    """
     try:
         import cPickle as pickle
     except ImportError:
@@ -144,17 +147,17 @@ class Serializer(object):
         return self.pickle.loads(data)
 
     def __eq__(self, other):
-        """this is only for the unit tests. It is not required."""
+        """this equality method is only to support the unit tests of this class"""
         return type(other) is Serializer and vars(self)==vars(other)
     __hash__=object.__hash__
 
 
 def resolveDottedAttribute(obj, attr, allowDotted):
-    """Resolves a dotted attribute name to an object.  Raises
-    an AttributeError if any attribute in the chain starts with a '_'.
-
+    """
+    Resolves a dotted attribute name to an object.  Raises
+    an AttributeError if any attribute in the chain starts with a '``_``'.
     If the optional allowDotted argument is false, dots are not
-    supported and this function operates similar to getattr(obj, attr).
+    supported and this function operates similar to ``getattr(obj, attr)``.
     """
     if allowDotted:
         attrs = attr.split('.')
@@ -169,6 +172,6 @@ def resolveDottedAttribute(obj, attr, allowDotted):
 
 
 def excepthook(ex_type, ex_value, ex_tb):
-    """An exception hook you can set sys.excepthook to, to automatically print remote Pyro tracebacks"""
+    """An exception hook you can use for ``sys.excepthook``, to automatically print remote Pyro tracebacks"""
     traceback="".join(getPyroTraceback(ex_type, ex_value, ex_tb))
     sys.stderr.write(traceback)

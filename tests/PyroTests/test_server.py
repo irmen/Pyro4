@@ -53,7 +53,7 @@ class DaemonLoopThread(threadutil.Thread):
 
 
 class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
-    def handshake(self, conn):
+    def _handshake(self, conn):
         # a bit of a hack, overriding this internal method to return a CONNECTFAIL...
         data=tobytes("rigged connection failure")
         msg=Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_CONNECTFAIL, data, 0, 1)
