@@ -35,12 +35,12 @@ Contents
 .. toctree::
    :maxdepth: 2
    
-   Introduction
-   Tutorial
+   Introduction.rst
+   Tutorial.rst
    Installation and configuration <config>
    Upgrading from Pyro 3 <upgrading>
    Other stuff (TODO) <other>
-   Socketserver API <socketserver>
+   api.rst
    Running on alternative Python implementations <alternative>
    Change log <changelog>
    License and disclaimer <licensedisclaimer>
