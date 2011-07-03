@@ -589,9 +589,11 @@ class DaemonObject(object):
         self.daemon=daemon
 
     def registered(self):
+        """returns a list of all object names registered in this daemon"""
         return list(self.daemon.objectsById.keys())
 
     def ping(self):
+        """a simple do-nothing method for testing purposes"""
         pass
 
 

@@ -3,3 +3,6 @@
 
 .. automodule:: Pyro4.core
    :members:
+
+.. autoclass:: Pyro4.core.DaemonObject
+  :members:
