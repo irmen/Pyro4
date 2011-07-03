@@ -176,6 +176,12 @@ the command :command:`python -m Pyro4.nsc list`, which will produce::
 (Once again the uri for our object will be random)
 This concludes this simple Pyro example.
 
+.. note::
+ In the source archive there is a directory :file:`examples` that contains a truckload
+ of example programs that show the various features of Pyro. If you're interested in them
+ (it is highly recommended to be so!) you will have to download the Pyro distribution archive.
+ Installing Pyro only provides the library modules. For more information, see :ref:`config-install`.
+
 Performance
 ===========
 Pyro4 is really fast at what it does. This is due to its low overhead and use of native Python serialization (pickle).

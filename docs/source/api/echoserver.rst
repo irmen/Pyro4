@@ -2,5 +2,4 @@
 ==========================================================================
 
 .. automodule:: Pyro4.test.echoserver
-   :synopsis: foo bar
    :members:

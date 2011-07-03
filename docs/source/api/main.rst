@@ -1,6 +1,8 @@
 :mod:`Pyro4` --- Main API package
 =================================
 
+.. module:: Pyro4
+
 :mod:`Pyro4` is the main package of Pyro4. It imports most of the other packages that it needs
 and provides shortcuts to the most frequently used objects and functions from those packages.
 This means you can mostly just ``import Pyro4`` in your code to start using Pyro.

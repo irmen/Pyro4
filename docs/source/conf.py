@@ -220,3 +220,8 @@ man_pages = [
     ('index', 'pyro', u'Pyro Documentation',
      [u'Irmen de Jong'], 1)
 ]
+
+def setup(app):
+    from sphinx.ext.autodoc import cut_lines
+    # skip the 2 copyright lines in every module docstring
+    app.connect('autodoc-process-docstring', cut_lines(pre=0, post=2, what=['module']))

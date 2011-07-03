@@ -4,44 +4,53 @@ Socket server API contract
 For now, this is an internal API, used by the Pyro Daemon.
 The various servers in Pyro4.socketserver implement this.
 
+.. py:class:: SocketServer_API
 
-METHODS:
+    **Methods:**
 
-    def init(self, daemon, host, port, unixsocket=None):
+    .. py:method:: init(daemon, host, port, unixsocket=None)
+
         Must bind the server on the given host and port (can be None).
         daemon is the object that will receive Pyro invocation calls (see below).
         When host or port is None, the server can select something appropriate itself.
-        If possible, use Pyro4.config.COMMTIMEOUT on the sockets.
-        Set self.sock to the daemon server socket.
+        If possible, use ``Pyro4.config.COMMTIMEOUT`` on the sockets (see :ref:`configuration`).
+        Set ``self.sock`` to the daemon server socket.
         If unixsocket is given the name of a unix domain socket, that type of socket
         will be created instead of a regular tcp/ip socket.
 
-    def loop(self, loopCondition):
+    .. py:method:: loop(loopCondition)
+
         Start an endless loop that serves Pyro requests.
         loopCondition is an optional function that is called every iteration,
         if it returns False, the loop is terminated and this method returns.
 
-    def events(self, eventsockets):
+    .. py:method:: events(eventsockets)
+
         Called from external event loops: let the server handle events that occur on one of the sockets of this server.
         eventsockets is a sequence of all the sockets for which an event occurred.
 
-    def close(self):
+    .. py:method:: close()
+
         Release the connections and close the server. It can no longer be used after calling this,
         until you call initServer again.
 
-    def wakeup(self):
-        This is called to wake up the requestLoop if it is in a blocking state.
+    .. py:method:: wakeup()
 
-PROPERTIES:
+        This is called to wake up the :meth:`requestLoop` if it is in a blocking state.
 
-    sockets:
+    **Properties:**
+    
+    .. py:attribute:: sockets
+
         must be the list of all sockets used by this server (server socket + all connected client sockets)
 
-    sock:
+    .. py:attribute:: sock
+
         must be the server socket itself.
 
-    locationStr:
-        must be a string of the form "serverhostname:serverport"
+    .. py:attribute:: locationStr
+
+        must be a string of the form ``"serverhostname:serverport"``
         can be different from the host:port arguments passed to initServer.
         because either of those can be None and the server will choose something appropriate.
-        If the socket is a unix domain socket, it should be of the form "./u:socketname".
+        If the socket is a unix domain socket, it should be of the form ``"./u:socketname"``.

@@ -2,7 +2,6 @@
 ===============================
 
 .. automodule:: Pyro4.util
-   :synopsis: foo bar
    :members:
 
 
@@ -10,13 +9,11 @@
 ====================================================
 
 .. automodule:: Pyro4.socketutil
-   :synopsis: foo bar
    :members:
 
 
-:mod:`Pyro4.threadutil` --- Thread related utilities
-====================================================
+:mod:`Pyro4.threadutil` --- wrapper module for :mod:`threading`
+===============================================================
 
 .. automodule:: Pyro4.threadutil
-   :synopsis: foo bar
    :members:

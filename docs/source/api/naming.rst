@@ -2,5 +2,4 @@
 ========================================
 
 .. automodule:: Pyro4.naming
-   :synopsis: foo bar
    :members:

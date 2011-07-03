@@ -2,5 +2,4 @@
 =====================================
 
 .. automodule:: Pyro4.core
-   :synopsis: foo bar
    :members:

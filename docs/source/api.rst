@@ -7,16 +7,12 @@ such as :mod:`Pyro4.core`, but for ease of use, the most important ones are also
 
 .. toctree::
 
-   Pyro4/main.rst
-   Pyro4/core.rst
-   Pyro4/naming.rst
-   Pyro4/nsc.rst
-   Pyro4/util.rst
-   Pyro4/constants.rst
-   Pyro4/configuration.rst
-   Pyro4/echoserver.rst
-   Pyro4/socketserver.rst
-
-
-
-
+   api/main.rst
+   api/core.rst
+   api/naming.rst
+   api/util.rst
+   api/constants.rst
+   api/config.rst
+   api/errors.rst
+   api/echoserver.rst
+   api/socketserver.rst
