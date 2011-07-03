@@ -13,7 +13,7 @@ The various servers in Pyro4.socketserver implement this.
         Must bind the server on the given host and port (can be None).
         daemon is the object that will receive Pyro invocation calls (see below).
         When host or port is None, the server can select something appropriate itself.
-        If possible, use ``Pyro4.config.COMMTIMEOUT`` on the sockets (see :ref:`configuration`).
+        If possible, use ``Pyro4.config.COMMTIMEOUT`` on the sockets (see :doc:`config`).
         Set ``self.sock`` to the daemon server socket.
         If unixsocket is given the name of a unix domain socket, that type of socket
         will be created instead of a regular tcp/ip socket.

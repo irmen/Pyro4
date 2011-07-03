@@ -1,6 +1,9 @@
 Intro and Example
 *****************
 
+.. image:: _static/pyro-large.png
+  :align: center
+
 This chapter contains a little overview of Pyro's features and a simple example to show how it looks like.
 
 About Pyro
@@ -46,7 +49,7 @@ Simple Example
 ==============
 
 This example will show you in a nutshell what it's like to use Pyro in your programs.
-A much more extensive introduction is found in the :doc:`Tutorial`.
+A much more extensive introduction is found in the :doc:`tutorials`.
 
 We're going to write a simple greeting service that will return a personalized greeting message to its callers.
 
@@ -180,7 +183,7 @@ This concludes this simple Pyro example.
  In the source archive there is a directory :file:`examples` that contains a truckload
  of example programs that show the various features of Pyro. If you're interested in them
  (it is highly recommended to be so!) you will have to download the Pyro distribution archive.
- Installing Pyro only provides the library modules. For more information, see :ref:`config-install`.
+ Installing Pyro only provides the library modules. For more information, see :doc:`config`.
 
 Performance
 ===========

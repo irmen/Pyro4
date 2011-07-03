@@ -1,4 +1,4 @@
-Other stuff, need to sort this out
+Other stuff: need to sort this out
 **********************************
 
 Pyro shell operation.

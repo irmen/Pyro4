@@ -21,7 +21,7 @@ Pyro is written in 100% pure Python and therefore runs on many platforms and Pyt
 Pyro is copyright © Irmen de Jong (irmen@razorvine.net | http://www.razorvine.net).
 
 `Pyro homepage <http://irmen.home.xs4all.nl/pyro/>`_ | `Pyro on Python package index <http://pypi.python.org/pypi/Pyro4/>`_ |
-`Pyro mailing list <http://lists.sourceforge.net/lists/listinfo/pyro-core>`_ | :doc:`licensedisclaimer`
+`Pyro mailing list <http://lists.sourceforge.net/lists/listinfo/pyro-core>`_ | :doc:`license`
 
 .. warning::
  This manual is still being written. It is not fully complete yet and may contain errors.
@@ -35,21 +35,21 @@ Contents
 .. toctree::
    :maxdepth: 2
    
-   Introduction.rst
-   Tutorial.rst
-   Installation and configuration <config>
-   Upgrading from Pyro 3 <upgrading>
+   intro.rst
+   install.rst
+   tutorials.rst
+   config.rst
+   upgrading.rst
    Other stuff (TODO) <other>
    api.rst
-   Running on alternative Python implementations <alternative>
-   Change log <changelog>
-   License and disclaimer <licensedisclaimer>
+   alternative.rst
+   changelog.rst
+   license.rst
 
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
 

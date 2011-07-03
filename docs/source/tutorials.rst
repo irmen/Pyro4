@@ -11,7 +11,7 @@ that demonstrate some key Pyro techniques.
 Warm-up
 =======
 
-Before proceeding, you should install Pyro if you haven't done so. For instructions about that, see :ref:`config-install`.
+Before proceeding, you should install Pyro if you haven't done so. For instructions about that, see :doc:`install`.
 
 In this tutorial, you will use Pyro's default configuration settings, so once Pyro is installed, you're all set!
 All you need is a text editor and a couple of console windows.
