@@ -10,11 +10,7 @@ What is Pyro?
 -------------
 It is a library that enables you to build applications in which
 objects can talk to each other over the network, with minimal programming effort.
-You can just use normal Python method calls, with almost every possible parameter
-and return value type, and Pyro takes care of locating the right object on the right
-computer to execute the method. It is designed to be very easy to use, and to 
-generally stay out of your way. But it also provides a set of powerful features that
-enables you to build distributed applications rapidly and effortlessly.
+You can just use normal Python method calls to call objects on other machines.
 Pyro is written in **100% pure Python** and therefore runs on many platforms and Python versions,
 **including Python 3.x**.
 
