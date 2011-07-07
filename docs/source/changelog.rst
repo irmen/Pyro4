@@ -1,6 +1,21 @@
 Change Log
 **********
 
+**Pyro 4.8**
+
+- Major additions to the documentation: tutorials, API docs, and much more.
+- Polished many docstrings in the sources, they're used in the generation of the API docs.
+- Unix domain socket support. Added :file:`unixdomainsock` example and unit tests.
+- Added options to the name server and echo server to use unix domain sockets.
+- Name server broadcast responder will attempt to guess the caller's correct network
+  interface, and use that to respond with the name server location IP (instead of 0.0.0.0).
+  This should fix some problems that occurred when the nameserver was listening on
+  0.0.0.0 and the proxy couldn't connect to it after lookup. Added unit test.
+- API change: async callbacks have been changed into the more general async "call chain",
+  using the ``then()`` method. Added examples and unit tests.
+- Async calls now copy the proxy internally so they don't serialize after another anymore.
+- A python 2.6 compatibility issue was fixed in the unit tests.
+
 **Pyro 4.7**
 
 - AutoProxy feature! This is a very nice one that I've always wanted to realize in Pyro ever since
