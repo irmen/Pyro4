@@ -25,7 +25,7 @@ for i in range(NUMBER_OF_LOOPS):
 p.printmessage("end of normal calls")
 assert total==(NUMBER_OF_LOOPS*(7*6 + 10+20))   # check
 duration=time.time()-begin
-print("that took {0:.4f} seconds ({1:.0f} calls/sec)".format(duration, NUMBER_OF_LOOPS*2.0/duration))
+print("that took {0:.2f} seconds ({1:.0f} calls/sec)".format(duration, NUMBER_OF_LOOPS*2.0/duration))
 duration_normal=duration
 
 
@@ -49,8 +49,8 @@ for r in result:
     total+=r
 duration=time.time()-begin
 assert total==(NUMBER_OF_LOOPS*(7*6 + 10+20))   # check
-print("total time taken {0:.4f} seconds ({1:.0f} calls/sec)".format(duration, NUMBER_OF_LOOPS*2.0/duration))
-print("batched calls were {0:.2f} times faster than normal remote calls".format(duration_normal/duration))
+print("total time taken {0:.2f} seconds ({1:.0f} calls/sec)".format(duration, NUMBER_OF_LOOPS*2.0/duration//100*100))
+print("batched calls were {0:.1f} times faster than normal remote calls".format(duration_normal/duration))
 
 # Now we do another loop of batched calls, but this time oneway (no results).
 print("\nOneway batched remote calls...")
@@ -66,8 +66,8 @@ print("executing batch, there will be no result values. Check server to see prin
 result=batch(oneway=True)      # execute the batch of remote calls, oneway, will return None
 assert result is None
 duration=time.time()-begin
-print("total time taken {0:.4f} seconds ({1:.0f} calls/sec)".format(duration, NUMBER_OF_LOOPS*2.0/duration))
-print("oneway batched calls were {0:.2f} times faster than normal remote calls".format(duration_normal/duration))
+print("total time taken {0:.2f} seconds ({1:.0f} calls/sec)".format(duration, NUMBER_OF_LOOPS*2.0/duration//100*100))
+print("oneway batched calls were {0:.1f} times faster than normal remote calls".format(duration_normal/duration))
 
 # Batches can be executed async as well
 print("\nBatched remote calls, async...")

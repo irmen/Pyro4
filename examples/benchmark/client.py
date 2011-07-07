@@ -54,14 +54,14 @@ for f in funcs:
     voor = time.time()
     for i in range(iters):
         f()
-    sys.stdout.write("%.4f\n" % (time.time()-voor))
+    sys.stdout.write("%.3f\n" % (time.time()-voor))
     sys.stdout.flush()
 duration = time.time()-begin
-print('total time %.4f seconds' % duration)
+print('total time %.3f seconds' % duration)
 amount=len(funcs)*iters
 print('total method calls: %d' % (amount))
 avg_pyro_msec = 1000.0*duration/amount
-print('avg. time per method call: %.4f msec (%d/sec)' % (avg_pyro_msec,amount/duration))
+print('avg. time per method call: %.3f msec (%d/sec)' % (avg_pyro_msec,amount/duration))
 
 print('-------- BENCHMARK LOCAL OBJECT ---------')
 object=bench.bench()
@@ -72,12 +72,12 @@ for f in funcs:
     voor = time.time()
     for i in range(iters):
         f()
-    sys.stdout.write("%.4f\n" % (time.time()-voor))
+    sys.stdout.write("%.3f\n" % (time.time()-voor))
     sys.stdout.flush()
 duration = time.time()-begin
-print('total time %.4f seconds' % duration)
+print('total time %.3f seconds' % duration)
 amount=len(funcs)*iters
 print('total method calls: %d' % (amount))
 avg_normal_msec = 1000.0*duration/amount
-print('avg. time per method call: %.4f msec (%d/sec)' % (avg_normal_msec,amount/duration))
-print('Normal method call is %.2f times faster than Pyro method call.'%(avg_pyro_msec/avg_normal_msec))
+print('avg. time per method call: %.3f msec (%d/sec)' % (avg_normal_msec,amount/duration//1000*1000))
+print('Normal method call is %.0f times faster than Pyro method call.'%(avg_pyro_msec/avg_normal_msec))

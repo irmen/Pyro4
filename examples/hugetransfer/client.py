@@ -24,4 +24,4 @@ duration=time.time()-begin
 
 totalsize=float(totalsize)
 print("It took %.2f seconds to transfer %d kilobyte." % (duration, totalsize/1024))
-print("That is %.2f k/sec. = %.2f mb/sec." % (totalsize/1024/duration, totalsize/1024/1024/duration))
+print("That is %.0f k/sec. = %.1f mb/sec." % (totalsize/1024/duration, totalsize/1024/1024/duration))

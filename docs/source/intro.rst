@@ -205,26 +205,26 @@ Pyro4 is really fast at what it does. This is due to its low overhead and use of
 Here are some measurements done between two processes running on a Core 2 Duo 3Ghz, Windows 7 machine.
 
 :benchmark/connections.py:
-    | 2000 connections in 1.09000015259 sec = 1834.86 conn/sec
-    | 2000 new proxy calls in 1.3220000267 sec = 1512.86 calls/sec
-    | 10000 calls in 0.939999818802 sec = 10638.30 calls/sec
+    | 2000 connections in 1.139 sec = 1756 conn/sec
+    | 2000 new proxy calls in 1.451 sec = 1378 calls/sec
+    | 10000 calls in 1.058 sec = 9452 calls/sec
 
 :benchmark/client.py:
-    | total time 1.6140 seconds
+    | total time 1.761 seconds
     | total method calls: 15000
-    | avg. time per method call: 0.1076 msec (9293/sec)
+    | avg. time per method call: 0.117 msec (8517/sec)
 
 :hugetransfer/client.py:
-    | It took 0.50 seconds to transfer 51269 kilobyte.
-    | That is 102539.06 k/sec. = 100.14 mb/sec.
+    | It took 0.48 seconds to transfer 51269 kilobyte.
+    | That is 106148 k/sec. = 103.7 mb/sec.
 
 :batchedcalls/client.py:
     | Batched remote calls...
     | processing the results...
-    | total time taken 0.1110 seconds (180180 calls/sec)
-    | batched calls were 17.18 times faster than normal remote calls
-    |
+    | total time taken 0.29 seconds (136500 calls/sec)
+    | batched calls were 14.1 times faster than normal remote calls
+
     | Oneway batched remote calls...
     | executing batch, there will be no result values. Check server to see printed messages...
-    | total time taken 0.1620 seconds (246913 calls/sec)
-    | oneway batched calls were 23.06 times faster than normal remote calls
+    | total time taken 0.19 seconds (215000 calls/sec)
+    | oneway batched calls were 22.2 times faster than normal remote calls
