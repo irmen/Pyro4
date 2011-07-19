@@ -3,6 +3,8 @@
 Upgrading from Pyro 3
 *********************
 
+.. _should-i-choose-pyro4:
+
 Should I choose Pyro4?
 ======================
 
