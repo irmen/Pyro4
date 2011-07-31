@@ -38,6 +38,7 @@ To inspect the current configuration you have several options:
 3. Access the config as a dictionary: ``Pyro4.config.asDict()``
 4. Access the config string dump (used in #2): ``Pyro4.config.dump()``
 
+.. _config-items:
 
 Overview of Config Items
 ------------------------
