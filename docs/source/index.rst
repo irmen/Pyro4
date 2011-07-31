@@ -34,11 +34,18 @@ Contents
    intro.rst
    install.rst
    tutorials.rst
-   other.rst
+   commandline.rst
+   clientcode.rst
+   servercode.rst
+   nameserver.rst
+   security.rst
+   errors.rst
    config.rst
    upgrading.rst
    api.rst
    alternative.rst
+   pyrolite.rst
+   internals.rst
    changelog.rst
    license.rst
 

@@ -3,6 +3,10 @@ Change Log
 
 **Pyro 4.8**
 
+- Additions to the documentation
+
+**Pyro 4.8**
+
 - Major additions to the documentation: tutorials, API docs, and much more.
 - Polished many docstrings in the sources, they're used in the generation of the API docs.
 - Unix domain socket support. Added :file:`unixdomainsock` example and unit tests.

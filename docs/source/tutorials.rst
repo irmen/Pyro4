@@ -47,7 +47,7 @@ The name in Pyro's case is the logical name of a remote object. The number is th
 We will see later what both actually look like, and why having a name server can be useful.
 
 .. [#commandline] Actually there are no scripts or command files included with Pyro right now.
-  The command line tools are invoked by starting their package directly using the :kbd:`-m` argument
+  The :ref:`command-line` are invoked by starting their package directly using the :kbd:`-m` argument
   of the Python interpreter.
 
 Starting a name server
@@ -74,8 +74,8 @@ The name server will start and it prints something like::
 
 The name server has started and is listening on *localhost port 9090*.
 
-It also printed an :abbr:`URI (unique resource identifier)`. This is what Pyro uses to uniquely identify every object.
-(similar to what a web page URL is to documents on the web).
+It also printed an :abbr:`URI (universal resource identifier)`. This is what Pyro uses to identify every object.
+(similar to what a web page URL is to point to the different documents on the web).
 It is read like this: "PYRO:" + object name + "@" + server name + port number.
 
 The name server can be stopped with a :kbd:`control-c`, or on Windows, with :kbd:`ctrl-break`. But let it run

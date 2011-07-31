@@ -58,6 +58,35 @@ backwards compatible. So to avoid conflicts, this new version has a different pa
 If you're interested in the old version, here is `its homepage <http://irmen.home.xs4all.nl/pyro3/>`_
 and it is also `available on PyPi <http://pypi.python.org/pypi/Pyro/>`_.
 
+What can you use it for?
+========================
+
+Essentially, Pyro can be used to distribute various kinds of resources or responsibilities:
+computational (hardware) resources (cpu, storage, printers),
+informational resources (data, privileged information)
+and business logic (departments, domains).
+
+An example would be a high performance compute cluster with a large storage system attached to it.
+Usually such a beast is not be accessible directly, rather, smaller systems connect to it and
+feed it with jobs that need to run on the big cluster. Later, they collect the results.
+Pyro could be used to expose the available resources on the cluster to other computers.
+Their client software connects to the cluster and calls the Python program there to perform its
+heavy duty work, and collect the results (either directly from a method call return value,
+or perhaps via asynchronous callbacks).
+
+Another example is the use of Pyro to implement a form of `privilege separation <http://en.wikipedia.org/wiki/Privilege_separation>`_.
+There is a small component running with higher privileges, but just able to execute the few tasks (and nothing else)
+that require those higher privileges. That component could expose one or more Pyro objects
+that represent the privileged information or logic.
+Other programs running with normal privileges can talk to those Pyro objects to
+perform those specific tasks with higher privileges in a controlled manner.
+
+On a lower level Pyro is just a form of inter-process communication. So everywhere you would otherwise have
+used a more primitive form of IPC (such as plain TCP/IP sockets) between Python components, you could consider to use
+Pyro instead.
+
+Have a look at the :file:`examples` directory in the source archive, perhaps one of the many example
+programs in there gives even more inspiration of possibilities.
 
 Simple Example
 ==============

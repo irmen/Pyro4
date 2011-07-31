@@ -30,11 +30,13 @@ def handleCommand(nameserver, options, args):
             printListResult(nameserver.list(prefix=args[1]), "- prefix '%s'" % args[1])
 
     def cmd_listregex():
-        if len(args)<2:
-            raise SystemExit("missing regex argument")
+        if len(args)!=2:
+            raise SystemExit("requires one argument: pattern")
         printListResult(nameserver.list(regex=args[1]), "- regex '%s'" % args[1])
 
     def cmd_register():
+        if len(args)!=3:
+            raise SystemExit("requires two arguments: name uri")
         nameserver.register(args[1], args[2], safe=True)
         print("Registered %s" % args[1])
 
@@ -46,8 +48,8 @@ def handleCommand(nameserver, options, args):
             print("Nothing removed")
 
     def cmd_removeregex():
-        if len(args)<2:
-            raise SystemExit("missing regex argument")
+        if len(args)!=2:
+            raise SystemExit("requires one argument: pattern")
         sure=input("Potentially removing lots of items from the Name server. Are you sure (y/n)?").strip()
         if sure in ('y', 'Y'):
             count=nameserver.remove(regex=args[1])
@@ -64,8 +66,8 @@ def handleCommand(nameserver, options, args):
     try:
         commands[args[0]]()
     except Exception:
-        x=sys.exc_info()[1]
-        print("Error: %s" % repr(x))
+        xt,xv,tb=sys.exc_info()
+        print("Error: %s - %s" % (xt.__name__,xv))
 
 
 def main(args):
