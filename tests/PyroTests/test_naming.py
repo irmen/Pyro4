@@ -46,11 +46,12 @@ class BCSetupTests(unittest.TestCase):
         bcserver.close()
 
 
-class NameServerNotRunningTests(unittest.TestCase):
-    def testLocate(self):
-        Pyro4.config.HMAC_KEY=tobytes("testsuite")
-        self.assertRaises(NamingError, Pyro4.naming.locateNS)
-        Pyro4.config.HMAC_KEY=None
+#This test is disabled because otherwise the suite won't succeed if you have a name server running somewhere:
+#class NameServerNotRunningTests(unittest.TestCase):
+#    def testLocate(self):
+#        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+#        self.assertRaises(NamingError, Pyro4.naming.locateNS)
+#        Pyro4.config.HMAC_KEY=None
 
 
 class NameServerTests(unittest.TestCase):
