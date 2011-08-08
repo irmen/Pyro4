@@ -95,7 +95,7 @@ class PyroGUI(object):
     def add_message(self, message):
         message="[{0}] {1}".format(time.strftime("%X"), message)
         self.serveroutput.append(message)
-        self.serveroutput=self.serveroutput[-28:]
+        self.serveroutput=self.serveroutput[-27:]
         self.msg.config(text="\n".join(self.serveroutput))
 
 
