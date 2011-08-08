@@ -1,9 +1,12 @@
 Change Log
 **********
 
-**Pyro 4.8**
+**Pyro 4.9**
 
 - Additions to the documentation
+- added gui_eventloop example
+- added deadlock example
+
 
 **Pyro 4.8**
 
