@@ -20,9 +20,7 @@ Pyro is copyright © Irmen de Jong (irmen@razorvine.net | http://www.razorvine.n
 `Pyro mailing list <http://lists.sourceforge.net/lists/listinfo/pyro-core>`_ | :doc:`license`
 
 .. warning::
- This manual is still being written. It is not fully complete yet and may contain errors.
- For the time being it may be helpful to read the `Pyro 3 manual <http://packages.python.org/Pyro/>`_ as well,
- for a lot of background information on the older Pyro version (on which Pyro4 is based).
+ Some parts of this manual still need to be written, or are incomplete.
 
 
 Contents
@@ -40,12 +38,12 @@ Contents
    nameserver.rst
    security.rst
    errors.rst
+   tipstricks.rst
    config.rst
    upgrading.rst
    api.rst
    alternative.rst
    pyrolite.rst
-   internals.rst
    changelog.rst
    license.rst
 

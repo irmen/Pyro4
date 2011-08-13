@@ -74,6 +74,12 @@ Their client software connects to the cluster and calls the Python program there
 heavy duty work, and collect the results (either directly from a method call return value,
 or perhaps via asynchronous callbacks).
 
+Remote controlling resources or other programs is a nice application as well.
+For instance, you could write a simple
+remote controller for your media server that is running on a machine somewhere in a closet.
+A simple remote control client program could be used to instruct the media server
+to play music, switch playlists, etc. 
+
 Another example is the use of Pyro to implement a form of `privilege separation <http://en.wikipedia.org/wiki/Privilege_separation>`_.
 There is a small component running with higher privileges, but just able to execute the few tasks (and nothing else)
 that require those higher privileges. That component could expose one or more Pyro objects

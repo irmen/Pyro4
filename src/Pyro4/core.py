@@ -139,11 +139,23 @@ def _check_hmac():
 
 
 class Proxy(object):
-    """Pyro proxy for a remote object. Intercepts method calls and dispatches them to the remote object."""
+    """
+    Pyro proxy for a remote object. Intercepts method calls and dispatches them to the remote object.
+
+    .. automethod:: _pyroBind
+    .. automethod:: _pyroRelease
+    .. automethod:: _pyroReconnect
+    .. automethod:: _pyroBatch
+    .. automethod:: _pyroAsync
+    """
     _pyroSerializer=util.Serializer()
     __pyroAttributes=frozenset(["__getnewargs__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway", "_pyroTimeout", "_pyroSeq"])
 
     def __init__(self, uri):
+        """
+        .. autoattribute:: _pyroOneway
+        .. autoattribute:: _pyroTimeout
+        """
         _check_hmac()  # check if hmac secret key is set
         if isinstance(uri, basestring):
             uri=URI(uri)
@@ -306,6 +318,7 @@ class Proxy(object):
                 raise errors.ProtocolError(err)
 
     def _pyroReconnect(self, tries=100000000):
+        """(re)connect the proxy to the daemon containing the pyro object which the proxy is for"""
         self._pyroRelease()
         while tries:
             try:
@@ -320,9 +333,11 @@ class Proxy(object):
         raise errors.ConnectionClosedError(msg)
 
     def _pyroBatch(self):
+        """returns a helper class that lets you create batched method calls on the proxy"""
         return _BatchProxyAdapter(self)
 
     def _pyroAsync(self):
+        """returns a helper class that lets you do asynchronous method calls on the proxy"""
         return _AsyncProxyAdapter(self)
 
     def _pyroInvokeBatch(self, calls, oneway=False):

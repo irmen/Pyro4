@@ -6,6 +6,8 @@ Change Log
 - Additions to the documentation
 - added gui_eventloop example
 - added deadlock example
+- added itunes example
+- fixed some missing methods in the api reference documentation
 
 
 **Pyro 4.8**
