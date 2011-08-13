@@ -42,13 +42,46 @@ Pyro enables code to call methods on objects even if that object is running on a
 
 Pyro is mainly used as a library in your code but it also has several supporting command line tools [#commandline]_.
 We won't explain every one of them here as you will only need the "name server" for this tutorial.
-The name server is a utility that provides a phone book for Pyro applications: you use it to look up a "number" by a "name".
-The name in Pyro's case is the logical name of a remote object. The number is the exact location where Pyro can contact the object.
-We will see later what both actually look like, and why having a name server can be useful.
 
 .. [#commandline] Actually there are no scripts or command files included with Pyro right now.
   The :ref:`command-line` are invoked by starting their package directly using the :kbd:`-m` argument
   of the Python interpreter.
+
+.. _keyconcepts:
+
+Key concepts
+^^^^^^^^^^^^
+Here are a couple of key concepts you encounter when using Pyro:
+
+Proxy
+    A proxy is a substitute object for "the real thing".
+    It intercepts the method calls you would normally do on an object as if it was the actual object.
+    Pyro then performs some magic to transfer the call to the computer that contains the *real* object,
+    where the actual method call is done, and the results are returned to the caller.
+    This means the calling code doesn't have to know if it's dealing with a normal or a remote object,
+    because the code is identical.
+    The class implementing Pyro proxies is :class:`Pyro4.core.Proxy`
+
+:abbr:`URI (Unique resource identifier)`
+    This is what Pyro uses to identify every object.
+    (similar to what a web page URL is to point to the different documents on the web).
+    Its string form is like this: "PYRO:" + object name + "@" + server name + port number.
+    The class implementing Pyro uris is :class:`Pyro4.core.URI`
+
+Pyro object
+    This is a normal Python object but it is registered with Pyro so that you can access it remotely.
+    Pyro objects are written just as any other object but the fact that Pyro knows something about
+    them makes them special, in the way that you can call methods on them from other programs.
+
+Pyro daemon (server)
+    This is the part of Pyro that listens for remote method calls, dispatches them
+    to the appropriate actual objects, and returns the results to the caller.
+    All Pyro objects are registered in one or more daemons.
+
+Pyro name server
+    The name server is a utility that provides a phone book for Pyro applications: you use it to look up a "number" by a "name".
+    The name in Pyro's case is the logical name of a remote object. The number is the exact location where Pyro can contact the object.
+
 
 Starting a name server
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -74,9 +107,8 @@ The name server will start and it prints something like::
 
 The name server has started and is listening on *localhost port 9090*.
 
-It also printed an :abbr:`URI (universal resource identifier)`. This is what Pyro uses to identify every object.
-(similar to what a web page URL is to point to the different documents on the web).
-It is read like this: "PYRO:" + object name + "@" + server name + port number.
+It also printed an :abbr:`URI (unique resource identifier)`. Remember that this is
+what Pyro uses to identify every object.
 
 The name server can be stopped with a :kbd:`control-c`, or on Windows, with :kbd:`ctrl-break`. But let it run
 in the background for the rest of this tutorial.

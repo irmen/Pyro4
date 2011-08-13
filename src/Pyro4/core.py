@@ -82,10 +82,12 @@ class URI(object):
 
     @staticmethod
     def isUnixsockLocation(location):
+        """determine if a location string is for a unix domain socket"""
         return location.startswith("./u:")
 
     @property
     def location(self):
+        """property containing the location string, for instance ``"servername.you.com:5555"``"""
         if self.host:
             return "%s:%d" % (self.host, self.port)
         elif self.sockname:
@@ -94,6 +96,7 @@ class URI(object):
             return None
 
     def asString(self):
+        """the string representation of this object"""
         result=self.protocol+":"+self.object
         location=self.location
         if location:
