@@ -448,11 +448,15 @@ class _AsyncRemoteMethod(object):
 
 
 class _AsyncResult(object):
+    """
+    The result object for asynchronous calls.
+    """
     def __init__(self):
         self.__ready=threadutil.Event()
         self.callchain=[]
         self.valueLock=threadutil.Lock()
     def ready(self, timeout=None):
+        """check if the result value is available, with optional wait timeout (in seconds)"""
         if timeout is None:
             return self.__ready.isSet()
         else:
@@ -474,8 +478,12 @@ class _AsyncResult(object):
                 self.__value=call(self.__value, **kwargs)
             self.callchain=[]
             self.__ready.set()
-    value=property(get_value, set_value)
+    value=property(get_value, set_value, None, "The result value of the call. Reading it will block if not available yet.")
     def then(self, call, **kwargs):
+        """
+        Add a callback to the call chain, to be invoked when the results become available.
+        Optional keyword arguments in kwargs.
+        """
         if self.__ready.isSet():
             # value is already known, we need to process it immediately (can't use the callchain anymore)
             self.__value=call(self.__value, **kwargs)

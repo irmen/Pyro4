@@ -12,7 +12,7 @@ from the server that notifies it that a worker has completed its job.
 (Note: the client uses oneway calls to start up the workers, this
 ensures that they are running in the background)
 
-For al this to work, the client needs to create a daemon as well:
+For all of this to work, the client needs to create a daemon as well:
 it needs to be able to receive (callback) calls after all.
 So it creates a deamon, a callback receiver, and starts it all up just
 like a server would do.

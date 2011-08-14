@@ -40,6 +40,14 @@ Here's a quick overview of Pyro's features:
 - large amount of unit tests and high test coverage.
 - built upon more than 10 years of existing Pyro history.
 
+.. warning::
+    Pyro uses the :py:mod:`pickle` module to serialize objects and sends them over the network.
+    It is well known that using :py:mod:`pickle` for this purpose is a security risk
+    (The main problem is that allowing your program to unpickle arbitrary data can cause
+    arbitrary code execution and may wreck or compromise your system).
+    However, Pyro has some security measures in place to deal with this.
+    They are described in the :doc:`security` chapter. It is strongly advised to read it.
+
 
 Pyro's history
 ^^^^^^^^^^^^^^
