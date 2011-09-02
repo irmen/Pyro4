@@ -12,6 +12,7 @@ Change Log
 - added deadlock example
 - added itunes example
 - fixed some missing methods in the api reference documentation
+- serialized data is released a bit faster to improve garbage collection
 
 
 **Pyro 4.8**
