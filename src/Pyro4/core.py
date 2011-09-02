@@ -245,6 +245,7 @@ class Proxy(object):
             data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags, self._pyroSeq)
             try:
                 self._pyroConnection.send(data)
+                del data  # invite GC to collect the object, don't wait for out-of-scope
                 if flags & MessageFactory.FLAGS_ONEWAY:
                     return None    # oneway call, no response data
                 else:
@@ -754,6 +755,7 @@ class Daemon(object):
             msgType, flags, seq, data = MessageFactory.getMessage(conn, MessageFactory.MSG_INVOKE)
             objId, method, vargs, kwargs=self.serializer.deserialize(
                                            data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
+            del data  # invite GC to collect the object, don't wait for out-of-scope
             obj=self.objectsById.get(objId)
             if obj is not None:
                 if kwargs and sys.version_info<(2, 6, 5) and os.name!="java":
