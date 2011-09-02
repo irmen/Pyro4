@@ -460,7 +460,11 @@ class _AsyncResult(object):
         Wait for the result to become available, with optional timeout (in seconds).
         Returns True if the result is ready, or False if it still isn't ready.
         """
-        return self.__ready.wait(timeout)
+        result=self.__ready.wait(timeout)
+        if result is None:
+            # older pythons return None from wait()
+            return self.__ready.isSet()
+        return result
     @property
     def ready(self):
         """Boolean that contains the readiness of the async result"""
