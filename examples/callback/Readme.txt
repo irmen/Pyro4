@@ -14,7 +14,7 @@ ensures that they are running in the background)
 
 For all of this to work, the client needs to create a daemon as well:
 it needs to be able to receive (callback) calls after all.
-So it creates a deamon, a callback receiver, and starts it all up just
+So it creates a daemon, a callback receiver, and starts it all up just
 like a server would do.
 
 The client counts the number of 'work completed' callbacks it receives.

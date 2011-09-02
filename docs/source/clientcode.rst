@@ -209,11 +209,15 @@ This object has the following interface:
     If you read this and the value is not yet available, execution is halted until the value becomes available.
     If it is already available you can read it as usual.
 
-.. py:method:: ready([timeout=None])
+.. py:attribute:: ready
 
-    Check if the result value is available, with optional wait timeout (in seconds). Default is None,
-    meaning infinite timeout. If the timeout expires before the result value is available, Pyro raises
-    :py:exc:`Pyro4.errors.AsyncResultTimeout`.
+    This property contains the readiness of the result value (``True`` meaning that the value is available).
+
+.. py:method:: wait([timeout=None])
+
+    Waits for the result value to become available, with optional wait timeout (in seconds). Default is None,
+    meaning infinite timeout. If the timeout expires before the result value is available, the call
+    will return ``False``. If the value has become available, it will return ``True``.
 
 .. py:method:: then(callable [, **kwargs])
 
@@ -226,7 +230,7 @@ A simple piece of code showing an asynchronous method call::
 
     async = Pyro4.async(proxy)
     asyncresult = async.remotemethod()
-    print "value available?", asyncresult.ready()
+    print "value available?", asyncresult.ready
     # ...do some other stuff...
     print "resultvalue=", asyncresult.value
 

@@ -15,8 +15,6 @@ The exception hierarchy is as follows::
                   +-- ConnectionClosedError
                   +-- ProtocolError
                   +-- TimeoutError
-                         |
-                         +-- AsyncResultTimeout
 
 .. automodule:: Pyro4.errors
    :members:

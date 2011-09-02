@@ -554,9 +554,9 @@ class RemoteMethodTests(unittest.TestCase):
         result=async.pause_and_divide(1,10,2)  # returns immediately
         duration=time.time()-begin
         self.assertTrue(duration<0.1)
-        self.assertFalse(result.ready())
+        self.assertFalse(result.ready)
         _=result.value
-        self.assertTrue(result.ready())
+        self.assertTrue(result.ready)
 
     def testAsyncCallbackMethod(self):
         class AsyncFunctionHolder(object):
@@ -579,9 +579,10 @@ class RemoteMethodTests(unittest.TestCase):
         proxy=self.AsyncProxyMock()
         async=Pyro4.async(proxy)
         result=async.pause_and_divide(1,10,2)  # returns immediately
-        self.assertFalse(result.ready())
-        self.assertRaises(Pyro4.errors.AsyncResultTimeout, result.ready, 0.5)  # won't be ready after 0.5 sec
-        self.assertTrue(result.ready(2))  # will be ready within 2 seconds
+        self.assertFalse(result.ready)
+        self.assertFalse(result.wait(0.5))  # won't be ready after 0.5 sec
+        self.assertTrue(result.wait(2))  # will be ready within 2 seconds
+        self.assertTrue(result.ready)
         self.assertEqual(5,result.value)
 
 

@@ -16,7 +16,7 @@ print("result=", proxy.divide(100,5))
 print("\n* async call:")
 async=Pyro4.async(proxy)
 asyncresult=async.divide(100,5)   # returns immediately
-print("result value available?",asyncresult.ready())   # returns False because the server is still 'busy'
+print("result value available?",asyncresult.ready)   # prints False because the server is still 'busy'
 print("client can do other stuff here.")
 print("getting result value...(will block until available)")
 print("resultvalue=",asyncresult.value)   # blocks until the result is available
@@ -43,14 +43,12 @@ print("\n* async call with timeout:")
 async=Pyro4.async(proxy)
 asyncresult=async.divide(100,5)
 print("checking if ready within 2 seconds...")
-try:
-    ready=asyncresult.ready(timeout=2)   # wait for ready within 2 seconds but the server takes 3
-    print("Weird, this shouldn't succeed!?... available=",ready)
-except Pyro4.errors.AsyncResultTimeout:
-    print("got exception (expected):",repr(sys.exc_info()[1]))
+ready=asyncresult.wait(2)   # wait for ready within 2 seconds but the server takes 3
+print("status after waiting=",ready)   # should print False
 print("checking again if ready within 5 seconds...(should be ok now)")
-ready=asyncresult.ready(timeout=5)   # wait 5 seconds now (but server will be done within 1 more second)
-print("available=",ready)
+ready=asyncresult.wait(timeout=5)   # wait 5 seconds now (but server will be done within 1 more second)
+print("status after waiting=",ready)
+print("available=",asyncresult.ready)
 print("resultvalue=",asyncresult.value)
 
 print("\n* a few async calls at the same time:")

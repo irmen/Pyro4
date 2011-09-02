@@ -3,6 +3,10 @@ Change Log
 
 **Pyro 4.9**
 
+- removed AsyncResultTimeout exception
+- asyncresult.ready is now a property instead of a method
+- asyncresult.wait() is a new method taking the optional timeout argument to wait for the result to become available.
+  It doesn't raise an exception, instead it returns true or false (like threading.Event.wait() does).
 - Additions to the documentation
 - added gui_eventloop example
 - added deadlock example

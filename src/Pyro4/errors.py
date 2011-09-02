@@ -47,11 +47,3 @@ class DaemonError(PyroError):
 class SecurityError(PyroError):
     """A security related error occurred."""
     pass
-
-
-class AsyncResultTimeout(TimeoutError):
-    """
-    A timeout error related to async calls:
-    the result from the async call didn't arrive within the given timeout period.
-    """
-    pass

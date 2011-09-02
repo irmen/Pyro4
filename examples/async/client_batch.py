@@ -23,7 +23,7 @@ batch.divide(99,9)
 batch.divide(555,2)
 print("getting results...")
 asyncresults = batch(async=True)  # returns immediately
-print("result value available?",asyncresults.ready())   # returns False because the server is still 'busy'
+print("result value available?",asyncresults.ready)   # prints False because the server is still 'busy'
 print("client can do other stuff here.")
 time.sleep(2)
 print("such as sleeping ;-)")
@@ -65,14 +65,12 @@ batch.divide(99,9)
 batch.divide(555,2)
 asyncresults = batch(async=True)  # returns immediately
 print("checking if ready within 2 seconds...")
-try:
-    ready=asyncresults.ready(timeout=2)   # wait for ready within 2 seconds but the server takes 3
-    print("Weird, this shouldn't succeed!?... available=",ready)
-except Pyro4.errors.AsyncResultTimeout:
-    print("got exception (expected):",repr(sys.exc_info()[1]))
+ready=asyncresults.wait(2)   # wait for ready within 2 seconds but the server takes 3
+print("status after wait=",ready)   # should print False
 print("checking again if ready within 10 seconds...(should be ok now)")
-ready=asyncresults.ready(timeout=10)   # wait 10 seconds now (but server will be done within ~8 more seconds)
-print("available=",ready)
+ready=asyncresults.wait(timeout=10)   # wait 10 seconds now (but server will be done within ~8 more seconds)
+print("status after wait=",ready)
+print("available=",asyncresults.ready)
 results=asyncresults.value
 print("resultvalues=",list(results))
 

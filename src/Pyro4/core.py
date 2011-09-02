@@ -20,7 +20,7 @@ import Pyro4
 
 __all__=["URI", "Proxy", "Daemon", "callback", "batch", "async"]
 
-if sys.version_info>(3, 0):
+if sys.version_info>=(3, 0):
     basestring=str
 
 log=logging.getLogger("Pyro.core")
@@ -455,16 +455,16 @@ class _AsyncResult(object):
         self.__ready=threadutil.Event()
         self.callchain=[]
         self.valueLock=threadutil.Lock()
-    def ready(self, timeout=None):
-        """check if the result value is available, with optional wait timeout (in seconds)"""
-        if timeout is None:
-            return self.__ready.isSet()
-        else:
-            self.__ready.wait(timeout)
-            if self.__ready.isSet():
-                return True
-            else:
-                raise Pyro4.errors.AsyncResultTimeout("async result didn't arrive in time")
+    def wait(self, timeout=None):
+        """
+        Wait for the result to become available, with optional timeout (in seconds).
+        Returns True if the result is ready, or False if it still isn't ready.
+        """
+        return self.__ready.wait(timeout)
+    @property
+    def ready(self):
+        """Boolean that contains the readiness of the async result"""
+        return self.__ready.isSet()
     def get_value(self):
         self.__ready.wait()
         if isinstance(self.__value, _ExceptionWrapper):
@@ -713,7 +713,7 @@ class Daemon(object):
         return self.transportServer.events(eventsockets)
 
     def shutdown(self):
-        """Cleanly terminate a deamon that is running in the requestloop. It must be running
+        """Cleanly terminate a daemon that is running in the requestloop. It must be running
         in a different thread, or this method will deadlock."""
         log.debug("daemon shutting down")
         self.__mustshutdown.set()

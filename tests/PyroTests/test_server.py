@@ -170,10 +170,11 @@ class ServerTestsOnce(unittest.TestCase):
             result=async.delayAndId(1,42)
             duration=time.time()-begin
             self.assertTrue(duration<0.1)
-            self.assertFalse(result.ready())
-            self.assertRaises(Pyro4.errors.AsyncResultTimeout, result.ready, 0.5)
+            self.assertFalse(result.ready)
+            self.assertFalse(result.wait(0.5))    # not available within 0.5 sec
             self.assertEqual("slept for 42",result.value)
-            self.assertTrue(result.ready())
+            self.assertTrue(result.ready)
+            self.assertTrue(result.wait())
 
     def testAsyncProxyCallchain(self):
         class FuncHolder(object):
@@ -192,7 +193,7 @@ class ServerTestsOnce(unittest.TestCase):
             duration=time.time()-begin
             self.assertTrue(duration<0.1)
             value=result.value
-            self.assertTrue(result.ready())
+            self.assertTrue(result.ready)
             self.assertEqual(22,value)
             self.assertEqual(3,holder.count)
 
@@ -239,7 +240,7 @@ class ServerTestsOnce(unittest.TestCase):
             holder=FuncHolder()
             result.then(holder.function).then(holder.function)
             value=result.value
-            self.assertTrue(result.ready())
+            self.assertTrue(result.ready)
             self.assertEqual([44,14],value)
             self.assertEqual(2,holder.count)
 
