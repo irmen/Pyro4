@@ -1,13 +1,12 @@
-Writing clients
-***************
+Clients: Calling remote objects
+*******************************
 
-This chapter explains how you go about writing 'client' programs.
-A client is a program that calls methods on a Pyro object.
-(The program that provides the object and actually runs the methods, is the server.
-Note that they can be mixed.)
+This chapter explains how you write code that calls remote objects.
+Often, a program that calls methods on a Pyro object is called a *client* program.
+(The program that provides the object and actually runs the methods, is the *server*.
+Both roles can be mixed in a single program.)
 
-Make sure you know what a Proxy, URI, Pyro object and a Pyro Name Server is.
-See :ref:`keyconcepts` for a quick introduction.
+Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
 
 
 Object discovery

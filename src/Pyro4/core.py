@@ -839,7 +839,7 @@ class Daemon(object):
         if hasattr(obj, "_pyroId"):
             raise errors.DaemonError("object already has a Pyro id")
         if objectId in self.objectsById:
-            raise errors.DaemonError("object already registered")
+            raise errors.DaemonError("object already registered with that id")
         # set some pyro attributes
         obj._pyroId=objectId
         obj._pyroDaemon=self

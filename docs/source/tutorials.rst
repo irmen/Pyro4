@@ -641,6 +641,11 @@ code is needed anyway to start up and configure the system. To be able to see th
 once more with comments on what changed with respect to the version in phase 1 (phase 2 is optional, it just makes
 for an easier transition).
 
+.. note::
+    This time we won't be using ``serveSimple`` to publish the objects and start the Daemon.
+    Instead, a daemon is created manually, we register our own objects,
+    and start the request loop ourselves. This needs more code but gives you more control.
+
 main
 ----
 There's no :file:`main.py` anymore. This is because you now start every component by itself, in separate

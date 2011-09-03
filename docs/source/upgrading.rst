@@ -125,4 +125,4 @@ Server code differences
 New features
 ^^^^^^^^^^^^
 Pyro4 introduces several new features that weren't available in Pyro3, so there is no migration path needed for those.
-(Things like batched calls, async calls, new config items etcetera).
+(Things like batched calls, async calls, new config items etc).

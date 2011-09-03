@@ -11,3 +11,8 @@ Detailed info on how to start/configure it.  (Command line tool: :ref:`command-l
 How to locate it from your code.
 The PYRO and PYRONAME protocol types.
 Name server Pyro interface.
+
+Pyro4.locateNS()
+Pyro4.resolve()
+
+

@@ -8,6 +8,8 @@ Tips & Tricks (@todo)
 
 Various miscellaneous tips and tricks:
 
+Logging.
+
 If you need to resolve lots of objects, consider using the name server directly instead of :meth:`Pyro4.resolve` /:meth:`Pyro4.naming.resolve` or PYRONAME uris
 
 Remember that URIs in proxies are unchanged. If you use many 'meta' uris (with PYRONAME) Pyro has to do a lookup everytime it needs to connect. Consider using PYRO uris or :meth:`Pyro4.core.Proxy._pyroBind()` if you want to avoid all the lookups.
