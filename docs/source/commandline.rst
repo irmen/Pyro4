@@ -1,5 +1,6 @@
 .. _command-line:
 
+******************
 Command line tools
 ******************
 

@@ -1,5 +1,6 @@
 .. include:: <isonum.txt>
 
+********
 Tutorial
 ********
 
@@ -15,6 +16,15 @@ Before proceeding, you should install Pyro if you haven't done so. For instructi
 
 In this tutorial, you will use Pyro's default configuration settings, so once Pyro is installed, you're all set!
 All you need is a text editor and a couple of console windows.
+During the tutorial, you are supposed to run everything on a single machine.
+This avoids initial networking complexity.
+
+.. note::
+    For security reasons, Pyro runs stuff on localhost by default.
+    If you want to access things from different machines, you'll have to tell Pyro
+    to do that explicitly.
+    At the end is a small paragraph :ref:`not-localhost` that tells you
+    how you can run the various components on different machines.
 
 .. note::
     The code of the two tutorial 'projects' is included in the Pyro source archive.
@@ -888,6 +898,48 @@ If you're interested to see what the name server now contains, type :command:`py
     example.stockmarket.newyork --> PYRO:obj_6bd09853979f4d13a73263e51a9c266b@localhost:50510
     example.stockquote.aggregator --> PYRO:obj_2c7a4f5341b1464c8cc6091f3997230f@localhost:50512
     --------END LIST
+
+
+.. _not-localhost:
+
+Running it on different machines
+================================
+For security reasons, Pyro runs stuff on localhost by default.
+If you want to access things from different machines, you'll have to tell Pyro to do that explicitly.
+This paragraph shows you how very briefly you can do this.
+For more details, refer to the chapters in this manual about the relevant Pyro components.
+
+*Name server*
+    to start the nameserver in such a way that it is accessible from other machines,
+    start it with an appropriate -n argument, like this: :command:`python -m Pyro4.naming -n your_hostname_here`
+
+*Warehouse server*
+    You'll have to modify :file:`warehouse.py`. Right before the ``serveSimple`` call you have to tell it to bind the daemon on your hostname
+    instead of localhost. You can do this by setting the ``HOST`` config item::
+
+        Pyro4.config.HOST="your_hostname_here"
+        Pyro4.Daemon.serveSimple(...)
+
+    You can also choose to leave the code alone, and instead set the ``PYRO_HOST`` environment variable
+    before starting the warehouse server.
+    Another option is to create a daemon yourself with the appropriate host argument::
+
+        pyrodaemon=Pyro4.Daemon(host="your_hostname_here")
+        Pyro4.Daemon.serveSimple(
+                {
+                    warehouse: "example.warehouse"
+                },
+                daemon=pyrodaemon,
+                ns=True)
+
+*Stock market servers*
+    This example already creates a daemon object insted of using the ``serveSimple`` call.
+    You'll have to modify the three source files because they all create a daemon.
+    But you'll only have to add the proper ``host`` argument to the construction of the Daemon,
+    to set it to your machine name instead of the default of localhost.
+    Ofcourse you could also change the ``HOST`` config item (either in the code itself,
+    or by setting the ``PYRO_HOST`` environment variable before launching.
+
 
 Ok, what's next?
 ================

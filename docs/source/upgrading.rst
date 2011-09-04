@@ -1,5 +1,6 @@
 .. include:: <isonum.txt>
 
+*********************
 Upgrading from Pyro 3
 *********************
 
@@ -36,9 +37,15 @@ Some of them may appear in the future in Pyro 4, but for now they're all exclusi
 **Availability in package forms**
 
 Some people can't or won't install software from source and rather use the package manager of their OS.
-Pyro 4 is not yet available in Linux package managers. Pyro 3 is available as a Debian package (an older version, but still).
+Pyro 4 might not yet be available in your package manager because it is rather new.
+Pyro 3 is available as a Debian package.
 So if you are on Debian (or a derivative like Ubuntu or Mint) and you only accept software from the distribution packages,
 Pyro 3 is your only choice for now.
+
+.. note::
+    The Pyro project itself does not provide any OS-specific packaging.
+    Things like the Debian Pyro package are created and maintained by
+    different people (thanks for that!)
 
 **Maturity**
 

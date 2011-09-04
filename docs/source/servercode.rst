@@ -1,3 +1,4 @@
+***************************
 Servers: publishing objects
 ***************************
 
@@ -66,6 +67,13 @@ The code above could also be written as::
 Verbose is set to True because you want it to print out the generated random object uri, otherwise
 there is no way to connect to your object. You can also choose to provide object names yourself,
 to use or not use the name server, etc. See :py:func:`Pyro4.core.Daemon.serveSimple`.
+
+Note that the amount of options you can provide is very limited.
+If you want to control the way the Pyro daemon is constructed (for instance, to make
+it listen on a different ip address than localhost), you'll have to do that by setting
+the appropriate config options before calling ``serveSimple``.
+Or you can create a daemon object yourself with the right arguments,
+and pass that to ``serveSimple`` so that it doesn't create a default daemon itself.
 
 Creating a Daemon
 -----------------
@@ -190,7 +198,13 @@ The following attributes will be added your object if you register it as a Pyro 
 * ``_pyroId`` - the unique id of this object (a ``str``)
 * ``_pyroDaemon`` - a reference to the :py:class:`Pyro4.core.Daemon` object that contains this object
 
-They will be removed once you unregister the object.
+Even though they start with an underscore (and are private, in a way),
+you can use them as you so desire. As long as you don't modify them!
+The daemon reference for instance is useful to register newly created objects with,
+to avoid the need of storing a global daemon object somewhere.
+
+
+These attributes will be removed again once you unregister the object.
 
 Network adapter binding (@todo)
 -------------------------------
