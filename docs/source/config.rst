@@ -62,6 +62,7 @@ NS_BCHOST               str     None           Hostname where the broadcast resp
 ONEWAY_THREADED         bool    True           Enable to make oneway calls be processed in their own separate thread
 POLLTIMEOUT             float   2.0            For the multiplexing server only: the timeout of the select or poll calls
 SERVERTYPE              str     "thread"       Select the Pyro server type. "thread" = thread pool based, "multiplex" = select/poll based
+SOCK_REUSE              bool    False          Should SO_REUSEADDR be used on sockets that Pyro creates.
 THREADING2              bool    False          Use the threading2 module if available instead of Python's standard threading module
 THREADPOOL_MINTHREADS   int     4              For the thread pool server: minimum amount of worker threads to be spawned
 THREADPOOL_MAXTHREADS   int     50             For the thread pool server: maximum amount of worker threads to be spawned

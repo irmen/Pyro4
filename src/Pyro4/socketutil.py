@@ -5,8 +5,8 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
 irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
 """
 
-import socket, os, errno, logging, time, sys
-from Pyro4.errors import ConnectionClosedError, TimeoutError, CommunicationError
+import socket, os, errno, time, sys
+from Pyro4.errors import ConnectionClosedError, TimeoutError
 
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.
@@ -20,8 +20,6 @@ if hasattr(errno, "WSAEWOULDBLOCK"):
 ERRNO_BADF=[errno.EBADF]
 if hasattr(errno, "WSAEBADF"):
     ERRNO_BADF.append(errno.WSAEBADF)
-
-log=logging.getLogger("Pyro.socketutil")
 
 
 def getIpAddress(hostname=None):
@@ -166,9 +164,9 @@ def sendData(sock, data):
                 retrydelay=__nextRetrydelay(retrydelay)
 
 
-def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeout=None, noinherit=False):
+def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=None, noinherit=False):
     """
-    Create a socket. Default options are keepalives and reuseaddr.
+    Create a socket. Default socket options are keepalives.
     If 'bind' or 'connect' is a string, it is assumed a unix domain socket is requested.
     Otherwise, a normal tcp/ip socket is used.
     """
@@ -180,6 +178,12 @@ def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeou
     if type(bind) is str or type(connect) is str:
         family=socket.AF_UNIX
     sock=socket.socket(family, socket.SOCK_STREAM)
+    if reuseaddr:
+        setReuseAddr(sock)
+    if keepalive:
+        setKeepalive(sock)
+    if noinherit:
+        setNoInherit(sock)
     if bind:
         if type(bind) is tuple and bind[1]==0:
             bindOnUnusedPort(sock, bind[0])
@@ -191,17 +195,11 @@ def createSocket(bind=None, connect=None, reuseaddr=True, keepalive=True, timeou
             pass  # jython sometimes raises errors here
     if connect:
         sock.connect(connect)
-    if reuseaddr:
-        setReuseAddr(sock)
-    if keepalive:
-        setKeepalive(sock)
-    if noinherit:
-        setNoInherit(sock)
     sock.settimeout(timeout)
     return sock
 
 
-def createBroadcastSocket(bind=None, reuseaddr=True, timeout=None):
+def createBroadcastSocket(bind=None, reuseaddr=False, timeout=None):
     """Create a udp broadcast socket."""
     if timeout==0:
         timeout=None
@@ -212,10 +210,9 @@ def createBroadcastSocket(bind=None, reuseaddr=True, timeout=None):
     if timeout is None:
         sock.settimeout(None)
     else:
-        if bind and os.name=="java":
-            # Jython has a problem with timeouts on udp sockets, see http://bugs.jython.org/issue1018
-            log.warn("not setting timeout on broadcast socket due to Jython issue 1018")
-        else:
+        if not bind or os.name!="java":
+            # only set timeout on the udp socket in this case, because Jython
+            # has a problem with timeouts on udp sockets, see http://bugs.jython.org/issue1018
             sock.settimeout(timeout)
     if bind:
         host,port=bind

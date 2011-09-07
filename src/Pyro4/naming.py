@@ -147,7 +147,7 @@ class BroadcastServer(object):
             bcport=Pyro4.config.NS_BCPORT
         if bchost is None:
             bchost=Pyro4.config.NS_BCHOST
-        self.sock=Pyro4.socketutil.createBroadcastSocket((bchost, bcport), timeout=2.0)
+        self.sock=Pyro4.socketutil.createBroadcastSocket((bchost, bcport), reuseaddr=Pyro4.config.SOCK_REUSE, timeout=2.0)
         self._sockaddr=self.sock.getsockname()
         bchost=bchost or self._sockaddr[0]
         bcport=bcport or self._sockaddr[1]
@@ -268,7 +268,7 @@ def locateNS(host=None, port=None):
         if not port:
             port=Pyro4.config.NS_BCPORT
         log.debug("broadcast locate")
-        sock=Pyro4.socketutil.createBroadcastSocket(timeout=0.7)
+        sock=Pyro4.socketutil.createBroadcastSocket(reuseaddr=Pyro4.config.SOCK_REUSE, timeout=0.7)
         for _ in range(3):
             try:
                 sock.sendto(BroadcastServer.REQUEST_NSURI, 0, ("<broadcast>", port))

@@ -14,6 +14,8 @@ Change Log
 - added itunes example
 - fixed some missing methods in the api reference documentation
 - serialized data is released a bit faster to improve garbage collection
+- fixed setting socket options in socketutil.createSocket
+- socket SO_REUSEADDR option now not set anymore by default; added new config item SOCK_REUSE to be able to set it to True if you want.
 
 
 **Pyro 4.8**

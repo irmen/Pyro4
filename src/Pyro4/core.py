@@ -284,7 +284,7 @@ class Proxy(object):
         connect_location=uri.sockname if uri.sockname else (uri.host, uri.port)
         try:
             with self.__pyroLock:
-                sock=socketutil.createSocket(connect=connect_location, timeout=self.__pyroTimeout)
+                sock=socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout)
                 conn=socketutil.SocketConnection(sock, uri.object)
                 # Do handshake. For now, no need to send anything.
                 msgType, flags, seq, data = MessageFactory.getMessage(conn, None)

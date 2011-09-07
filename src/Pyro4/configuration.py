@@ -15,7 +15,8 @@ import os, sys
 class Configuration(object):
     __slots__=("HOST", "NS_HOST", "NS_PORT", "NS_BCPORT", "NS_BCHOST",
                "COMPRESSION", "SERVERTYPE", "DOTTEDNAMES", "COMMTIMEOUT",
-               "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED", "DETAILED_TRACEBACK",
+               "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
+               "DETAILED_TRACEBACK", "SOCK_REUSE",
                "THREADPOOL_MINTHREADS", "THREADPOOL_MAXTHREADS",
                "THREADPOOL_IDLETIMEOUT", "HMAC_KEY", "AUTOPROXY")
 
@@ -34,6 +35,7 @@ class Configuration(object):
         self.DOTTEDNAMES = False   # server-side
         self.COMMTIMEOUT = 0.0
         self.POLLTIMEOUT = 2.0     # seconds
+        self.SOCK_REUSE = False    # so_reuseaddr on server sockets?
         self.THREADING2 = False    # use threading2 if available?
         self.ONEWAY_THREADED = True     # oneway calls run in their own thread
         self.DETAILED_TRACEBACK = False
