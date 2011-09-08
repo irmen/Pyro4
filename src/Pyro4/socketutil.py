@@ -180,8 +180,6 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
     sock=socket.socket(family, socket.SOCK_STREAM)
     if reuseaddr:
         setReuseAddr(sock)
-    if keepalive:
-        setKeepalive(sock)
     if noinherit:
         setNoInherit(sock)
     if bind:
@@ -195,6 +193,8 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
             pass  # jython sometimes raises errors here
     if connect:
         sock.connect(connect)
+    if keepalive:
+        setKeepalive(sock)
     sock.settimeout(timeout)
     return sock
 
