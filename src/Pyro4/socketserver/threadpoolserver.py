@@ -162,10 +162,14 @@ class SocketServer_Threadpool(object):
             try:
                 self.events([self.sock])
             except socket.error:
+                x=sys.exc_info()[1]
+                err=getattr(x, "errno", x.args[0])
                 if not loopCondition():
                     # swallow the socket error if loop terminates anyway
                     # this can occur if we are asked to shutdown, socket can be invalid then
                     break
+                if err in socketutil.ERRNO_RETRIES:
+                    continue
                 else:
                     raise
             except KeyboardInterrupt:
