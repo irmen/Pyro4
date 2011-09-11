@@ -17,6 +17,7 @@ Change Log
 - fixed setting socket options in socketutil.createSocket
 - socket SO_REUSEADDR option now not set anymore by default; added new config item SOCK_REUSE to be able to set it to True if you want.
 - threaded server should deal with EINTR and other errors better (retry call)
+- better closedown of threadpool server
 
 
 **Pyro 4.8**
