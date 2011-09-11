@@ -214,7 +214,11 @@ class SocketServer_Threadpool(object):
             worker.running=False
             csock=getattr(worker, "csock", None)
             if csock:
-                csock.close()    # terminate socket that the worker might be listening on
+                try:
+                    csock.sock.shutdown(socket.SHUT_RDWR)
+                except (EnvironmentError, socket.error):
+                    pass
+                csock.close()
             if self.workqueue is not None:
                 self.workqueue.put((None, None))  # put a 'stop' sentinel in the worker queue
         while joinWorkers:
