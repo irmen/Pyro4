@@ -37,6 +37,9 @@ class MyThing(object):
     def testargs(self,x,*args,**kwargs):
         return x,args,kwargs
 
+class MyThing2(object):
+    pass
+
 class DaemonLoopThread(threadutil.Thread):
     def __init__(self, pyrodaemon):
         super(DaemonLoopThread,self).__init__()
@@ -273,27 +276,30 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertRaises(StopIteration, next, results)     # no more results should be available after the error
 
     def testAutoProxy(self):
-        obj=MyThing()
+        obj=MyThing2()
         try:
             with Pyro4.core.Proxy(self.objectUri) as p:
+                Pyro4.config.AUTOPROXY=False   # make sure autoproxy is disabled
+                result=p.echo(obj)
+                self.assertTrue(isinstance(result,MyThing2))
+                self.daemon.register(obj)
+                result=p.echo(obj)
+                self.assertTrue(isinstance(result,MyThing2), "with autoproxy off the object should be an instance of the class")
+                self.daemon.unregister(obj)
+                result=p.echo(obj)
+                self.assertTrue(isinstance(result,MyThing2), "serialized object must still be normal object")
                 Pyro4.config.AUTOPROXY=True   # make sure autoproxying is enabled
                 result=p.echo(obj)
-                self.assertTrue(isinstance(result,MyThing))
+                self.assertTrue(isinstance(result,MyThing2), "non-pyro object must be returned as normal class")
                 self.daemon.register(obj)
                 result=p.echo(obj)
                 self.assertTrue(isinstance(result, Pyro4.core.Proxy),"serialized pyro object must be a proxy")
                 self.daemon.unregister(obj)
                 result=p.echo(obj)
-                self.assertTrue(isinstance(result,MyThing), "serialized object must be normal again")
-                Pyro4.config.AUTOPROXY=False   # try again without auto proxying
-                result=p.echo(obj)
-                self.assertTrue(isinstance(result,MyThing))
-                self.daemon.register(obj)
-                result=p.echo(obj)
-                self.assertTrue(isinstance(result,MyThing), "with autoproxy off the object should be an instance of the class")
-                self.daemon.unregister(obj)
-                result=p.echo(obj)
-                self.assertTrue(isinstance(result,MyThing), "serialized object must be normal again")
+                self.assertTrue(isinstance(result,MyThing2), "unregistered pyro object must be normal class again")
+                # note: the custom serializer may still be active but it should be smart enough to see
+                # that the object is no longer a pyro object, and therefore, no proxy should be created.
+
         finally:
             Pyro4.config.AUTOPROXY=True
 
