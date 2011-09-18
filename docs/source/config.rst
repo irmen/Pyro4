@@ -53,7 +53,7 @@ COMPRESSION             bool    False          Enable to make Pyro compress the 
 DETAILED_TRACEBACK      bool    False          Enable to get detailed exception tracebacks (including the value of local variables per stack frame)
 DOTTEDNAMES             bool    False          Server side only: Enable to support object traversal using dotted names (a.b.c.d)
 HMAC_KEY                bytes   None           Shared secret key to sign all communication messages
-HOST                    str     "localhost"    Hostname where Pyro daemons will bind on
+HOST                    str     localhost      Hostname where Pyro daemons will bind on
 NS_HOST                 str     *equal to      Hostname where the name server is supposed to be found
                                 HOST*
 NS_PORT                 int     9090           TCP port of the name server
@@ -61,10 +61,21 @@ NS_BCPORT               int     9091           UDP port of the broadcast respond
 NS_BCHOST               str     None           Hostname where the broadcast responder of the name sever is supposed to be found
 ONEWAY_THREADED         bool    True           Enable to make oneway calls be processed in their own separate thread
 POLLTIMEOUT             float   2.0            For the multiplexing server only: the timeout of the select or poll calls
-SERVERTYPE              str     "thread"       Select the Pyro server type. "thread" = thread pool based, "multiplex" = select/poll based
+SERVERTYPE              str     thread         Select the Pyro server type. thread=thread pool based, multiplex=select/poll based
 SOCK_REUSE              bool    False          Should SO_REUSEADDR be used on sockets that Pyro creates.
 THREADING2              bool    False          Use the threading2 module if available instead of Python's standard threading module
 THREADPOOL_MINTHREADS   int     4              For the thread pool server: minimum amount of worker threads to be spawned
 THREADPOOL_MAXTHREADS   int     50             For the thread pool server: maximum amount of worker threads to be spawned
 THREADPOOL_IDLETIMEOUT  float   5.0            For the thread pool server: number of seconds to pass for an idle worker thread to be terminated
+======================= ======= ============== =======
+
+There are two special config items that are only available as environment variable settings.
+This is because they are used at module import time (when the Pyro4 package is being imported).
+They control Pyro's logging behavior:
+
+======================= ======= ============== =======
+environment variable    type    default        meaning
+======================= ======= ============== =======
+PYRO_LOGLEVEL           string  *not set*      The log level to use for Pyro's logger (DEBUG, WARN, ...) See Python's standard :py:mod:`logging` module for the allowed values. If it is not set, no logging is being configured.
+PYRO_LOGFILE            string  pyro.log       The name of the log file. Use {stderr} to make the log go to the standard error output.
 ======================= ======= ============== =======

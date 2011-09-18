@@ -15,7 +15,7 @@ The various servers in Pyro4.socketserver implement this.
         When host or port is None, the server can select something appropriate itself.
         If possible, use ``Pyro4.config.COMMTIMEOUT`` on the sockets (see :doc:`config`).
         Set ``self.sock`` to the daemon server socket.
-        If unixsocket is given the name of a unix domain socket, that type of socket
+        If unixsocket is given the name of a Unix domain socket, that type of socket
         will be created instead of a regular tcp/ip socket.
 
     .. py:method:: loop(loopCondition)
@@ -53,4 +53,4 @@ The various servers in Pyro4.socketserver implement this.
         must be a string of the form ``"serverhostname:serverport"``
         can be different from the host:port arguments passed to initServer.
         because either of those can be None and the server will choose something appropriate.
-        If the socket is a unix domain socket, it should be of the form ``"./u:socketname"``.
+        If the socket is a Unix domain socket, it should be of the form ``"./u:socketname"``.

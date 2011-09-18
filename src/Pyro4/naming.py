@@ -12,7 +12,7 @@ from Pyro4.threadutil import RLock, Thread
 from Pyro4.errors import PyroError, NamingError
 import Pyro4
 
-__all__=["locateNS", "resolve"]
+__all__=["locateNS", "resolve", "startNS"]
 
 if sys.version_info>=(3, 0):
     basestring=str
@@ -212,7 +212,7 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
     nsUri=daemon.uriFor(daemon.nameserver)
     bcserver=None
     if unixsocket:
-        hostip="unix domain socket"
+        hostip="Unix domain socket"
     else:
         hostip=daemon.sock.getsockname()[0]
         if hostip.startswith("127."):
@@ -326,7 +326,7 @@ def main(args):
     parser=OptionParser()
     parser.add_option("-n", "--host", dest="host", help="hostname to bind server on")
     parser.add_option("-p", "--port", dest="port", type="int", help="port to bind server on (0=random)")
-    parser.add_option("-u","--unixsocket", help="unix domain socket name to bind server on")
+    parser.add_option("-u","--unixsocket", help="Unix domain socket name to bind server on")
     parser.add_option("", "--bchost", dest="bchost", help="hostname to bind broadcast server on (default is \"\")")
     parser.add_option("", "--bcport", dest="bcport", type="int",
                       help="port to bind broadcast server on (0=random)")

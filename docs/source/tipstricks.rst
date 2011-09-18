@@ -1,23 +1,29 @@
 .. _tipstrics:
 
-*********************
-Tips & Tricks (@todo)
-*********************
+*************
+Tips & Tricks
+*************
 
-.. note::
-  This still needs to be written
+Logging
+=======
+If you configure it (see :ref:`config-items`) Pyro will write a bit of debug information, errors, and notifications to a log file.
+It uses Python's standard :py:mod:`logging` module for this.
+Once enabled, your own program code could use Pyro's logging setup as well.
+But if you want to configure your own logging, make sure you do that before any Pyro imports. Then Pyro will skip its own autoconfig.
 
-Various miscellaneous tips and tricks:
+Multiple network interfaces
+===========================
+This is a difficult subject but here are a few short notes about it.
+*At this time, Pyro doesn't support running on multiple network interfaces at the same time*.
+You can bind a deamon on INADDR_ANY (0.0.0.0) though, including the name server.
+But weird things happen with the URIs of objects published through these servers, because they
+will point to 0.0.0.0 and your clients won't be able to connect to the actual objects.
 
-Logging.
-
-If you need to resolve lots of objects, consider using the name server directly instead of :meth:`Pyro4.resolve` /:meth:`Pyro4.naming.resolve` or PYRONAME uris
-
-Remember that URIs in proxies are unchanged. If you use many 'meta' uris (with PYRONAME) Pyro has to do a lookup everytime it needs to connect. Consider using PYRO uris or :meth:`Pyro4.core.Proxy._pyroBind()` if you want to avoid all the lookups.
-
-Info on multi-interface computers and binding daemons on INADDR_ANY. (and the current inability of publishing objects on multiple interfaces)
-
-If you make more connections to a daemon than its current thread pool, your client will hang until some connections have been freed, and worker threads have become available again.
+The name server however contains a little trick. The broadcast responder can also be bound on 0.0.0.0
+and it will in fact try to determine the correct ip address of the interface that a client needs to use
+to contact the name server on. So while you cannot run Pyro daemons on 0.0.0.0 (to respond to requests
+from all possible interfaces), sometimes it is possible to run only the name server on 0.0.0.0.
+The success ratio of all this depends heavily on your network setup.
 
 
 Wire protocol version

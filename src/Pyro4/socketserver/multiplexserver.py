@@ -94,7 +94,7 @@ class MultiplexedSocketServerBase(object):
                 pass
             self.sock.close()
             if type(sockname) is str:
-                # it was a unix domain socket, remove it from the filesystem
+                # it was a Unix domain socket, remove it from the filesystem
                 if os.path.exists(sockname):
                     os.remove(sockname)
         self.sock=None

@@ -13,7 +13,6 @@ command line argument.
 An idea is to define shell aliases for them, for instance:
 :kbd:`alias pyrons='python -m Pyro4.naming'`
 
-.. _command-line-nameserver:
 
 Name server
 ===========
@@ -29,11 +28,11 @@ A short explanation of the available options can be printed with the help option
 
    Print a short help message and exit.
 
-Detailed information is available here: :ref:`name-server`.
+.. seealso:: :ref:`nameserver-nameserver` for detailed information
 
 Name server control
 ===================
-:command:`python -m Pyro4.nsc [options] command [arguments]`
+synopsys: :command:`python -m Pyro4.nsc [options] command [arguments]`
 
 The name server control tool (or 'nsc') is used to talk to a running name server and perform
 diagnostic or maintenance actions such as querying the registered objects, adding or removing
@@ -46,36 +45,7 @@ A short explanation of the available options can be printed with the help option
 
    Print a short help message and exit.
 
-The available commands are:
-
-list : list [prefix]
-  List all objects registered in the name server. If you supply a prefix,
-  the list will be filtered to show only the objects whose name starts with the prefix.
-
-listmatching : listmatching pattern
-  List only the objects with a name matching the given regular expression pattern.
-
-register : register name uri
-  Registers a name to the given Pyro object :abbr:`URI (universal resource identifier)`.
-
-remove : remove name
-  Removes the entry with the exact given name from the name server.
-
-removematching : removematching pattern
-  Removes all entries matching the given regular expression pattern.
-
-ping
-  Does nothing besides checking if the name server is running and reachable.
-
-Example::
-
-  $ python -m Pyro4.nsc ping
-  Name server ping ok.
-
-  $ python -m Pyro4.nsc list Pyro
-  --------START LIST - prefix 'Pyro'
-  Pyro.NameServer --> PYRO:Pyro.NameServer@localhost:9090
-  --------END LIST - prefix 'Pyro'
+.. seealso:: :ref:`nameserver-nsc` for detailed information
 
 Test echo server
 ================

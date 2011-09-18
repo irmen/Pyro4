@@ -167,7 +167,7 @@ def sendData(sock, data):
 def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=None, noinherit=False):
     """
     Create a socket. Default socket options are keepalives.
-    If 'bind' or 'connect' is a string, it is assumed a unix domain socket is requested.
+    If 'bind' or 'connect' is a string, it is assumed a Unix domain socket is requested.
     Otherwise, a normal tcp/ip socket is used.
     """
     if timeout==0:

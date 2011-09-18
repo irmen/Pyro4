@@ -32,7 +32,7 @@ class URI(object):
     The uri format is like this: ``PYRO:objectid@location`` where location is one of:
 
     - ``hostname:port`` (tcp/ip socket on given port)
-    - ``./u:sockname`` (unix domain socket on localhost)
+    - ``./u:sockname`` (Unix domain socket on localhost)
 
     There is also a 'Magic format' for simple name resolution using Name server:
       ``PYRONAME:objectname[@location]``  (optional name server location, can also omit location port)
@@ -82,7 +82,7 @@ class URI(object):
 
     @staticmethod
     def isUnixsockLocation(location):
-        """determine if a location string is for a unix domain socket"""
+        """determine if a location string is for a Unix domain socket"""
         return location.startswith("./u:")
 
     @property
@@ -289,7 +289,7 @@ class Proxy(object):
         """Connects this proxy to the remote Pyro daemon. Does connection handshake."""
         from Pyro4.naming import resolve  # don't import this globally because of cyclic dependancy
         uri=resolve(self._pyroUri)
-        # socket connection (normal or unix domain socket)
+        # socket connection (normal or Unix domain socket)
         conn=None
         log.debug("connecting to %s", uri)
         connect_location=uri.sockname if uri.sockname else (uri.host, uri.port)

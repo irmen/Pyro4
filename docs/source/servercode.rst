@@ -90,7 +90,7 @@ It has a few optional arguments when you create it:
     :type host: str or None
     :param port: port to bind the server on. Defaults to 0, which means to pick a random port.
     :type port: int
-    :param unixsocket: the name of a unix domain socket to use instead of a TCP/IP socket. Default is ``None`` (don't use).
+    :param unixsocket: the name of a Unix domain socket to use instead of a TCP/IP socket. Default is ``None`` (don't use).
     :type unixsocket: str or None
 
 

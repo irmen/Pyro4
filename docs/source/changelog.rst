@@ -8,7 +8,7 @@ Change Log
 - asyncresult.ready is now a property instead of a method
 - asyncresult.wait() is a new method taking the optional timeout argument to wait for the result to become available.
   It doesn't raise an exception, instead it returns true or false.
-- Additions to the documentation
+- completed the documentation
 - added gui_eventloop example
 - added deadlock example
 - added itunes example
@@ -26,7 +26,7 @@ Change Log
 - Major additions to the documentation: tutorials, API docs, and much more.
 - Polished many docstrings in the sources, they're used in the generation of the API docs.
 - Unix domain socket support. Added :file:`unixdomainsock` example and unit tests.
-- Added options to the name server and echo server to use unix domain sockets.
+- Added options to the name server and echo server to use Unix domain sockets.
 - Name server broadcast responder will attempt to guess the caller's correct network
   interface, and use that to respond with the name server location IP (instead of 0.0.0.0).
   This should fix some problems that occurred when the nameserver was listening on
