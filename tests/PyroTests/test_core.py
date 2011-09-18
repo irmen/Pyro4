@@ -103,7 +103,8 @@ class CoreTests(unittest.TestCase):
         uri="PYRONAME:some_obj_name@host.com:8888"
         p=Pyro4.core.URI(uri)
         self.assertEqual(uri,str(p))
-        self.assertTrue("URI object at" in repr(p))
+        expected="<Pyro4.core.URI at 0x%x, PYRONAME:some_obj_name@host.com:8888>" % id(p)
+        self.assertEqual(expected, repr(p))
         uri="PYRO:12345@host.com:9999"
         p=Pyro4.core.URI(uri)
         self.assertEqual(uri,str(p))
@@ -211,11 +212,17 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("PYRO",pu.protocol)
         self.assertEqual("host"+unichr(0x20AC)+".com",pu.host)
         self.assertEqual("weirdchars"+unichr(0x20AC),pu.object)
-        self.assertEqual(pu.asString(), pu.__str__())
+        if sys.version_info<=(3,0):
+            self.assertEqual("PYRO:weirdchars?@host?.com:4444", pu.__str__())
+            expected="<Pyro4.core.URI at 0x%x, PYRO:weirdchars?@host?.com:4444>" % id(pu)
+            self.assertEqual(expected, repr(pu))
+        else:
+            self.assertEqual("PYRO:weirdchars"+unichr(0x20ac)+"@host"+unichr(0x20ac)+".com:4444", pu.__str__())
+            expected=("<Pyro4.core.URI at 0x%x, PYRO:weirdchars"+unichr(0x20ac)+"@host"+unichr(0x20ac)+".com:4444>") % id(pu)
+            self.assertEqual(expected, repr(pu))
         self.assertEqual("PYRO:weirdchars"+unichr(0x20ac)+"@host"+unichr(0x20ac)+".com:4444", pu.asString())
         self.assertEqual("PYRO:weirdchars"+unichr(0x20ac)+"@host"+unichr(0x20ac)+".com:4444", unicode(pu))
-        self.assertTrue("URI object at" in repr(pu))
-    
+
     def testUriCopy(self):
         p1=Pyro4.core.URI("PYRO:12345@hostname:9999")
         p2=Pyro4.core.URI(p1)
@@ -316,12 +323,13 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(p3._pyroSerializer, p1._pyroSerializer)
         self.assertTrue(p3._pyroSerializer is p1._pyroSerializer)
 
-    def testProxyStr(self):
+    def testProxyRepr(self):
         p=Pyro4.core.Proxy("PYRO:9999@localhost:15555")
-        self.assertEqual("<Pyro Proxy for PYRO:9999@localhost:15555>", str(p))
-        self.assertEqual(unicode("<Pyro Proxy for PYRO:9999@localhost:15555>"), unicode(p))
-        self.assertTrue("Proxy object at" in repr(p))
-        
+        address=id(p)
+        expected="<Pyro4.core.Proxy at 0x%x, not connected, for PYRO:9999@localhost:15555>" % address
+        self.assertEqual(expected, repr(p))
+        self.assertEqual(unicode(expected), unicode(p))
+
     def testProxySettings(self):
         p1=Pyro4.core.Proxy("PYRO:9999@localhost:15555")
         p2=Pyro4.core.Proxy("PYRO:9999@localhost:15555")

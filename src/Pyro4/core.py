@@ -104,10 +104,16 @@ class URI(object):
         return result
 
     def __str__(self):
-        return self.asString()
+        string=self.asString()
+        if sys.version_info<(3,0) and type(string) is unicode:
+            return string.encode("ascii", "replace")
+        return string
 
+    def __unicode__(self):
+        return self.asString()
+    
     def __repr__(self):
-        return "<%s.%s at 0x%x, %s>" % (self.__class__.__module__, self.__class__.__name__, id(self), self.asString())
+        return "<%s.%s at 0x%x, %s>" % (self.__class__.__module__, self.__class__.__name__, id(self), str(self))
 
     def __eq__(self, other):
         return (self.protocol, self.object, self.sockname, self.host, self.port) \
