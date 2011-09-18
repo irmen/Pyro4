@@ -106,6 +106,9 @@ class URI(object):
     def __str__(self):
         return self.asString()
 
+    def __repr__(self):
+        return "<%s.%s at 0x%x, %s>" % (self.__class__.__module__, self.__class__.__name__, id(self), self.asString())
+
     def __eq__(self, other):
         return (self.protocol, self.object, self.sockname, self.host, self.port) \
                 == (other.protocol, other.object, other.sockname, other.host, other.port)
@@ -181,8 +184,10 @@ class Proxy(object):
             raise AttributeError(name)
         return _RemoteMethod(self._pyroInvoke, name)
 
-    def __str__(self):
-        return "<Pyro Proxy for "+str(self._pyroUri)+">"
+    def __repr__(self):
+        connected="connected" if self._pyroConnection else "not connected"
+        return "<%s.%s at 0x%x, %s, for %s>" % (self.__class__.__module__, self.__class__.__name__,
+            id(self), connected, self._pyroUri)
 
     def __unicode__(self):
         return str(self)
@@ -902,8 +907,9 @@ class Daemon(object):
             self.transportServer.close()
             self.transportServer=None
 
-    def __str__(self):
-        return "<Pyro Daemon on "+self.locationStr+">"
+    def __repr__(self):
+        return "<%s.%s at 0x%x, %s, %d objects>" % (self.__class__.__module__, self.__class__.__name__,
+            id(self), self.locationStr, len(self.objectsById))
 
     def __enter__(self):
         if not self.transportServer:

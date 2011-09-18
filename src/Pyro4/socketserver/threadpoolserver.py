@@ -156,6 +156,10 @@ class SocketServer_Threadpool(object):
         if self.sock is not None:
             self.sock.close()
 
+    def __repr__(self):
+        return "<%s on %s, poolsize %d, %d queued>" % (self.__class__.__name__, self.locationStr,
+            len(self.threadpool.pool), self.workqueue.qsize())
+
     def loop(self, loopCondition=lambda: True):
         log.debug("threadpool server requestloop")
         while (self.sock is not None) and loopCondition():
