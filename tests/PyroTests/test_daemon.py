@@ -62,7 +62,8 @@ class DaemonTests(unittest.TestCase):
                 self.assertEqual(locationstr, d.locationStr)
                 self.assertEqual("PYRO:"+Pyro4.constants.DAEMON_NAME+"@"+locationstr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
                 # check the string representations
-                self.assertEqual("<Pyro Daemon on "+locationstr+">",str(d))
+                expected=("<Pyro4.core.Daemon at 0x%x, %s, 1 objects>") % (id(d), locationstr)
+                self.assertEqual(expected,str(d))
                 self.assertEqual(SOCKNAME,d.sock.getsockname())
                 self.assertEqual(socket.AF_UNIX,d.sock.family)
 
