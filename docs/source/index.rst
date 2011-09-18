@@ -15,9 +15,6 @@ Pyro is copyright © Irmen de Jong (irmen@razorvine.net | http://www.razorvine.n
 `Pyro homepage <http://irmen.home.xs4all.nl/pyro/>`_ | `Pyro on Python package index <http://pypi.python.org/pypi/Pyro4/>`_ |
 `Pyro mailing list <http://lists.sourceforge.net/lists/listinfo/pyro-core>`_ | :doc:`license`
 
-.. warning::
- Some parts of this manual still need to be written, or are incomplete.
-
 
 Contents
 --------

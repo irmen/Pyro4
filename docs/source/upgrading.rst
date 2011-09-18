@@ -112,6 +112,7 @@ Server code differences
 ^^^^^^^^^^^^^^^^^^^^^^^
 - ``Pyro.core.initServer`` was deprecated for a long time already, and has been removed.
 - ``Pyro.core.ObjBase`` is gone, just use any class directly as a Pyro object. Pyro4 injects a few magic attributes in your object. Their names start with ``_pyro`` for easy identification.
+- ``Pyro.core.SynchronizedObjBase`` is gone as well, you need to create your own thread safety measures if required (locks, Queues, etc)
 - see above for changes concerning how to locate the name server.
 - Daemons are created much in the same way as before. But they don't automagically register anything in the name server anymore so you have to do that yourself (``daemon.useNameServer`` is gone)
 - Daemons now bind on a random free port by default instead of a fixed port. You need to specify a port yourself when creating a daemon if you want a fixed port.

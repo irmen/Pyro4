@@ -11,8 +11,9 @@ Both roles can be mixed in a single program.)
 
 Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
 
-.. note::
-    See :doc:`config` for several config items that you can use to tweak various server side aspects.
+.. seealso::
+
+    :doc:`config` for several config items that you can use to tweak various server side aspects.
 
 
 Pyro Daemon: publishing Pyro objects
@@ -181,15 +182,44 @@ and the client won't be able to interact with the actual new Pyro object in the 
 There is a :file:`autoproxy` example that shows the use of this feature,
 and several other examples also make use of it.
 
-Server types and Object concurrency model (@todo)
-=================================================
-@todo
-threaded server
-multiplexed server
+Server types and Object concurrency model
+=========================================
+Pyro supports multiple server types (the way the Daemon listens for requests). Select the
+desired type by setting the ``SERVERTYPE`` config item. It depends very much on what you
+are doing in your Pyro objects what server type is most suitable. For instance, if your Pyro
+object does a lot of I/O, it may benefit from the parallelism provided by the thread pool server.
+However if it is doing a lot of CPU intensive calculations, the multiplexed server may be more
+appropriate. If in doubt, go with the default setting.
+
+#. threaded server (servertype ``"threaded"``, this is the default)
+    This server uses a thread pool to handle incoming proxy connections.
+    The size of the pool is configurable via various config items.
+    Every proxy on a client that connects to the daemon will be assigned to a thread to handle
+    the remote method calls. This way multiple calls can be processed concurrently.
+    This means your Pyro object must be *thread-safe*! If you access a shared resource from
+    your Pyro object you may need to take thread locking measures such as using Queues.
+    If the thread pool is too small for the number of proxy connections, new proxy connections will
+    be put to wait until another proxy disconnects from the server.
+
+#. multiplexed server (servertype ``"multiplex"``)
+    This server uses a select (or poll, if available) based connection multiplexer to process
+    all remote method calls sequentially. No threads are used in this server. It means
+    only one method call is running at a time, so if it takes a while to complete, all other
+    calls are waiting for their turn (even when they are from different proxies).
+
+.. note::
+    If the ``ONEWAY_THREADED`` config item is enabled (it is by default), *oneway* method calls will
+    be executed in a separate worker thread, regardless of the server type you're using.
+
+.. note::
+    It must be pretty obvious but the following is a very important concept so it is repeated
+    once more to be 100% clear:
+    Currently, you register *objects* with Pyro, not *classes*. This means remote method calls
+    to a certain Pyro object always run on the single instance that you registered with Pyro.
 
 
-Other features (@todo)
-======================
+Other features
+==============
 
 Attributes added to Pyro objects
 --------------------------------
@@ -206,10 +236,42 @@ to avoid the need of storing a global daemon object somewhere.
 
 These attributes will be removed again once you unregister the object.
 
-Network adapter binding (@todo)
--------------------------------
-@todo Default: localhost. See :doc:`security`.
+Network adapter binding
+-----------------------
 
-Daemon Pyro interface (@todo)
------------------------------
-@todo see :class:`Pyro4.core.DaemonObject`
+All Pyro daemons bind on localhost by default. This is because of security reasons.
+This means only processes on the same machine have access to your Pyro objects.
+If you want to make them available for remote machines, you'll have to tell Pyro on what
+network interface address it must bind the daemon.
+
+.. warning::
+    Read chapter :doc:`security` before exposing Pyro objects to remote machines!
+
+There are a few ways to tell Pyro what network address it needs to use.
+You can set a global config item ``HOST``, or pass a ``host`` parameter to the constructor of a Daemon,
+or use a command line argument if you're dealing with the name server.
+For more details, refer to the chapters in this manual about the relevant Pyro components.
+
+Pyro provides a couple of utility functions to help you with finding the appropriate IP address
+to bind your servers on if you want to make them publicly accessible:
+
+* :py:func:`Pyro4.socketutil.getMyIpAddress`
+* :py:func:`Pyro4.socketutil.getInterfaceAddress`
+
+
+Daemon Pyro interface
+---------------------
+A rather interesting aspect of Pyro's Daemon is that it (partly) is a Pyro object itself.
+This means it exposes a couple of remote methods that you can also invoke yourself if you want.
+The object exposed is :class:`Pyro4.core.DaemonObject` (as you can see it is a bit limited still).
+
+You access this object by creating a proxy for the ``"Pyro.Daemon"`` object. That is a reserved
+object name. You can use it directly but it is preferable to use the constant
+``Pyro4.constants.DAEMON_NAME``. An example follows that accesses the daemon object from a running name server::
+
+    >>> import Pyro4
+    >>> daemon=Pyro4.Proxy("PYRO:"+Pyro4.constants.DAEMON_NAME+"@localhost:9090")
+    >>> daemon.ping()
+    >>> daemon.registered()
+    ['Pyro.NameServer', 'Pyro.Daemon']
+
