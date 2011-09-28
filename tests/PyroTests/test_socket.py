@@ -20,16 +20,13 @@ class TestSocketutil(unittest.TestCase):
         Pyro4.config.POLLTIMEOUT=0.1
         
     def testGetIP(self):
-        localip=SU.getIpAddress()
-        localhost=socket.getfqdn(localip)
-        self.assertEqual(localip,SU.getIpAddress(localhost))
-        myip=SU.getMyIpAddress()
+        myip=SU.getIpAddress("")
         self.assertTrue(len(myip)>4)
-        myip=SU.getMyIpAddress(workaround127=True)
+        myip=SU.getIpAddress("",workaround127=True)
         self.assertTrue(len(myip)>4)
         self.assertFalse(myip.startswith("127."))
-        self.assertEqual("127.0.0.1", SU.getMyIpAddress("127.0.0.1",workaround127=False))
-        self.assertNotEqual("127.0.0.1", SU.getMyIpAddress("127.0.0.1",workaround127=True))
+        self.assertEqual("127.0.0.1", SU.getIpAddress("127.0.0.1",workaround127=False))
+        self.assertNotEqual("127.0.0.1", SU.getIpAddress("127.0.0.1",workaround127=True))
         
     def testUnusedPort(self):
         port1=SU.findUnusedPort()

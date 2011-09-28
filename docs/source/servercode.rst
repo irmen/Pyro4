@@ -255,7 +255,7 @@ For more details, refer to the chapters in this manual about the relevant Pyro c
 Pyro provides a couple of utility functions to help you with finding the appropriate IP address
 to bind your servers on if you want to make them publicly accessible:
 
-* :py:func:`Pyro4.socketutil.getMyIpAddress`
+* :py:func:`Pyro4.socketutil.getIpAddress`
 * :py:func:`Pyro4.socketutil.getInterfaceAddress`
 
 

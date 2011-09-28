@@ -116,7 +116,7 @@ Server code differences
 - see above for changes concerning how to locate the name server.
 - Daemons are created much in the same way as before. But they don't automagically register anything in the name server anymore so you have to do that yourself (``daemon.useNameServer`` is gone)
 - Daemons now bind on a random free port by default instead of a fixed port. You need to specify a port yourself when creating a daemon if you want a fixed port.
-- Daemons bind on localhost by default, instead of 0.0.0.0. If you want to expose to the network, you'll have to provide a proper hostname or ip address yourself. There are two utility methods in the ``Pyro4.socketutil`` module that can help you with that: ``getIpAddress`` and ``getMyIpAddress``.
+- Daemons bind on localhost by default, instead of 0.0.0.0. If you want to expose to the network, you'll have to provide a proper hostname or ip address yourself. There is a utility method in the ``Pyro4.socketutil`` module that can help you with that: ``getIpAddress``.
 - ``daemon.connect`` has been renamed to ``daemon.register``. It still returns the URI for the object, as usual.
 - ``daemon.disconnect`` has been renamed to ``daemon.unregister``
 - ``daemon.connectPersistent`` is gone, just pass the existing object id as a parameter to the normal register.

@@ -21,27 +21,64 @@ ERRNO_BADF=[errno.EBADF]
 if hasattr(errno, "WSAEBADF"):
     ERRNO_BADF.append(errno.WSAEBADF)
 
-
-def getIpAddress(hostname=None):
-    """returns the IP address for the current, or another, hostname"""
-    return socket.gethostbyname(hostname or socket.gethostname())
+if not hasattr(socket, "SOL_TCP"):
+    socket.SOL_TCP=socket.IPPROTO_TCP
 
 
-def getMyIpAddress(hostname=None, workaround127=False):
-    """returns our own IP address. If you enable the workaround,
-    it will use a little hack if the system reports our own ip address
-    as being localhost (this is often the case on Linux)"""
-    ip=getIpAddress(hostname)
-    if ip.startswith("127.") and workaround127:
-        ip=getInterfaceAddress("4.2.2.2")   # 'abuse' a level 3 DNS server
-    return ip
+def getIpType(hostnameOrAddress):
+    """
+    Determine what the IP type is of the given hostname or ip address (4 or 6).
+    This is done by checking if it is enclosed in brackets [].
+    If it is, it's 6, otherwise it's 4.  Returns 0 if unknown.
+    """
+    if hostnameOrAddress in (None, ""):
+        return 0
+    if hostnameOrAddress.startswith("[") and hostnameOrAddress.endswith("]"):
+        return 6
+    return 4
+
+
+def getIpAddress(hostname, workaround127=False):
+    """
+    Returns the IP address for the given host. If you enable the workaround,
+    it will use a little hack if the ip address is found to be the loopback address.
+    The hack tries to discover an externally visible ip address instead
+    (this only works for ipv4 addresses).
+    """
+    def getaddr4(hostname):
+        ip=socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
+        if ip.startswith("127.") and workaround127:
+            ip=getInterfaceAddress("4.2.2.2")   # 'abuse' a level 3 DNS server
+        return ip
+    def getaddr6(hostname):
+        return socket.getaddrinfo(hostname, None, socket.AF_INET6, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
+    def getaddr(hostname):
+        if getIpType(hostname) in (0,4):
+            try:
+                return getaddr4(hostname)       # first try ipv4
+            except socket.gaierror:
+                return "["+getaddr6(hostname)+"]"     # if that fails, try ipv6
+        else:
+            return "["+getaddr6(hostname[1:-1])+"]"     # ipv6
+    try:
+        return getaddr(hostname)
+    except socket.gaierror:
+        if hostname in (None,""):
+            return getaddr(socket.gethostname())   # sometimes empty hostname isn't allowed
+        else:
+            raise
 
 
 def getInterfaceAddress(peer_ip_address):
     """tries to find the ip address of the interface that connects to a given host"""
-    s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect((peer_ip_address, 53))   # 53=dns
-    ip=s.getsockname()[0]
+    if getIpType(peer_ip_address)==4:
+        s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect((peer_ip_address, 53))   # 53=dns
+        ip=s.getsockname()[0]
+    else:
+        s=socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+        s.connect((peer_ip_address[1:-1], 53))   # 53=dns
+        ip="["+s.getsockname()[0]+"]"
     s.close()
     return ip
 
