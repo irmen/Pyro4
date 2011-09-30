@@ -223,5 +223,5 @@ man_pages = [
 
 def setup(app):
     from sphinx.ext.autodoc import cut_lines
-    # skip the 2 copyright lines in every module docstring
-    app.connect('autodoc-process-docstring', cut_lines(pre=0, post=2, what=['module']))
+    # skip the copyright line in every module docstring (last line of docstring)
+    app.connect('autodoc-process-docstring', cut_lines(pre=0, post=1, what=['module']))
