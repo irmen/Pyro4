@@ -7,8 +7,7 @@ This is usually invoked by starting this module as a script:
 It is also possible to use the :class:`EchoServer` in user code
 but that is not terribly useful.
 
-Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import sys, os, time

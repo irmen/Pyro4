@@ -1,8 +1,7 @@
 """
 Tests for the package structure and import names.
 
-Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import unittest

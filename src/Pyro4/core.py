@@ -1,8 +1,7 @@
 """
 Core logic (uri, daemon, proxy stuff).
 
-Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement

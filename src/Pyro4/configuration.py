@@ -1,8 +1,7 @@
 """
 Configuration settings.
 
-Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 # Env vars used at package import time (see __init__.py):

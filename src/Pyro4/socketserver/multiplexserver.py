@@ -1,8 +1,7 @@
 """
 Socket server based on socket multiplexing. Doesn't use threads.
 
-Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import socket, select, sys, logging, os

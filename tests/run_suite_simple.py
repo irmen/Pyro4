@@ -2,8 +2,7 @@
 Run the complete test suite. Doesn't require nose and coverage,
 but is more braindead and gives less output.
 
-Pyro - Python Remote Objects.  Copyright by Irmen de Jong.
-irmen@razorvine.net - http://www.razorvine.net/projects/Pyro
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import unittest
