@@ -16,4 +16,5 @@ such as :mod:`Pyro4.core`, but for ease of use, the most important ones are also
    api/config.rst
    api/errors.rst
    api/echoserver.rst
+   api/flame.rst
    api/socketserver.rst

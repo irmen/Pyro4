@@ -13,5 +13,8 @@ DAEMON_NAME = "Pyro.Daemon"
 # standard name for the Name server itself
 NAMESERVER_NAME = "Pyro.NameServer"
 
+# standard name for Flame server
+FLAME_NAME = "Pyro.Flame"
+
 # wire protocol version
 PROTOCOL_VERSION = 44
