@@ -101,12 +101,21 @@ class RemoteInteractiveConsole(code.InteractiveConsole):
         banner = self.remoteconsole.get_banner()
         code.InteractiveConsole.interact(self, banner=banner)
         print("(Remote session ended)")
+    def close(self):
+        self.remoteconsole.terminate()
         self.remoteconsole._pyroRelease()
     def push(self, line):
         output, more = self.remoteconsole.push_and_get_output(line)
         if output:
             sys.stdout.write(output)
         return more
+    def __repr__(self):
+        return "<%s.%s at 0x%x, for %s>" % (self.__class__.__module__, self.__class__.__name__,
+            id(self), self.remoteconsole._pyroUri.location)
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
 
 class InteractiveConsole(code.InteractiveConsole):
@@ -126,6 +135,9 @@ class InteractiveConsole(code.InteractiveConsole):
         return self.banner          # custom banner string, set by Pyro daemon
     def write(self, data):
         sys.stdout.write(data)      # stdout instead of stderr
+    def terminate(self):
+        self._pyroDaemon.unregister(self)
+        self.resetbuffer()
 
 
 class Flame(object):
@@ -169,13 +181,13 @@ class Flame(object):
     def sendfile(self, filename, filedata):
         """store a new file on the server"""
         import os, stat
-        with open(filename,"wb") as targetfile:
+        with open(filename, "wb") as targetfile:
             os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR)    # readable/writable by owner only
             targetfile.write(filedata)
 
     def getfile(self, filename):
         """read any accessible file from the server"""
-        with open(filename,"rb") as file:
+        with open(filename, "rb") as file:
             return file.read()
 
     def console(self):
