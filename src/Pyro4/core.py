@@ -911,7 +911,7 @@ class Daemon(object):
         Be *very* cautious before starting this: it allows the clients full access to everything on your system.
         """
         import Pyro4.flame
-        flame=Pyro4.flame.FlameServer()
+        flame=Pyro4.flame.Flame()
         return self.register(flame, Pyro4.constants.FLAME_NAME)
 
     def close(self):
