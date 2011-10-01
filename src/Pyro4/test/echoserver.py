@@ -17,6 +17,7 @@ import Pyro4
 
 __all__=["EchoServer"]
 
+
 class EchoServer(object):
     """
     The echo server object that is provided as a Pyro object by this module.

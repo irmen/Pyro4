@@ -19,7 +19,7 @@ import Pyro4
 
 __all__=["URI", "Proxy", "Daemon", "callback", "batch", "async"]
 
-if sys.version_info>=(3, 0):
+if sys.version_info>=(3,0):
     basestring=str
 
 log=logging.getLogger("Pyro.core")
@@ -110,7 +110,7 @@ class URI(object):
 
     def __unicode__(self):
         return self.asString()
-    
+
     def __repr__(self):
         return "<%s.%s at 0x%x, %s>" % (self.__class__.__module__, self.__class__.__name__, id(self), str(self))
 
@@ -264,7 +264,7 @@ class Proxy(object):
                     data=self._pyroSerializer.deserialize(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
                     if flags & MessageFactory.FLAGS_EXCEPTION:
                         if sys.platform=="cli":
-                            fixIronPythonExceptionForPickle(data, False) # extract
+                            fixIronPythonExceptionForPickle(data, False)
                         raise data
                     else:
                         return data
@@ -359,7 +359,6 @@ class Proxy(object):
         if oneway:
             flags|=MessageFactory.FLAGS_ONEWAY
         return self._pyroInvoke("<batch>", calls, None, flags)
-
 
 
 class _BatchedRemoteMethod(object):
@@ -466,6 +465,7 @@ class _AsyncResult(object):
         self.__ready=threadutil.Event()
         self.callchain=[]
         self.valueLock=threadutil.Lock()
+
     def wait(self, timeout=None):
         """
         Wait for the result to become available, with optional timeout (in seconds).
@@ -476,16 +476,19 @@ class _AsyncResult(object):
             # older pythons return None from wait()
             return self.__ready.isSet()
         return result
+
     @property
     def ready(self):
         """Boolean that contains the readiness of the async result"""
         return self.__ready.isSet()
+
     def get_value(self):
         self.__ready.wait()
         if isinstance(self.__value, _ExceptionWrapper):
             self.__value.raiseIt()
         else:
             return self.__value
+
     def set_value(self, value):
         with self.valueLock:
             self.__value=value
@@ -493,7 +496,9 @@ class _AsyncResult(object):
                 self.__value=call(self.__value, **kwargs)
             self.callchain=[]
             self.__ready.set()
+
     value=property(get_value, set_value, None, "The result value of the call. Reading it will block if not available yet.")
+
     def then(self, call, **kwargs):
         """
         Add a callback to the call chain, to be invoked when the results become available.
@@ -519,13 +524,14 @@ class _ExceptionWrapper(object):
 
     def raiseIt(self):
         if sys.platform=="cli":
-            fixIronPythonExceptionForPickle(self.exception, False) # extract attributes
+            fixIronPythonExceptionForPickle(self.exception, False)
         raise self.exception
 
 
 def batch(proxy):
     """convenience method to get a batch proxy adapter"""
     return proxy._pyroBatch()
+
 
 def async(proxy):
     """convenience method to get an async proxy adapter"""
@@ -555,7 +561,7 @@ class MessageFactory(object):
     FLAGS_HMAC = 1<<3
     FLAGS_BATCH = 1<<4
     MAGIC = 0x34E9
-    if sys.version_info>=(3, 0):
+    if sys.version_info>=(3,0):
         empty_bytes = bytes([])
         pyro_tag = bytes("PYRO", "ASCII")
         empty_hmac = bytes(hashlib.sha1().digest_size)
@@ -905,6 +911,15 @@ class Daemon(object):
                 raise errors.DaemonError("object isn't registered")
         return URI("PYRO:"+objectOrId+"@"+self.locationStr)
 
+    def startFlame(self):
+        """
+        Create and register a Flame server.
+        Be *very* cautious before starting this: it allows the clients full access to everything on your system.
+        """
+        import Pyro4.flame
+        flame=Pyro4.flame.Flame()
+        return self.register(flame, Pyro4.constants.FLAME_NAME)
+
     def close(self):
         """Close down the server and release resources"""
         log.debug("daemon closing")
@@ -931,6 +946,7 @@ class Daemon(object):
 class __IronPythonExceptionArgs(object):
     def __init__(self,data):
         self.data=data
+
 
 def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
     """function to hack around a bug in IronPython where it doesn't pickle
