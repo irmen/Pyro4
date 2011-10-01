@@ -12,7 +12,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import sys
 import types
-import inspect
 import code
 import Pyro4.core
 import Pyro4.util
@@ -163,10 +162,23 @@ class Flame(object):
 
     def getmodule(self, modulename):
         """obtain the source code from a module available on the server"""
+        import inspect
         module = __import__(modulename, globals={}, locals={})
         return inspect.getsource(module)
 
-    def interactive(self):
+    def sendfile(self, filename, filedata):
+        """store a new file on the server"""
+        import os, stat
+        with open(filename,"wb") as targetfile:
+            os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR)    # readable/writable by owner only
+            targetfile.write(filedata)
+
+    def getfile(self, filename):
+        """read any accessible file from the server"""
+        with open(filename,"rb") as file:
+            return file.read()
+
+    def console(self):
         """get a proxy for a remote interactive console session"""
         console = InteractiveConsole()
         uri = self._pyroDaemon.register(console)
