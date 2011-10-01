@@ -55,20 +55,27 @@ class FlameModule(object):
         # store a proxy to the flameserver regardless of autoproxy setting
         self.flameserver = Pyro4.core.Proxy(flameserver._pyroDaemon.uriFor(flameserver))
         self.module = module
+
     def __getattr__(self, item):
         if item in ("__getnewargs__", "__getinitargs__"):
             raise AttributeError(item)
         return Pyro4.core._RemoteMethod(self.__invoke, "%s.%s" % (self.module, item))
+
     def __getstate__(self):
         return self.__dict__
+
     def __setstate__(self, args):
         self.__dict__ = args
+
     def __invoke(self, module, args, kwargs):
         return self.flameserver._invokeModule(module, args, kwargs)
+
     def __enter__(self):
         return self
+
     def __exit__(self, exc_type, exc_value, traceback):
         self.flameserver._pyroRelease()
+
     def __repr__(self):
         return "<%s.%s at 0x%x, module '%s' at %s>" % (self.__class__.__module__, self.__class__.__name__,
             id(self), self.module, self.flameserver._pyroUri.location)
@@ -80,12 +87,16 @@ class FlameBuiltin(object):
         # store a proxy to the flameserver regardless of autoproxy setting
         self.flameserver = Pyro4.core.Proxy(flameserver._pyroDaemon.uriFor(flameserver))
         self.builtin = builtin
+
     def __call__(self, *args, **kwargs):
         return self.flameserver._invokeBuiltin(self.builtin, args, kwargs)
+
     def __enter__(self):
         return self
+
     def __exit__(self, exc_type, exc_value, traceback):
         self.flameserver._pyroRelease()
+
     def __repr__(self):
         return "<%s.%s at 0x%x, builtin '%s' at %s>" % (self.__class__.__module__, self.__class__.__name__,
             id(self), self.builtin, self.flameserver._pyroUri.location)
@@ -97,23 +108,29 @@ class RemoteInteractiveConsole(code.InteractiveConsole):
         code.InteractiveConsole.__init__(self)
         # store a proxy to the console regardless of autoproxy setting
         self.remoteconsole = Pyro4.core.Proxy(remoteconsoleuri)
+
     def interact(self, banner=None):
         banner = self.remoteconsole.get_banner()
         code.InteractiveConsole.interact(self, banner=banner)
         print("(Remote session ended)")
+
     def close(self):
         self.remoteconsole.terminate()
         self.remoteconsole._pyroRelease()
+
     def push(self, line):
         output, more = self.remoteconsole.push_and_get_output(line)
         if output:
             sys.stdout.write(output)
         return more
+
     def __repr__(self):
         return "<%s.%s at 0x%x, for %s>" % (self.__class__.__module__, self.__class__.__name__,
             id(self), self.remoteconsole._pyroUri.location)
+
     def __enter__(self):
         return self
+
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
@@ -131,10 +148,13 @@ class InteractiveConsole(code.InteractiveConsole):
         finally:
             sys.stdout = stdout_save
         return output, more
+
     def get_banner(self):
         return self.banner          # custom banner string, set by Pyro daemon
+
     def write(self, data):
         sys.stdout.write(data)      # stdout instead of stderr
+
     def terminate(self):
         self._pyroDaemon.unregister(self)
         self.resetbuffer()
