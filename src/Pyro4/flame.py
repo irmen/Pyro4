@@ -13,24 +13,29 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import sys
 import types
 import inspect
+import code
 import Pyro4.core
 import Pyro4.util
 import Pyro4.constants
 try:
     import importlib
 except ImportError:
-    importlib=None
+    importlib = None
 try:
     import builtins
 except ImportError:
     import __builtin__ as builtins
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 
-__all__=["connect","Flame"]
+__all__ = ["connect", "Flame"]
 
 
 # Exec is a statement in Py2, a function in Py3
 # Workaround as written by Ned Batchelder on his blog.
-if sys.version_info>(3,0):
+if sys.version_info > (3, 0):
     def exec_function(source, filename, global_map):
         exec(compile(source, filename, "exec"), global_map)
 else:
@@ -46,23 +51,21 @@ def exec_function(source, filename, global_map):
 
 
 class FlameModule(object):
-    """
-    Proxy to a remote module.
-    """
+    """Proxy to a remote module."""
     def __init__(self, flameserver, module):
         # store a proxy to the flameserver regardless of autoproxy setting
-        self.flameserver=Pyro4.core.Proxy(flameserver._pyroDaemon.uriFor(flameserver))
-        self.module=module
+        self.flameserver = Pyro4.core.Proxy(flameserver._pyroDaemon.uriFor(flameserver))
+        self.module = module
     def __getattr__(self, item):
-        if item in ("__getnewargs__","__getinitargs__"):
+        if item in ("__getnewargs__", "__getinitargs__"):
             raise AttributeError(item)
         return Pyro4.core._RemoteMethod(self.__invoke, "%s.%s" % (self.module, item))
     def __getstate__(self):
         return self.__dict__
     def __setstate__(self, args):
-        self.__dict__=args
+        self.__dict__ = args
     def __invoke(self, module, args, kwargs):
-        return self.flameserver._invokeModule(module, args,kwargs)
+        return self.flameserver._invokeModule(module, args, kwargs)
     def __enter__(self):
         return self
     def __exit__(self, exc_type, exc_value, traceback):
@@ -73,13 +76,11 @@ class FlameModule(object):
 
 
 class FlameBuiltin(object):
-    """
-    Proxy to a remote builtin function.
-    """
+    """Proxy to a remote builtin function."""
     def __init__(self, flameserver, builtin):
         # store a proxy to the flameserver regardless of autoproxy setting
-        self.flameserver=Pyro4.core.Proxy(flameserver._pyroDaemon.uriFor(flameserver))
-        self.builtin=builtin
+        self.flameserver = Pyro4.core.Proxy(flameserver._pyroDaemon.uriFor(flameserver))
+        self.builtin = builtin
     def __call__(self, *args, **kwargs):
         return self.flameserver._invokeBuiltin(self.builtin, args, kwargs)
     def __enter__(self):
@@ -91,6 +92,43 @@ class FlameBuiltin(object):
             id(self), self.builtin, self.flameserver._pyroUri.location)
 
 
+class RemoteInteractiveConsole(code.InteractiveConsole):
+    """Proxy to a remote interactive console."""
+    def __init__(self, remoteconsoleuri):
+        code.InteractiveConsole.__init__(self)
+        # store a proxy to the console regardless of autoproxy setting
+        self.remoteconsole = Pyro4.core.Proxy(remoteconsoleuri)
+    def interact(self, banner=None):
+        banner = self.remoteconsole.get_banner()
+        code.InteractiveConsole.interact(self, banner=banner)
+        print("(Remote session ended)")
+        self.remoteconsole._pyroRelease()
+    def push(self, line):
+        output, more = self.remoteconsole.push_and_get_output(line)
+        if output:
+            sys.stdout.write(output)
+        return more
+
+
+class InteractiveConsole(code.InteractiveConsole):
+    """Interactive console wrapper that saves output written to stdout so it can be returned as value"""
+    def push_and_get_output(self, line):
+        output, more = "", False
+        stdout_save = sys.stdout
+        try:
+            sys.stdout = StringIO()
+            more = self.push(line)
+            output = sys.stdout.getvalue()
+            sys.stdout.close()
+        finally:
+            sys.stdout = stdout_save
+        return output, more
+    def get_banner(self):
+        return self.banner          # custom banner string, set by Pyro daemon
+    def write(self, data):
+        sys.stdout.write(data)      # stdout instead of stderr
+
+
 class Flame(object):
     """
     The actual FLAME server logic.
@@ -100,9 +138,9 @@ class Flame(object):
     def module(self, name):
         """import a module on the server given by the module name and returns a proxy to it"""
         if importlib:
-            m=importlib.import_module(name)
+            importlib.import_module(name)
         else:
-            m=__import__(name)
+            __import__(name)
         return FlameModule(self, name)
 
     def builtin(self, name):
@@ -119,25 +157,32 @@ class Flame(object):
 
     def sendmodule(self, modulename, modulesource):
         """send the source of a module to the server and make it import it"""
-        module=types.ModuleType(modulename)
+        module = types.ModuleType(modulename)
         exec_function(modulesource, "<remote-module>", module.__dict__)
-        sys.modules[modulename]=module
+        sys.modules[modulename] = module
 
     def getmodule(self, modulename):
         """obtain the source code from a module available on the server"""
-        module=__import__(modulename, globals={}, locals={})
+        module = __import__(modulename, globals={}, locals={})
         return inspect.getsource(module)
+
+    def interactive(self):
+        """get a proxy for a remote interactive console session"""
+        console = InteractiveConsole()
+        uri = self._pyroDaemon.register(console)
+        console.banner = "Python %s on %s\n(Remote console on %s)" % (sys.version, sys.platform, uri.location)
+        return RemoteInteractiveConsole(uri)
 
     def _invokeBuiltin(self, builtin, args, kwargs):
         return getattr(builtins, builtin)(*args, **kwargs)
 
     def _invokeModule(self, dottedname, args, kwargs):
         # dottedname is something like "os.path.walk" so strip off the module name
-        modulename, dottedname=dottedname.split('.',1)
-        module=sys.modules[modulename]
+        modulename, dottedname = dottedname.split('.', 1)
+        module = sys.modules[modulename]
         # we override the DOTTEDNAMES setting here because this safeguard makes no sense
         # with the Flame server (if enabled it already allows full access to anything):
-        method=Pyro4.util.resolveDottedAttribute(module, dottedname, True)
+        method = Pyro4.util.resolveDottedAttribute(module, dottedname, True)
         return method(*args, **kwargs)
 
 
@@ -146,43 +191,45 @@ def connect(location):
     Connect to a Flame server on the given location, for instance localhost:9999 or ./u:unixsock
     This is just a convenience function to creates an appropriate Pyro proxy.
     """
-    return Pyro4.core.Proxy("PYRO:%s@%s" % (Pyro4.constants.FLAME_NAME, location))
+    proxy = Pyro4.core.Proxy("PYRO:%s@%s" % (Pyro4.constants.FLAME_NAME, location))
+    proxy._pyroBind()
+    return proxy
 
 
 def main(args, returnWithoutLooping=False):
     from optparse import OptionParser
-    parser=OptionParser()
-    parser.add_option("-H","--host", default="localhost", help="hostname to bind server on (default=localhost)")
-    parser.add_option("-p","--port", type="int", default=0, help="port to bind server on")
-    parser.add_option("-u","--unixsocket", help="Unix domain socket name to bind server on")
-    parser.add_option("-q","--quiet", action="store_true", default=False, help="don't output anything")
-    parser.add_option("-k","--key", help="the HMAC key to use (required)")
-    options,args = parser.parse_args(args)
+    parser = OptionParser()
+    parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=localhost)")
+    parser.add_option("-p", "--port", type="int", default=0, help="port to bind server on")
+    parser.add_option("-u", "--unixsocket", help="Unix domain socket name to bind server on")
+    parser.add_option("-q", "--quiet", action="store_true", default=False, help="don't output anything")
+    parser.add_option("-k", "--key", help="the HMAC key to use")
+    options, args = parser.parse_args(args)
 
     if not options.quiet:
         print("Starting Pyro Flame server.")
 
-    hmac=options.key
+    hmac = options.key
     if not hmac:
         print("Warning: HMAC key not set. Anyone can connect to this server!")
-    if hmac and sys.version_info>=(3,0):
-        hmac=bytes(hmac,"utf-8")
-    Pyro4.config.HMAC_KEY=hmac or Pyro4.config.HMAC_KEY
+    if hmac and sys.version_info >= (3, 0):
+        hmac = bytes(hmac, "utf-8")
+    Pyro4.config.HMAC_KEY = hmac or Pyro4.config.HMAC_KEY
     if not options.quiet and Pyro4.config.HMAC_KEY:
         print("HMAC_KEY set to: %s" % Pyro4.config.HMAC_KEY)
 
-    d=Pyro4.core.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
-    uri=d.startFlame()
+    daemon = Pyro4.core.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
+    uri = daemon.startFlame()
     if not options.quiet:
         print("server uri: %s" % uri)
         print("server is running.")
 
     if returnWithoutLooping:
-        return d,uri        # for unit testing
+        return daemon, uri        # for unit testing
     else:
-        d.requestLoop()
-    d.close()
+        daemon.requestLoop()
+    daemon.close()
     return 0
 
-if __name__=="__main__":
+if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
