@@ -911,15 +911,6 @@ class Daemon(object):
                 raise errors.DaemonError("object isn't registered")
         return URI("PYRO:"+objectOrId+"@"+self.locationStr)
 
-    def startFlame(self):
-        """
-        Create and register a Flame server.
-        Be *very* cautious before starting this: it allows the clients full access to everything on your system.
-        """
-        import Pyro4.flame
-        flame=Pyro4.flame.Flame()
-        return self.register(flame, Pyro4.constants.FLAME_NAME)
-
     def close(self):
         """Close down the server and release resources"""
         log.debug("daemon closing")
