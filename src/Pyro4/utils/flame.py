@@ -103,7 +103,7 @@ class RemoteInteractiveConsole(object):
     class LineSendingConsole(code.InteractiveConsole):
         """makes sure the lines are sent to the remote console"""
         def __init__(self, remoteconsole):
-            code.InteractiveConsole.__init__(self)
+            code.InteractiveConsole.__init__(self, filename="<remoteconsole>")
             self.remoteconsole = remoteconsole
         def push(self, line):
             output, more = self.remoteconsole.push_and_get_output(line)
@@ -212,7 +212,7 @@ class Flame(object):
 
     def console(self):
         """get a proxy for a remote interactive console session"""
-        console = InteractiveConsole()
+        console = InteractiveConsole(filename="<remoteconsole>")
         uri = self._pyroDaemon.register(console)
         console.banner = "Python %s on %s\n(Remote console on %s)" % (sys.version, sys.platform, uri.location)
         return RemoteInteractiveConsole(uri)
