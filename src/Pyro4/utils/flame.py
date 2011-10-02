@@ -97,27 +97,32 @@ class FlameBuiltin(object):
             id(self), self.builtin, self.flameserver._pyroUri.location)
 
 
-class RemoteInteractiveConsole(code.InteractiveConsole):
+class RemoteInteractiveConsole(object):
     """Proxy to a remote interactive console."""
+
+    class LineSendingConsole(code.InteractiveConsole):
+        """makes sure the lines are sent to the remote console"""
+        def __init__(self, remoteconsole):
+            code.InteractiveConsole.__init__(self)
+            self.remoteconsole = remoteconsole
+        def push(self, line):
+            output, more = self.remoteconsole.push_and_get_output(line)
+            if output:
+                sys.stdout.write(output)
+            return more
+
     def __init__(self, remoteconsoleuri):
-        code.InteractiveConsole.__init__(self)
         # store a proxy to the console regardless of autoproxy setting
         self.remoteconsole = Pyro4.core.Proxy(remoteconsoleuri)
 
-    def interact(self, banner=None):
-        banner = self.remoteconsole.get_banner()
-        code.InteractiveConsole.interact(self, banner=banner)
+    def interact(self):
+        console = self.LineSendingConsole(self.remoteconsole)
+        console.interact(banner=self.remoteconsole.get_banner())
         print("(Remote session ended)")
 
     def close(self):
         self.remoteconsole.terminate()
         self.remoteconsole._pyroRelease()
-
-    def push(self, line):
-        output, more = self.remoteconsole.push_and_get_output(line)
-        if output:
-            sys.stdout.write(output)
-        return more
 
     def __repr__(self):
         return "<%s.%s at 0x%x, for %s>" % (self.__class__.__module__, self.__class__.__name__,
