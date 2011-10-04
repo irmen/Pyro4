@@ -5,6 +5,7 @@ Easy but potentially very dangerous way of exposing remote modules and builtins.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
+from __future__ import with_statement
 import sys
 import types
 import code
@@ -24,7 +25,7 @@ try:
 except ImportError:
     from io import StringIO
 
-__all__ = ["connect", "start", "Flame"]
+__all__ = ["connect", "start", "createModule", "Flame"]
 
 
 # Exec is a statement in Py2, a function in Py3
@@ -105,6 +106,7 @@ class RemoteInteractiveConsole(object):
         def __init__(self, remoteconsole):
             code.InteractiveConsole.__init__(self, filename="<remoteconsole>")
             self.remoteconsole = remoteconsole
+
         def push(self, line):
             output, more = self.remoteconsole.push_and_get_output(line)
             if output:
@@ -187,13 +189,14 @@ class Flame(object):
         return eval(expression)
 
     def sendmodule(self, modulename, modulesource):
-        """send the source of a module to the server and make it import it"""
-        module = types.ModuleType(modulename)
-        exec_function(modulesource, "<remote-module>", module.__dict__)
-        sys.modules[modulename] = module
+        """
+        Send the source of a module to the server and make the server load it.
+        Note that you still have to actually ``import`` it on the server to access it.
+        """
+        createModule(modulename, modulesource)
 
     def getmodule(self, modulename):
-        """obtain the source code from a module available on the server"""
+        """obtain the source code from a module on the server"""
         import inspect
         module = __import__(modulename, globals={}, locals={})
         return inspect.getsource(module)
@@ -228,6 +231,32 @@ class Flame(object):
         # with the Flame server (if enabled it already allows full access to anything):
         method = Pyro4.util.resolveDottedAttribute(module, dottedname, True)
         return method(*args, **kwargs)
+
+
+def createModule(name, source, filename="<dynamic-module>", namespace=None):
+    """
+    Utility function to create a new module with the given name (dotted notation allowed), directly from the source string.
+    Adds it to sys.modules, and returns the new module object.
+    If you provide a namespace dict (such as ``globals()``), it will import the module into that namespace too.
+    """
+    path = ""
+    components = name.split('.')
+    module = types.ModuleType("pyro-flame-module-context")
+    for component in components:
+        # build the module hierarchy.
+        path += '.' + component
+        real_path = path[1:]
+        if real_path in sys.modules:
+            # use already loaded modules instead of overwriting them
+            module = sys.modules[real_path]
+        else:
+            setattr(module, component, types.ModuleType(real_path))
+            module = getattr(module, component)
+            sys.modules[real_path] = module
+    exec_function(source, filename, module.__dict__)
+    if namespace is not None:
+        namespace[components[0]] = __import__(name)
+    return module
 
 
 def start(daemon):

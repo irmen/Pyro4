@@ -11,12 +11,26 @@ hence its name 'lite'...  Because Pyrolite has no dependencies,
 it is a much lighter way to use Pyro from Java/.NET than a solution with
 jython+pyro or IronPython+pyro would provide.
 So if you don't need Pyro's full feature set, and don't require your
-Java/.NETa code to host Pyro objects itself, Pyrolite may be
+Java/.NET code to host Pyro objects itself, Pyrolite may be
 a good choice to connect java or .NET and python.
 
 Pyrolite contains an almost complete implementation of Python's :mod:`pickle` protocol
 (with fairly intelligent mapping of datatypes between Python and Java/.NET),
 and a small part of Pyro's client network protocol and proxy logic.
+
+Small code example (java):
+
+.. code-block:: java
+
+    import net.razorvine.pyro.*;
+
+    NameServerProxy ns = NameServerProxy.locateNS(null);
+    PyroProxy something = new PyroProxy(ns.lookup("Your.Pyro.Object"));
+
+    Object result = something.call("pythonmethod",42,"arguments",[1,2,3]);
+
+    // depending on what 'pythonmethod' returns you'll have to cast
+    // the result object to the appropriate type, such as HashMap for dicts, etc.
 
 .. note::
   Pyrolite is very new and should be considered experimental.
