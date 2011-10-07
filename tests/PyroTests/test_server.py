@@ -473,7 +473,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             start=time.time()
             p.delay(0.5)
             duration=time.time()-start
-            self.assertAlmostEqual(0.5, duration, places=1)
+            self.assertTrue(0.4<duration<0.6)
             p._pyroTimeout=0.1
             start=time.time()
             self.assertRaises(Pyro4.errors.TimeoutError, p.delay, 1)
@@ -585,7 +585,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         else:
             # thread based server does execute calls in parallel,
             # so 6 threads taking 0.5 seconds =~ 0.5 seconds passed
-            self.assertTrue(0.3<duration<0.7)
+            self.assertTrue(0.4<duration<0.9)  # loose upper bound for slow jython
 
 if os.name!="java":
     class ServerTestsMultiplexNoTimeout(ServerTestsThreadNoTimeout):
