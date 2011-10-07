@@ -163,14 +163,14 @@ def sendData(sock, data):
                 retrydelay=__nextRetrydelay(retrydelay)
 
 
-def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=None, noinherit=False):
+_GLOBAL_DEFAULT_TIMEOUT=object()
+
+def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False):
     """
     Create a socket. Default socket options are keepalives.
     If 'bind' or 'connect' is a string, it is assumed a Unix domain socket is requested.
     Otherwise, a normal tcp/ip socket is used.
     """
-    if timeout==0:
-        timeout=None
     if bind and connect:
         raise ValueError("bind and connect cannot both be specified at the same time")
     family=socket.AF_INET
@@ -181,6 +181,8 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
         setReuseAddr(sock)
     if noinherit:
         setNoInherit(sock)
+    if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+        sock.settimeout(timeout)
     if bind:
         if type(bind) is tuple and bind[1]==0:
             bindOnUnusedPort(sock, bind[0])
@@ -194,14 +196,11 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
         sock.connect(connect)
     if keepalive:
         setKeepalive(sock)
-    sock.settimeout(timeout)
     return sock
 
 
-def createBroadcastSocket(bind=None, reuseaddr=False, timeout=None):
+def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TIMEOUT):
     """Create a udp broadcast socket."""
-    if timeout==0:
-        timeout=None
     sock=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     if reuseaddr:
@@ -209,7 +208,7 @@ def createBroadcastSocket(bind=None, reuseaddr=False, timeout=None):
     if timeout is None:
         sock.settimeout(None)
     else:
-        if not bind or os.name!="java":
+        if timeout is not _GLOBAL_DEFAULT_TIMEOUT and (not bind or os.name!="java"):
             # only set timeout on the udp socket in this case, because Jython
             # has a problem with timeouts on udp sockets, see http://bugs.jython.org/issue1018
             sock.settimeout(timeout)
