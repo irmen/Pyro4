@@ -5,6 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import socket, os, errno, time, sys
+import re
 from Pyro4.errors import ConnectionClosedError, TimeoutError
 
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
@@ -24,61 +25,52 @@ if not hasattr(socket, "SOL_TCP"):
     socket.SOL_TCP=socket.IPPROTO_TCP
 
 
-def getIpType(hostnameOrAddress):
+def getIpVersion(hostnameOrAddress):
     """
-    Determine what the IP type is of the given hostname or ip address (4 or 6).
-    This is done by checking if it is enclosed in brackets [].
-    If it is, it's 6, otherwise it's 4.  Returns 0 if unknown.
+    Determine what the IP version is of the given hostname or ip address (4, 6 or 0=unknown).
+    If it contains a ':' it is considered to be an ipv6 address.
+    If it contains a '.' and is not a hostname, it is ipv4.
+    If it's a hostname we can't tell and return 0 (unknown).
     """
     if hostnameOrAddress in (None, ""):
         return 0
-    if hostnameOrAddress.startswith("[") and hostnameOrAddress.endswith("]"):
+    if ":" in hostnameOrAddress:
         return 6
-    return 4
+    return 4 if re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", hostnameOrAddress) else 0
 
 
-def getIpAddress(hostname, workaround127=False):
+def getIpAddress(hostname, ipv6=False, workaround127=False):
     """
     Returns the IP address for the given host. If you enable the workaround,
     it will use a little hack if the ip address is found to be the loopback address.
     The hack tries to discover an externally visible ip address instead
     (this only works for ipv4 addresses).
+    Set ipv6=True to return ipv6 addresses instead of ipv4.
     """
-    def getaddr4(hostname):
-        ip=socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
-        if ip.startswith("127.") and workaround127:
-            ip=getInterfaceAddress("4.2.2.2")   # 'abuse' a level 3 DNS server
-        return ip
-    def getaddr6(hostname):
-        return socket.getaddrinfo(hostname, None, socket.AF_INET6, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
     def getaddr(hostname):
-        if getIpType(hostname) in (0,4):
-            try:
-                return getaddr4(hostname)       # first try ipv4
-            except socket.gaierror:
-                return "["+getaddr6(hostname)+"]"     # if that fails, try ipv6
+        if ipv6:
+            return socket.getaddrinfo(hostname, None, socket.AF_INET6, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
         else:
-            return "["+getaddr6(hostname[1:-1])+"]"     # ipv6
+            ip=socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
+            if ip.startswith("127.") and workaround127:
+                ip=getInterfaceAddress("4.2.2.2")   # 'abuse' a public level 3 DNS server
+            return ip
     try:
         return getaddr(hostname)
     except socket.gaierror:
         if hostname in (None,""):
-            return getaddr(socket.gethostname())   # sometimes empty hostname isn't allowed
+            return getaddr(socket.gethostname())   # sometimes empty hostname isn't allowed, insert a fair guess
         else:
             raise
 
 
-def getInterfaceAddress(peer_ip_address):
+def getInterfaceAddress(ip_address):
     """tries to find the ip address of the interface that connects to a given host"""
-    if getIpType(peer_ip_address)==4:
-        s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect((peer_ip_address, 53))   # 53=dns
-        ip=s.getsockname()[0]
-    else:
-        s=socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-        s.connect((peer_ip_address[1:-1], 53))   # 53=dns
-        ip="["+s.getsockname()[0]+"]"
-    s.close()
+    family = socket.AF_INET if getIpVersion(ip_address)==4 else socket.AF_INET6
+    sock = socket.socket(family, socket.SOCK_DGRAM)
+    sock.connect((ip_address, 53))   # 53=dns
+    ip = sock.getsockname()[0]
+    sock.close()
     return ip
 
 
@@ -200,14 +192,14 @@ def sendData(sock, data):
                 retrydelay=__nextRetrydelay(retrydelay)
 
 
-def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=None, noinherit=False):
+_GLOBAL_DEFAULT_TIMEOUT=object()
+
+def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False):
     """
     Create a socket. Default socket options are keepalives.
     If 'bind' or 'connect' is a string, it is assumed a Unix domain socket is requested.
     Otherwise, a normal tcp/ip socket is used.
     """
-    if timeout==0:
-        timeout=None
     if bind and connect:
         raise ValueError("bind and connect cannot both be specified at the same time")
     family=socket.AF_INET
@@ -218,6 +210,8 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
         setReuseAddr(sock)
     if noinherit:
         setNoInherit(sock)
+    if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+        sock.settimeout(timeout)
     if bind:
         if type(bind) is tuple and bind[1]==0:
             bindOnUnusedPort(sock, bind[0])
@@ -231,14 +225,11 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
         sock.connect(connect)
     if keepalive:
         setKeepalive(sock)
-    sock.settimeout(timeout)
     return sock
 
 
-def createBroadcastSocket(bind=None, reuseaddr=False, timeout=None):
+def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TIMEOUT):
     """Create a udp broadcast socket."""
-    if timeout==0:
-        timeout=None
     sock=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     if reuseaddr:
@@ -246,7 +237,7 @@ def createBroadcastSocket(bind=None, reuseaddr=False, timeout=None):
     if timeout is None:
         sock.settimeout(None)
     else:
-        if not bind or os.name!="java":
+        if timeout is not _GLOBAL_DEFAULT_TIMEOUT and (not bind or os.name!="java"):
             # only set timeout on the udp socket in this case, because Jython
             # has a problem with timeouts on udp sockets, see http://bugs.jython.org/issue1018
             sock.settimeout(timeout)
