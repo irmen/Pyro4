@@ -7,14 +7,22 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import socket, os, errno, time, sys
 from Pyro4.errors import ConnectionClosedError, TimeoutError
 
+import select
+if os.name=="java":
+    selectfunction = select.cpython_compatible_select
+else:
+    selectfunction = select.select
+
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.
 # So I didn't include them in de list of retryable errors.
-ERRNO_RETRIES=[errno.EINTR, errno.EAGAIN, errno.EWOULDBLOCK]
+ERRNO_RETRIES=[errno.EINTR, errno.EAGAIN, errno.EWOULDBLOCK, errno.EINPROGRESS]
 if hasattr(errno, "WSAEINTR"):
     ERRNO_RETRIES.append(errno.WSAEINTR)
 if hasattr(errno, "WSAEWOULDBLOCK"):
     ERRNO_RETRIES.append(errno.WSAEWOULDBLOCK)
+if hasattr(errno, "WSAEINPROGRESS"):
+    ERRNO_RETRIES.append(errno.WSAEINPROGRESS)
 
 ERRNO_BADF=[errno.EBADF]
 if hasattr(errno, "WSAEBADF"):
@@ -193,7 +201,28 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
         except Exception:
             pass  # jython sometimes raises errors here
     if connect:
-        sock.connect(connect)
+        try:
+            sock.connect(connect)
+        except socket.error:
+            # This can happen when the socket is in non-blocking mode (or has a timeout configured).
+            # We check if it is a retryable errno (usually EINPROGRESS).
+            # If so, we use select() to wait until the socket is in writable state,
+            # essentially rebuilding a blocking connect() call.
+            xt, xv, xtb = sys.exc_info()
+            errno = xv.errno
+            del xt, xv, xtb
+            if errno in ERRNO_RETRIES:
+                if timeout is _GLOBAL_DEFAULT_TIMEOUT:
+                    timeout = None
+                timeout = max(0.1, timeout)   # avoid polling behavior with timeout=0
+                while True:
+                    sr, sw, se = selectfunction([], [sock], [sock], timeout)
+                    if sock in sw:
+                        break   # yay, writable now, connect() completed
+                    elif sock in se:
+                        raise socket.error("connect failed")
+            else:
+                raise
     if keepalive:
         setKeepalive(sock)
     return sock
