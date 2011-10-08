@@ -15,7 +15,7 @@ class Configuration(object):
     __slots__=("HOST", "NS_HOST", "NS_PORT", "NS_BCPORT", "NS_BCHOST",
                "COMPRESSION", "SERVERTYPE", "DOTTEDNAMES", "COMMTIMEOUT",
                "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
-               "DETAILED_TRACEBACK", "SOCK_REUSE",
+               "DETAILED_TRACEBACK", "SOCK_REUSE", "PREFER_IPV6",
                "THREADPOOL_MINTHREADS", "THREADPOOL_MAXTHREADS",
                "THREADPOOL_IDLETIMEOUT", "HMAC_KEY", "AUTOPROXY")
 
@@ -43,6 +43,7 @@ class Configuration(object):
         self.THREADPOOL_IDLETIMEOUT = 5.0
         self.HMAC_KEY = None   # must be bytes type
         self.AUTOPROXY = True
+        self.PREFER_IPV6 = False
 
         # process enviroment variables
         PREFIX="PYRO_"

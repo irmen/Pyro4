@@ -6,6 +6,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import socket, os, errno, time, sys
 from Pyro4.errors import ConnectionClosedError, TimeoutError, CommunicationError
+import Pyro4
 
 import select
 if os.name=="java":
@@ -37,22 +38,21 @@ def getIpVersion(hostnameOrAddress):
     Determine what the IP version is of the given hostname or ip address (4 or 6).
     If it contains a ':' it is considered to be an ipv6 address.
     If it contains a '.' and is not a hostname, it is ipv4.
-    If it's a hostname or None we can't really tell and return 4 by default.
+    If it's a hostname or None we can't really tell and the result depends on the PREFER_IPV6 config item.
     """
     if hostnameOrAddress in (None, ""):
-        return 4
+        return 6 if Pyro4.config.PREFER_IPV6 else 4
     if ":" in hostnameOrAddress:
         return 6
-    return 4   # if re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", hostnameOrAddress) else 0
+    return 6 if Pyro4.config.PREFER_IPV6 else 4
 
 
-def getIpAddress(hostname, ipv6=False, workaround127=False):
+def getIpAddress(hostname, workaround127=False, ipv6=None):
     """
     Returns the IP address for the given host. If you enable the workaround,
     it will use a little hack if the ip address is found to be the loopback address.
-    The hack tries to discover an externally visible ip address instead
-    (this only works for ipv4 addresses).
-    Set ipv6=True to return ipv6 addresses instead of ipv4.
+    The hack tries to discover an externally visible ip address instead (this only works for ipv4 addresses).
+    Set ipv6=True to return ipv6 addresses, False to return ipv4, None to depend on the PREFER_IPV6 config item.
     """
     def getaddr(hostname):
         if ipv6:
@@ -63,6 +63,8 @@ def getIpAddress(hostname, ipv6=False, workaround127=False):
                 ip=getInterfaceAddress("4.2.2.2")   # 'abuse' a public level 3 DNS server
             return ip
     try:
+        if ipv6 is None:
+            ipv6 = Pyro4.config.PREFER_IPV6
         return getaddr(hostname)
     except socket.gaierror:
         if hostname in (None,""):
