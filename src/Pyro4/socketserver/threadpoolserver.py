@@ -144,7 +144,10 @@ class SocketServer_Threadpool(object):
         else:
             host=host or self._socketaddr[0]
             port=port or self._socketaddr[1]
-            self.locationStr="%s:%d" % (host, port)
+            if ":" in host:  # ipv6
+                self.locationStr="[%s]:%d" % (host, port)
+            else:
+                self.locationStr="%s:%d" % (host, port)
         self.threadpool=ThreadPool(self, daemon)
         self.workqueue=queue.Queue()
         for _ in range(Pyro4.config.THREADPOOL_MINTHREADS):

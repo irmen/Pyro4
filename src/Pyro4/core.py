@@ -71,7 +71,10 @@ class URI(object):
             if (not self.sockname) or ':' in self.sockname:
                 raise errors.PyroError("invalid uri (location)")
         else:
-            self.host, _, self.port=location.partition(":")
+            if location.startswith("["):  # ipv6
+                self.host, _, self.port = re.match(r"\[([0-9a-fA-F:]+)](:(\d+))?", location).groups()
+            else:
+                self.host, _, self.port = location.partition(":")
             if not self.port:
                 self.port=defaultPort
             try:
@@ -88,7 +91,10 @@ class URI(object):
     def location(self):
         """property containing the location string, for instance ``"servername.you.com:5555"``"""
         if self.host:
-            return "%s:%d" % (self.host, self.port)
+            if ":" in self.host:    # ipv6
+               return "[%s]:%d" % (self.host, self.port)
+            else:
+                return "%s:%d" % (self.host, self.port)
         elif self.sockname:
             return "./u:"+self.sockname
         else:

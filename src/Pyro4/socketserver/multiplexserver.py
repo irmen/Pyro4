@@ -29,7 +29,10 @@ class MultiplexedSocketServerBase(object):
         else:
             host=host or sockaddr[0]
             port=port or sockaddr[1]
-            self.locationStr="%s:%d" % (host, port)
+            if ":" in host:   # ipv6
+                self.locationStr="[%s]:%d" % (host, port)
+            else:
+                self.locationStr="%s:%d" % (host, port)
 
     def __repr__(self):
         return "<%s on %s, %d connections>" % (self.__class__.__name__, self.locationStr, len(self.clients))
