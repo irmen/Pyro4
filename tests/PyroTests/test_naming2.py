@@ -224,7 +224,7 @@ class OfflineNameServerTests(unittest.TestCase):
             sys.stderr=StringIO()
             ns=Pyro4.naming.NameServer()
             Pyro4.nsc.handleCommand(ns, None, ["foo"])
-            self.assertEqual("Error: KeyError - 'foo'\n", sys.stdout.getvalue())
+            self.assertTrue(sys.stdout.getvalue().startswith("Error: KeyError "))
             Pyro4.nsc.handleCommand(ns, None, ["ping"])
             self.assertTrue(sys.stdout.getvalue().endswith("ping ok.\n"))
             Pyro4.nsc.handleCommand(ns, None, ["list"])

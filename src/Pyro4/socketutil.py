@@ -59,7 +59,7 @@ def getIpAddress(hostname, ipv6=False, workaround127=False):
             return socket.getaddrinfo(hostname, None, socket.AF_INET6, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
         else:
             ip=socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
-            if (ip.startswith("127.") or ip=="0.0.0.0") and workaround127:
+            if workaround127 and (ip.startswith("127.") or ip=="0.0.0.0"):
                 ip=getInterfaceAddress("4.2.2.2")   # 'abuse' a public level 3 DNS server
             return ip
     try:
