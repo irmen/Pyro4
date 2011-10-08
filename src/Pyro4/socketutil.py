@@ -229,6 +229,8 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
         setReuseAddr(sock)
     if noinherit:
         setNoInherit(sock)
+    if timeout==0:
+        timeout = None
     if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
         sock.settimeout(timeout)
     if bind:
