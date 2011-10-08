@@ -20,10 +20,13 @@ class Configuration(object):
                "THREADPOOL_IDLETIMEOUT", "HMAC_KEY", "AUTOPROXY")
 
     def __init__(self):
-        self.refresh()
+        self.reset()
 
-    def refresh(self):
-        # set defaults
+    def reset(self, useenvironment=True):
+        """
+        Set default config items.
+        If useenvironment is False, won't read environment variables settings (useful if you can't trust your env).
+        """
         self.HOST = "localhost"  # don't expose us to the outside world by default
         self.NS_HOST = self.HOST
         self.NS_PORT = 9090      # tcp
@@ -44,29 +47,30 @@ class Configuration(object):
         self.HMAC_KEY = None   # must be bytes type
         self.AUTOPROXY = True
 
-        # process enviroment variables
-        PREFIX="PYRO_"
-        for symbol in self.__slots__:
-            if PREFIX+symbol in os.environ:
-                value=getattr(self,symbol)
-                envvalue=os.environ[PREFIX+symbol]
-                if value is not None:
-                    valuetype=type(value)
-                    if valuetype is bool:
-                        # booleans are special
-                        envvalue=envvalue.lower()
-                        if envvalue in ("0", "off", "no", "false"):
-                            envvalue=False
-                        elif envvalue in ("1", "yes", "on", "true"):
-                            envvalue=True
+        if useenvironment:
+            # process enviroment variables
+            PREFIX="PYRO_"
+            for symbol in self.__slots__:
+                if PREFIX+symbol in os.environ:
+                    value=getattr(self,symbol)
+                    envvalue=os.environ[PREFIX+symbol]
+                    if value is not None:
+                        valuetype=type(value)
+                        if valuetype is bool:
+                            # booleans are special
+                            envvalue=envvalue.lower()
+                            if envvalue in ("0", "off", "no", "false"):
+                                envvalue=False
+                            elif envvalue in ("1", "yes", "on", "true"):
+                                envvalue=True
+                            else:
+                                raise ValueError("invalid boolean value: %s%s=%s" % (PREFIX, symbol, envvalue))
                         else:
-                            raise ValueError("invalid boolean value: %s%s=%s" % (PREFIX, symbol, envvalue))
-                    else:
-                        envvalue=valuetype(envvalue)  # just cast the value to the appropriate type
-                setattr(self, symbol, envvalue)
-            if self.HMAC_KEY and sys.version_info>=(3,0):
-                if type(self.HMAC_KEY) is not bytes:
-                    self.HMAC_KEY=bytes(self.HMAC_KEY, "utf-8")     # convert to bytes
+                            envvalue=valuetype(envvalue)  # just cast the value to the appropriate type
+                    setattr(self, symbol, envvalue)
+        if self.HMAC_KEY and sys.version_info>=(3,0):
+            if type(self.HMAC_KEY) is not bytes:
+                self.HMAC_KEY=bytes(self.HMAC_KEY, "utf-8")     # convert to bytes
 
     def asDict(self):
         """returns the current config as a regular dictionary"""

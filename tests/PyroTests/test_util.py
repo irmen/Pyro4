@@ -134,19 +134,19 @@ class TestUtils(unittest.TestCase):
             if "PYRO_HOST" in os.environ: del os.environ["PYRO_HOST"]
             if "PYRO_NS_PORT" in os.environ: del os.environ["PYRO_NS_PORT"]
             if "PYRO_COMPRESSION" in os.environ: del os.environ["PYRO_COMPRESSION"]
-            Pyro4.config.refresh()
+            Pyro4.config.reset(useenvironment=False)
         clearEnv()
         try:
             self.assertEqual(9090, Pyro4.config.NS_PORT)
             self.assertEqual("localhost", Pyro4.config.HOST)
             self.assertEqual(False, Pyro4.config.COMPRESSION)
             os.environ["NS_PORT"]="4444"
-            Pyro4.config.refresh()
+            Pyro4.config.reset()
             self.assertEqual(9090, Pyro4.config.NS_PORT)
             os.environ["PYRO_NS_PORT"]="4444"
             os.environ["PYRO_HOST"]="something.com"
             os.environ["PYRO_COMPRESSION"]="OFF"
-            Pyro4.config.refresh()
+            Pyro4.config.reset()
             self.assertEqual(4444, Pyro4.config.NS_PORT)
             self.assertEqual("something.com", Pyro4.config.HOST)
             self.assertEqual(False, Pyro4.config.COMPRESSION)
@@ -155,6 +155,19 @@ class TestUtils(unittest.TestCase):
             self.assertEqual(9090, Pyro4.config.NS_PORT)
             self.assertEqual("localhost", Pyro4.config.HOST)
             self.assertEqual(False, Pyro4.config.COMPRESSION)
+
+    def testConfigReset(self):
+        Pyro4.config.reset(useenvironment=False)
+        self.assertEqual("localhost", Pyro4.config.HOST)
+        Pyro4.config.HOST="foobar"
+        self.assertEqual("foobar", Pyro4.config.HOST)
+        Pyro4.config.reset(useenvironment=False)
+        self.assertEqual("localhost", Pyro4.config.HOST)
+        os.environ["PYRO_HOST"]="foobar"
+        Pyro4.config.reset(useenvironment=True)
+        self.assertEqual("foobar", Pyro4.config.HOST)
+        Pyro4.config.reset(useenvironment=False)
+        self.assertEqual("localhost", Pyro4.config.HOST)
 
     def testResolveAttr(self):
         class Test(object):
