@@ -5,8 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import socket, os, errno, time, sys
-import re
-from Pyro4.errors import ConnectionClosedError, TimeoutError
+from Pyro4.errors import ConnectionClosedError, TimeoutError, CommunicationError
 
 import select
 if os.name=="java":
@@ -35,16 +34,16 @@ if not hasattr(socket, "SOL_TCP"):
 
 def getIpVersion(hostnameOrAddress):
     """
-    Determine what the IP version is of the given hostname or ip address (4, 6 or 0=unknown).
+    Determine what the IP version is of the given hostname or ip address (4 or 6).
     If it contains a ':' it is considered to be an ipv6 address.
     If it contains a '.' and is not a hostname, it is ipv4.
-    If it's a hostname we can't tell and return 0 (unknown).
+    If it's a hostname or None we can't really tell and return 4 by default.
     """
     if hostnameOrAddress in (None, ""):
-        return 0
+        return 4
     if ":" in hostnameOrAddress:
         return 6
-    return 4 if re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", hostnameOrAddress) else 0
+    return 4   # if re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", hostnameOrAddress) else 0
 
 
 def getIpAddress(hostname, ipv6=False, workaround127=False):
@@ -60,7 +59,7 @@ def getIpAddress(hostname, ipv6=False, workaround127=False):
             return socket.getaddrinfo(hostname, None, socket.AF_INET6, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
         else:
             ip=socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
-            if ip.startswith("127.") and workaround127:
+            if (ip.startswith("127.") or ip=="0.0.0.0") and workaround127:
                 ip=getInterfaceAddress("4.2.2.2")   # 'abuse' a public level 3 DNS server
             return ip
     try:
@@ -210,9 +209,19 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
     """
     if bind and connect:
         raise ValueError("bind and connect cannot both be specified at the same time")
-    family=socket.AF_INET
     if type(bind) is str or type(connect) is str:
         family=socket.AF_UNIX
+    elif (type(bind) is tuple and getIpVersion(bind[0]) == 4) or (type(connect) is tuple and getIpVersion(connect[0]) == 4):
+        family=socket.AF_INET
+    elif (type(bind) is tuple and getIpVersion(bind[0]) == 6) or (type(connect) is tuple and getIpVersion(connect[0]) == 6):
+        family=socket.AF_INET6
+        # replace bind/connect addresses by their ipv6 counterparts (4-tuple)
+        if bind:
+            bind=(bind[0], bind[1], 0, 0)
+        if connect:
+            connect=(connect[0], connect[1], 0, 0)
+    else:
+        family=socket.AF_INET
     sock=socket.socket(family, socket.SOCK_STREAM)
     if reuseaddr:
         setReuseAddr(sock)
@@ -259,8 +268,16 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
 
 def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TIMEOUT):
     """Create a udp broadcast socket."""
-    sock=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    if not bind or (type(bind) is tuple and getIpVersion(bind[0]) == 4):
+        family=socket.AF_INET
+    elif type(bind) is tuple and getIpVersion(bind[0]) == 6:
+        family=socket.AF_INET6
+        bind=(bind[0], bind[1], 0, 0)
+    else:
+        raise ValueError("unknown bind format: %r" % (bind,))
+    sock=socket.socket(family, socket.SOCK_DGRAM)
+    if family == socket.AF_INET:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     if reuseaddr:
         setReuseAddr(sock)
     if timeout is None:
@@ -271,12 +288,17 @@ def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TI
             # has a problem with timeouts on udp sockets, see http://bugs.jython.org/issue1018
             sock.settimeout(timeout)
     if bind:
-        host,port=bind
-        host=host or ""
+        host = bind[0] or ""
+        port = bind[1]
         if port==0:
             bindOnUnusedPort(sock, host)
         else:
-            sock.bind((host,port))
+            if len(bind) == 2:
+                sock.bind((host,port))  # ipv4
+            elif len(bind) == 4:
+                sock.bind((host,port,0,0))  # ipv6
+            else:
+                raise ValueError("bind must be None, 2-tuple or 4-tuple")
     return sock
 
 
@@ -365,10 +387,18 @@ def findUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
 def bindOnUnusedPort(sock, host='localhost'):
     """Bind the socket to a free port and return the port number.
     This code is based on the code in the stdlib's test.test_support module."""
-    if os.name!="java" and sock.family == socket.AF_INET and sock.type == socket.SOCK_STREAM:
+    socketfamily = getattr(sock, "family", socket.AF_INET)   # workaround for jython bug http://bugs.jython.org/issue1803
+    sockettype = getattr(sock, "type", socket.SOCK_STREAM)   # workaround for jython bug http://bugs.jython.org/issue1804
+    if os.name!="java" and socketfamily in(socket.AF_INET, socket.AF_INET6) and sockettype == socket.SOCK_STREAM:
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            # even though Jython has this socket option, it doesn't support it. Hence the check in the if statement above.
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
-    sock.bind((host, 0))
+    if socketfamily == socket.AF_INET:
+        sock.bind((host, 0))
+    elif socketfamily == socket.AF_INET6:
+        sock.bind((host, 0, 0, 0))
+    else:
+        raise CommunicationError( "unsupported socket family: " + socketfamily )
     if os.name=="java":
         try:
             sock.listen(100)  # otherwise jython always just returns 0 for the port
