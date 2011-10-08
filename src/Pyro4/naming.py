@@ -271,6 +271,8 @@ def locateNS(host=None, port=None):
                 return core.Proxy(data)
             except socket.timeout:
                 continue
+            except socket.error:
+                continue
         sock.close()
         return None
 
