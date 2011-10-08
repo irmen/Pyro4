@@ -39,7 +39,7 @@ def getMyIpAddress(hostname=None, workaround127=False):
     it will use a little hack if the system reports our own ip address
     as being localhost (this is often the case on Linux)"""
     ip=getIpAddress(hostname)
-    if ip.startswith("127.") and workaround127:
+    if workaround127 and (ip.startswith("127.") or ip=="0.0.0.0"):
         ip=getInterfaceAddress("4.2.2.2")   # 'abuse' a level 3 DNS server
     return ip
 
