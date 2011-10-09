@@ -28,6 +28,10 @@ ERRNO_BADF=[errno.EBADF]
 if hasattr(errno, "WSAEBADF"):
     ERRNO_BADF.append(errno.WSAEBADF)
 
+ERRNO_ENOTSOCK=[errno.ENOTSOCK]
+if hasattr(errno, "WSAENOTSOCK"):
+    ERRNO_ENOTSOCK.append(errno.WSAENOTSOCK)
+
 
 def getIpAddress(hostname=None):
     """returns the IP address for the current, or another, hostname"""

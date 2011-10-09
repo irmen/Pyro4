@@ -59,7 +59,9 @@ class MultiplexedSocketServerBase(object):
 
     def _handleConnection(self, sock):
         try:
-            csock, caddr=sock.accept()
+            if sock is None:
+                return
+            csock, caddr = sock.accept()
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
         except socket.error:
@@ -69,7 +71,7 @@ class MultiplexedSocketServerBase(object):
                 # just ignore this error for now and continue
                 log.warn("accept() failed errno=%d, shouldn't happen", err)
                 return None
-            if err in socketutil.ERRNO_BADF:
+            if err in socketutil.ERRNO_BADF or err in socketutil.ERRNO_ENOTSOCK:
                 # our server socket got destroyed
                 raise errors.ConnectionClosedError("server socket closed")
             raise
@@ -186,7 +188,10 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                         # this can occur if we are shutting down and the socket is no longer valid
                         break
                 if self.sock in rlist:
-                    rlist.remove(self.sock)
+                    try:
+                        rlist.remove(self.sock)
+                    except ValueError:
+                        pass  # this can occur when closing down, even when we just tested for presence in the list
                     try:
                         conn=self._handleConnection(self.sock)
                         if conn:
