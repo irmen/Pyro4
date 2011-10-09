@@ -18,7 +18,7 @@ from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
 import Pyro4
 
-__all__=["URI", "Proxy", "Daemon", "callback", "batch", "async", "Future", "FutureResult"]
+__all__=["URI", "Proxy", "Daemon", "callback", "batch", "async", "Future"]
 
 if sys.version_info>=(3,0):
     basestring=str
@@ -520,13 +520,13 @@ class FutureResult(object):
 
 class Future(object):
     """
-    Holds a function call that will be executed asynchronously and provide its
+    Holds a callable that will be executed asynchronously and provide its
     result value some time in the future.
     This is a more general implementation than the AsyncRemoteMethod, which
     only works with Pyro proxies (and provides a bit different syntax).
     """
-    def __init__(self, function):
-        self.function = function
+    def __init__(self, callable):
+        self.callable = callable
         self.chain = []
 
     def __call__(self, *args, **kwargs):
@@ -544,7 +544,7 @@ class Future(object):
 
     def __asynccall(self, asyncresult, chain, args, kwargs):
         try:
-            value = self.function(*args, **kwargs)
+            value = self.callable(*args, **kwargs)
             # now walk the callchain, passing on the previous value as first argument
             for call, args, kwargs in chain:
                 call = functools.partial(call, value)

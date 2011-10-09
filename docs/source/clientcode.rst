@@ -186,8 +186,8 @@ See the :file:`batchedcalls` example for more details.
 
 .. _async-calls:
 
-Asynchronous ('future') calls & call chains
-===========================================
+Asynchronous ('future') remote calls & call chains
+==================================================
 You can execute a remote method call and tell Pyro: "hey, I don't need the results right now.
 Go ahead and compute them, I'll come back later once I need them".
 The call will be processed in the background and you can collect the results at a later time.
@@ -238,6 +238,14 @@ A simple piece of code showing an asynchronous method call::
     Callables from the call chain are invoked sequentially in this background thread.
 
 See the :file:`async` example for more details and example code for call chains.
+
+Async calls for normal callables (not only for Pyro proxies)
+------------------------------------------------------------
+The async proxy wrapper discussed above is only available when you are dealing with Pyro proxies.
+It provides a convenient syntax to call the methods on the proxy asynchronously.
+For normal Python code it is sometimes useful to have a similar mechanism as well.
+Pyro provides this too, see :ref:`future-functions` for more information.
+
 
 Pyro Callbacks
 ==============
