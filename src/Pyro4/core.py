@@ -8,6 +8,7 @@ from __future__ import with_statement
 import re, struct, sys, time, os
 import logging, uuid
 import hashlib, hmac
+import functools
 try:
     import copyreg
 except ImportError:
@@ -17,7 +18,7 @@ from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
 import Pyro4
 
-__all__=["URI", "Proxy", "Daemon", "callback", "batch", "async"]
+__all__=["URI", "Proxy", "Daemon", "callback", "batch", "async", "Future", "FutureResult"]
 
 if sys.version_info>=(3,0):
     basestring=str
@@ -439,11 +440,11 @@ class _AsyncRemoteMethod(object):
         return _AsyncRemoteMethod(self.__proxy, "%s.%s" % (self.__name, name))
 
     def __call__(self, *args, **kwargs):
-        asyncresult=_AsyncResult()
-        thread=threadutil.Thread(target=self.__asynccall, args=(asyncresult, args, kwargs))
+        result=FutureResult()
+        thread=threadutil.Thread(target=self.__asynccall, args=(result, args, kwargs))
         thread.setDaemon(True)
         thread.start()
-        return asyncresult
+        return result
 
     def __asynccall(self, asyncresult, args, kwargs):
         try:
@@ -452,12 +453,12 @@ class _AsyncRemoteMethod(object):
             with self.__proxy.__copy__() as proxy:
                 value = proxy._pyroInvoke(self.__name, args, kwargs)
             asyncresult.value=value
-        except:
-            log.warn("exception occurred in async call, ignored")
+        except Exception:
+            # ignore any exceptions here, return them as part of the async result instead
             asyncresult.value=_ExceptionWrapper(sys.exc_info()[1])
 
 
-class _AsyncResult(object):
+class FutureResult(object):
     """
     The result object for asynchronous calls.
     """
@@ -492,26 +493,74 @@ class _AsyncResult(object):
     def set_value(self, value):
         with self.valueLock:
             self.__value=value
-            for call, kwargs in self.callchain:
-                self.__value=call(self.__value, **kwargs)
+            for call, args, kwargs in self.callchain:
+                call = functools.partial(call, self.__value)
+                self.__value = call(*args, **kwargs)
             self.callchain=[]
             self.__ready.set()
 
     value=property(get_value, set_value, None, "The result value of the call. Reading it will block if not available yet.")
 
-    def then(self, call, **kwargs):
+    def then(self, call, *args, **kwargs):
         """
-        Add a callback to the call chain, to be invoked when the results become available.
-        Optional keyword arguments in kwargs.
+        Add a callable to the call chain, to be invoked when the results become available.
+        The result of the current call will be used as the first argument for the next call.
+        Optional extra arguments can be provided in args and kwargs.
         """
         if self.__ready.isSet():
             # value is already known, we need to process it immediately (can't use the callchain anymore)
-            self.__value=call(self.__value, **kwargs)
+            call = functools.partial(call, self.__value)
+            self.__value = call(*args, **kwargs)
         else:
             # add the call to the callchain, it will be processed later when the result arrives
             with self.valueLock:
-                self.callchain.append((call,kwargs))
+                self.callchain.append((call, args, kwargs))
         return self
+
+
+class Future(object):
+    """
+    Holds a function call that will be executed asynchronously and provide its
+    result value some time in the future.
+    This is a more general implementation than the AsyncRemoteMethod, which
+    only works with Pyro proxies (and provides a bit different syntax).
+    """
+    def __init__(self, function):
+        self.function = function
+        self.chain = []
+
+    def __call__(self, *args, **kwargs):
+        """
+        Start the future call with the provided arguments.
+        Control flow returns immediately, with a FutureResult object.
+        """
+        chain = self.chain
+        del self.chain  # make it impossible to add new calls to the chain once we started executing it
+        result=FutureResult()
+        thread=threadutil.Thread(target=self.__asynccall, args=(result, chain, args, kwargs))
+        thread.setDaemon(True)
+        thread.start()
+        return result
+
+    def __asynccall(self, asyncresult, chain, args, kwargs):
+        try:
+            value = self.function(*args, **kwargs)
+            # now walk the callchain, passing on the previous value as first argument
+            for call, args, kwargs in chain:
+                call = functools.partial(call, value)
+                value = call(*args, **kwargs)
+            asyncresult.value = value
+        except Exception:
+            # ignore any exceptions here, return them as part of the async result instead
+            asyncresult.value=_ExceptionWrapper(sys.exc_info()[1])
+
+    def then(self, call, *args, **kwargs):
+        """
+        Add a callable to the call chain, to be invoked when the results become available.
+        The result of the current call will be used as the first argument for the next call.
+        Optional extra arguments can be provided in args and kwargs.
+        """
+        self.chain.append((call, args, kwargs))
 
 
 class _ExceptionWrapper(object):
