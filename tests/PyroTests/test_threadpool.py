@@ -12,19 +12,25 @@ import Pyro4.threadutil
 
 
 class Worker(Pyro4.threadutil.Thread):
-    def __init__(self, pool, name, something=None):
+    def __init__(self, pool, name):
         Pyro4.threadutil.Thread.__init__(self)
         self.setDaemon(True)
         self.myname=name
         self.pool=pool
-        self.something=something
         self.continuerunning=True
     def run(self):
-        # print("worker %s (%s, %s) running!" % (self.getName(), self.myname, self.something))
+        # print("worker %s (%s) running!" % (self.getName(), self.myname))
         while self.continuerunning:
             time.sleep(0.01)
         # print("worker %s exits!" % self.getName())
         self.pool.remove(self)   # XXX for now, a worker must remove itself from the pool when it exits
+
+class WorkerFactory(object):
+    def __init__(self, pool, name):
+        self.pool=pool
+        self.workername=name
+    def __call__(self):
+        return Worker(self.pool, self.workername)
 
 
 MIN_POOL_SIZE = 5
@@ -41,8 +47,9 @@ class ThreadpoolTests(unittest.TestCase):
 
     def testPoolCreation(self):
         tp = ThreadPool()
+        tp.workerFactory=WorkerFactory(tp, "workername")
         self.assertEqual(0, len(tp))
-        tp.fill(Worker, tp, "workername", something="something")
+        tp.fill()
         self.assertEqual(MIN_POOL_SIZE, len(tp))
         for worker in tp.pool.copy():
             worker.continuerunning=False
@@ -50,19 +57,20 @@ class ThreadpoolTests(unittest.TestCase):
 
     def testPoolGrowth(self):
         tp = ThreadPool()
-        tp.fill(Worker, tp, "workername", something="something")
+        tp.workerFactory=WorkerFactory(tp, "workername")
+        tp.fill()
         self.assertEqual(MIN_POOL_SIZE, len(tp))
         self.assertFalse(tp.poolCritical())
-        spawned=tp.growIfNeeded(Worker, tp, "name")
+        spawned=tp.growIfNeeded()
         self.assertFalse(spawned)
         tp.updateWorking(5)
         self.assertTrue(tp.poolCritical())
-        spawned=tp.growIfNeeded(Worker, tp, "name")
+        spawned=tp.growIfNeeded()
         self.assertTrue(spawned)
         self.assertEqual(6, len(tp))
         tp.updateWorking(5)  # total number of 'working' threads now sits at 10
         for _ in range(MAX_POOL_SIZE*2):
-            tp.growIfNeeded(Worker, tp, "name")
+            tp.growIfNeeded()
         self.assertEqual(MAX_POOL_SIZE, len(tp))     # shouldn't grow beyond max size
         for worker in tp.pool.copy():
             worker.continuerunning=False
@@ -71,7 +79,8 @@ class ThreadpoolTests(unittest.TestCase):
     def testPoolShrink(self):
         Pyro4.config.THREADPOOL_MINTHREADS = MAX_POOL_SIZE
         tp = ThreadPool()
-        tp.fill(Worker, tp, "workername", something="something")
+        tp.workerFactory=WorkerFactory(tp, "workername")
+        tp.fill()
         self.assertFalse(tp.poolCritical())
         tp.updateWorking(MAX_POOL_SIZE)
         self.assertTrue(tp.poolCritical())

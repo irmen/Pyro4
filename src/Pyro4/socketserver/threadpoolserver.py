@@ -83,6 +83,14 @@ class SocketWorker(threadutil.Thread):
         return False
 
 
+class SocketWorkerFactory(object):
+    def __init__(self, server, daemon):
+        self.server=server
+        self.daemon=daemon
+    def __call__(self):
+        return SocketWorker(self.server, self.daemon)
+
+
 class SocketServer_Threadpool(object):
     """transport server for socket connections, worker thread pool version."""
     def init(self, daemon, host, port, unixsocket=None):
@@ -103,7 +111,8 @@ class SocketServer_Threadpool(object):
             self.locationStr="%s:%d" % (host, port)
         self.workqueue=queue.Queue()
         self.threadpool=Pyro4.threadpool.ThreadPool()
-        self.threadpool.fill(SocketWorker, self, self.daemon)
+        self.threadpool.workerFactory=SocketWorkerFactory(self, self.daemon)
+        self.threadpool.fill()
         log.info("%d worker threads started", len(self.threadpool))
 
     def __del__(self):
@@ -145,7 +154,7 @@ class SocketServer_Threadpool(object):
             log.debug("connection from %s", caddr)
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
-            self.threadpool.growIfNeeded(SocketWorker, self, self.daemon)
+            self.threadpool.growIfNeeded()
             self.workqueue.put((csock, caddr))
         except socket.timeout:
             pass  # just continue the loop on a timeout on accept

@@ -13,10 +13,13 @@ class ThreadPool(object):
     """
     A pool of threads that can grow and shrink between limits set by the
     THREADPOOL_MINTHREADS and THREADPOOL_MAXTHREADS config items.
+    Make sure to set the ``workerFactory`` attribute after creation,
+    to a callable that returns a worker thread object.
     """
     def __init__(self):
         self.lock = Pyro4.threadutil.Lock()
         self.pool = set()
+        self.workerFactory=None   # you must set this after creation
         self.__working = 0
         self.__lastshrink = time.time()
 
@@ -26,16 +29,16 @@ class ThreadPool(object):
     def __repr__(self):
         return "<%s.%s at 0x%x, poolsize %s>" % (self.__class__.__module__, self.__class__.__name__, id(self), len(self.pool))
 
-    def fill(self, workerType, *workerArgs, **workerKwargs):
+    def fill(self):
         """pre-fill the pool with workers"""
         for _ in range(Pyro4.config.THREADPOOL_MINTHREADS):
-            if not self.attemptSpawn(workerType, *workerArgs, **workerKwargs):
+            if not self.attemptSpawn():
                 break
 
-    def growIfNeeded(self, workerType, *workerArgs, **workerKwargs):
+    def growIfNeeded(self):
         """If there are no more idle workers in the pool, spawn a new one, and return True. Otherwise, return False."""
         if self.poolCritical():
-            return self.attemptSpawn(workerType, *workerArgs, **workerKwargs)
+            return self.attemptSpawn()
 
     def attemptRemove(self, member):
         """
@@ -56,16 +59,15 @@ class ThreadPool(object):
             except KeyError:
                 pass
 
-    def attemptSpawn(self, workerType, *workerArgs, **workerKwargs):
+    def attemptSpawn(self):
         """
         Spawns a new worker thread of the given type and adds it to the pool,
         but only if the pool is still smaller than the maximum size.
-        The args are passed to the workertype constructor if a worker is actually created.
         Returns True if a worker spawned, False if the pool is already full.
         """
         with self.lock:
             if len(self.pool) < Pyro4.config.THREADPOOL_MAXTHREADS:
-                worker = workerType(*workerArgs, **workerKwargs)
+                worker = self.workerFactory()
                 self.pool.add(worker)
                 worker.start()
                 return True

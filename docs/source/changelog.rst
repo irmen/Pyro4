@@ -9,6 +9,7 @@ Change Log
 - improved FutureResult.then(), it now accepts additional normal arguments as well instead of only kwargs
 - renamed Pyro4.config.refresh to Pyro4.config.reset because reset better describes what it is doing
 - added parameter to config.refresh to make it ignore environment variables
+- refactored internal threadpool into its own module, added unit tests
 
 
 **Pyro 4.9**
