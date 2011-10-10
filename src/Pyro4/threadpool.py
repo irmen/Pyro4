@@ -20,11 +20,22 @@ class ThreadPool(object):
         self.__working = 0
         self.__lastshrink = time.time()
 
-    def fill(self, workertype, *workerargs, **workerkwargs):
+    def __len__(self):
+        return len(self.pool)
+
+    def __repr__(self):
+        return "<%s.%s at 0x%x, poolsize %s>" % (self.__class__.__module__, self.__class__.__name__, id(self), len(self.pool))
+
+    def fill(self, workerType, *workerArgs, **workerKwargs):
         """pre-fill the pool with workers"""
         for _ in range(Pyro4.config.THREADPOOL_MINTHREADS):
-            if not self.attemptSpawn(workertype, *workerargs, **workerkwargs):
+            if not self.attemptSpawn(workerType, *workerArgs, **workerKwargs):
                 break
+
+    def growIfNeeded(self, workerType, *workerArgs, **workerKwargs):
+        """If there are no more idle workers in the pool, spawn a new one, and return True. Otherwise, return False."""
+        if self.poolCritical():
+            return self.attemptSpawn(workerType, *workerArgs, **workerKwargs)
 
     def attemptRemove(self, member):
         """
@@ -72,10 +83,9 @@ class ThreadPool(object):
         The number of 'busy' workers is needed to determine of the pool should be grown or shrunk.
         This method returns the number of workers removed in case a pool shrink occurred.
         """
-        shrunk = self.shrink()
         with self.lock:
             self.__working += number
-        return shrunk
+        return self.shrink()
 
     def shrink(self):
         """Cleans up the pool: any excess idle workers are removed. Returns the number of removed workers."""
@@ -85,5 +95,6 @@ class ThreadPool(object):
             idle = threads - self.__working
             if idle > Pyro4.config.THREADPOOL_MINTHREADS and (time.time() - self.__lastshrink) > Pyro4.config.THREADPOOL_IDLETIMEOUT:
                 shrunk = idle - Pyro4.config.THREADPOOL_MINTHREADS
+                # XXX hmm, something should actually remove the idle threads from the pool here ..... instead of depending on the user to do it....
                 self.__lastshrink = time.time()
         return shrunk

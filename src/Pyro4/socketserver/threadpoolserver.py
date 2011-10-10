@@ -104,7 +104,7 @@ class SocketServer_Threadpool(object):
         self.workqueue=queue.Queue()
         self.threadpool=Pyro4.threadpool.ThreadPool()
         self.threadpool.fill(SocketWorker, self, self.daemon)
-        log.info("%d worker threads started", len(self.threadpool.pool))
+        log.info("%d worker threads started", len(self.threadpool))
 
     def __del__(self):
         if self.sock is not None:
@@ -112,7 +112,7 @@ class SocketServer_Threadpool(object):
 
     def __repr__(self):
         return "<%s on %s, poolsize %d, %d queued>" % (self.__class__.__name__, self.locationStr,
-            len(self.threadpool.pool), self.workqueue.qsize())
+            len(self.threadpool), self.workqueue.qsize())
 
     def loop(self, loopCondition=lambda: True):
         log.debug("threadpool server requestloop")
@@ -145,8 +145,7 @@ class SocketServer_Threadpool(object):
             log.debug("connection from %s", caddr)
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
-            if self.threadpool.poolCritical():
-                self.threadpool.attemptSpawn(SocketWorker, self, self.daemon)
+            self.threadpool.growIfNeeded(SocketWorker, self, self.daemon)
             self.workqueue.put((csock, caddr))
         except socket.timeout:
             pass  # just continue the loop on a timeout on accept
@@ -168,11 +167,10 @@ class SocketServer_Threadpool(object):
             except Exception:
                 pass
             self.sock=None
-        workers = self.threadpool.pool.copy()
         if self.workqueue is not None:
-            for _ in range(len(workers)):
+            for _ in range(len(self.threadpool)):
                 self.workqueue.put((None, None))  # put a 'stop' sentinel in the worker queue for every worker
-        for worker in workers:
+        for worker in self.threadpool.pool.copy():
             worker.running=False
             csock=getattr(worker, "csock", None)
             if csock:
