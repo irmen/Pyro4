@@ -4,7 +4,8 @@ Pyrolite - client library for Java and .NET
 
 This library allows your Java or .NET program to interface very easily with
 the Python world. It uses the Pyro protocol to call methods on remote
-objects.
+objects. It also supports convenient access to a Pyro Flame server including the remote
+interactive console.
 
 Pyrolite only implements part of the client side Pyro library,
 hence its name 'lite'...  Because Pyrolite has no dependencies,

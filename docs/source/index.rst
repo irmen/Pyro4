@@ -31,6 +31,7 @@ Contents
    nameserver.rst
    security.rst
    errors.rst
+   flame.rst
    tipstricks.rst
    config.rst
    upgrading.rst
