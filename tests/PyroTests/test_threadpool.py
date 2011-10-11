@@ -98,11 +98,11 @@ class ThreadpoolTests(unittest.TestCase):
         time.sleep(IDLE_TIMEOUT+0.2)
         shrunk=tp.updateWorking(0)
         self.assertEqual(MAX_POOL_SIZE-MIN_POOL_SIZE, shrunk)
-        # XXX for now we need to actually remove the idle threads ourselves
+        # for now we need to actually remove the idle threads ourselves
         for worker in list(tp.pool)[:shrunk]:
             worker.continuerunning=False
             worker.join()
-        # XXX the worker, when it exits, removes itself from the thread pool
+        # the worker, when it exits, must remove itself from the thread pool
         self.assertEqual(MIN_POOL_SIZE, len(tp))
         for worker in tp.pool.copy():
             worker.continuerunning=False

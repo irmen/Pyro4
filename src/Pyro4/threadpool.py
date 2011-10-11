@@ -15,6 +15,13 @@ class ThreadPool(object):
     THREADPOOL_MINTHREADS and THREADPOOL_MAXTHREADS config items.
     Make sure to set the ``workerFactory`` attribute after creation,
     to a callable that returns a worker thread object.
+
+    ....this class didn't turn out to be as nice as I wanted; you still need to do
+    quite a lot of work yourself in the worker threads or the controlling code.
+    Worker threads need to call updateWorking with +1 or -1 when they start or finish work,
+    and controlling code needs to call growIfNeeded when processing tasks. Also, when a worker
+    thread exits, it needs to call remove by itself to actually remove it from the pool.
+    Maybe I'll refactor this thing in the future.
     """
     def __init__(self):
         self.lock = Pyro4.threadutil.Lock()
