@@ -2,19 +2,24 @@
 Flame: Foreign Location Automatic Module Exposer
 ************************************************
 
+.. image:: _static/flammable.png
+       :align: left
+
 Pyro Flame is an easy way of exposing remote modules and builtins, and even a remote interactive
 Python console. It is available since Pyro 4.10.
-With Flame, you don't need to write any explicit server side Pyro objects anymore but you are
-still able to call code on the remote machine. It does this by giving a client direct access to
-any module or builtin that is available on the remote machine.
+With Flame, you don't need to write any server side code anymore, and still be
+able to call objects, modules and other things on the remote machine.
+Flame does this by giving a client direct access to any module or builtin that is available on the remote machine.
 
 Flame can be found in the :py:mod:`Pyro4.utils.flame` module.
 
 .. warning:: Be very sure about what you are doing before enabling Flame.
 
     Flame is disabled by default.
-    This is because it allows client programs full access to everything on your system.
+    This is because it allows client programs full access to *everything* on your system.
     Only use it if you fully trust your environment and the clients that can connect to your machines.
+
+    (Flame is also symbolic for burning server machines that got totally owned by malicious clients.)
 
 
 Enabling Flame
@@ -91,8 +96,11 @@ A remote interactive console can be started like this::
     The ``getmodule`` and ``sendmodule`` functions can be used to send module source files
     to other machines so it is possible to execute code that wasn't available before.
     This is a *very* experimental replacement of the mobile code feature that Pyro 3.x had.
+    It also is a very easy way of totally owning the server because you can make it execute
+    anything you like. Be very careful.
 
 .. note::
     :doc:`pyrolite` also supports convenient access to a Pyro Flame server. This includes the remote interactive console.
 
 
+See the :file:`flame` example for example code including uploading module source code to the server.
