@@ -7,7 +7,14 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import unittest
 import sys, os
-sys.path.insert(0,"../src")    # add Pyro source directory
+
+if len(sys.argv)==2 and sys.argv[1]=="--tox":
+    # running from Tox, don't screw with paths otherwise it screws up the virtualenv
+    pass
+else:
+    # running from normal shell invocation
+    sys.path.insert(0,"../src")    # add Pyro source directory
+
 sys.path.insert(1,"PyroTests")
 
 if __name__=="__main__":
