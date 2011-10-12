@@ -32,7 +32,7 @@ including Python 2.x, Python 3.x, IronPython, Jython and Pypy.""",
         "keywords": "distributed objects, middleware, network communication, remote method call, IPC",
         "url": "http://irmen.home.xs4all.nl/pyro/",
         "package_dir": {'':'src'},
-        "packages": ['Pyro4', 'Pyro4.socketserver', 'Pyro4.test'],
+        "packages": ['Pyro4', 'Pyro4.socketserver', 'Pyro4.test', 'Pyro4.utils'],
         "scripts": [],
         "platforms": "any",
         "classifiers": [
