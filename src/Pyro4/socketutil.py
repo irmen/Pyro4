@@ -5,6 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import socket, os, errno, time, sys
+import re
 from Pyro4.errors import ConnectionClosedError, TimeoutError, CommunicationError
 import Pyro4
 
@@ -44,6 +45,8 @@ def getIpVersion(hostnameOrAddress):
         return 6 if Pyro4.config.PREFER_IPV6 else 4
     if ":" in hostnameOrAddress:
         return 6
+    if re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", hostnameOrAddress):
+        return 4
     return 6 if Pyro4.config.PREFER_IPV6 else 4
 
 
@@ -203,7 +206,7 @@ def sendData(sock, data):
 
 _GLOBAL_DEFAULT_TIMEOUT=object()
 
-def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False):
+def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False, ipv6=False):
     """
     Create a socket. Default socket options are keepalives.
     If 'bind' or 'connect' is a string, it is assumed a Unix domain socket is requested.
@@ -223,7 +226,7 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
         if connect:
             connect=(connect[0], connect[1], 0, 0)
     else:
-        family=socket.AF_INET
+        family=socket.AF_INET6 if ipv6 else socket.AF_INET
     sock=socket.socket(family, socket.SOCK_STREAM)
     if reuseaddr:
         setReuseAddr(sock)
@@ -270,9 +273,11 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
     return sock
 
 
-def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TIMEOUT):
+def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TIMEOUT, ipv6=False):
     """Create a udp broadcast socket."""
-    if not bind or (type(bind) is tuple and getIpVersion(bind[0]) == 4):
+    if not bind:
+        family=socket.AF_INET6 if ipv6 else socket.AF_INET
+    elif type(bind) is tuple and getIpVersion(bind[0]) == 4:
         family=socket.AF_INET
     elif type(bind) is tuple and getIpVersion(bind[0]) == 6:
         family=socket.AF_INET6
