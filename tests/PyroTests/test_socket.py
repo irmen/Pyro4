@@ -98,12 +98,14 @@ class TestSocketutil(unittest.TestCase):
         self.assertEqual(socket.AF_INET, bs.family)
         try:
             host,port=s.getsockname()
-            self.fail("should get socket.error")
+            # can either fail with socket.error or return (host,0)
+            self.assertEqual(0,port)
         except socket.error:
             pass
         try:
             host,port=bs.getsockname()
-            self.fail("should get socket.error")
+            # can either fail with socket.error or return (host,0)
+            self.assertEqual(0,port)
         except socket.error:
             pass
         s.close()
@@ -116,12 +118,14 @@ class TestSocketutil(unittest.TestCase):
         self.assertEqual(socket.AF_INET6, bs.family)
         try:
             host,port,_,_=s.getsockname()
-            self.fail("should get socket.error")
+            # can either fail with socket.error or return (host,0)
+            self.assertEqual(0,port)
         except socket.error:
             pass
         try:
             host,port,_,_=bs.getsockname()
-            self.fail("should get socket.error")
+            # can either fail with socket.error or return (host,0)
+            self.assertEqual(0,port)
         except socket.error:
             pass
         s.close()
