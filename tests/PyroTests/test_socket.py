@@ -31,12 +31,12 @@ class TestSocketutil(unittest.TestCase):
         self.assertNotEqual("127.0.0.1", SU.getMyIpAddress("127.0.0.1",workaround127=True))
         
     def testUnusedPort(self):
-        port1=SU.findUnusedPort()
-        port2=SU.findUnusedPort()
+        port1=SU.findProbablyUnusedPort()
+        port2=SU.findProbablyUnusedPort()
         self.assertTrue(port1>0)
         self.assertNotEqual(port1,port2)
-        port1=SU.findUnusedPort(socktype=socket.SOCK_DGRAM)
-        port2=SU.findUnusedPort(socktype=socket.SOCK_DGRAM)
+        port1=SU.findProbablyUnusedPort(socktype=socket.SOCK_DGRAM)
+        port2=SU.findProbablyUnusedPort(socktype=socket.SOCK_DGRAM)
         self.assertTrue(port1>0)
         self.assertNotEqual(port1,port2)
     def testBindUnusedPort(self):
@@ -185,7 +185,7 @@ class ServerCallback(object):
 class TestSocketServer(unittest.TestCase):
     def testServer_thread(self):
         daemon=ServerCallback()
-        port=SU.findUnusedPort()
+        port=SU.findProbablyUnusedPort()
         serv=SocketServer_Threadpool()
         serv.init(daemon,"localhost",port)
         self.assertEqual("localhost:"+str(port), serv.locationStr)
@@ -201,7 +201,7 @@ class TestSocketServer(unittest.TestCase):
         self.assertTrue(serv.sock is None)
     def testServer_select(self):
         daemon=ServerCallback()
-        port=SU.findUnusedPort()
+        port=SU.findProbablyUnusedPort()
         serv=SocketServer_Select()
         serv.init(daemon,"localhost",port)
         self.assertEqual("localhost:"+str(port), serv.locationStr)
@@ -217,7 +217,7 @@ class TestSocketServer(unittest.TestCase):
         self.assertTrue(serv.sock is None)
     def testServer_poll(self):
         daemon=ServerCallback()
-        port=SU.findUnusedPort()
+        port=SU.findProbablyUnusedPort()
         serv=SocketServer_Poll()
         serv.init(daemon,"localhost",port)
         self.assertEqual("localhost:"+str(port), serv.locationStr)

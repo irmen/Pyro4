@@ -329,8 +329,8 @@ class SocketConnection(object):
     timeout=property(getTimeout, setTimeout)
 
 
-def findUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
-    """Returns an unused port that should be suitable for binding.
+def findProbablyUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
+    """Returns an unused port that should be suitable for binding (likely, but not guaranteed).
     This code is copied from the stdlib's test.test_support module."""
     tempsock = socket.socket(family, socktype)
     port = bindOnUnusedPort(tempsock)

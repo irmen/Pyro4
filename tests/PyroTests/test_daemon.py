@@ -34,7 +34,7 @@ class DaemonTests(unittest.TestCase):
         Pyro4.config.HMAC_KEY=None
         
     def testDaemon(self):
-        freeport=Pyro4.socketutil.findUnusedPort()
+        freeport=Pyro4.socketutil.findProbablyUnusedPort()
         with Pyro4.core.Daemon(port=freeport) as d:
             locationstr="%s:%d" %(Pyro4.config.HOST, freeport)
             self.assertEqual( locationstr, d.locationStr)
@@ -99,7 +99,7 @@ class DaemonTests(unittest.TestCase):
 
     def testRegisterEtc(self):
         try:
-            freeport=Pyro4.socketutil.findUnusedPort()
+            freeport=Pyro4.socketutil.findProbablyUnusedPort()
             d=Pyro4.core.Daemon(port=freeport)
             self.assertEqual(1, len(d.objectsById))
             o1=MyObj("object1")
@@ -211,7 +211,7 @@ class DaemonTests(unittest.TestCase):
         
     def testUriFor(self):
         try:
-            freeport=Pyro4.socketutil.findUnusedPort()
+            freeport=Pyro4.socketutil.findProbablyUnusedPort()
             d=Pyro4.core.Daemon(port=freeport)
             locationstr="%s:%d" %(Pyro4.config.HOST, freeport)
             o1=MyObj("object1")
