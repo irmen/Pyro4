@@ -37,43 +37,43 @@ if not hasattr(socket, "SOL_TCP"):
 def getIpVersion(hostnameOrAddress):
     """
     Determine what the IP version is of the given hostname or ip address (4 or 6).
-    If it contains a ':' it is considered to be an ipv6 address.
-    If it contains a '.' and is not a hostname, it is ipv4.
-    If it's a hostname or None we can't really tell and the result depends on the PREFER_IPV6 config item.
+    First, it resolves the hostname or address to get an IP address.
+    Then, if the resolved IP contains a ':' it is considered to be an ipv6 address,
+    and if it contains a '.', it is ipv4.
     """
-    if hostnameOrAddress in (None, ""):
-        return 6 if Pyro4.config.PREFER_IPV6 else 4
-    if ":" in hostnameOrAddress:
-        return 6
-    if re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", hostnameOrAddress):
+    address = getIpAddress(hostnameOrAddress)
+    if "." in address:
         return 4
-    return 6 if Pyro4.config.PREFER_IPV6 else 4
+    elif ":" in address:
+        return 6
+    else:
+        raise CommunicationError("Unknown IP address format" + address)
 
 
-def getIpAddress(hostname, workaround127=False, ipv6=None):
+def getIpAddress(hostname, workaround127=False, ipVersion=None):
     """
     Returns the IP address for the given host. If you enable the workaround,
     it will use a little hack if the ip address is found to be the loopback address.
     The hack tries to discover an externally visible ip address instead (this only works for ipv4 addresses).
-    Set ipv6=True to return ipv6 addresses, False to return ipv4, None to depend on the PREFER_IPV6 config item.
+    Set ipVersion=6 to return ipv6 addresses, 4 to return ipv4, 0 to let OS choose the best one or None to use Pyro4.config.PREFER_IP_VERSION.
     """
-    def getaddr(hostname):
-        if ipv6:
-            return socket.getaddrinfo(hostname, None, socket.AF_INET6, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
+    def getaddr(ipVersion):
+        if ipVersion == 6:
+            family=socket.AF_INET6
+        elif ipVersion == 4:
+            family=socket.AF_INET
+        elif ipVersion == 0:
+            family=socket.AF_UNSPEC
         else:
-            ip=socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
-            if workaround127 and (ip.startswith("127.") or ip=="0.0.0.0"):
-                ip=getInterfaceAddress("4.2.2.2")   # 'abuse' a public level 3 DNS server
-            return ip
+            raise ValueError("unkown value for argument ipVersion.")
+        ip=socket.getaddrinfo(hostname or socket.gethostname(), None, family, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
+        if workaround127 and (ip.startswith("127.") or ip=="0.0.0.0"):
+            ip=getInterfaceAddress("4.2.2.2")
+        return ip
     try:
-        if ipv6 is None:
-            ipv6 = Pyro4.config.PREFER_IPV6
-        return getaddr(hostname)
+        return getaddr(Pyro4.config.PREFER_IP_VERSION) if ipVersion == None else getaddr(ipVersion)
     except socket.gaierror:
-        if hostname in (None,""):
-            return getaddr(socket.gethostname())   # sometimes empty hostname isn't allowed, insert a fair guess
-        else:
-            raise
+        return getaddr(0)
 
 
 def getInterfaceAddress(ip_address):
@@ -208,25 +208,47 @@ _GLOBAL_DEFAULT_TIMEOUT=object()
 
 def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False, ipv6=False):
     """
-    Create a socket. Default socket options are keepalives.
+    Create a socket. Default socket options are keepalive and IPv4 family.
     If 'bind' or 'connect' is a string, it is assumed a Unix domain socket is requested.
     Otherwise, a normal tcp/ip socket is used.
     """
     if bind and connect:
         raise ValueError("bind and connect cannot both be specified at the same time")
+    forceIPv6=ipv6 or (ipv6 == None and Pyro4.config.PREFER_IP_VERSION == 6)
     if type(bind) is str or type(connect) is str:
         family=socket.AF_UNIX
-    elif (type(bind) is tuple and getIpVersion(bind[0]) == 4) or (type(connect) is tuple and getIpVersion(connect[0]) == 4):
-        family=socket.AF_INET
-    elif (type(bind) is tuple and getIpVersion(bind[0]) == 6) or (type(connect) is tuple and getIpVersion(connect[0]) == 6):
-        family=socket.AF_INET6
-        # replace bind/connect addresses by their ipv6 counterparts (4-tuple)
-        if bind:
-            bind=(bind[0], bind[1], 0, 0)
-        if connect:
-            connect=(connect[0], connect[1], 0, 0)
+    elif not bind and not connect:
+        family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+    elif type(bind) is tuple:
+        if not bind[0]:
+            family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+        else:
+            if getIpVersion(bind[0]) == 4:
+                if forceIPv6:
+                    raise ValueError("IPv4 address is used bind argument with forceIPv6 argument:" + bind[0] + ".")
+                family=socket.AF_INET
+            elif getIpVersion(bind[0]) == 6:
+                family=socket.AF_INET6
+                # replace bind addresses by their ipv6 counterparts (4-tuple)
+                bind=(bind[0], bind[1], 0, 0)
+            else:
+                raise ValueError("unkown bind format.")
+    elif type(connect) is tuple:
+        if not connect[0]:
+            family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+        else:
+            if getIpVersion(connect[0]) == 4:
+                if forceIPv6:
+                    raise ValueError("IPv4 address is used in connect argument with forceIPv6 argument:" + bind[0] + ".")
+                family=socket.AF_INET
+            elif getIpVersion(connect[0]) == 6:
+                family=socket.AF_INET6
+                # replace connect addresses by their ipv6 counterparts (4-tuple)
+                connect=(connect[0], connect[1], 0, 0)
+            else:
+                raise ValueError("unkown connect format.")
     else:
-        family=socket.AF_INET6 if ipv6 else socket.AF_INET
+        raise ValueError("unkown bind or connect format.")
     sock=socket.socket(family, socket.SOCK_STREAM)
     if reuseaddr:
         setReuseAddr(sock)
@@ -275,13 +297,22 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
 
 def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TIMEOUT, ipv6=False):
     """Create a udp broadcast socket."""
+    forceIPv6=ipv6 or (ipv6 == None and Pyro4.config.PREFER_IP_VERSION == 6)
     if not bind:
-        family=socket.AF_INET6 if ipv6 else socket.AF_INET
-    elif type(bind) is tuple and getIpVersion(bind[0]) == 4:
-        family=socket.AF_INET
-    elif type(bind) is tuple and getIpVersion(bind[0]) == 6:
-        family=socket.AF_INET6
-        bind=(bind[0], bind[1], 0, 0)
+        family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+    elif type(bind) is tuple:
+        if not bind[0]:
+            family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+        else:
+            if getIpVersion(bind[0]) == 4:
+                if forceIPv6:
+                    raise ValueError("IPv4 address is used with forceIPv6 option:" + bind[0] + ".")
+                family=socket.AF_INET
+            elif getIpVersion(bind[0]) == 6:
+                family=socket.AF_INET6
+                bind=(bind[0], bind[1], 0, 0)
+            else:
+                raise ValueError("unknown bind format: %r" % (bind,))
     else:
         raise ValueError("unknown bind format: %r" % (bind,))
     sock=socket.socket(family, socket.SOCK_DGRAM)
@@ -403,9 +434,15 @@ def bindOnUnusedPort(sock, host='localhost'):
             # even though Jython has this socket option, it doesn't support it. Hence the check in the if statement above.
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
     if socketfamily == socket.AF_INET:
-        sock.bind((host, 0))
+        if host == 'localhost':
+            sock.bind(('127.0.0.1', 0))
+        else:
+            sock.bind((host, 0))
     elif socketfamily == socket.AF_INET6:
-        sock.bind((host, 0, 0, 0))
+        if host == 'localhost':
+            sock.bind(('::1', 0, 0, 0))
+        else:
+            sock.bind((host, 0, 0, 0))
     else:
         raise CommunicationError( "unsupported socket family: " + socketfamily )
     if os.name=="java":

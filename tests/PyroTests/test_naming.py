@@ -167,7 +167,8 @@ class NameServerTests(unittest.TestCase):
         self.assertEqual("PYRO:12345@host.com:4444", str(resolved1))
         
         ns=Pyro4.naming.locateNS(self.nsUri.host, self.nsUri.port)
-        uri=Pyro4.naming.resolve("PYRONAME:"+Pyro4.constants.NAMESERVER_NAME+"@"+self.nsUri.host+":"+str(self.nsUri.port))
+        host="["+self.nsUri.host+"]" if ":" in self.nsUri.host else self.nsUri.host
+        uri=Pyro4.naming.resolve("PYRONAME:"+Pyro4.constants.NAMESERVER_NAME+"@"+host+":"+str(self.nsUri.port))
         self.assertEqual("PYRO",uri.protocol)
         self.assertEqual(self.nsUri.host,uri.host)
         self.assertEqual(Pyro4.constants.NAMESERVER_NAME,uri.object)
@@ -181,7 +182,7 @@ class NameServerTests(unittest.TestCase):
         self.assertEqual("PYRO",uri.protocol)
 
         # test some errors
-        self.assertRaises(NamingError, Pyro4.naming.resolve, "PYRONAME:unknown_object@"+self.nsUri.host)
+        self.assertRaises(NamingError, Pyro4.naming.resolve, "PYRONAME:unknown_object@"+host)
         self.assertRaises(TypeError, Pyro4.naming.resolve, 999)  #wrong arg type
 
 

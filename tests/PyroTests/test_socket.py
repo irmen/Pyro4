@@ -19,6 +19,7 @@ class TestSocketutil(unittest.TestCase):
         Pyro4.config.POLLTIMEOUT=0.1
         
     def testGetIP(self):
+        Pyro4.config.PREFER_IP_VERSION=4
         myip=SU.getIpAddress("")
         self.assertTrue(len(myip)>4)
         myip=SU.getIpAddress("",workaround127=True)
@@ -28,19 +29,22 @@ class TestSocketutil(unittest.TestCase):
         self.assertNotEqual("127.0.0.1", SU.getIpAddress("127.0.0.1",workaround127=True))
         
     def testGetIP6(self):
-        self.assertTrue(":" in SU.getIpAddress("::1",ipv6=True))
-        self.assertTrue(":" in SU.getIpAddress("",ipv6=True))
-        self.assertTrue(":" in SU.getIpAddress("localhost",ipv6=True))
+        self.assertTrue(":" in SU.getIpAddress("::1",ipVersion=6))
+        self.assertTrue(":" in SU.getIpAddress("",ipVersion=6))
+        self.assertTrue(":" in SU.getIpAddress("localhost",ipVersion=6))
 
     def testGetIpVersion(self):
-        Pyro4.config.PREFER_IPV6=True
+        Pyro4.config.PREFER_IP_VERSION=6
         self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
         self.assertEqual(6, SU.getIpVersion("::1"))
         self.assertEqual(6, SU.getIpVersion("localhost"))
-        Pyro4.config.PREFER_IPV6=False
+        Pyro4.config.PREFER_IP_VERSION=4
         self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
         self.assertEqual(6, SU.getIpVersion("::1"))
         self.assertEqual(4, SU.getIpVersion("localhost"))
+        Pyro4.config.PREFER_IP_VERSION=0
+        self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
+        self.assertEqual(6, SU.getIpVersion("::1"))
 
     def testGetInterfaceAddress(self):
         self.assertTrue(SU.getInterfaceAddress("localhost").startswith("127."))
@@ -132,9 +136,9 @@ class TestSocketutil(unittest.TestCase):
         bs.close()
 
     def testCreateBoundSockets(self):
-        s=SU.createSocket(bind=('localhost',0))
+        s=SU.createSocket(bind=('127.0.0.1',0))
         self.assertEqual(socket.AF_INET, s.family)
-        bs=SU.createBroadcastSocket(bind=('localhost',0))
+        bs=SU.createBroadcastSocket(bind=('127.0.0.1',0))
         self.assertEqual('127.0.0.1',s.getsockname()[0])
         self.assertEqual('127.0.0.1',bs.getsockname()[0])
         s.close()
