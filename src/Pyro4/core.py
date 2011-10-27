@@ -23,7 +23,7 @@ __all__=["URI", "Proxy", "Daemon", "callback", "batch", "async", "Future"]
 if sys.version_info>=(3,0):
     basestring=str
 
-log=logging.getLogger("Pyro.core")
+log=logging.getLogger("Pyro4.core")
 
 
 class URI(object):

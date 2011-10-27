@@ -87,11 +87,11 @@ class CoreTests(unittest.TestCase):
         self.assertTrue("LOGLEVEL" in dump)
 
     def testLogInit(self):
-        _=logging.getLogger("Pyro")
+        _=logging.getLogger("Pyro4")
         os.environ["PYRO_LOGLEVEL"]="DEBUG"
         os.environ["PYRO_LOGFILE"]="{stderr}"
         reload(Pyro4)
-        _=logging.getLogger("Pyro")
+        _=logging.getLogger("Pyro4")
         del os.environ["PYRO_LOGLEVEL"]
         del os.environ["PYRO_LOGFILE"]
         reload(Pyro4)

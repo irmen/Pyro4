@@ -16,7 +16,7 @@ __all__=["locateNS", "resolve", "startNS"]
 if sys.version_info>=(3, 0):
     basestring=str
 
-log=logging.getLogger("Pyro.naming")
+log=logging.getLogger("Pyro4.naming")
 
 
 class NameServer(object):
