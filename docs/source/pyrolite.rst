@@ -44,4 +44,4 @@ Readme: http://irmen.home.xs4all.nl/pyrolite/README.txt
 
 License (same as Pyro): http://irmen.home.xs4all.nl/pyrolite/LICENSE
 
-Readonly subversion repository: :kbd:`svn://svn.razorvine.net/Various/Pyrolite`
+Readonly subversion repository: :kbd:`svn://svn.razorvine.net/Pyro/Pyrolite`
