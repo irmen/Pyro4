@@ -5,6 +5,7 @@ Change Log
 **Pyro 4.11**
 
 - changed logger category from Pyro to Pyro4
+- added host and port parameters to Daemon.serveSimple
 
 
 **Pyro 4.10**

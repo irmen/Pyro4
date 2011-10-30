@@ -7,7 +7,7 @@ the Python world. It uses the Pyro protocol to call methods on remote
 objects. It also supports convenient access to a Pyro Flame server including the remote
 interactive console.
 
-Pyrolite only implements part of the client side Pyro library,
+Pyrolite is a tiny library (~50Kb) that implements a part of the client side Pyro library,
 hence its name 'lite'...  Because Pyrolite has no dependencies,
 it is a much lighter way to use Pyro from Java/.NET than a solution with
 jython+pyro or IronPython+pyro would provide.
@@ -19,22 +19,8 @@ Pyrolite contains an almost complete implementation of Python's :mod:`pickle` pr
 (with fairly intelligent mapping of datatypes between Python and Java/.NET),
 and a small part of Pyro's client network protocol and proxy logic.
 
-Small code example (java):
-
-.. code-block:: java
-
-    import net.razorvine.pyro.*;
-
-    NameServerProxy ns = NameServerProxy.locateNS(null);
-    PyroProxy something = new PyroProxy(ns.lookup("Your.Pyro.Object"));
-
-    Object result = something.call("pythonmethod",42,"arguments",[1,2,3]);
-
-    // depending on what 'pythonmethod' returns you'll have to cast
-    // the result object to the appropriate type, such as HashMap for dicts, etc.
-
 .. note::
-  Pyrolite is very new and should be considered experimental.
+  Pyrolite is quite new and should be considered rather experimental.
   It does contain a large amount of unit tests to validate its behavior,
   but "be careful".
 
@@ -45,3 +31,46 @@ Readme: http://irmen.home.xs4all.nl/pyrolite/README.txt
 License (same as Pyro): http://irmen.home.xs4all.nl/pyrolite/LICENSE
 
 Readonly subversion repository: :kbd:`svn://svn.razorvine.net/Pyro/Pyrolite`
+
+Small code example in Java:
+
+.. code-block:: java
+
+    import net.razorvine.pyro.*;
+
+    NameServerProxy ns = NameServerProxy.locateNS(null);
+    PyroProxy remoteobject = new PyroProxy(ns.lookup("Your.Pyro.Object"));
+    Object result = remoteobject.call("pythonmethod", 42, "hello", new int[]{1,2,3});
+    String message = (String)result;  // cast to the type that 'pythonmethod' returns
+    System.out.println("result message="+message);
+    remoteobject.close();
+    ns.close();
+
+The same example in C#:
+
+.. code-block:: csharp
+
+    using Razorvine.Pyro;
+
+    using( NameServerProxy ns = NameServerProxy.locateNS(null) )
+    {
+        using( PyroProxy something = new PyroProxy(ns.lookup("Your.Pyro.Object")) )
+        {
+            object result = something.call("pythonmethod", 42, "hello", new int[]{1,2,3});
+            string message = (string)result;  // cast to the type that 'pythonmethod' returns
+            Console.WriteLine("result message="+message);
+        }
+    }
+
+You can also use Pyro Flame rather conveniently because of some wrapper classes:
+
+.. code-block:: java
+
+    PyroProxy flame = new PyroProxy(hostname, port, "Pyro.Flame");
+    FlameModule r_module = (FlameModule) flame.call("module", "socket");
+    System.out.println("hostname=" + r_module.call("gethostname"));
+
+    FlameRemoteConsole console = (FlameRemoteConsole) flame.call("console");
+    console.interact();
+    console.close();
+

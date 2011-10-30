@@ -736,7 +736,7 @@ class Daemon(object):
         return self.transportServer.sockets
 
     @staticmethod
-    def serveSimple(objects, daemon=None, ns=True, verbose=True):
+    def serveSimple(objects, host=None, port=0, daemon=None, ns=True, verbose=True):
         """
         Very basic method to fire up a daemon (or supply one yourself).
         objects is a dict containing objects to register as keys, and
@@ -744,7 +744,7 @@ class Daemon(object):
         in the naming server as well, otherwise they just stay local.
         """
         if not daemon:
-            daemon=Daemon()
+            daemon=Daemon(host, port)
         with daemon:
             if ns:
                 ns=Pyro4.naming.locateNS()
