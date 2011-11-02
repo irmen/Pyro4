@@ -124,7 +124,7 @@ class TestSocketutil(unittest.TestCase):
         ss=SU.createBroadcastSocket((None, 0))
         port=ss.getsockname()[1]
         cs=SU.createBroadcastSocket()
-        cs.sendto(tobytes("monkey"),0,('<broadcast>',port))
+        cs.sendto(tobytes("monkey"),0,('',port))
         data,_=ss.recvfrom(500)
         self.assertEqual(tobytes("monkey"),data)
         cs.close()

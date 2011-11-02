@@ -270,7 +270,7 @@ def locateNS(host=None, port=None):
         sock=Pyro4.socketutil.createBroadcastSocket(reuseaddr=Pyro4.config.SOCK_REUSE, timeout=0.7)
         for _ in range(3):
             try:
-                sock.sendto(BroadcastServer.REQUEST_NSURI, 0, ("<broadcast>", port))
+                sock.sendto(BroadcastServer.REQUEST_NSURI, 0, ("", port))
                 data, _=sock.recvfrom(100)
                 sock.close()
                 if sys.version_info>=(3,0):
