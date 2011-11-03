@@ -270,7 +270,14 @@ def locateNS(host=None, port=None):
         sock=Pyro4.socketutil.createBroadcastSocket(reuseaddr=Pyro4.config.SOCK_REUSE, timeout=0.7)
         for _ in range(3):
             try:
-                sock.sendto(BroadcastServer.REQUEST_NSURI, 0, ("", port))
+                for bcaddr in Pyro4.config.parseAddressesString(Pyro4.config.BROADCAST_ADDRS):
+                    try:
+                        sock.sendto(BroadcastServer.REQUEST_NSURI, 0, (bcaddr, port))
+                    except socket.error:
+                        x=sys.exc_info()[1]
+                        err=getattr(x, "errno", x.args[0])
+                        if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:    # yeah, windows likes to throw these...
+                            raise
                 data, _=sock.recvfrom(100)
                 sock.close()
                 if sys.version_info>=(3,0):

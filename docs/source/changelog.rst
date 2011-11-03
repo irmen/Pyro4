@@ -6,7 +6,9 @@ Change Log
 
 - changed logger category from Pyro to Pyro4
 - added host and port parameters to Daemon.serveSimple
-- changed broadcast hostname to ''. Fixes freezing unittests on certain platforms (OpenSUSE)
+- added BROADCAST_ADDRS config item. Use this to set the appropriate broadcast addresses (comma separated)
+  The default is '<broadcast>' but you might need to change this on certain platforms (OpenSUSE?)
+  where that doesn't work very well.
 
 
 **Pyro 4.10**

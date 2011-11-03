@@ -32,6 +32,10 @@ ERRNO_ENOTSOCK=[errno.ENOTSOCK]
 if hasattr(errno, "WSAENOTSOCK"):
     ERRNO_ENOTSOCK.append(errno.WSAENOTSOCK)
 
+ERRNO_EADDRNOTAVAIL=[errno.EADDRNOTAVAIL]
+if hasattr(errno, "WSAEADDRNOTAVAIL"):
+    ERRNO_EADDRNOTAVAIL.append(errno.WSAEADDRNOTAVAIL)
+
 
 def getIpAddress(hostname=None):
     """returns the IP address for the current, or another, hostname"""
