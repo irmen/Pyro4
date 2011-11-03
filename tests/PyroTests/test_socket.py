@@ -5,7 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import unittest
-import socket, os
+import socket, os, sys
 import Pyro4.socketutil as SU
 from Pyro4 import threadutil
 from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
@@ -131,7 +131,8 @@ class TestSocketutil(unittest.TestCase):
                 x=sys.exc_info()[1]
                 err=getattr(x, "errno", x.args[0])
                 if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:    # yeah, windows likes to throw these...
-                    raise
+                    if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:     # and jython likes to throw thses...
+                        raise
         data,_=ss.recvfrom(500)
         self.assertEqual(tobytes("monkey"),data)
         cs.close()

@@ -277,7 +277,8 @@ def locateNS(host=None, port=None):
                         x=sys.exc_info()[1]
                         err=getattr(x, "errno", x.args[0])
                         if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:    # yeah, windows likes to throw these...
-                            raise
+                            if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:     # and jython likes to throw thses...
+                                raise
                 data, _=sock.recvfrom(100)
                 sock.close()
                 if sys.version_info>=(3,0):
