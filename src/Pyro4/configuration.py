@@ -47,7 +47,7 @@ class Configuration(object):
         self.THREADPOOL_IDLETIMEOUT = 5.0
         self.HMAC_KEY = None   # must be bytes type
         self.AUTOPROXY = True
-        self.BROADCAST_ADDRS = "<broadcast>"   # comma separated list of broadcast addresses
+        self.BROADCAST_ADDRS = "<broadcast>, 0.0.0.0"   # comma separated list of broadcast addresses
 
         if useenvironment:
             # process enviroment variables
