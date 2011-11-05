@@ -98,9 +98,9 @@ class DaemonTests(unittest.TestCase):
         Pyro4.config.SERVERTYPE=old_servertype
 
     def testRegisterEtc(self):
+        freeport=Pyro4.socketutil.findProbablyUnusedPort()
+        d=Pyro4.core.Daemon(port=freeport)
         try:
-            freeport=Pyro4.socketutil.findProbablyUnusedPort()
-            d=Pyro4.core.Daemon(port=freeport)
             self.assertEqual(1, len(d.objectsById))
             o1=MyObj("object1")
             o2=MyObj("object2")
@@ -210,9 +210,9 @@ class DaemonTests(unittest.TestCase):
                 pass
         
     def testUriFor(self):
+        freeport=Pyro4.socketutil.findProbablyUnusedPort()
+        d=Pyro4.core.Daemon(port=freeport)
         try:
-            freeport=Pyro4.socketutil.findProbablyUnusedPort()
-            d=Pyro4.core.Daemon(port=freeport)
             locationstr="%s:%d" %(Pyro4.config.HOST, freeport)
             o1=MyObj("object1")
             o2=MyObj("object2")
