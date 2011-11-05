@@ -103,3 +103,10 @@ the ``FutureResult`` class::
 
 See the :file:`futures` example for more details and example code.
 
+
+DNS setup
+=========
+Pyro depends on a working DNS configuration, at least for your local hostname (i.e. 'pinging' your local hostname should work).
+If your local hostname doesn't resolve to an IP address, you'll have to fix this.
+This can usually be done by adding an entry to the hosts file. For OpenSUSE, you can also use Yast to fix it
+(go to Network Settings, enable "Assing hostname to loopback IP").
