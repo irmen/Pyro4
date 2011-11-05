@@ -9,6 +9,7 @@ Change Log
 - added BROADCAST_ADDRS config item. Use this to set the appropriate broadcast addresses (comma separated)
   The default is '<broadcast>' but you might need to change this on certain platforms (OpenSUSE?)
   where that doesn't work very well.
+- connection closed error is no longer logged if it's just a normal terminated proxy connection
 
 
 **Pyro 4.10**
