@@ -206,6 +206,11 @@ This goes like this: you simply ask Pyro to look up the name server and return a
 It automatically figures out where in your subnet it is running by doing a broadcast and returning
 the first Pyro name server that responds.
 
+There is a config item ``BROADCAST_ADDRS`` that contains a comma separated list of the broadcast
+addresses Pyro should use when doing a broadcast lookup. Depending on your network configuration,
+you may have to change this list to make the lookup work. It could be that you have to add the
+network broadcast address for the specific network that the name server is located on.
+
 .. note::
     Broadcast lookup only works if you started a name server that didn't bind on localhost.
     For instance, the name server started as an example in :ref:`nameserver-nameserver` was told to
