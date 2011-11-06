@@ -129,13 +129,14 @@ class TestUtils(unittest.TestCase):
             finally:
                 sys.stderr=oldstderr
 
+    def clearEnv(self):
+        if "PYRO_HOST" in os.environ: del os.environ["PYRO_HOST"]
+        if "PYRO_NS_PORT" in os.environ: del os.environ["PYRO_NS_PORT"]
+        if "PYRO_COMPRESSION" in os.environ: del os.environ["PYRO_COMPRESSION"]
+        Pyro4.config.reset(useenvironment=False)
+    
     def testConfig(self):
-        def clearEnv():
-            if "PYRO_HOST" in os.environ: del os.environ["PYRO_HOST"]
-            if "PYRO_NS_PORT" in os.environ: del os.environ["PYRO_NS_PORT"]
-            if "PYRO_COMPRESSION" in os.environ: del os.environ["PYRO_COMPRESSION"]
-            Pyro4.config.reset(useenvironment=False)
-        clearEnv()
+        self.clearEnv()
         try:
             self.assertEqual(9090, Pyro4.config.NS_PORT)
             self.assertEqual("localhost", Pyro4.config.HOST)
@@ -151,23 +152,27 @@ class TestUtils(unittest.TestCase):
             self.assertEqual("something.com", Pyro4.config.HOST)
             self.assertEqual(False, Pyro4.config.COMPRESSION)
         finally:
-            clearEnv()
+            self.clearEnv()
             self.assertEqual(9090, Pyro4.config.NS_PORT)
             self.assertEqual("localhost", Pyro4.config.HOST)
             self.assertEqual(False, Pyro4.config.COMPRESSION)
 
     def testConfigReset(self):
-        Pyro4.config.reset(useenvironment=False)
-        self.assertEqual("localhost", Pyro4.config.HOST)
-        Pyro4.config.HOST="foobar"
-        self.assertEqual("foobar", Pyro4.config.HOST)
-        Pyro4.config.reset(useenvironment=False)
-        self.assertEqual("localhost", Pyro4.config.HOST)
-        os.environ["PYRO_HOST"]="foobar"
-        Pyro4.config.reset(useenvironment=True)
-        self.assertEqual("foobar", Pyro4.config.HOST)
-        Pyro4.config.reset(useenvironment=False)
-        self.assertEqual("localhost", Pyro4.config.HOST)
+        try:
+            Pyro4.config.reset(useenvironment=False)
+            self.assertEqual("localhost", Pyro4.config.HOST)
+            Pyro4.config.HOST="foobar"
+            self.assertEqual("foobar", Pyro4.config.HOST)
+            Pyro4.config.reset(useenvironment=False)
+            self.assertEqual("localhost", Pyro4.config.HOST)
+            os.environ["PYRO_HOST"]="foobar"
+            Pyro4.config.reset(useenvironment=True)
+            self.assertEqual("foobar", Pyro4.config.HOST)
+            Pyro4.config.reset(useenvironment=False)
+            self.assertEqual("localhost", Pyro4.config.HOST)
+        finally:
+            self.clearEnv()
+
 
     def testResolveAttr(self):
         class Test(object):
