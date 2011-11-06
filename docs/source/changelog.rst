@@ -10,6 +10,7 @@ Change Log
   The default is '<broadcast>' but you might need to change this on certain platforms (OpenSUSE?)
   where that doesn't work very well.
 - connection closed error is no longer logged if it's just a normal terminated proxy connection
+- fixed a config cleanup error in the test suite that could break it, depending on test execution order
 
 
 **Pyro 4.10**
