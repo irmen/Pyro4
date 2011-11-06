@@ -222,9 +222,8 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
             # We check if it is a retryable errno (usually EINPROGRESS).
             # If so, we use select() to wait until the socket is in writable state,
             # essentially rebuilding a blocking connect() call.
-            xt, xv, xtb = sys.exc_info()
+            xv = sys.exc_info()[1]
             errno = xv.errno
-            del xt, xv, xtb
             if errno in ERRNO_RETRIES:
                 if timeout is _GLOBAL_DEFAULT_TIMEOUT:
                     timeout = None
