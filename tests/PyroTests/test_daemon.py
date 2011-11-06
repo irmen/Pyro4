@@ -274,7 +274,7 @@ class DaemonTests(unittest.TestCase):
 
     def testNAT(self):
         with Pyro4.core.Daemon() as d:
-            self.assertIsNone(d.natLocationStr)
+            self.assertTrue(d.natLocationStr is None)
         with Pyro4.core.Daemon(nathost="nathosttest", natport=12345) as d:
             self.assertEqual("nathosttest:12345", d.natLocationStr)
             self.assertNotEqual(d.locationStr, d.natLocationStr)
@@ -305,7 +305,7 @@ class DaemonTests(unittest.TestCase):
             Pyro4.config.NATHOST=None
             Pyro4.config.NATPORT=0
             with Pyro4.core.Daemon() as d:
-                self.assertIsNone(d.natLocationStr)
+                self.assertTrue(d.natLocationStr is None)
             Pyro4.config.NATHOST="nathosttest"
             Pyro4.config.NATPORT=12345
             with Pyro4.core.Daemon() as d:
