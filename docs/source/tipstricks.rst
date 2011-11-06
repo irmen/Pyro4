@@ -140,4 +140,10 @@ and ``natport`` were used). You can override this by setting ``nat=False``::
 
 The Name server can also be started behind a NAT: it has a couple of command line options that
 allow you to specify a nathost and natport for it. See :ref:`nameserver-nameserver`.
-Notice that the broadcast responder always returns the internal address, never the external NAT address.
+
+.. note::
+    The broadcast responder always returns the internal address, never the external NAT address.
+    Also, the name server itself won't translate any URIs that are registered with it.
+    So if you want it to publish URIs with 'external' locations in them, you have to tell
+    the Daemon that registers these URIs to use the correct nathost and natport as well.
+
