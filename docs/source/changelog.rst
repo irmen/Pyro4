@@ -4,11 +4,14 @@ Change Log
 
 **Pyro 4.11**
 
-- changed logger category from Pyro to Pyro4
 - added host and port parameters to Daemon.serveSimple
+- added nathost and natport parameters to Daemon to be able to run behind a NAT router/firewall
+- added nathost and natport options to name server to configure it for use with NAT
+- added NATHOST and NATPORT config items to configure the external address for use with NAT
 - added BROADCAST_ADDRS config item. Use this to set the appropriate broadcast addresses (comma separated)
   The default is '<broadcast>' but you might need to change this on certain platforms (OpenSUSE?)
   where that doesn't work very well.
+- changed logger category from Pyro to Pyro4
 - connection closed error is no longer logged if it's just a normal terminated proxy connection
 - fixed a config cleanup error in the test suite that could break it, depending on test execution order
 

@@ -149,7 +149,7 @@ How it works:
 You create a batch proxy wrapper using this: ``batch = Pyro4.batch(proxy)`` or this (equivalent): ``batch = proxy._pyroBatch()``.
 The signature of the batch proxy call is as follows:
 
-.. py:method:: batchproxy.__call__([oneway=False][, async=False])
+.. py:method:: batchproxy.__call__([oneway=False, async=False])
 
     Invoke the batch and when done, returns a generator that produces the results of every call, in order.
     If ``oneway==True``, perform the whole batch as one-way calls, and return ``None`` immediately.
@@ -218,7 +218,7 @@ This object means 'the result of this will be available at some moment in the fu
     meaning infinite timeout. If the timeout expires before the result value is available, the call
     will return ``False``. If the value has become available, it will return ``True``.
 
-.. py:method:: then(callable [,*args] [, **kwargs])
+.. py:method:: then(callable [, *args, **kwargs])
 
      Add a callable to the call chain, to be invoked when the results become available.
      The result of the current call will be used as the first argument for the next call.

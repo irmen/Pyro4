@@ -243,6 +243,14 @@ class OfflineNameServerTests(unittest.TestCase):
             sys.stdout=oldstdout
             sys.stderr=oldstderr
 
+    def testNAT(self):
+        uri,ns,bc=Pyro4.naming.startNS(host="", port=0, enableBroadcast=True, nathost="nathosttest", natport=12345)
+        self.assertEqual("nathosttest:12345", uri.location)
+        self.assertEqual("nathosttest:12345", ns.uriFor("thing").location)
+        self.assertNotEqual("nathosttest:12345", bc.nsUri.location, "broadcast location must not be the NAT location")
+        ns.close()
+        bc.close()
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

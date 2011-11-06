@@ -84,7 +84,7 @@ Pyro's daemon is :class:`Pyro4.core.Daemon` and you can also access it by its sh
 It has a few optional arguments when you create it:
 
 
-.. function:: Daemon([host=None][, port=0][, unixsocket=None])
+.. function:: Daemon([host=None, port=0, unixsocket=None, nathost=None, natport=None])
 
     Create a new Pyro daemon.
 
@@ -94,6 +94,11 @@ It has a few optional arguments when you create it:
     :type port: int
     :param unixsocket: the name of a Unix domain socket to use instead of a TCP/IP socket. Default is ``None`` (don't use).
     :type unixsocket: str or None
+    :param nathost: hostname to use in published addresses (useful when running behind a NAT firewall/router). Default is ``None`` which means to just use the normal host.
+                    For more details about NAT, see :ref:`nat-router`.
+    :type host: str or None
+    :param natport: port to use in published addresses (useful when running behind a NAT firewall/router)
+    :type port: int
 
 
 Registering objects
@@ -101,7 +106,7 @@ Registering objects
 Every object you want to publish as a Pyro object needs to be registered with the daemon.
 You can let Pyro choose a unique object id for you, or provide a more readable one yourself.
 
-.. method:: Daemon.register(obj[, objectId=None])
+.. method:: Daemon.register(obj [, objectId=None])
 
     Registers an object with the daemon to turn it into a Pyro object.
 

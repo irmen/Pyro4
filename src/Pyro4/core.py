@@ -699,10 +699,18 @@ class Daemon(object):
     Pyro daemon. Contains server side logic and dispatches incoming remote method calls
     to the appropriate objects.
     """
-    def __init__(self, host=None, port=0, unixsocket=None):
+    def __init__(self, host=None, port=0, unixsocket=None, nathost=None, natport=None):
         _check_hmac()  # check if hmac secret key is set
         if host is None:
             host=Pyro4.config.HOST
+        if nathost is None:
+            nathost=Pyro4.config.NATHOST
+        if natport is None:
+            natport=Pyro4.config.NATPORT or None
+        if nathost and unixsocket:
+            raise ValueError("cannot use nathost together with unixsocket")
+        if (nathost is None) ^ (natport is None):
+            raise ValueError("must provide natport with nathost")
         if Pyro4.config.SERVERTYPE=="thread":
             self.transportServer=SocketServer_Threadpool()
         elif Pyro4.config.SERVERTYPE=="multiplex":
@@ -719,6 +727,9 @@ class Daemon(object):
         self.transportServer.init(self, host, port, unixsocket)
         self.locationStr=self.transportServer.locationStr
         log.debug("created daemon on %s", self.locationStr)
+        self.natLocationStr = "%s:%d" % (nathost, natport) if nathost else None
+        if self.natLocationStr:
+            log.debug("NAT address is %s", self.natLocationStr)
         self.serializer=util.Serializer()
         pyroObject=DaemonObject(self)
         pyroObject._pyroId=constants.DAEMON_NAME
@@ -947,19 +958,25 @@ class Daemon(object):
                 # objects map to scan for types. Finally, the copyreg module doesn't seem
                 # to be designed with cleanup in mind (it has no explicit unregister function)
 
-    def uriFor(self, objectOrId=None):
+    def uriFor(self, objectOrId=None, nat=True):
         """
         Get a URI for the given object (or object id) from this daemon.
         Only a daemon can hand out proper uris because the access location is
         contained in them.
         Note that unregistered objects cannot be given an uri, but unregistered
-        object names can (it's just a string we're creating in that case)
+        object names can (it's just a string we're creating in that case).
+        If nat is set to False, the configured NAT address (if any) is ignored and it will
+        return an URI for the internal address.
         """
         if not isinstance(objectOrId, basestring):
             objectOrId=getattr(objectOrId, "_pyroId", None)
             if objectOrId is None:
                 raise errors.DaemonError("object isn't registered")
-        return URI("PYRO:"+objectOrId+"@"+self.locationStr)
+        if nat:
+            loc=self.natLocationStr or self.locationStr
+        else:
+            loc=self.locationStr
+        return URI("PYRO:%s@%s" % (objectOrId, loc))
 
     def close(self):
         """Close down the server and release resources"""

@@ -18,7 +18,7 @@ class Configuration(object):
                "DETAILED_TRACEBACK", "SOCK_REUSE",
                "THREADPOOL_MINTHREADS", "THREADPOOL_MAXTHREADS",
                "THREADPOOL_IDLETIMEOUT", "HMAC_KEY", "AUTOPROXY",
-               "BROADCAST_ADDRS")
+               "BROADCAST_ADDRS", "NATHOST", "NATPORT")
 
     def __init__(self):
         self.reset()
@@ -33,6 +33,8 @@ class Configuration(object):
         self.NS_PORT = 9090      # tcp
         self.NS_BCPORT = 9091    # udp
         self.NS_BCHOST = None
+        self.NATHOST = None
+        self.NATPORT = 0
         self.COMPRESSION = False
         self.SERVERTYPE = "thread"
         self.DOTTEDNAMES = False   # server-side

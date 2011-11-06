@@ -110,3 +110,34 @@ Pyro depends on a working DNS configuration, at least for your local hostname (i
 If your local hostname doesn't resolve to an IP address, you'll have to fix this.
 This can usually be done by adding an entry to the hosts file. For OpenSUSE, you can also use Yast to fix it
 (go to Network Settings, enable "Assing hostname to loopback IP").
+
+
+.. _nat-router:
+
+Pyro behind a NAT router/firewall
+=================================
+You can run Pyro behind a NAT router/firewall.
+Assume the external hostname is 'pyro.server.com' and the external port is 5555.
+Also assume the internal host is 'server1.lan' and the internal port is 9999.
+You'll need to have a NAT rule that maps pyro.server.com:5555 to server1.lan:9999.
+You'll need to start your Pyro daemon, where you specify the ``nathost`` and ``natport`` arguments,
+so that Pyro knows it needs to 'publish' URIs containing that *external* location instead of just
+using the internal addresses::
+
+    # running on server1.lan
+    d = Pyro4.Daemon(port=9999, nathost="pyro.server.com", natport=5555)
+    uri = d.register(Something(), "thing")
+    print uri     # "PYRO:thing@pyro.server.com:5555"
+
+As you see, the URI now contains the external address.
+
+:py:meth:`Pyro4.core.Daemon.uriFor` by default returns URIs with a NAT address in it (if ``nathost``
+and ``natport`` were used). You can override this by setting ``nat=False``::
+
+    print d.uriFor("thing")                 # "PYRO:thing@pyro.server.com:5555"
+    print d.uriFor("thing", nat=False)      # "PYRO:thing@localhost:36124"
+    uri2 = d.uriFor(uri.object, nat=False)  # get non-natted uri
+
+The Name server can also be started behind a NAT: it has a couple of command line options that
+allow you to specify a nathost and natport for it. See :ref:`nameserver-nameserver`.
+Notice that the broadcast responder always returns the internal address, never the external NAT address.
