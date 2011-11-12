@@ -493,9 +493,13 @@ class FutureResult(object):
     def set_value(self, value):
         with self.valueLock:
             self.__value=value
-            for call, args, kwargs in self.callchain:
-                call = functools.partial(call, self.__value)
-                self.__value = call(*args, **kwargs)
+            # walk the call chain but only as long as the result is not an exception
+            if not isinstance(value, _ExceptionWrapper):
+                for call, args, kwargs in self.callchain:
+                    call = functools.partial(call, self.__value)
+                    self.__value = call(*args, **kwargs)
+                    if isinstance(self.__value, _ExceptionWrapper):
+                        break
             self.callchain=[]
             self.__ready.set()
 
@@ -536,7 +540,7 @@ class Future(object):
         """
         chain = self.chain
         del self.chain  # make it impossible to add new calls to the chain once we started executing it
-        result=FutureResult()
+        result=FutureResult()  # notice that the call chain doesn't sit on the result object
         thread=threadutil.Thread(target=self.__asynccall, args=(result, chain, args, kwargs))
         thread.setDaemon(True)
         thread.start()
