@@ -199,7 +199,7 @@ We'll have to modify a few lines in :file:`greeting.py` to make it register the 
     class GreetingMaker(object):
         def get_fortune(self, name):
             return "Hello, {0}. Here is your fortune message:\n" \
-                   "Behold the warranty -- the bold print giveth and the fine print taketh away.".format(name)
+                   "Tomorrow's lucky number is 12345678.".format(name)
 
     greeting_maker=GreetingMaker()
 
@@ -243,6 +243,14 @@ This concludes this simple Pyro example.
  of example programs that show the various features of Pyro. If you're interested in them
  (it is highly recommended to be so!) you will have to download the Pyro distribution archive.
  Installing Pyro only provides the library modules. For more information, see :doc:`config`.
+
+Other means of creating connections
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The example above showed two of the basic ways to set up connections between your client and server code.
+There are various other options, have a look at the client code details: :ref:`object-discovery`
+and the server code details: :ref:`publish-objects`. The use of the name server is optional, see
+:ref:`name-server` for details.
+
 
 Performance
 ===========

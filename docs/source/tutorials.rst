@@ -96,8 +96,8 @@ Pyro name server
 Starting a name server
 ^^^^^^^^^^^^^^^^^^^^^^
 
-We will be needing the name server later, and it shows a few basic Pyro concepts,
-so let us begin by explaining a little about it.
+While the use of the Pyro name server is optional, we will use it in this tutorial.
+It also shows a few basic Pyro concepts, so let us begin by explaining a little about it.
 Open a console window and execute the following command to start a name server:
 
 :command:`python -Wignore -m Pyro4.naming`
@@ -939,6 +939,13 @@ For more details, refer to the chapters in this manual about the relevant Pyro c
     Ofcourse you could also change the ``HOST`` config item (either in the code itself,
     or by setting the ``PYRO_HOST`` environment variable before launching.
 
+Other means of creating connections
+===================================
+In both tutorials above we used the Name Server for easy object lookup.
+The use of the name server is optional, see :ref:`name-server` for details.
+There are various other options for connecting your client code to your Pyro objects,
+have a look at the client code details: :ref:`object-discovery`
+and the server code details: :ref:`publish-objects`.
 
 Ok, what's next?
 ================

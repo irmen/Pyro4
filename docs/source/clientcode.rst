@@ -9,6 +9,7 @@ Both roles can be mixed in a single program.)
 
 Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
 
+.. _object-discovery:
 
 Object discovery
 ================

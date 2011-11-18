@@ -2,6 +2,12 @@
 Change Log
 **********
 
+**Pyro 4.12**
+
+- added a few more code examples and cross-references to the docs to hopefully make it easier
+  to understand what the different ways of connecting your client code and server objects are
+
+
 **Pyro 4.11**
 
 - added host and port parameters to Daemon.serveSimple
