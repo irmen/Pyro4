@@ -302,6 +302,33 @@ class ServerTestsOnce(unittest.TestCase):
         finally:
             Pyro4.config.AUTOPROXY=True
 
+    def testConnectOnce(self):
+        with Pyro4.core.Proxy(self.objectUri) as proxy:
+            self.assertTrue(proxy._pyroBind(), "first bind should always connect")
+            self.assertTrue(proxy._pyroBind(), "second bind should still connect again because it releases first")
+
+    def testConnectingThreads(self):
+        class ConnectingThread(threadutil.Thread):
+            new_connections=0
+            def __init__(self, proxy, event):
+                threadutil.Thread.__init__(self)
+                self.proxy=proxy
+                self.event=event
+                self.setDaemon(True)
+            def run(self):
+                self.event.wait()
+                if self.proxy._pyroBind():
+                    ConnectingThread.new_connections+=1     # 1 more new connection done
+        with Pyro4.core.Proxy(self.objectUri) as proxy:
+            event = threadutil.Event()
+            threads = [ConnectingThread(proxy, event) for _ in range(8)]
+            for t in threads:
+                t.start()
+            event.set()
+            for t in threads:
+                t.join()
+            self.assertEqual(1, ConnectingThread.new_connections, "proxy shared among threads must still have only 1 connect done")
+
 
 class ServerTestsThreadNoTimeout(unittest.TestCase):
     SERVERTYPE="thread"
