@@ -24,6 +24,10 @@ This is a simple phone-book like registry that maps logical object names to thei
 No need to remember the exact URI anymore. Instead, you can ask the name server to look it up for
 you. You only need to give it the logical object name.
 
+.. note:: Usually you only need to run *one single instance* of the name server in your network.
+    You can start multiple name servers but they are unconnected; you'll end up with a partitioned name space.
+
+
 **Example scenario:**
 Assume you've got a document archive server that publishes a Pyro object with several archival related methods in it.
 This archive server can register this object with the name server, using a logical name such as

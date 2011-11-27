@@ -91,6 +91,7 @@ Pyro daemon (server)
 Pyro name server
     The name server is a utility that provides a phone book for Pyro applications: you use it to look up a "number" by a "name".
     The name in Pyro's case is the logical name of a remote object. The number is the exact location where Pyro can contact the object.
+    Usually there is just *one* name server running in your network.
 
 
 Starting a name server
