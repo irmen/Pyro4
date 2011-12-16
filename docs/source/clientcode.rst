@@ -126,7 +126,7 @@ should be called as one-way (by default it is an empty set). For these methods, 
 from the remote object. This means that your client program continues to
 work, while the remote object is still busy processing the method call.
 The return value of these calls is always ``None``. You can't tell if the method call
-was successful, because errors won't be returned either!
+was successful, or if the method even exists on the remote object, because errors won't be returned either!
 
 See the :file:`oneway` example for more details.
 
@@ -234,6 +234,7 @@ A simple piece of code showing an asynchronous method call::
     print "resultvalue=", asyncresult.value
 
 .. note::
+
     :ref:`batched-calls` can also be executed asynchronously.
     Asynchronous calls are implemented using a background thread that waits for the results.
     Callables from the call chain are invoked sequentially in this background thread.

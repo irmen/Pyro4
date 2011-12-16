@@ -100,6 +100,7 @@ A remote interactive console can be started like this::
     anything you like. Be very careful.
 
 .. note::
+
     :doc:`pyrolite` also supports convenient access to a Pyro Flame server. This includes the remote interactive console.
 
 
