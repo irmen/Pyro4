@@ -118,7 +118,11 @@ class URI(object):
     def __eq__(self, other):
         return (self.protocol, self.object, self.sockname, self.host, self.port) \
                 == (other.protocol, other.object, other.sockname, other.host, other.port)
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     __hash__=object.__hash__
+
     # note: getstate/setstate are not needed if we use pickle protocol 2,
     # but this way it helps pickle to make the representation smaller by omitting all attribute names.
 

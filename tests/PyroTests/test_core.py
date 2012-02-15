@@ -248,11 +248,21 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(p1,p2)
         self.assertNotEqual(p1,p3)
         self.assertNotEqual(p2,p3)
+        self.assertTrue(p1==p2)
+        self.assertFalse(p1==p3)
+        self.assertFalse(p2==p3)
+        self.assertFalse(p1!=p2)
+        self.assertTrue(p1!=p3)
+        self.assertTrue(p2!=p3)
         p2.port=4444
         p2.object="99999"
         self.assertNotEqual(p1,p2)
         self.assertEqual(p2,p3)
-        
+        self.assertFalse(p1==p2)
+        self.assertTrue(p2==p3)
+        self.assertTrue(p1!=p2)
+        self.assertFalse(p2!=p3)
+
     def testLocation(self):
         self.assertTrue(Pyro4.core.URI.isUnixsockLocation("./u:name"))
         self.assertFalse(Pyro4.core.URI.isUnixsockLocation("./p:name"))

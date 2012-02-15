@@ -29,6 +29,8 @@ class SerializeTests(unittest.TestCase):
         p,_=self.ser.serialize(s)
         s2=self.ser.deserialize(p)
         self.assertEqual(s,s2)
+        self.assertTrue(s==s2)
+        self.assertFalse(s!=s2)
 
     def testSerCompression(self):
         d1,c1=self.ser.serialize("small data", compress=True)
