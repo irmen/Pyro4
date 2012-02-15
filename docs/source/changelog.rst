@@ -7,7 +7,7 @@ Change Log
 - added a few more code examples and cross-references to the docs to hopefully make it easier
   to understand what the different ways of connecting your client code and server objects are
 - proxies no longer connect again if already connected (could happen with threads)
-- fixed not-equal-comparison for proxy and serializer (x!=y)
+- fixed not-equal-comparison for uri and serializer objects (x!=y)
 
 
 **Pyro 4.11**
