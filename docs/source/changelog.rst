@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.13**
+
+- fixed source-newline problem with sending module sources with flame, this could break 
+  on Python < 2.7 because exec is very picky about newlines in the source text on older pythons
+
 **Pyro 4.12**
 
 - added a few more code examples and cross-references to the docs to hopefully make it easier

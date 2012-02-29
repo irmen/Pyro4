@@ -40,6 +40,11 @@ class FlameTests(unittest.TestCase):
         Pyro4.utils.flame.exec_function("foobar=5+6", "<foo>", namespace)
         self.assertEqual(11, namespace["foobar"])
 
+    def testExecFunctionNewlines(self):
+        namespace={}
+        Pyro4.utils.flame.exec_function("if True:\r\n  foobar=5+6\r\n   ", "<foo>", namespace)
+        self.assertEqual(11, namespace["foobar"])
+
     def testFlameModule(self):
         with Pyro4.core.Daemon() as d:
             Pyro4.utils.flame.start(d)
