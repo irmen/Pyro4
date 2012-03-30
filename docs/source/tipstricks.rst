@@ -109,7 +109,10 @@ DNS setup
 Pyro depends on a working DNS configuration, at least for your local hostname (i.e. 'pinging' your local hostname should work).
 If your local hostname doesn't resolve to an IP address, you'll have to fix this.
 This can usually be done by adding an entry to the hosts file. For OpenSUSE, you can also use Yast to fix it
-(go to Network Settings, enable "Assing hostname to loopback IP").
+(go to Network Settings, enable "Assign hostname to loopback IP").
+
+If Pyro detects a problem with the dns setup it will log a WARNING in the logfile (if logging is enabled),
+something like: ``weird DNS setup: your-computer-hostname resolves to localhost (127.x.x.x)``
 
 
 .. _nat-router:
