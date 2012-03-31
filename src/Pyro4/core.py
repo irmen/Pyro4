@@ -116,12 +116,15 @@ class URI(object):
         return "<%s.%s at 0x%x, %s>" % (self.__class__.__module__, self.__class__.__name__, id(self), str(self))
 
     def __eq__(self, other):
+        if not isinstance(other, URI):
+            return False
         return (self.protocol, self.object, self.sockname, self.host, self.port) \
                 == (other.protocol, other.object, other.sockname, other.host, other.port)
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    __hash__=object.__hash__
+    def __hash__(self):
+        return hash((self.protocol, self.object, self.sockname, self.host, self.port))
 
     # note: getstate/setstate are not needed if we use pickle protocol 2,
     # but this way it helps pickle to make the representation smaller by omitting all attribute names.
@@ -220,6 +223,19 @@ class Proxy(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._pyroRelease()
+
+    def __eq__(self, other):
+        if other is self:
+            return True
+        return isinstance(other, Proxy) and other._pyroUri == self._pyroUri and other._pyroOneway == self._pyroOneway
+
+    def __ne__(self, other):
+        if other and isinstance(other, Proxy):
+            return other._pyroUri != self._pyroUri or other._pyroOneway != self._pyroOneway
+        return True
+
+    def __hash__(self):
+        return hash(self._pyroUri) ^ hash(frozenset(self._pyroOneway))
 
     def _pyroRelease(self):
         """release the connection to the pyro daemon"""
