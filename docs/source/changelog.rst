@@ -6,6 +6,9 @@ Change Log
 
 - fixed source-newline problem with sending module sources with flame, this could break 
   on Python < 2.7 because exec is very picky about newlines in the source text on older pythons
+- fixed URI and Proxy equality comparisons and hash(). Note that Proxy equality and hashing is
+  done on the local proxy object and not on the remote Pyro object.
+
 
 **Pyro 4.12**
 
