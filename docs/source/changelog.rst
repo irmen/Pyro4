@@ -8,6 +8,8 @@ Change Log
   on Python < 2.7 because exec is very picky about newlines in the source text on older pythons
 - fixed URI and Proxy equality comparisons and hash(). Note that Proxy equality and hashing is
   done on the local proxy object and not on the remote Pyro object.
+- added contrib directory where contributed stuff can be put. For now, there's a Linux init.d
+  script for the name server daemon.
 
 
 **Pyro 4.12**
