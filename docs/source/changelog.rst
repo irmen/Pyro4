@@ -10,6 +10,7 @@ Change Log
   done on the local proxy object and not on the remote Pyro object.
 - added contrib directory where contributed stuff can be put. For now, there's a Linux init.d
   script for the name server daemon.
+- fix setNoInherit on 64-bits Python on Windows (see http://tech.oyster.com/cherrypy-ctypes-and-being-explicit/)
 
 
 **Pyro 4.12**
