@@ -99,7 +99,8 @@ It has a few optional arguments when you create it:
     :param nathost: hostname to use in published addresses (useful when running behind a NAT firewall/router). Default is ``None`` which means to just use the normal host.
                     For more details about NAT, see :ref:`nat-router`.
     :type host: str or None
-    :param natport: port to use in published addresses (useful when running behind a NAT firewall/router)
+    :param natport: port to use in published addresses (useful when running behind a NAT firewall/router). If you use 0 here,
+                    Pyro will replace the NAT-port by the internal port number to facilitate one-to-one NAT port mappings.
     :type port: int
 
 

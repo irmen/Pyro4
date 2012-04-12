@@ -757,14 +757,21 @@ class Daemon(object):
         else:
             raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
         self.transportServer.init(self, host, port, unixsocket)
+        #: The location (str of the form ``host:portnumber``) on which the Daemon is listening
         self.locationStr=self.transportServer.locationStr
         log.debug("created daemon on %s", self.locationStr)
-        self.natLocationStr = "%s:%d" % (nathost, natport) if nathost else None
+        natport_for_loc = natport
+        if natport==0:
+            # expose internal port number as NAT port as well. (don't use port because it could be 0 and will be chosen by the OS)
+            natport_for_loc = int(self.locationStr.split(":")[1])
+        #: The NAT-location (str of the form ``nathost:natportnumber``) on which the Daemon is exposed for use with NAT-routing
+        self.natLocationStr = "%s:%d" % (nathost, natport_for_loc) if nathost else None
         if self.natLocationStr:
             log.debug("NAT address is %s", self.natLocationStr)
         self.serializer=util.Serializer()
         pyroObject=DaemonObject(self)
         pyroObject._pyroId=constants.DAEMON_NAME
+        #: Dictionary from Pyro object id to the actual Pyro object registered by this id
         self.objectsById={pyroObject._pyroId: pyroObject}
         self.__mustshutdown=threadutil.Event()
         self.__loopstopped=threadutil.Event()

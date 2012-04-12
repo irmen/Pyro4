@@ -300,6 +300,30 @@ class DaemonTests(unittest.TestCase):
         except ValueError:
             pass
 
+    def testNATzeroPort(self):
+        servertype = Pyro4.config.SERVERTYPE
+        try:
+            Pyro4.config.SERVERTYPE="multiplex"
+            with Pyro4.core.Daemon(nathost="nathosttest", natport=99999) as d:
+                host, port = d.locationStr.split(":")
+                self.assertNotEqual(99999, port)
+                self.assertEqual("nathosttest:99999", d.natLocationStr)
+            with Pyro4.core.Daemon(nathost="nathosttest", natport=0) as d:
+                host, port = d.locationStr.split(":")
+                self.assertEqual("nathosttest:%s" % port, d.natLocationStr)
+            Pyro4.config.SERVERTYPE="thread"
+            with Pyro4.core.Daemon(nathost="nathosttest", natport=99999) as d:
+                host, port = d.locationStr.split(":")
+                self.assertNotEqual(99999, port)
+                self.assertEqual("nathosttest:99999", d.natLocationStr)
+            with Pyro4.core.Daemon(nathost="nathosttest", natport=0) as d:
+                host, port = d.locationStr.split(":")
+                self.assertEqual("nathosttest:%s" % port, d.natLocationStr)
+        finally:
+            Pyro4.config.SERVERTYPE=servertype
+
+
+
     def testNATconfig(self):
         try:
             Pyro4.config.NATHOST=None

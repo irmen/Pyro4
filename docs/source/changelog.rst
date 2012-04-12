@@ -11,6 +11,7 @@ Change Log
 - added contrib directory where contributed stuff can be put. For now, there's a Linux init.d
   script for the name server daemon.
 - fix setNoInherit on 64-bits Python on Windows (see http://tech.oyster.com/cherrypy-ctypes-and-being-explicit/)
+- setting natport to 0 now replaces it by the internal port number, to facilitate one-to-one NAT port mapping setups
 
 
 **Pyro 4.12**

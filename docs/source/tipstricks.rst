@@ -150,6 +150,11 @@ allow you to specify a nathost and natport for it. See :ref:`nameserver-nameserv
     So if you want it to publish URIs with 'external' locations in them, you have to tell
     the Daemon that registers these URIs to use the correct nathost and natport as well.
 
+.. note::
+    In some situations the NAT simply is configured to pass through any port one-to-one to another
+    host behind the NAT router/firewall. Pyro facilitates this by allowing you to set the natport
+    to 0, in which case Pyro will replace it by the internal port number.
+
 
 Binary data transfer
 ====================
