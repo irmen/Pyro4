@@ -12,6 +12,7 @@ Change Log
   script for the name server daemon.
 - fix setNoInherit on 64-bits Python on Windows (see http://tech.oyster.com/cherrypy-ctypes-and-being-explicit/)
 - setting natport to 0 now replaces it by the internal port number, to facilitate one-to-one NAT port mapping setups
+- fixed _pyroId attribute problem when running with Cython
 
 
 **Pyro 4.12**

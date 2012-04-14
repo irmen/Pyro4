@@ -97,6 +97,21 @@ class DaemonTests(unittest.TestCase):
         self.assertRaises(PyroError, Pyro4.core.Daemon)
         Pyro4.config.SERVERTYPE=old_servertype
 
+    def testRegisterTwice(self):
+        with Pyro4.core.Daemon(port=0) as d:
+            o1=MyObj("object1")
+            d.register(o1)
+            self.assertRaises(DaemonError, d.register, o1, None)
+            d.unregister(o1)
+            d.register(o1)
+            self.assertTrue(hasattr(o1, "_pyroId"))
+            d.unregister(o1)
+            self.assertFalse(hasattr(o1, "_pyroId"))
+            o1._pyroId="FOOBAR"
+            self.assertRaises(DaemonError, d.register, o1, None)
+            o1._pyroId=""
+            d.register(o1)   # with empty-string _pyroId register should worlk
+
     def testRegisterEtc(self):
         freeport=Pyro4.socketutil.findProbablyUnusedPort()
         d=Pyro4.core.Daemon(port=freeport)
@@ -106,11 +121,8 @@ class DaemonTests(unittest.TestCase):
             o2=MyObj("object2")
             d.register(o1)
             self.assertRaises(DaemonError, d.register, o2, Pyro4.constants.DAEMON_NAME)  # cannot use daemon name
-            self.assertRaises(DaemonError, d.register, o1, None)  # cannot register twice
-            self.assertRaises(DaemonError, d.register, o1, "obj1a")
             d.register(o2, "obj2a")
-            self.assertRaises(DaemonError, d.register, o2, "obj2b")
-            
+
             self.assertEqual(3, len(d.objectsById))
             self.assertEqual(o1, d.objectsById[o1._pyroId])
             self.assertEqual(o2, d.objectsById["obj2a"])

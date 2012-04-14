@@ -953,7 +953,7 @@ class Daemon(object):
                 raise TypeError("objectId must be a string or None")
         else:
             objectId="obj_"+uuid.uuid4().hex   # generate a new objectId
-        if hasattr(obj, "_pyroId"):
+        if hasattr(obj, "_pyroId") and obj._pyroId != "":     # check for empty string is needed for Cython
             raise errors.DaemonError("object already has a Pyro id")
         if objectId in self.objectsById:
             raise errors.DaemonError("object already registered with that id")
