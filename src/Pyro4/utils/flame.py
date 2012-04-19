@@ -47,8 +47,8 @@ def exec_function(source, filename, global_map):
     ))
     
 def fixExecSourceNewlines(source):
-    if sys.version_info < (2,7):
-        # for python versions prior to 2.7, compile is kinda picky.
+    if sys.version_info < (2,7) or sys.version_info[:2] in ((3,0), (3,1)):
+        # for python versions prior to 2.7 (and 3.0/3.1), compile is kinda picky.
         # it needs unix type newlines and a trailing newline to work correctly.
         source = source.replace("\r\n", "\n")
         source = source.rstrip() + "\n"

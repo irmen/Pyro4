@@ -4,6 +4,12 @@ Change Log
 
 **Pyro 4.13**
 
+- Fixed source-newline incompatibility with sending module sources with flame, the
+  fixExecSourceNewlines should be used on Python 3.0 and 3.1 as well it seemed.
+
+
+**Pyro 4.13**
+
 - fixed source-newline problem with sending module sources with flame, this could break 
   on Python < 2.7 because exec is very picky about newlines in the source text on older pythons
 - fixed URI and Proxy equality comparisons and hash(). Note that Proxy equality and hashing is
