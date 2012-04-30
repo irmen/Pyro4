@@ -291,6 +291,8 @@ try:
 except ImportError:
     # no fcntl available, try the windows version
     try:
+        if sys.platform=="cli":
+            raise NotImplementedError("IronPython can't obtain a proper HANDLE from a socket")
         from ctypes import windll, WinError, wintypes
         # help ctypes to set the proper args for this kernel32 call on 64-bit pythons
         _SetHandleInformation = windll.kernel32.SetHandleInformation
@@ -302,7 +304,7 @@ except ImportError:
             if not _SetHandleInformation(sock.fileno(), 1, 0):
                 raise WinError()
 
-    except ImportError:
+    except (ImportError, NotImplementedError):
         # nothing available, define a dummy function
         def setNoInherit(sock):
             """Mark the given socket fd as non-inheritable to child processes (dummy)"""

@@ -2,10 +2,12 @@
 Change Log
 **********
 
-**Pyro 4.13**
+**Pyro 4.14**
 
 - Fixed source-newline incompatibility with sending module sources with flame, the
   fixExecSourceNewlines should be used on Python 3.0 and 3.1 as well it seemed.
+- fix IronPython crash: set socketutil.setNoInherit to a dummy for IronPython
+  because it can't pass the proper arguments to the win32 api call
 
 
 **Pyro 4.13**
