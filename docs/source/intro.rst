@@ -50,6 +50,12 @@ Here's a quick overview of Pyro's features:
     However, Pyro has some security measures in place to deal with this.
     They are described in the :doc:`security` chapter. It is strongly advised to read it.
 
+.. note::
+    The pickle protocol is very convenient to transfer Python objects 'over the wire' but it also
+    has a drawback: it serializes the whole object graph you're passing, even when only a tiny fraction
+    of it is used on the receiving end. Be aware of this: it may be necessary to define special objects
+    for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
+
 
 Pyro's history
 ^^^^^^^^^^^^^^
