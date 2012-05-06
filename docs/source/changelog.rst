@@ -12,6 +12,8 @@ Change Log
   messages sent on the wire, default=0 bytes (which means unlimited size).
 - fixed some unit test problems with pypy and ironpython
 - fixed some problems with MSG_WAITALL socket option on systems that don't properly support it
+- temporary workaround for threadpool scaling problem (lock-up):
+  pool is fixed at THREADPOOL_MINTHREADS threads, until the thread pool has been redesigned to get rid of the issues.
 
 
 **Pyro 4.13**

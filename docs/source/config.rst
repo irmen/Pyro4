@@ -91,6 +91,11 @@ THREADPOOL_MAXTHREADS   int     50             For the thread pool server: maxim
 THREADPOOL_IDLETIMEOUT  float   5.0            For the thread pool server: number of seconds to pass for an idle worker thread to be terminated
 ======================= ======= ============== =======
 
+.. warning::
+    A temporary workaround for a thread pool scaling problem (lock-up) is in effect:
+    the thread pool is fixed at THREADPOOL_MINTHREADS threads. THREADPOOL_MAXTHREADS can still be
+    set but has no effect at the moment, until the thread pool implementation has been fixed.
+
 There are two special config items that are only available as environment variable settings.
 This is because they are used at module import time (when the Pyro4 package is being imported).
 They control Pyro's logging behavior:
