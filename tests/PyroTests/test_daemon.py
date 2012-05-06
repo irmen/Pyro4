@@ -34,19 +34,18 @@ class DaemonTests(unittest.TestCase):
         Pyro4.config.HMAC_KEY=None
         
     def testDaemon(self):
-        freeport=Pyro4.socketutil.findProbablyUnusedPort()
-        with Pyro4.core.Daemon(port=freeport) as d:
-            locationstr="%s:%d" %(Pyro4.config.HOST, freeport)
-            self.assertEqual( locationstr, d.locationStr)
+        with Pyro4.core.Daemon(port=0) as d:
+            hostname, port = d.locationStr.split(":")
+            port = int(port)
             self.assertTrue(Pyro4.constants.DAEMON_NAME in d.objectsById)
-            self.assertEqual("PYRO:"+Pyro4.constants.DAEMON_NAME+"@"+locationstr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
+            self.assertEqual("PYRO:"+Pyro4.constants.DAEMON_NAME+"@"+d.locationStr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
             # check the string representations
-            expected=("<Pyro4.core.Daemon at 0x%x, %s, 1 objects>") % (id(d), locationstr)
+            expected=("<Pyro4.core.Daemon at 0x%x, %s, 1 objects>") % (id(d), d.locationStr)
             self.assertEqual(expected,str(d))
             self.assertEqual(expected,unicode(d))
             self.assertEqual(expected,repr(d))
             sockname=d.sock.getsockname()
-            self.assertEqual(freeport, sockname[1])
+            self.assertEqual(port, sockname[1])
             daemonobj=d.objectsById[Pyro4.constants.DAEMON_NAME]
             daemonobj.ping()
             daemonobj.registered()
@@ -113,8 +112,7 @@ class DaemonTests(unittest.TestCase):
             d.register(o1)   # with empty-string _pyroId register should worlk
 
     def testRegisterEtc(self):
-        freeport=Pyro4.socketutil.findProbablyUnusedPort()
-        d=Pyro4.core.Daemon(port=freeport)
+        d=Pyro4.core.Daemon(port=0)
         try:
             self.assertEqual(1, len(d.objectsById))
             o1=MyObj("object1")
@@ -222,10 +220,8 @@ class DaemonTests(unittest.TestCase):
                 pass
         
     def testUriFor(self):
-        freeport=Pyro4.socketutil.findProbablyUnusedPort()
-        d=Pyro4.core.Daemon(port=freeport)
+        d=Pyro4.core.Daemon(port=0)
         try:
-            locationstr="%s:%d" %(Pyro4.config.HOST, freeport)
             o1=MyObj("object1")
             o2=MyObj("object2")
             self.assertRaises(DaemonError, d.uriFor, o1)
@@ -244,7 +240,7 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual("PYRO",u3.protocol)
             self.assertEqual("PYRO",u4.protocol)
             self.assertEqual("object_two",u4.object)
-            self.assertEqual(Pyro4.core.URI("PYRO:unexisting_thingie@"+locationstr), u3)
+            self.assertEqual(Pyro4.core.URI("PYRO:unexisting_thingie@"+d.locationStr), u3)
         finally:
             d.close()
     
@@ -334,8 +330,6 @@ class DaemonTests(unittest.TestCase):
         finally:
             Pyro4.config.SERVERTYPE=servertype
 
-
-
     def testNATconfig(self):
         try:
             Pyro4.config.NATHOST=None
@@ -349,6 +343,7 @@ class DaemonTests(unittest.TestCase):
         finally:
             Pyro4.config.NATHOST=None
             Pyro4.config.NATPORT=0
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

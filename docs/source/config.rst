@@ -71,6 +71,7 @@ DETAILED_TRACEBACK      bool    False          Enable to get detailed exception 
 DOTTEDNAMES             bool    False          Server side only: Enable to support object traversal using dotted names (a.b.c.d)
 HMAC_KEY                bytes   None           Shared secret key to sign all communication messages
 HOST                    str     localhost      Hostname where Pyro daemons will bind on
+MAX_MESSAGE_SIZE        int     0              Maximum size in bytes of the messages sent or received on the wire. If a message exceeds this size, a ProtocolError is raised.
 NS_HOST                 str     *equal to      Hostname for the name server
                                 HOST*
 NS_PORT                 int     9090           TCP port of the name server

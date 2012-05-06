@@ -8,6 +8,10 @@ Change Log
   fixExecSourceNewlines should be used on Python 3.0 and 3.1 as well it seemed.
 - fix IronPython crash: set socketutil.setNoInherit to a dummy for IronPython
   because it can't pass the proper arguments to the win32 api call
+- new config item MAX_MESSAGE_SIZE to optionally set a limit on the size of the
+  messages sent on the wire, default=0 bytes (which means unlimited size).
+- fixed some unit test problems with pypy and ironpython
+- fixed some problems with MSG_WAITALL socket option on systems that don't properly support it
 
 
 **Pyro 4.13**

@@ -655,6 +655,8 @@ class MessageFactory(object):
     def createMessage(cls, msgType, databytes, flags, seq):
         """creates a message containing a header followed by the given databytes"""
         databytes=databytes or cls.empty_bytes
+        if 0 < Pyro4.config.MAX_MESSAGE_SIZE < len(databytes):
+            raise errors.ProtocolError("max message size exceeded (%d where max=%d)" % (len(databytes), Pyro4.config.MAX_MESSAGE_SIZE))
         if Pyro4.config.HMAC_KEY:
             flags|=MessageFactory.FLAGS_HMAC
             bodyhmac=hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest()
@@ -680,6 +682,11 @@ class MessageFactory(object):
     def getMessage(cls, connection, requiredMsgType):
         headerdata = connection.recv(cls.HEADERSIZE)
         msgType, flags, seq, datalen, datahmac = cls.parseMessageHeader(headerdata)
+        if 0 < Pyro4.config.MAX_MESSAGE_SIZE < datalen:
+            errorMsg = "max message size exceeded (%d where max=%d)" % (datalen, Pyro4.config.MAX_MESSAGE_SIZE)
+            log.error("connection "+str(connection)+": "+errorMsg)
+            connection.close()   # close the socket because at this point we can't return the correct sequence number for returning an error message
+            raise errors.ProtocolError(errorMsg)
         if requiredMsgType is not None and msgType != requiredMsgType:
             err="invalid msg type %d received" % msgType
             log.error(err)

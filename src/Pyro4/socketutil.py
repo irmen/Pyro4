@@ -13,6 +13,13 @@ if os.name=="java":
 else:
     selectfunction = select.select
 
+if sys.platform=="win32":
+    if hasattr(socket, "MSG_WAITALL"):
+        del socket.MSG_WAITALL
+    USE_MSG_WAITALL = False
+else:
+    USE_MSG_WAITALL = hasattr(socket, "MSG_WAITALL")
+
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.
 # So I didn't include them in de list of retryable errors.
@@ -92,7 +99,7 @@ def receiveData(sock, size):
         retrydelay=0.0
         msglen=0
         chunks=[]
-        if hasattr(socket, "MSG_WAITALL"):
+        if USE_MSG_WAITALL:
             # waitall is very convenient and if a socket error occurs,
             # we can assume the receive has failed. No need for a loop,
             # unless it is a retryable error.

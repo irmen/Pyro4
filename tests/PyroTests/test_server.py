@@ -329,6 +329,19 @@ class ServerTestsOnce(unittest.TestCase):
                 t.join()
             self.assertEqual(1, ConnectingThread.new_connections, "proxy shared among threads must still have only 1 connect done")
 
+    def testMaxMsgSize(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            bigobject = [42] * 1000
+            result = p.echo(bigobject)
+            self.assertEqual(result, bigobject)
+            Pyro4.config.MAX_MESSAGE_SIZE = 999
+            try:
+                result = p.echo(bigobject)
+                self.fail("should fail with ProtocolError msg too large")
+            except Pyro4.errors.ProtocolError:
+                pass
+            Pyro4.config.MAX_MESSAGE_SIZE = 0
+
 
 class ServerTestsThreadNoTimeout(unittest.TestCase):
     SERVERTYPE="thread"
