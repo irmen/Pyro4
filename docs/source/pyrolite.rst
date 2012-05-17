@@ -30,7 +30,7 @@ Readme: http://irmen.home.xs4all.nl/pyrolite/README.txt
 
 License (same as Pyro): http://irmen.home.xs4all.nl/pyrolite/LICENSE
 
-Readonly subversion repository: :kbd:`svn://svn.razorvine.net/Pyro/Pyrolite`
+Readonly source repository (subversion): :kbd:`svn://svn.razorvine.net/Pyro/Pyrolite`
 
 Small code example in Java:
 
