@@ -350,7 +350,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro4.config.POLLTIMEOUT=0.1
         Pyro4.config.SERVERTYPE=self.SERVERTYPE
         Pyro4.config.COMMTIMEOUT=self.COMMTIMEOUT
-        Pyro4.config.THREADPOOL_MINTHREADS=2
+        Pyro4.config.THREADPOOL_MINTHREADS=10
         Pyro4.config.THREADPOOL_MAXTHREADS=20
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
         self.daemon=Pyro4.core.Daemon(port=0)
