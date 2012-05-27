@@ -56,6 +56,7 @@ class ThreadpoolTests(unittest.TestCase):
             worker.join()
 
     def testPoolGrowth(self):
+        self.skipTest("pool size is fixed until thread pool scaling bug has been resolved")  # XXX
         tp = ThreadPool()
         tp.workerFactory=WorkerFactory(tp, "workername")
         tp.fill()
