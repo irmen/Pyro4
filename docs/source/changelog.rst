@@ -2,6 +2,15 @@
 Change Log
 **********
 
+**Pyro 4.15**
+
+- Documentation contains new homepage link
+- No longer gives a warning about version incompatibility on Jython 2.5
+- Minimum threadpool size increased to 10 (from 4) to give a bit more breathing room
+  while the threadpool scaling still needs to be fixed
+- Added a paragraph to tips&trics about MSG_WAITALL
+
+
 **Pyro 4.14**
 
 - Fixed source-newline incompatibility with sending module sources with flame, the

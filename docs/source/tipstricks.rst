@@ -195,3 +195,15 @@ of it is used on the receiving end. Be aware of this: it may be necessary to def
 for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
 
 Another drawback of pickle is that there are security concerns related to it, see :doc:`security`.
+
+
+MSG_WAITALL socket option
+=========================
+Pyro will use the ``MSG_WAITALL`` socket option to receive large messages, if it decides that
+the feature is available and working correctly. On most systems that define the ``socket.MSG_WAITALL``
+symbol, it does, except on Windows: even though the option is there, it doesn't work.
+*So Pyro deletes the symbol from the socket module at import time, if it detects that it is
+running on Windows*. I realize this is a nasty side effect of importing Pyro, but
+it is doing this to prevent other socket code from using the option by mistake.
+Because there are platforms out there that don't have the option in the first place, socket
+code alread has to test for the existence of the option anyway.

@@ -9,6 +9,8 @@ except ImportError:
 
 if __name__ == '__main__' :
     sys.path.insert(0, "src")
+    import warnings
+    warnings.simplefilter("default", ImportWarning)   # enable ImportWarning
     import Pyro4.constants
     print('Pyro version = %s' % Pyro4.constants.VERSION)
 

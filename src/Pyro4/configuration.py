@@ -44,7 +44,7 @@ class Configuration(object):
         self.THREADING2 = False    # use threading2 if available?
         self.ONEWAY_THREADED = True     # oneway calls run in their own thread
         self.DETAILED_TRACEBACK = False
-        self.THREADPOOL_MINTHREADS = 4
+        self.THREADPOOL_MINTHREADS = 10
         self.THREADPOOL_MAXTHREADS = 50
         self.THREADPOOL_IDLETIMEOUT = 5.0
         self.HMAC_KEY = None   # must be bytes type
