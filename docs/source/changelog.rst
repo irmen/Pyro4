@@ -9,6 +9,7 @@ Change Log
 - Minimum threadpool size increased to 10 (from 4) to give a bit more breathing room
   while the threadpool scaling still needs to be fixed
 - Added a paragraph to tips&trics about MSG_WAITALL
+- optimize bytecode flag no longer added in setup script when using jython, this used to crash the setup.py install process on jython
 
 
 **Pyro 4.14**

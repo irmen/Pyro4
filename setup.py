@@ -1,4 +1,5 @@
 import sys
+import os
 try:
     # try setuptools first, to get access to build_sphinx and test commands
     from setuptools import setup
@@ -54,6 +55,10 @@ including Python 2.x, Python 3.x, IronPython, Jython and Pypy.""",
                 "Topic :: System :: Networking"
             ]
         }
+
+    if os.name != "java":
+        # only add '-O' optimized bytecode compile if not using jython
+        setupargs["options"] = {"install": {"optimize": 1}}
         
     if using_setuptools:
         setupargs["test_suite"]="nose.collector"    # use Nose to run unittests
