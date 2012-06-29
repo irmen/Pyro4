@@ -356,6 +356,8 @@ def findProbablyUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
     port = bindOnUnusedPort(tempsock)
     tempsock.close()
     del tempsock
+    if sys.platform=="cli":
+        return port+1  # the actual port is somehow still in use by the socket when using IronPython
     return port
 
 

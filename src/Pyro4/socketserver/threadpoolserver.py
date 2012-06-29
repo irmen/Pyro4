@@ -161,6 +161,9 @@ class SocketServer_Threadpool(object):
 
     def close(self, joinWorkers=True):
         log.debug("closing threadpool server")
+        if sys.platform=="cli" and joinWorkers:
+            joinWorkers=False
+            log.info("not joining workers on IronPython (usually hangs)")   # @todo is this an artifact of this particular thread pool implementation?
         if self.sock:
             sockname=None
             try:
@@ -185,9 +188,9 @@ class SocketServer_Threadpool(object):
             if csock:
                 try:
                     csock.sock.shutdown(socket.SHUT_RDWR)
+                    csock.close()
                 except (EnvironmentError, socket.error):
                     pass
-                csock.close()
         while joinWorkers:
             try:
                 worker=self.threadpool.pool.pop()
@@ -204,7 +207,7 @@ class SocketServer_Threadpool(object):
     def wakeup(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
-            sock=socketutil.createSocket(connect=self._socketaddr)
+            sock=socketutil.createSocket(connect=self._socketaddr, keepalive=False, timeout=None)
             if sys.version_info<(3, 0):
                 sock.send("!"*16)
             else:
@@ -212,3 +215,4 @@ class SocketServer_Threadpool(object):
             sock.close()
         except socket.error:
             pass
+
