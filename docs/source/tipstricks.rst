@@ -206,4 +206,4 @@ symbol, it does, except on Windows: even though the option is there, it doesn't 
 running on Windows*. I realize this is a nasty side effect of importing Pyro, but
 it is doing this to prevent other socket code from using the option by mistake.
 Because there are platforms out there that don't have the option in the first place, socket
-code alread has to test for the existence of the option anyway.
+code already has to test for the existence of the option anyway.

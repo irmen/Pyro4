@@ -1,3 +1,16 @@
+BUGS
+
+Pyro4:
+- don't del MSG_WAITALL from socket module
+- fix threadpool (Will Lee)
+- Traceback in unit tests on ubuntu:
+Traceback (most recent call last):
+  File "/home/irmen/Projects/Pyro4/tests/PyroTests/test_server.py", line 330, in testConnectingThreads
+    self.assertEqual(1, ConnectingThread.new_connections, "proxy shared among threads must still have only 1 connect done")
+AssertionError: 1 != 2 : proxy shared among threads must still have only 1 connect done
+
+
+
 Ideas / TODO
 
 * IPV6 support (testable in 'ipv6' branch)
