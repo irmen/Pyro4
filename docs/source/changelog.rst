@@ -10,6 +10,7 @@ Change Log
   while the threadpool scaling still needs to be fixed
 - Added a paragraph to tips&trics about MSG_WAITALL
 - optimize bytecode flag no longer added in setup script when using jython, this used to crash the setup.py install process on jython
+- fixed a gc issue due to a circular dependency
 - IronPython: improved suggesting a free port number in socketutil.findProbablyUnusedPort
 - IronPython: threadpoolserver no longer attempts to join the worker threads because not all threads seemed to actually exit on IronPython, thereby hanging the process when shutting down a daemon.
 
