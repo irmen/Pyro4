@@ -8,6 +8,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement
 import socket, logging, sys, os
+import weakref
 try:
     import queue
 except ImportError:
@@ -85,7 +86,7 @@ class SocketWorker(threadutil.Thread):
 
 class SocketWorkerFactory(object):
     def __init__(self, server, daemon):
-        self.server=server
+        self.server=weakref.proxy(server)  # circular ref
         self.daemon=daemon
     def __call__(self):
         return SocketWorker(self.server, self.daemon)
