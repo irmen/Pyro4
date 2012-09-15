@@ -201,9 +201,6 @@ MSG_WAITALL socket option
 =========================
 Pyro will use the ``MSG_WAITALL`` socket option to receive large messages, if it decides that
 the feature is available and working correctly. On most systems that define the ``socket.MSG_WAITALL``
-symbol, it does, except on Windows: even though the option is there, it doesn't work.
-*So Pyro deletes the symbol from the socket module at import time, if it detects that it is
-running on Windows*. I realize this is a nasty side effect of importing Pyro, but
-it is doing this to prevent other socket code from using the option by mistake.
-Because there are platforms out there that don't have the option in the first place, socket
-code already has to test for the existence of the option anyway.
+symbol, it does, except on Windows: even though the option is there, it doesn't work reliably.
+If you want to check in your code what Pyro's behavior is, see the ``socketutil.USE_MSG_WAITALL`` attribute
+(it's a boolean that will be set to False if Pyro decides it can't or should not use MSG_WAITALL).

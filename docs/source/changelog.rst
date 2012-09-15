@@ -13,6 +13,7 @@ Change Log
 - fixed a gc issue due to a circular dependency
 - IronPython: improved suggesting a free port number in socketutil.findProbablyUnusedPort
 - IronPython: threadpoolserver no longer attempts to join the worker threads because not all threads seemed to actually exit on IronPython, thereby hanging the process when shutting down a daemon.
+- socket.MSG_WAITALL is no longer deleted by importing Pyro on systems that have a broken MSG_WAITALL (Windows). You'll have to check for this yourself now, but I wanted to get rid of this side effect of importing Pyro.
 
 
 **Pyro 4.14**

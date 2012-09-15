@@ -1,7 +1,6 @@
 BUGS
 
 Pyro4:
-- don't del MSG_WAITALL from socket module
 - fix threadpool (Will Lee)
 - ideally, fix circular dependency in threadpool server (get rid of weakref)
 - Traceback in unit tests on ubuntu (python 3.2):

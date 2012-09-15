@@ -14,9 +14,7 @@ else:
     selectfunction = select.select
 
 if sys.platform=="win32":
-    if hasattr(socket, "MSG_WAITALL"):
-        del socket.MSG_WAITALL  # it doesn't work reliably on Windows even though it's defined
-    USE_MSG_WAITALL = False
+    USE_MSG_WAITALL = False   # it doesn't work reliably on Windows even though it's defined
 else:
     USE_MSG_WAITALL = hasattr(socket, "MSG_WAITALL")
 
