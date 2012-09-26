@@ -305,7 +305,7 @@ class ServerTestsOnce(unittest.TestCase):
     def testConnectOnce(self):
         with Pyro4.core.Proxy(self.objectUri) as proxy:
             self.assertTrue(proxy._pyroBind(), "first bind should always connect")
-            self.assertTrue(proxy._pyroBind(), "second bind should still connect again because it releases first")
+            self.assertFalse(proxy._pyroBind(), "second bind should not connect again")
 
     def testConnectingThreads(self):
         class ConnectingThread(threadutil.Thread):
@@ -322,7 +322,7 @@ class ServerTestsOnce(unittest.TestCase):
                     ConnectingThread.new_connections.incr()     # 1 more new connection done
         with Pyro4.core.Proxy(self.objectUri) as proxy:
             event = threadutil.Event()
-            threads = [ConnectingThread(proxy, event) for _ in range(40)]
+            threads = [ConnectingThread(proxy, event) for _ in range(20)]
             for t in threads:
                 t.start()
             event.set()

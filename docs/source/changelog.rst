@@ -4,15 +4,17 @@ Change Log
 
 **Pyro 4.15**
 
-- Documentation contains new homepage link
-- No longer gives a warning about version incompatibility on Jython 2.5
 - Minimum threadpool size increased to 10 (from 4) to give a bit more breathing room
   while the threadpool scaling still needs to be fixed
-- Added a paragraph to tips&trics about MSG_WAITALL
+- Binding a proxy will no longer release an existing connection first, instead it will just do nothing if the proxy has already been bound to its uri
+- Resolved a race condition related to releasing and binding a proxy, improved unit test
+- Documentation contains new homepage link
+- No longer gives a warning about version incompatibility on Jython 2.5
 - optimize bytecode flag no longer added in setup script when using jython, this used to crash the setup.py install process on jython
 - fixed a gc issue due to a circular dependency
 - IronPython: improved suggesting a free port number in socketutil.findProbablyUnusedPort
 - IronPython: threadpoolserver no longer attempts to join the worker threads because not all threads seemed to actually exit on IronPython, thereby hanging the process when shutting down a daemon.
+- Added a paragraph to tips&trics about MSG_WAITALL
 - socket.MSG_WAITALL is no longer deleted by importing Pyro on systems that have a broken MSG_WAITALL (Windows). You'll have to check for this yourself now, but I wanted to get rid of this side effect of importing Pyro.
 
 
