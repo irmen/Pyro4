@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.15**
 
-- Minimum threadpool size increased to 10 (from 4) to give a bit more breathing room
+- Minimum threadpool size increased to 20 (from 4) to give a bit more breathing room
   while the threadpool scaling still needs to be fixed
 - Binding a proxy will no longer release an existing connection first, instead it will just do nothing if the proxy has already been bound to its uri
 - Resolved a race condition related to releasing and binding a proxy, improved unit test
