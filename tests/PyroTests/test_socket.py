@@ -14,6 +14,17 @@ import Pyro4
 from testsupport import *
 
 
+class TestSocketStuff(unittest.TestCase):
+    def testSockname(self):
+        s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(("",0))
+        s.listen(5)
+        host, port = s.getsockname()
+        self.assertNotEqual(0, port)
+        self.assertEqual("0.0.0.0", host)     # ipv4 support only at this time
+        s.close()
+
+
 class TestSocketutil(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT=0.1
