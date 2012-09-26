@@ -57,15 +57,21 @@ class SocketWorker(threadutil.Thread):
                         self.csock.close()
                     finally:
                         # make sure we tell the pool that we are no longer working
-                        shrunk = self.server.threadpool.updateWorking(-1)
-                        self.processPoolShrink(shrunk)
+                        try:
+                            shrunk = self.server.threadpool.updateWorking(-1)
+                            self.processPoolShrink(shrunk)
+                        except ReferenceError:
+                            pass
         # Note: we don't swallow exceptions here anymore because @Pyro4.callback doesn't
         #       do anything anymore if we do (the re-raised exception would be swallowed...)
         #except Exception:
         #    exc_type, exc_value, _ = sys.exc_info()
         #    log.warn("swallow exception in worker %s: %s %s", self.getName(), exc_type, exc_value)
         finally:
-            self.server.threadpool.remove(self)
+            try:
+                self.server.threadpool.remove(self)
+            except ReferenceError:
+                pass
             log.debug("stopping worker %s", self.getName())
 
     def processPoolShrink(self, amount):
