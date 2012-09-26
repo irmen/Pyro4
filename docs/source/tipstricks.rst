@@ -1,4 +1,4 @@
-.. _tipstrics:
+.. _tipstricks:
 
 *************
 Tips & Tricks
