@@ -35,6 +35,7 @@ class TPJobQueueTests(unittest.TestCase):
 
     def testJQcreate(self):
         with ThreadPooledJobQueue() as jq:
+            _=repr(jq)
             self.assertEqual(MIN_POOL_SIZE, jq.workercountSafe)
         jq.drain()
 

@@ -44,8 +44,7 @@ class Worker(Pyro4.threadutil.Thread):
                 job = pool.getJob()
             except NoJobAvailableError:
                 # attempt to halt the worker, if the pool size permits this
-                if pool.workercountSafe > Pyro4.config.THREADPOOL_MINTHREADS:
-                    pool.halted(self)
+                if pool.attemptHalt(self):
                     break
                 else:
                     continue
@@ -113,9 +112,13 @@ class ThreadPooledJobQueue(object):
         with self.lock:
             return len(self.idle) + len(self.busy)
 
+    @property
+    def jobcount(self):
+        return self.jobs.qsize()
+
     def __repr__(self):
         return "<%s.%s at 0x%x, %d idle, %d busy, %d jobs>" % \
-            (self.__class__.__module__, self.__class__.__name__, id(self), len(self.idle), len(self.busy), self.jobs.qsize())
+            (self.__class__.__module__, self.__class__.__name__, id(self), len(self.idle), len(self.busy), self.jobcount)
 
     def process(self, job):
         """
@@ -124,14 +127,14 @@ class ThreadPooledJobQueue(object):
         as long as the pool size permits it.
         """
         self.jobs.put(job)
-        jobcount = self.jobs.qsize()
-        if jobcount > 0:
+        if self.jobcount > 0:
             with self.lock:
                 if not self.idle:
                     self.__spawnIdle()
-                while jobcount > 1:
+                spawnamount = self.jobcount
+                while spawnamount > 1:
                     self.__spawnIdle()
-                    jobcount -= 1
+                    spawnamount -= 1
 
     def setIdle(self, worker):
         with self.lock:
@@ -144,13 +147,28 @@ class ThreadPooledJobQueue(object):
             self.busy.add(worker)
 
     def halted(self, worker, crashed=False):
-        """Called by a worker when it halts (exits)."""
+        """Called by a worker when it halts (exits). This removes the worker from the bookkeeping."""
         with self.lock:
-            if worker in self.idle:
-                self.idle.remove(worker)
-            if worker in self.busy:
-                self.busy.remove(worker)
-            log.debug("worker halted: %s", worker.name)
+            self.__halted(worker)
+
+    def __halted(self, worker):
+        # Lock-free version that is used internally
+        if worker in self.idle:
+            self.idle.remove(worker)
+        if worker in self.busy:
+            self.busy.remove(worker)
+        log.debug("worker halted: %s", worker.name)
+
+    def attemptHalt(self, worker):
+        """
+        Called by a worker to signal it intends to halt.
+        Returns true or false depending on whether the worker was actually allowed to halt.
+        """
+        with self.lock:
+            if self.workercount > Pyro4.config.THREADPOOL_MINTHREADS:
+                self.__halted(worker)
+                return True
+            return False
 
     def getJob(self):
         """
