@@ -1,6 +1,6 @@
 BUGS
 
-- fix threadpool (Will Lee)
+- fix the todo in jq.close, it needs to interrupt the socket of busy workers somehow
 - ironpython hangs on test_naming, test_server
 - ironpython crashes with timeouterrrors in test_server_timeout (but unit test doesn't fail)
 - jython hangs on test_echoserver, test_naming (in jq.drain)
@@ -14,19 +14,17 @@ Ideas / TODO
 * Add more topics to the index of the docs
 * More decorators? @synchronized, @oneway, @expose (also on attributes?)
 * Batched calls for multiple different proxies (for the same daemon)
-* Refactor the threadpool so it controls its own idle/busy workers and adds/removes workers as needed
 * let async/Future use a client-side threadpool instead of spawning endless new threads
-* add multiprocess server (forking?) based on multiprocessing?
-* explain callbacks better?
-* automatic callback handling if you pass a callable to the server?
-* Make Pyro support listening to multiple interfaces (and returning the correct URI from the daemon. Name server is harder...)
-* Make it possible to plug in a user written socketserver (register custom Pyro4.config.SERVERTYPE ?)
-* Does the socketserver-api need more tweaks so that it will be easy for users to provide their own servers?
-* Add to docs: use socketserver API to write socket server based on another event mechanism such as epoll or kqueue, and how to plug it in
+* add multiprocess server (forking?) based on multiprocessing
+* explain callbacks better
+* automatic callback handling if you pass a callable to the server
+* Make Pyro support listening to multiple network interfaces at the same time (and returning the correct URI from the daemon. Name server is harder...)
+* Add to docs: how to use the socketserver API to write your own implementation
+* investigate socket server based on another async/multiplexing event mechanism such as epoll, kqueue (instead of the less efficient select)
 * simplify the shutdown/close methods so that they only signal a shutdown condition and let the eventloop thread clean up nicely. This to avoid all kinds of exceptions on shutdown (mainly socketserver on ironpython now)
 * on proxy connect: query the server about the object. Can be a method on the DaemonObject itself. Query for meta info about the object: oneway methods, security settings, exposed attributes (to create properties?), whatever.
 * object activation / object registration strategies: instance_per_call, instance_per_connection, shared_instance (let the daemon instantiate your object's class instead of user code)
-* persistent Name Server (store namespace in a database on disk) use sqlite3 because it needs multithreading/transactions
+* persistent Name Server (store namespace in a database on disk) use sqlite because it needs multithreading/transactions
 * daemon (nameserver) should be able to disconnect clients that haven't been active over the past X seconds
 * connection validator is missing and I want it back with similar features as Pyro3, but see next item
 * clean way to have server hooks for client connects and disconnects

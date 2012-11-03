@@ -36,7 +36,7 @@ class Worker(Pyro4.threadutil.Thread):
         super(Worker, self).__init__()
         self.daemon = True
         self.pool = weakref.ref(pool)
-        self.name = "JobWorkerThread-%d " % id(self)
+        self.name = "Pyro-Worker-%d " % id(self)
 
     def run(self):
         while True:
