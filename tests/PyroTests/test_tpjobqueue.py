@@ -8,7 +8,7 @@ from __future__ import with_statement
 import unittest
 import time
 import random
-from Pyro4.tpjobqueue import ThreadPooledJobQueue
+from Pyro4.tpjobqueue import ThreadPooledJobQueue, JobQueueError
 import Pyro4.threadutil
 
 
@@ -76,6 +76,25 @@ class TPJobQueueTests(unittest.TestCase):
             self.assertEqual(MAX_POOL_SIZE, jq.workercountSafe)
             time.sleep(JOB_TIME*2 + 1.1*IDLE_TIMEOUT)  # wait till the workers are done
             self.assertEqual(MIN_POOL_SIZE, jq.workercountSafe)  # should have shrunk back to the minimal pool size
+        jq.drain()
+
+    def testJQclose(self):
+        # test that after closing a job queue, no more new jobs are taken from the queue, and some other stuff
+        with ThreadPooledJobQueue() as jq:
+            for i in range(2*MAX_POOL_SIZE):
+                jq.process(Job(str(i+1)))
+            self.assertGreater(jq.jobcount, 1)
+            self.assertGreater(jq.workercount, 1)
+            self.assertRaises(JobQueueError, jq.drain)   # can't drain if not yet closed
+
+        self.assertRaises(JobQueueError, jq.process, Job(1))  # must not allow new jobs after closing
+        self.assertGreater(jq.jobcount, 1)
+        self.assertGreater(jq.workercount, 1)
+        time.sleep(JOB_TIME*1.1)
+        jobs_left = jq.jobcount
+        time.sleep(JOB_TIME*1.1)   # wait till jobs finish and a new one *might* be taken off the queue
+        self.assertEqual(jobs_left, jq.jobcount, "may not process new jobs after close")
+        self.assertEqual(0, jq.workercount, "all workers must be stopped by now")
         jq.drain()
 
 

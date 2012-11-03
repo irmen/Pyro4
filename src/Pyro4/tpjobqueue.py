@@ -21,6 +21,9 @@ log=logging.getLogger("Pyro4.tpjobqueue")
 class NoJobAvailableError(queue.Empty):
     pass
 
+class JobQueueError(Exception):
+    pass
+
 
 class Worker(Pyro4.threadutil.Thread):
     """
@@ -74,6 +77,7 @@ class ThreadPooledJobQueue(object):
         self.idle = set()
         self.busy = set()
         self.jobs = queue.Queue()
+        self.closed = False
         for _ in range(Pyro4.config.THREADPOOL_MINTHREADS):
             self.__spawnIdle()
 
@@ -89,19 +93,16 @@ class ThreadPooledJobQueue(object):
         for _ in range(count):
             self.jobs.put(None)  # None as a job means: terminate the worker
         log.debug("closing down, %d halt-jobs issued", count)
+        self.closed = True
 
     def drain(self):
         """Wait till the job queue has been emptied."""
+        if not self.closed:
+            raise JobQueueError("can't drain a job queue that hasn't been closed yet")
         while not self.jobs.empty() and self.workercountSafe:
             time.sleep(0.1)
-        if self.workercountSafe==0:
-            # check that all leftover jobs are 'halting' sentinels (None)
-            while not self.jobs.empty():
-                job = self.jobs.get()
-                if job is not None:
-                    raise RuntimeError("job queue still contains jobs")
-        else:
-            raise RuntimeError("there are still active workers")
+        if self.workercountSafe > 0:
+            raise JobQueueError("there are still active workers")
 
     @property
     def workercount(self):
@@ -126,9 +127,11 @@ class ThreadPooledJobQueue(object):
         If there's no idle worker available to service it, a new one is spawned
         as long as the pool size permits it.
         """
-        self.jobs.put(job)
-        if self.jobcount > 0:
-            with self.lock:
+        with self.lock:
+            if self.closed:
+                raise JobQueueError("job queue is closed")
+            self.jobs.put(job)
+            if self.jobcount > 0:
                 if not self.idle:
                     self.__spawnIdle()
                 spawnamount = self.jobcount
@@ -176,10 +179,12 @@ class ThreadPooledJobQueue(object):
         If there's no job available in the timeout period given by the
         THREADPOOL_IDLETIMEOUT config item, NoJobAvailableError is raised.
         """
+        if self.closed:
+            return None
         try:
             return self.jobs.get(timeout=Pyro4.config.THREADPOOL_IDLETIMEOUT)
         except queue.Empty:
-            raise NoJobAvailableError
+            raise NoJobAvailableError("queue is empty")
 
     def __spawnIdle(self):
         """
