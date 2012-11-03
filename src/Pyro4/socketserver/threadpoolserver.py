@@ -8,94 +8,46 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement
 import socket, logging, sys, os
-import weakref
-try:
-    import queue
-except ImportError:
-    import Queue as queue
-from Pyro4 import socketutil, threadutil, errors
-import Pyro4.threadpool
+from Pyro4 import socketutil, errors
+import Pyro4.tpjobqueue
 
 log=logging.getLogger("Pyro4.socketserver.threadpool")
 
 
-class SocketWorker(threadutil.Thread):
-    """worker thread to process requests"""
-    def __init__(self, server, daemon):
-        super(SocketWorker, self).__init__()
-        self.setDaemon(True)
-        self.server=server
-        self.callbackDaemon=daemon
-        if os.name=="java":
-            # jython names every thread 'Thread', so we improve that a little
-            self.setName("Thread-%d"%id(self))
+class ClientConnectionJob(object):
+    """
+    Takes care of a single client connection and all requests
+    that may arrive during its life span.
+    """
+    def __init__(self, clientSocket, clientAddr, daemon):
+        self.csock = socketutil.SocketConnection(clientSocket)
+        self.caddr = clientAddr
+        self.daemon = daemon
 
-    def run(self):
-        self.running=True
-        try:
-            while self.running:  # loop over all connections in the queue
-                self.csock, self.caddr = self.server.workqueue.get()
-                if self.csock is None and self.caddr is None:
-                    # this was a 'stop' sentinel
-                    self.running=False
+    def __call__(self):
+        if self.handleConnection():
+            while True:
+                try:
+                    self.daemon.handleRequest(self.csock)
+                except (socket.error, errors.ConnectionClosedError):
+                    # client went away.
+                    log.debug("disconnected %s", self.caddr)
                     break
-                self.csock=socketutil.SocketConnection(self.csock)
-                if self.handleConnection(self.csock):
-                    shrunk = self.server.threadpool.updateWorking(1)  # tell the pool we're working
-                    self.processPoolShrink(shrunk)
-                    try:
-                        while self.running:   # loop over all requests during a single connection
-                            try:
-                                self.callbackDaemon.handleRequest(self.csock)
-                            except (socket.error, errors.ConnectionClosedError):
-                                # client went away.
-                                log.debug("worker %s client disconnected %s", self.getName(), self.caddr)
-                                break
-                            except errors.SecurityError:
-                                log.debug("worker %s client security error %s", self.getName(), self.caddr)
-                                break
-                        self.csock.close()
-                    finally:
-                        # make sure we tell the pool that we are no longer working
-                        try:
-                            shrunk = self.server.threadpool.updateWorking(-1)
-                            self.processPoolShrink(shrunk)
-                        except ReferenceError:
-                            pass
-        # Note: we don't swallow exceptions here anymore because @Pyro4.callback doesn't
-        #       do anything anymore if we do (the re-raised exception would be swallowed...)
-        #except Exception:
-        #    exc_type, exc_value, _ = sys.exc_info()
-        #    log.warn("swallow exception in worker %s: %s %s", self.getName(), exc_type, exc_value)
-        finally:
-            try:
-                self.server.threadpool.remove(self)
-            except ReferenceError:
-                pass
-            log.debug("stopping worker %s", self.getName())
+                except errors.SecurityError:
+                    log.debug("security error on client %s", self.caddr)
+                    break
+            self.csock.close()
 
-    def processPoolShrink(self, amount):
-        # for every worker removed from the pool, put a 'stop' sentinel in the worker queue to kill a worker thread.
-        for _ in range(amount):
-            self.server.workqueue.put((None, None))
-
-    def handleConnection(self, conn):
+    def handleConnection(self):
+        # connection handshake
         try:
-            if self.callbackDaemon._handshake(conn):
+            if self.daemon._handshake(self.csock):
                 return True
         except (socket.error, errors.PyroError):
             x=sys.exc_info()[1]
             log.warn("error during connect: %s", x)
-            conn.close()
+            self.csock.close()
         return False
-
-
-class SocketWorkerFactory(object):
-    def __init__(self, server, daemon):
-        self.server=weakref.proxy(server)  # circular ref
-        self.daemon=daemon
-    def __call__(self):
-        return SocketWorker(self.server, self.daemon)
 
 
 class SocketServer_Threadpool(object):
@@ -116,19 +68,18 @@ class SocketServer_Threadpool(object):
             host=host or self._socketaddr[0]
             port=port or self._socketaddr[1]
             self.locationStr="%s:%d" % (host, port)
-        self.workqueue=queue.Queue()
-        self.threadpool=Pyro4.threadpool.ThreadPool()
-        self.threadpool.workerFactory=SocketWorkerFactory(self, self.daemon)
-        self.threadpool.fill()
-        log.info("%d worker threads started", len(self.threadpool))
+        self.jobqueue = Pyro4.tpjobqueue.ThreadPooledJobQueue()
+        log.info("%d workers started", self.jobqueue.workercount)
 
     def __del__(self):
         if self.sock is not None:
             self.sock.close()
+        if self.jobqueue is not None:
+            self.jobqueue.close()
 
     def __repr__(self):
-        return "<%s on %s, poolsize %d, %d queued>" % (self.__class__.__name__, self.locationStr,
-            len(self.threadpool), self.workqueue.qsize())
+        return "<%s on %s, %d workers, %d jobs>" % (self.__class__.__name__, self.locationStr,
+            self.jobqueue.workercount, self.jobqueue.jobcount)
 
     def loop(self, loopCondition=lambda: True):
         log.debug("threadpool server requestloop")
@@ -158,19 +109,15 @@ class SocketServer_Threadpool(object):
         assert self.sock in eventsockets
         try:
             csock, caddr=self.sock.accept()
-            log.debug("connection from %s", caddr)
+            log.debug("connected %s", caddr)
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
-            self.threadpool.growIfNeeded()
-            self.workqueue.put((csock, caddr))
+            self.jobqueue.process(ClientConnectionJob(csock, caddr, self.daemon))
         except socket.timeout:
             pass  # just continue the loop on a timeout on accept
 
     def close(self, joinWorkers=True):
         log.debug("closing threadpool server")
-        if sys.platform=="cli" and joinWorkers:
-            joinWorkers=False
-            log.info("not joining workers on IronPython (usually hangs)")   # @todo is this an artifact of this particular thread pool implementation?
         if self.sock:
             sockname=None
             try:
@@ -186,25 +133,11 @@ class SocketServer_Threadpool(object):
             except Exception:
                 pass
             self.sock=None
-        if self.workqueue is not None:
-            for _ in range(len(self.threadpool)):
-                self.workqueue.put((None, None))  # put a 'stop' sentinel in the worker queue for every worker
-        for worker in self.threadpool.pool.copy():
-            worker.running=False
-            csock=getattr(worker, "csock", None)
-            if csock:
-                try:
-                    csock.sock.shutdown(socket.SHUT_RDWR)
-                    csock.close()
-                except (EnvironmentError, socket.error):
-                    pass
-        while joinWorkers:
-            try:
-                worker=self.threadpool.pool.pop()
-            except KeyError:
-                break
-            else:
-                worker.join()
+        self.jobqueue.close()
+        # XXX todo break all busy workers that are waiting on data to arrive at their socket
+
+        if joinWorkers:
+            self.jobqueue.drain()
 
     @property
     def sockets(self):

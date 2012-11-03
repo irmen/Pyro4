@@ -2,7 +2,6 @@ BUGS
 
 Pyro4:
 - fix threadpool (Will Lee)
-- ideally, fix circular dependency in threadpool server (get rid of weakref)
 
 
 Ideas / TODO

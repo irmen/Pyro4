@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.16**
 
-- New implementation for the threadpool server, with a reliable growing/shrinking behavior.
+- New implementation for the threadpool server: job queue with self-adjusting number of workers.
   The workaround that was in place (fixed pool size) has been removed.
 
 
