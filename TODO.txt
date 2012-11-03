@@ -1,7 +1,9 @@
 BUGS
 
-Pyro4:
 - fix threadpool (Will Lee)
+- ironpython hangs on test_naming, test_server
+- ironpython crashes with timeouterrrors in test_server_timeout (but unit test doesn't fail)
+- jython hangs on test_echoserver, test_naming (in jq.drain)
 
 
 Ideas / TODO
