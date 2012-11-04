@@ -1,6 +1,6 @@
 BUGS
 
-- jython 2.5.3 hangs on testBClookup0000 in test_naming
+- jython 2.5.3 hangs on testBClookup0000 in test_naming on Windows
 
 
 Ideas / TODO
@@ -27,4 +27,3 @@ Ideas / TODO
 * clean way to have server hooks for client connects and disconnects
 * look at SSL support. The standard ssl module should be enough to do this without the need of 3rd party stuff such as m2crypto or pyopenssl
 * Pyro-over-SSH (not SSL) using Paramiko
-* Name server cannot be stopped if there are still connections to it

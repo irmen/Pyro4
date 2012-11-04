@@ -6,6 +6,7 @@ Change Log
 
 - New implementation for the threadpool server: job queue with self-adjusting number of workers.
   The workaround that was in place (fixed pool size) has been removed.
+- minor api doc fix: corrected reference of Pyro4 package members
 
 
 **Pyro 4.15**
