@@ -52,8 +52,11 @@ class ClientConnectionJob(object):
 
     def interrupt(self):
         """attempt to interrupt the worker's request loop"""
-        self.csock.sock.shutdown(socket.SHUT_RDWR)
-        self.csock.sock.setblocking(False)
+        try:
+            self.csock.sock.shutdown(socket.SHUT_RDWR)
+            self.csock.sock.setblocking(False)
+        except socket.error:
+            pass
         if hasattr(socket, "SO_RCVTIMEO"):
             # setting a recv timeout seems to break the blocking call to recv() on some systems
             try:
