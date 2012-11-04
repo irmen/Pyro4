@@ -1,9 +1,6 @@
 BUGS
 
-- fix the todo in jq.close, it needs to interrupt the socket of busy workers somehow
-- ironpython hangs on test_naming, test_server
-- ironpython crashes with timeouterrrors in test_server_timeout (but unit test doesn't fail)
-- jython hangs on test_echoserver, test_naming (in jq.drain)
+- jython 2.5.3 hangs on testBClookup0000 in test_naming
 
 
 Ideas / TODO

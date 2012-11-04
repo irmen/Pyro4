@@ -37,6 +37,7 @@ class Worker(Pyro4.threadutil.Thread):
         self.daemon = True
         self.pool = weakref.ref(pool)
         self.name = "Pyro-Worker-%d " % id(self)
+        self.job = None  # the active job
 
     def run(self):
         while True:
@@ -44,21 +45,21 @@ class Worker(Pyro4.threadutil.Thread):
             if not pool:
                 break   # pool's gone, better exit
             try:
-                job = pool.getJob()
+                self.job = pool.getJob()
             except NoJobAvailableError:
                 # attempt to halt the worker, if the pool size permits this
                 if pool.attemptHalt(self):
                     break
                 else:
                     continue
-            if job is None:
+            if self.job is None:
                 # halt the worker, regardless of the pool size
                 pool.halted(self)
                 break
             else:
                 pool.setBusy(self)
                 try:
-                    job()
+                    self.job()
                     pool.setIdle(self)
                 except:
                     pool.halted(self, True)
@@ -100,6 +101,8 @@ class ThreadPooledJobQueue(object):
         if not self.closed:
             raise JobQueueError("can't drain a job queue that hasn't been closed yet")
         while not self.jobs.empty() and self.workercountSafe:
+            # note: this loop may never end if a worker's job remains busy or blocked,
+            # we simply assume all workers eventually terminate their jobs...
             time.sleep(0.1)
         if self.workercountSafe > 0:
             raise JobQueueError("there are still active workers")

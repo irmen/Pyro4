@@ -44,6 +44,10 @@ class TPJobQueueTests(unittest.TestCase):
             job = Job()
             jq.process(job)
             self.assertEqual(MIN_POOL_SIZE, jq.workercountSafe)
+            time.sleep(0.02)  # let it pick up the job
+            self.assertEqual(1, len(jq.busy))
+            worker = list(jq.busy)[0]
+            self.assertEqual(job, worker.job, "busy worker should be running our job")
         jq.drain()
 
     def testJQgrow(self):

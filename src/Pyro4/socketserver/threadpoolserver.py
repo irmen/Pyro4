@@ -8,6 +8,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement
 import socket, logging, sys, os
+import struct
 from Pyro4 import socketutil, errors
 import Pyro4.tpjobqueue
 
@@ -48,6 +49,19 @@ class ClientConnectionJob(object):
             log.warn("error during connect: %s", x)
             self.csock.close()
         return False
+
+    def interrupt(self):
+        """attempt to interrupt the worker's request loop"""
+        self.csock.sock.shutdown(socket.SHUT_RDWR)
+        self.csock.sock.setblocking(False)
+        if hasattr(socket, "SO_RCVTIMEO"):
+            # setting a recv timeout seems to break the blocking call to recv() on some systems
+            try:
+                self.csock.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, struct.pack("ii", 1,1))
+            except socket.error:
+                pass
+        self.csock.close()
+
 
 
 class SocketServer_Threadpool(object):
@@ -134,8 +148,8 @@ class SocketServer_Threadpool(object):
                 pass
             self.sock=None
         self.jobqueue.close()
-        # XXX todo break all busy workers that are waiting on data to arrive at their socket
-
+        for worker in self.jobqueue.busy.copy():
+            worker.job.interrupt()   # try to break all busy workers
         if joinWorkers:
             self.jobqueue.drain()
 
@@ -145,14 +159,18 @@ class SocketServer_Threadpool(object):
         return [self.sock]
 
     def wakeup(self):
-        """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
-        try:
-            sock=socketutil.createSocket(connect=self._socketaddr, keepalive=False, timeout=None)
-            if sys.version_info<(3, 0):
-                sock.send("!"*16)
-            else:
-                sock.send(bytes([1]*16))
-            sock.close()
-        except socket.error:
-            pass
+        interruptSocket(self._socketaddr)
+
+
+def interruptSocket(address):
+    """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
+    try:
+        sock=socketutil.createSocket(connect=address, keepalive=False, timeout=None)
+        if sys.version_info<(3, 0):
+            sock.send("!"*16)
+        else:
+            sock.send(bytes([1]*16))
+        sock.close()
+    except socket.error:
+        pass
 
