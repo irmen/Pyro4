@@ -52,6 +52,8 @@ def fixExecSourceNewlines(source):
         # it needs unix type newlines and a trailing newline to work correctly.
         source = source.replace("\r\n", "\n")
         source = source.rstrip() + "\n"
+    # remove trailing whitespace that might cause IndentationErrors
+    source = source.rstrip()
     return source
 
 

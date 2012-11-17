@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.17**
+
+- Fixed possible IndentationError problem with sending modules in Flame
+
+
 **Pyro 4.16**
 
 - New implementation for the threadpool server: job queue with self-adjusting number of workers.

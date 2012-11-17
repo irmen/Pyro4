@@ -1,6 +1,7 @@
 BUGS
 
 - jython 2.5.3 hangs on testBClookup0000 in test_naming on Windows
+- remote flame console won't close in IronPython
 
 
 Ideas / TODO
