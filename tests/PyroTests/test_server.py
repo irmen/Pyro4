@@ -42,7 +42,7 @@ class MyThing(object):
     def testargs(self,x,*args,**kwargs):
         return x,args,kwargs
     def nonserializableException(self):
-        raise NonserializableError("this should work")
+        raise NonserializableError(("xantippe", lambda x: 0))
 
 class MyThing2(object):
     pass
@@ -179,10 +179,14 @@ class ServerTestsOnce(unittest.TestCase):
                 self.fail("should crash")
             except Exception:
                 xt, xv, tb = sys.exc_info()
+                print "XT: %r" % xt  # XXX
+                print "XV: %r" % xv  # XXX
                 self.assertEqual(xt, Pyro4.errors.PyroError)
                 tblines = "\n".join(Pyro4.util.getPyroTraceback())
-                self.assertTrue("PyroError: Error serializing exception: to make this error non-serializable. Original exception: <class '__main__.NonserializableError'>: this should work" in tblines)
-                self.assertTrue("raise NonserializableError(\"this should work\")" in tblines)
+                self.assertTrue("PyroError: Error serializing exception" in tblines)
+                self.assertTrue("Original exception: <class '__main__.NonserializableError'>:" in tblines)
+                self.assertTrue("raise NonserializableError((\"xantippe" in tblines)
+                time.sleep(0.1)
 
     def testBatchProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
