@@ -179,12 +179,12 @@ class ServerTestsOnce(unittest.TestCase):
                 self.fail("should crash")
             except Exception:
                 xt, xv, tb = sys.exc_info()
-                print "XT: %r" % xt  # XXX
-                print "XV: %r" % xv  # XXX
                 self.assertEqual(xt, Pyro4.errors.PyroError)
                 tblines = "\n".join(Pyro4.util.getPyroTraceback())
                 self.assertTrue("PyroError: Error serializing exception" in tblines)
-                self.assertTrue("Original exception: <class '__main__.NonserializableError'>:" in tblines)
+                s1 = "Original exception: <class '__main__.NonserializableError'>:"
+                s2 = "Original exception: <class 'PyroTests.test_server.NonserializableError'>:"
+                self.assertTrue(s1 in tblines or s2 in tblines)
                 self.assertTrue("raise NonserializableError((\"xantippe" in tblines)
                 time.sleep(0.1)
 
