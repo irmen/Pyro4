@@ -186,7 +186,6 @@ class ServerTestsOnce(unittest.TestCase):
                 s2 = "Original exception: <class 'PyroTests.test_server.NonserializableError'>:"
                 self.assertTrue(s1 in tblines or s2 in tblines)
                 self.assertTrue("raise NonserializableError((\"xantippe" in tblines)
-                time.sleep(0.1)
 
     def testBatchProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
