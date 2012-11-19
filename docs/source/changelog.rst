@@ -5,6 +5,7 @@ Change Log
 **Pyro 4.17**
 
 - Fixed possible IndentationError problem with sending modules in Flame
+- Can now deal with exceptions that can't be serialized: they're raised as generic PyroError instead with appropriate message
 
 
 **Pyro 4.16**
