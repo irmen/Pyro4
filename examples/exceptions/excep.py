@@ -1,5 +1,13 @@
+import pickle
+
+
 class MyError(Exception):
     pass
+
+class UnserializableError(Exception):
+    def __reduce__(self):
+        raise pickle.PicklingError("make this nonpickleable")
+
 
 class TestClass(object):
     def div(self, arg1, arg2):
@@ -15,6 +23,8 @@ class TestClass(object):
     def complexerror(self):
         x=Foo()
         x.crash()
+    def unserializable(self):
+        raise UnserializableError("this error can't be serialized")
 
 
 class Foo(object):

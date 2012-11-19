@@ -5,6 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
+import pickle
 import unittest
 import Pyro4.core
 import Pyro4.errors
@@ -12,6 +13,11 @@ import Pyro4.util
 import time, os, sys, platform
 from Pyro4 import threadutil
 from testsupport import *
+
+
+class NonserializableError(Exception):
+    def __reduce__(self):
+        raise pickle.PicklingError("to make this error non-serializable")
 
 
 class MyThing(object):
@@ -35,6 +41,8 @@ class MyThing(object):
         return "slept for "+str(id)
     def testargs(self,x,*args,**kwargs):
         return x,args,kwargs
+    def nonserializableException(self):
+        raise NonserializableError("this should work")
 
 class MyThing2(object):
     pass
@@ -150,6 +158,31 @@ class ServerTestsOnce(unittest.TestCase):
     def testNormalProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
             self.assertEqual(42,p.multiply(7,6))
+
+    def testExceptions(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            try:
+                p.divide(1,0)
+                self.fail("should crash")
+            except ZeroDivisionError:
+                pass
+            try:
+                p.multiply("a", "b")
+                self.fail("should crash")
+            except TypeError:
+                pass
+
+    def testNonserializableException(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            try:
+                p.nonserializableException()
+                self.fail("should crash")
+            except Exception:
+                xt, xv, tb = sys.exc_info()
+                self.assertEqual(xt, Pyro4.errors.PyroError)
+                tblines = "\n".join(Pyro4.util.getPyroTraceback())
+                self.assertTrue("PyroError: Error serializing exception: to make this error non-serializable. Original exception: <class '__main__.NonserializableError'>: this should work" in tblines)
+                self.assertTrue("raise NonserializableError(\"this should work\")" in tblines)
 
     def testBatchProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
