@@ -12,6 +12,7 @@ import code
 import Pyro4.core
 import Pyro4.util
 import Pyro4.constants
+import Pyro4.errors
 try:
     import importlib
 except ImportError:
@@ -277,7 +278,10 @@ def start(daemon):
     Create and register a Flame server in the given daemon.
     Be *very* cautious before starting this: it allows the clients full access to everything on your system.
     """
-    return daemon.register(Flame(), Pyro4.constants.FLAME_NAME)
+    if Pyro4.config.FLAME_ENABLED:
+        return daemon.register(Flame(), Pyro4.constants.FLAME_NAME)
+    else:
+        raise Pyro4.errors.SecurityError("Flame is disabled in the server configuration")
 
 
 def connect(location):

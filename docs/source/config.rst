@@ -89,12 +89,9 @@ THREADING2              bool    False          Use the threading2 module if avai
 THREADPOOL_MINTHREADS   int     4              For the thread pool server: minimum amount of worker threads to be spawned
 THREADPOOL_MAXTHREADS   int     50             For the thread pool server: maximum amount of worker threads to be spawned
 THREADPOOL_IDLETIMEOUT  float   2.0            For the thread pool server: number of seconds to pass for an idle worker thread to be terminated
+FLAME_ENABLED           bool    False          Should Pyro Flame be enabled on the server
 ======================= ======= ============== =======
 
-.. warning::
-    A temporary workaround for a thread pool scaling problem (lock-up) is in effect:
-    the thread pool is fixed at THREADPOOL_MINTHREADS threads. THREADPOOL_MAXTHREADS can still be
-    set but has no effect at the moment, until the thread pool implementation has been fixed.
 
 There are two special config items that are only available as environment variable settings.
 This is because they are used at module import time (when the Pyro4 package is being imported).
