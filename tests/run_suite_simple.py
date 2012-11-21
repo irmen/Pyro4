@@ -13,6 +13,10 @@ if len(sys.argv)==2 and sys.argv[1]=="--tox":
     pass
 else:
     # running from normal shell invocation
+    dirname = os.path.dirname(__file__)
+    if dirname:
+        print("chdir to "+dirname)
+        os.chdir(dirname)
     sys.path.insert(0,"../src")    # add Pyro source directory
 
 sys.path.insert(1,"PyroTests")

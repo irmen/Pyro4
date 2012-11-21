@@ -192,6 +192,7 @@ class Proxy(object):
         self._pyroSeq=0    # message sequence number
         self.__pyroTimeout=Pyro4.config.COMMTIMEOUT
         self.__pyroLock=threadutil.Lock()
+        self.__pyroConnLock=threadutil.Lock()
 
     def __del__(self):
         if hasattr(self, "_pyroConnection"):
@@ -219,6 +220,7 @@ class Proxy(object):
         self._pyroConnection=None
         self._pyroSeq=0
         self.__pyroLock=threadutil.Lock()
+        self.__pyroConnLock=threadutil.Lock()
 
     def __copy__(self):
         uriCopy=URI(self._pyroUri)
@@ -245,15 +247,18 @@ class Proxy(object):
 
     def _pyroRelease(self):
         """release the connection to the pyro daemon"""
-        if self._pyroConnection:
-            self._pyroConnection.close()
-            self._pyroConnection=None
-            log.debug("connection released")
+        with self.__pyroConnLock:
+            if self._pyroConnection is not None:
+                self._pyroConnection.close()
+                self._pyroConnection=None
+                log.debug("connection released")
 
     def _pyroBind(self):
-        """Bind this proxy to the exact object from the uri. That means that the proxy's uri
-        will be updated with a direct PYRO uri, if it isn't one yet."""
-        self._pyroRelease()
+        """
+        Bind this proxy to the exact object from the uri. That means that the proxy's uri
+        will be updated with a direct PYRO uri, if it isn't one yet.
+        If the proxy is already bound, it will not bind again.
+        """
         return self.__pyroCreateConnection(True)
 
     def __pyroGetTimeout(self):
@@ -261,13 +266,13 @@ class Proxy(object):
 
     def __pyroSetTimeout(self, timeout):
         self.__pyroTimeout=timeout
-        if self._pyroConnection:
+        if self._pyroConnection is not None:
             self._pyroConnection.timeout=timeout
     _pyroTimeout=property(__pyroGetTimeout, __pyroSetTimeout)
 
     def _pyroInvoke(self, methodname, vargs, kwargs, flags=0):
         """perform the remote method call communication"""
-        if not self._pyroConnection:
+        if self._pyroConnection is None:
             # rebind here, don't do it from inside the invoke because deadlock will occur
             self.__pyroCreateConnection()
         data, compressed=self._pyroSerializer.serialize(
@@ -316,55 +321,56 @@ class Proxy(object):
         Connects this proxy to the remote Pyro daemon. Does connection handshake.
         Returns true if a new connection was made, false if an existing one was already present.
         """
-        if self._pyroConnection is not None:
-            return False    # already connected
-        from Pyro4.naming import resolve  # don't import this globally because of cyclic dependancy
-        uri=resolve(self._pyroUri)
-        # socket connection (normal or Unix domain socket)
-        conn=None
-        log.debug("connecting to %s", uri)
-        connect_location=uri.sockname if uri.sockname else (uri.host, uri.port)
-        with self.__pyroLock:
-            try:
-                if self._pyroConnection is not None:
-                    return False    # already connected
-                sock=socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout)
-                conn=socketutil.SocketConnection(sock, uri.object)
-                # Do handshake. For now, no need to send anything.
-                msgType, flags, seq, data = MessageFactory.getMessage(conn, None)
-                # any trailing data (dataLen>0) is an error message, if any
-            except Exception:
-                x=sys.exc_info()[1]
-                if conn:
-                    conn.close()
-                err="cannot connect: %s" % x
-                log.error(err)
-                if isinstance(x, errors.CommunicationError):
-                    raise
-                else:
-                    raise errors.CommunicationError(err)
-            else:
-                if msgType==MessageFactory.MSG_CONNECTFAIL:
-                    error="connection rejected"
-                    if data:
-                        if sys.version_info>=(3,0):
-                            data=str(data,"utf-8")
-                        error+=", reason: "+data
-                    conn.close()
-                    log.error(error)
-                    raise errors.CommunicationError(error)
-                elif msgType==MessageFactory.MSG_CONNECTOK:
-                    self._pyroConnection=conn
-                    if replaceUri:
-                        log.debug("replacing uri with bound one")
-                        self._pyroUri=uri
-                    log.debug("connected to %s", self._pyroUri)
-                    return True
-                else:
-                    conn.close()
-                    err="connect: invalid msg type %d received" % msgType
+        with self.__pyroConnLock:
+            if self._pyroConnection is not None:
+                return False     # already connected
+            from Pyro4.naming import resolve  # don't import this globally because of cyclic dependancy
+            uri=resolve(self._pyroUri)
+            # socket connection (normal or Unix domain socket)
+            conn=None
+            log.debug("connecting to %s", uri)
+            connect_location=uri.sockname if uri.sockname else (uri.host, uri.port)
+            with self.__pyroLock:
+                try:
+                    if self._pyroConnection is not None:
+                        return False    # already connected
+                    sock=socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout)
+                    conn=socketutil.SocketConnection(sock, uri.object)
+                    # Do handshake. For now, no need to send anything.
+                    msgType, flags, seq, data = MessageFactory.getMessage(conn, None)
+                    # any trailing data (dataLen>0) is an error message, if any
+                except Exception:
+                    x=sys.exc_info()[1]
+                    if conn:
+                        conn.close()
+                    err="cannot connect: %s" % x
                     log.error(err)
-                    raise errors.ProtocolError(err)
+                    if isinstance(x, errors.CommunicationError):
+                        raise
+                    else:
+                        raise errors.CommunicationError(err)
+                else:
+                    if msgType==MessageFactory.MSG_CONNECTFAIL:
+                        error="connection rejected"
+                        if data:
+                            if sys.version_info>=(3,0):
+                                data=str(data,"utf-8")
+                            error+=", reason: "+data
+                        conn.close()
+                        log.error(error)
+                        raise errors.CommunicationError(error)
+                    elif msgType==MessageFactory.MSG_CONNECTOK:
+                        self._pyroConnection=conn
+                        if replaceUri:
+                            log.debug("replacing uri with bound one")
+                            self._pyroUri=uri
+                        log.debug("connected to %s", self._pyroUri)
+                        return True
+                    else:
+                        conn.close()
+                        err="connect: invalid msg type %d received" % msgType
+                        log.error(err)
+                        raise errors.ProtocolError(err)
 
     def _pyroReconnect(self, tries=100000000):
         """(re)connect the proxy to the daemon containing the pyro object which the proxy is for"""

@@ -933,7 +933,7 @@ For more details, refer to the chapters in this manual about the relevant Pyro c
                 ns=True)
 
 *Stock market servers*
-    This example already creates a daemon object insted of using the ``serveSimple`` call.
+    This example already creates a daemon object instead of using the ``serveSimple`` call.
     You'll have to modify the three source files because they all create a daemon.
     But you'll only have to add the proper ``host`` argument to the construction of the Daemon,
     to set it to your machine name instead of the default of localhost.

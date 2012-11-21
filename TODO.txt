@@ -1,0 +1,34 @@
+BUGS
+
+Pyro4:
+- fix threadpool (Will Lee)
+- ideally, fix circular dependency in threadpool server (get rid of weakref)
+
+
+Ideas / TODO
+
+* IPV6 support (testable in 'ipv6' branch)
+* add a FAQ to the docs? first question: name server can still be discovered when running on localhost but then communicationerror to the server?
+* HMAC: Allow per-proxy HMAC key (to be able to connect to different servers with different keys)
+* Add more topics to the index of the docs
+* More decorators? @synchronized, @oneway, @expose (also on attributes?)
+* Batched calls for multiple different proxies (for the same daemon)
+* Refactor the threadpool so it controls its own idle/busy workers and adds/removes workers as needed
+* let async/Future use a client-side threadpool instead of spawning endless new threads
+* add multiprocess server (forking?) based on multiprocessing?
+* explain callbacks better?
+* automatic callback handling if you pass a callable to the server?
+* Make Pyro support listening to multiple interfaces (and returning the correct URI from the daemon. Name server is harder...)
+* Make it possible to plug in a user written socketserver (register custom Pyro4.config.SERVERTYPE ?)
+* Does the socketserver-api need more tweaks so that it will be easy for users to provide their own servers?
+* Add to docs: use socketserver API to write socket server based on another event mechanism such as epoll or kqueue, and how to plug it in
+* simplify the shutdown/close methods so that they only signal a shutdown condition and let the eventloop thread clean up nicely. This to avoid all kinds of exceptions on shutdown (mainly socketserver on ironpython now)
+* on proxy connect: query the server about the object. Can be a method on the DaemonObject itself. Query for meta info about the object: oneway methods, security settings, exposed attributes (to create properties?), whatever.
+* object activation / object registration strategies: instance_per_call, instance_per_connection, shared_instance (let the daemon instantiate your object's class instead of user code)
+* persistent Name Server (store namespace in a database on disk) use sqlite3 because it needs multithreading/transactions
+* daemon (nameserver) should be able to disconnect clients that haven't been active over the past X seconds
+* connection validator is missing and I want it back with similar features as Pyro3, but see next item
+* clean way to have server hooks for client connects and disconnects
+* look at SSL support. The standard ssl module should be enough to do this without the need of 3rd party stuff such as m2crypto or pyopenssl
+* Pyro-over-SSH (not SSL) using Paramiko
+* Name server cannot be stopped if there are still connections to it

@@ -1,4 +1,5 @@
 import sys
+import os
 try:
     # try setuptools first, to get access to build_sphinx and test commands
     from setuptools import setup
@@ -9,6 +10,8 @@ except ImportError:
 
 if __name__ == '__main__' :
     sys.path.insert(0, "src")
+    import warnings
+    warnings.simplefilter("default", ImportWarning)   # enable ImportWarning
     import Pyro4.constants
     print('Pyro version = %s' % Pyro4.constants.VERSION)
 
@@ -30,7 +33,7 @@ including Python 2.x, Python 3.x, IronPython, Jython and Pypy.""",
         "author": "Irmen de Jong",
         "author_email": "irmen@razorvine.net",
         "keywords": "distributed objects, middleware, network communication, remote method call, IPC",
-        "url": "http://irmen.home.xs4all.nl/pyro/",
+        "url": "http://packages.python.org/Pyro4",
         "package_dir": {'':'src'},
         "packages": ['Pyro4', 'Pyro4.socketserver', 'Pyro4.test', 'Pyro4.utils'],
         "scripts": [],
@@ -52,6 +55,10 @@ including Python 2.x, Python 3.x, IronPython, Jython and Pypy.""",
                 "Topic :: System :: Networking"
             ]
         }
+
+    if os.name != "java":
+        # only add '-O' optimized bytecode compile if not using jython
+        setupargs["options"] = {"install": {"optimize": 1}}
         
     if using_setuptools:
         setupargs["test_suite"]="nose.collector"    # use Nose to run unittests

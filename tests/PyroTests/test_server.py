@@ -180,9 +180,9 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testAsyncProxyCallchain(self):
         class FuncHolder(object):
-            count=0
+            count=AtomicCounter()
             def function(self, value, increase=1):
-                self.count+=1
+                self.count.incr()
                 return value+increase
         with Pyro4.core.Proxy(self.objectUri) as p:
             async=Pyro4.async(p)
@@ -197,7 +197,7 @@ class ServerTestsOnce(unittest.TestCase):
             value=result.value
             self.assertTrue(result.ready)
             self.assertEqual(22,value)
-            self.assertEqual(3,holder.count)
+            self.assertEqual(3,holder.count.value())
 
     def testBatchOneway(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -229,10 +229,10 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testBatchAsyncCallchain(self):
         class FuncHolder(object):
-            count=0
+            count=AtomicCounter()
             def function(self, values):
                 result=[value+1 for value in values]
-                self.count+=1
+                self.count.incr()
                 return result
         with Pyro4.core.Proxy(self.objectUri) as p:
             batch=Pyro4.batch(p)
@@ -244,7 +244,7 @@ class ServerTestsOnce(unittest.TestCase):
             value=result.value
             self.assertTrue(result.ready)
             self.assertEqual([44,14],value)
-            self.assertEqual(2,holder.count)
+            self.assertEqual(2,holder.count.value())
 
     def testPyroTracebackNormal(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -305,29 +305,30 @@ class ServerTestsOnce(unittest.TestCase):
     def testConnectOnce(self):
         with Pyro4.core.Proxy(self.objectUri) as proxy:
             self.assertTrue(proxy._pyroBind(), "first bind should always connect")
-            self.assertTrue(proxy._pyroBind(), "second bind should still connect again because it releases first")
+            self.assertFalse(proxy._pyroBind(), "second bind should not connect again")
 
     def testConnectingThreads(self):
         class ConnectingThread(threadutil.Thread):
-            new_connections=0
+            new_connections=AtomicCounter()
             def __init__(self, proxy, event):
                 threadutil.Thread.__init__(self)
                 self.proxy=proxy
                 self.event=event
                 self.setDaemon(True)
+                self.new_connections.reset()
             def run(self):
                 self.event.wait()
                 if self.proxy._pyroBind():
-                    ConnectingThread.new_connections+=1     # 1 more new connection done
+                    ConnectingThread.new_connections.incr()     # 1 more new connection done
         with Pyro4.core.Proxy(self.objectUri) as proxy:
             event = threadutil.Event()
-            threads = [ConnectingThread(proxy, event) for _ in range(8)]
+            threads = [ConnectingThread(proxy, event) for _ in range(20)]
             for t in threads:
                 t.start()
             event.set()
             for t in threads:
                 t.join()
-            self.assertEqual(1, ConnectingThread.new_connections, "proxy shared among threads must still have only 1 connect done")
+            self.assertEqual(1, ConnectingThread.new_connections.value())  # proxy shared among threads must still have only 1 connect done
 
     def testMaxMsgSize(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -350,7 +351,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro4.config.POLLTIMEOUT=0.1
         Pyro4.config.SERVERTYPE=self.SERVERTYPE
         Pyro4.config.COMMTIMEOUT=self.COMMTIMEOUT
-        Pyro4.config.THREADPOOL_MINTHREADS=2
+        Pyro4.config.THREADPOOL_MINTHREADS=10
         Pyro4.config.THREADPOOL_MAXTHREADS=20
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
         self.daemon=Pyro4.core.Daemon(port=0)

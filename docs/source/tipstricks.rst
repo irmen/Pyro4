@@ -1,4 +1,4 @@
-.. _tipstrics:
+.. _tipstricks:
 
 *************
 Tips & Tricks
@@ -195,3 +195,12 @@ of it is used on the receiving end. Be aware of this: it may be necessary to def
 for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
 
 Another drawback of pickle is that there are security concerns related to it, see :doc:`security`.
+
+
+MSG_WAITALL socket option
+=========================
+Pyro will use the ``MSG_WAITALL`` socket option to receive large messages, if it decides that
+the feature is available and working correctly. On most systems that define the ``socket.MSG_WAITALL``
+symbol, it does, except on Windows: even though the option is there, it doesn't work reliably.
+If you want to check in your code what Pyro's behavior is, see the ``socketutil.USE_MSG_WAITALL`` attribute
+(it's a boolean that will be set to False if Pyro decides it can't or should not use MSG_WAITALL).

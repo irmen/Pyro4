@@ -8,6 +8,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement
 import socket, logging, sys, os
+import weakref
 try:
     import queue
 except ImportError:
@@ -56,15 +57,21 @@ class SocketWorker(threadutil.Thread):
                         self.csock.close()
                     finally:
                         # make sure we tell the pool that we are no longer working
-                        shrunk = self.server.threadpool.updateWorking(-1)
-                        self.processPoolShrink(shrunk)
+                        try:
+                            shrunk = self.server.threadpool.updateWorking(-1)
+                            self.processPoolShrink(shrunk)
+                        except ReferenceError:
+                            pass
         # Note: we don't swallow exceptions here anymore because @Pyro4.callback doesn't
         #       do anything anymore if we do (the re-raised exception would be swallowed...)
         #except Exception:
         #    exc_type, exc_value, _ = sys.exc_info()
         #    log.warn("swallow exception in worker %s: %s %s", self.getName(), exc_type, exc_value)
         finally:
-            self.server.threadpool.remove(self)
+            try:
+                self.server.threadpool.remove(self)
+            except ReferenceError:
+                pass
             log.debug("stopping worker %s", self.getName())
 
     def processPoolShrink(self, amount):
@@ -85,7 +92,7 @@ class SocketWorker(threadutil.Thread):
 
 class SocketWorkerFactory(object):
     def __init__(self, server, daemon):
-        self.server=server
+        self.server=weakref.proxy(server)  # circular ref
         self.daemon=daemon
     def __call__(self):
         return SocketWorker(self.server, self.daemon)
@@ -164,6 +171,9 @@ class SocketServer_Threadpool(object):
 
     def close(self, joinWorkers=True):
         log.debug("closing threadpool server")
+        if sys.platform=="cli" and joinWorkers:
+            joinWorkers=False
+            log.info("not joining workers on IronPython (usually hangs)")   # @todo is this an artifact of this particular thread pool implementation?
         if self.sock:
             sockname=None
             try:
@@ -188,9 +198,9 @@ class SocketServer_Threadpool(object):
             if csock:
                 try:
                     csock.sock.shutdown(socket.SHUT_RDWR)
+                    csock.close()
                 except (EnvironmentError, socket.error):
                     pass
-                csock.close()
         while joinWorkers:
             try:
                 worker=self.threadpool.pool.pop()
@@ -207,7 +217,7 @@ class SocketServer_Threadpool(object):
     def wakeup(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         try:
-            sock=socketutil.createSocket(connect=self._socketaddr)
+            sock=socketutil.createSocket(connect=self._socketaddr, keepalive=False, timeout=None)
             if sys.version_info<(3, 0):
                 sock.send("!"*16)
             else:
@@ -215,3 +225,4 @@ class SocketServer_Threadpool(object):
             sock.close()
         except socket.error:
             pass
+

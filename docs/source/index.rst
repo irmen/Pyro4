@@ -14,10 +14,10 @@ You can just use normal Python method calls to call objects on other machines.
 Pyro is written in **100% pure Python** and therefore runs on many platforms and Python versions,
 **including Python 3.x**.
 
-Pyro is copyright © Irmen de Jong (irmen@razorvine.net | http://www.razorvine.net).
+Pyro is copyright © Irmen de Jong (irmen@razorvine.net | http://www.razorvine.net).  Please read :doc:`license`.
 
-`Pyro homepage <http://irmen.home.xs4all.nl/pyro/>`_ | `Pyro on Python package index <http://pypi.python.org/pypi/Pyro4/>`_ |
-`Pyro mailing list <http://lists.sourceforge.net/lists/listinfo/pyro-core>`_ | :doc:`license`
+Join the `Pyro mailing list <http://lists.sourceforge.net/lists/listinfo/pyro-core>`_ for questions and discussion.
+Pyro can be found on Pypi as `Pyro4 <http://pypi.python.org/pypi/Pyro4/>`_.
 
 
 Contents

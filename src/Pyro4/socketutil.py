@@ -16,9 +16,7 @@ else:
     selectfunction = select.select
 
 if sys.platform=="win32":
-    if hasattr(socket, "MSG_WAITALL"):
-        del socket.MSG_WAITALL
-    USE_MSG_WAITALL = False
+    USE_MSG_WAITALL = False   # it doesn't work reliably on Windows even though it's defined
 else:
     USE_MSG_WAITALL = hasattr(socket, "MSG_WAITALL")
 
@@ -448,6 +446,8 @@ def findProbablyUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
     port = bindOnUnusedPort(tempsock)
     tempsock.close()
     del tempsock
+    if sys.platform=="cli":
+        return port+1  # the actual port is somehow still in use by the socket when using IronPython
     return port
 
 
