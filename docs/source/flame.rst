@@ -15,7 +15,8 @@ Flame can be found in the :py:mod:`Pyro4.utils.flame` module.
 
 .. warning:: Be very sure about what you are doing before enabling Flame.
 
-    Flame is disabled by default.
+    Flame is disabled by default. You need to explicitly set a config item
+    to true, and start a Flame server yourself, to make it available.
     This is because it allows client programs full access to *everything* on your system.
     Only use it if you fully trust your environment and the clients that can connect to your machines.
 
@@ -31,6 +32,9 @@ function with your daemon that you want to enable flame on::
     import Pyro4.utils.flame
     Pyro4.utils.flame.start(daemon)
 
+Additionally, you have to set the ``FLAME_ENABLED`` config item to True, otherwise you'll
+get an error when trying to start Flame. The config item is False by default
+to avoid unintentionally running Flame servers.
 
 Command line server
 ===================
@@ -41,7 +45,10 @@ to provide a Flame server:
 :command:`python -m Pyro4.utils.flameserver`
 
 The command line arguments are similar to the echo server (see :ref:`command-line-echoserver`).
-Use ``-h`` to make it print a short help text.
+Use ``-h`` to make it print a short help text. For the command line server you'll also have
+to set the ``FLAME_ENABLED`` config item to True, otherwise you'll get an error when trying to start it.
+Because we're talking about command line clients, the most convenient way to do so is probably by
+setting the environment variable in your shell: ``PYRO_FLAME_ENABLED=true``.
 
 Flame object and examples
 =========================
@@ -51,7 +58,7 @@ Its interface is described in the API documentation, see :py:class:`Pyro4.utils.
 
 Connecting to the flame server can be done as usual (by creating a Pyro proxy yourself)
 or by using the convenience function :py:func:`Pyro4.utils.flame.connect`.
-A little example follows. You need to run a flame server running, then you can write a client like this::
+A little example follows. You have to have running flame server, and then you can write a client like this::
 
     import Pyro4.utils.flame
     flame = Pyro4.utils.flame.connect("hostname:9999")    # or whatever the server runs at

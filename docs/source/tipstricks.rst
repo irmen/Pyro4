@@ -73,9 +73,13 @@ Asynchronous ('future') normal function calls
 =============================================
 Pyro provides an async proxy wrapper to call remote methods asynchronously, see :ref:`async-calls`.
 For normal Python code, Python provides a similar mechanism in the form of the
-:py:class:`Pyro4.core.Future` class (also available as ``Pyro4.Future``).
+:py:class:`Pyro4.futures.Future` class (also available as ``Pyro4.Future``).
 With a syntax that is slightly different from normal method calls,
 it provides the same asynchronous function calls as the async proxy has.
+Note that Python itself has a similar thing in the standard library since version 3.2, see
+http://docs.python.org/3/library/concurrent.futures.html#future-objects . However Pyro's Future
+object is available on older Python versions too, and works slightly differently. It's
+also a little bit easier to work with.
 
 You create a ``Future`` object for a callable that you want to execute in the background,
 and receive its results somewhere in the future::
@@ -88,13 +92,13 @@ and receive its results somewhere in the future::
     # do some other stuff... then access the value
     summation = result.value
 
-Actually calling the `Future` object returns control immediately and results in a :py:class:`Pyro4.core.FutureResult`
+Actually calling the `Future` object returns control immediately and results in a :py:class:`Pyro4.futures.FutureResult`
 object. This is the exact same class as with the async proxy. The most important attributes are ``value``, ``ready``
 and the ``wait`` method. See :ref:`async-calls` for more details.
 
 You can also chain multiple calls, so that the whole call chain is executed sequentially in the background.
 Rather than doing this on the ``FutureResult`` result object, you should do it directly on the ``Future`` object,
-with the :py:meth:`Pyro4.core.Future.then` method. It has the same signature as the ``then`` method from
+with the :py:meth:`Pyro4.futures.Future.then` method. It has the same signature as the ``then`` method from
 the ``FutureResult`` class::
 
     futurecall = Pyro4.Future(something)

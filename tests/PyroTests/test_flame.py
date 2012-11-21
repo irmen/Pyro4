@@ -8,6 +8,7 @@ from __future__ import with_statement
 import unittest
 import Pyro4.utils.flame
 import Pyro4.utils.flameserver
+import Pyro4.errors
 from testsupport import *
 
 
@@ -15,12 +16,24 @@ class Something(object):
     pass
 
 
+class FlameDisabledTests(unittest.TestCase):
+    def testFlameDisabled(self):
+        with Pyro4.core.Daemon() as d:
+            self.assertRaises(Pyro4.errors.SecurityError, Pyro4.utils.flame.start, d)   # default should be disabled
+            Pyro4.config.FLAME_ENABLED=True
+            Pyro4.utils.flame.start(d)
+            Pyro4.config.FLAME_ENABLED=False
+            self.assertRaises(Pyro4.errors.SecurityError, Pyro4.utils.flame.start, d)
+
+
 class FlameTests(unittest.TestCase):
     
     def setUp(self):
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.FLAME_ENABLED=True
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
+        Pyro4.config.FLAME_ENABLED=False
 
     def testCreateModule(self):
         module=Pyro4.utils.flame.createModule("testmodule", "def x(y): return y*y")

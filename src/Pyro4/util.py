@@ -176,3 +176,20 @@ def excepthook(ex_type, ex_value, ex_tb):
     """An exception hook you can use for ``sys.excepthook``, to automatically print remote Pyro tracebacks"""
     traceback="".join(getPyroTraceback(ex_type, ex_value, ex_tb))
     sys.stderr.write(traceback)
+
+
+def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
+    """function to hack around a bug in IronPython where it doesn't pickle
+    exception attributes. We piggyback them into the exception's args."""
+    if hasattr(exceptionObject, "args"):
+        if addAttributes:
+            # piggyback the attributes on the exception args instead.
+            exceptionObject.args+=(__IronPythonExceptionArgs(vars(exceptionObject)),)
+        else:
+            # check if there is a piggybacked object in the args
+            # if there is, extract the exception attributes from it.
+            if len(exceptionObject.args) > 0:
+                piggyback = exceptionObject.args[-1]
+                if isinstance(piggyback, __IronPythonExceptionArgs):
+                    exceptionObject.args = exceptionObject.args[:-1]
+                    exceptionObject.__dict__.update(piggyback.data)

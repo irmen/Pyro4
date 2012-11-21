@@ -155,7 +155,8 @@ class SocketServer_Threadpool(object):
             self.sock=None
         self.jobqueue.close()
         for worker in self.jobqueue.busy.copy():
-            worker.job.interrupt()   # try to break all busy workers
+            if worker.job is not None:
+                worker.job.interrupt()   # try to break all busy workers
         if joinWorkers:
             self.jobqueue.drain()
 

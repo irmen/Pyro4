@@ -66,10 +66,10 @@ class SerializeTests(unittest.TestCase):
     def testSerializeExceptionWithAttr(self):
         ex=ZeroDivisionError("test error")
         ex._pyroTraceback=["test traceback payload"]
-        Pyro4.core.fixIronPythonExceptionForPickle(ex,True) # hack for ironpython
+        Pyro4.util.fixIronPythonExceptionForPickle(ex,True) # hack for ironpython
         data,compressed=self.ser.serialize(ex)
         ex2=self.ser.deserialize(data,compressed)
-        Pyro4.core.fixIronPythonExceptionForPickle(ex2,False) # hack for ironpython
+        Pyro4.util.fixIronPythonExceptionForPickle(ex2,False) # hack for ironpython
         self.assertEqual(ZeroDivisionError, type(ex2))
         self.assertTrue(hasattr(ex2, "_pyroTraceback"))
         self.assertEqual(["test traceback payload"], ex2._pyroTraceback)

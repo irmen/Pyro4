@@ -34,6 +34,12 @@ try:
     print("%r, %s" % (result,result))
 except MyError:
     print("MYERROR: %s" % sys.exc_info()[1])
+try:
+    result=test.unserializable()
+    print("%r, %s" % (result,result))
+except Exception:
+    print("UNSERIALIZABLE ERROR: %s" % sys.exc_info()[1])
+
 
 print("\n*** invoking server method that crashes, catching traceback ***")
 try:

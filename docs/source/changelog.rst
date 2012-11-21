@@ -2,6 +2,14 @@
 Change Log
 **********
 
+**Pyro 4.17**
+
+- Fixed possible IndentationError problem with sending modules in Flame
+- Can now deal with exceptions that can't be serialized: they're raised as generic PyroError instead with appropriate message
+- added new config item FLAME_ENABLED, to enable/disable the use of Pyro Flame on the server. Default is false (disabled).
+- Moved futures from core to new futures module. Code using Pyro4.Future will still work.
+
+
 **Pyro 4.16**
 
 - New implementation for the threadpool server: job queue with self-adjusting number of workers.

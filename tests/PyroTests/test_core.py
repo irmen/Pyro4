@@ -14,6 +14,7 @@ import Pyro4.configuration
 import Pyro4.core
 import Pyro4.errors
 import Pyro4.constants
+import Pyro4.futures
 from testsupport import *
 
 Pyro4.config.reset(useenvironment=False)
@@ -473,7 +474,7 @@ class RemoteMethodTests(unittest.TestCase):
             self.result=[]
             for methodname, args, kwargs in calls:
                 if methodname=="error":
-                    self.result.append(Pyro4.core._ExceptionWrapper(ValueError("some exception")))
+                    self.result.append(Pyro4.futures._ExceptionWrapper(ValueError("some exception")))
                     break  # stop processing the rest, this is what Pyro should do in case of an error in a batch
                 elif methodname=="pause":
                     time.sleep(args[0])
@@ -678,7 +679,7 @@ class TestFutures(unittest.TestCase):
     def testSimpleFuture(self):
         f=Pyro4.Future(futurestestfunc)
         r=f(4,5)
-        self.assertTrue(isinstance(r, Pyro4.core.FutureResult))
+        self.assertTrue(isinstance(r, Pyro4.futures.FutureResult))
         value=r.value
         self.assertEqual(9, value)
     def testFutureChain(self):
