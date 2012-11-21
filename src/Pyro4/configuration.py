@@ -18,7 +18,7 @@ class Configuration(object):
                "DETAILED_TRACEBACK", "SOCK_REUSE", "PREFER_IP_VERSION",
                "THREADPOOL_MINTHREADS", "THREADPOOL_MAXTHREADS",
                "THREADPOOL_IDLETIMEOUT", "HMAC_KEY", "AUTOPROXY",
-               "BROADCAST_ADDRS", "NATHOST", "NATPORT")
+               "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE")
 
     def __init__(self):
         self.reset()
@@ -49,6 +49,7 @@ class Configuration(object):
         self.THREADPOOL_IDLETIMEOUT = 5.0
         self.HMAC_KEY = None   # must be bytes type
         self.AUTOPROXY = True
+        self.MAX_MESSAGE_SIZE = 0   # 0 = unlimited
         self.BROADCAST_ADDRS = "<broadcast>, 0.0.0.0"   # comma separated list of broadcast addresses
         self.PREFER_IP_VERSION = 4    # 4, 6 or 0 (let OS choose according to RFC 3484)
 

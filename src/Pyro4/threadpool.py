@@ -6,7 +6,10 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement
 import time
+import logging
 import Pyro4.threadutil
+
+log=logging.getLogger("Pyro4.threadpool")
 
 
 class ThreadPool(object):
@@ -29,6 +32,7 @@ class ThreadPool(object):
         self.workerFactory=None   # you must set this after creation
         self.__working = 0
         self.__lastshrink = time.time()
+        log.warn("temporary workaround for threadpool scaling problem is in effect: pool is fixed at THREADPOOL_MINTHREADS threads (%d)" % Pyro4.config.THREADPOOL_MINTHREADS)  # @todo fix the bug and remove the temporary workaround
 
     def __len__(self):
         return len(self.pool)
@@ -73,7 +77,8 @@ class ThreadPool(object):
         Returns True if a worker spawned, False if the pool is already full.
         """
         with self.lock:
-            if len(self.pool) < Pyro4.config.THREADPOOL_MAXTHREADS:
+            # if len(self.pool) < Pyro4.config.THREADPOOL_MAXTHREADS:  # @todo temporary workaround: see next line
+            if len(self.pool) < Pyro4.config.THREADPOOL_MINTHREADS:   # @todo temporary workaround for threadpool scale problem: stick with fixed number of threads for now (THREADPOOL_MINTHREADS)
                 worker = self.workerFactory()
                 self.pool.add(worker)
                 worker.start()

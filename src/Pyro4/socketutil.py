@@ -15,6 +15,13 @@ if os.name=="java":
 else:
     selectfunction = select.select
 
+if sys.platform=="win32":
+    if hasattr(socket, "MSG_WAITALL"):
+        del socket.MSG_WAITALL
+    USE_MSG_WAITALL = False
+else:
+    USE_MSG_WAITALL = hasattr(socket, "MSG_WAITALL")
+
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.
 # So I didn't include them in de list of retryable errors.
@@ -128,7 +135,7 @@ def receiveData(sock, size):
         retrydelay=0.0
         msglen=0
         chunks=[]
-        if hasattr(socket, "MSG_WAITALL"):
+        if USE_MSG_WAITALL:
             # waitall is very convenient and if a socket error occurs,
             # we can assume the receive has failed. No need for a loop,
             # unless it is a retryable error.
@@ -383,6 +390,8 @@ try:
 except ImportError:
     # no fcntl available, try the windows version
     try:
+        if sys.platform=="cli":
+            raise NotImplementedError("IronPython can't obtain a proper HANDLE from a socket")
         from ctypes import windll, WinError, wintypes
         # help ctypes to set the proper args for this kernel32 call on 64-bit pythons
         _SetHandleInformation = windll.kernel32.SetHandleInformation
@@ -394,7 +403,7 @@ except ImportError:
             if not _SetHandleInformation(sock.fileno(), 1, 0):
                 raise WinError()
 
-    except ImportError:
+    except (ImportError, NotImplementedError):
         # nothing available, define a dummy function
         def setNoInherit(sock):
             """Mark the given socket fd as non-inheritable to child processes (dummy)"""

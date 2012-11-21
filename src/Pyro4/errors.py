@@ -29,7 +29,7 @@ class TimeoutError(CommunicationError):
 
 
 class ProtocolError(CommunicationError):
-    """Pyro received a message that didn't match the active Pyro network protocol."""
+    """Pyro received a message that didn't match the active Pyro network protocol, or there was a protocol related error."""
     pass
 
 

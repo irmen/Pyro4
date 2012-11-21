@@ -185,3 +185,13 @@ you can use when transferring binary data using Pyro:
 Your best choice, if you want to transfer binary data using Pyro, seems to be to use the ``bytes`` type
 (and possibly the ``array("B")`` type if you're using Python 3.x, or just ``str`` if you're stuck on 2.5).
 Stay clear from the rest. It is strange that the ``bytearray`` type is encoded so inefficiently by pickle.
+
+
+Pickling and the risk of serializing huge object graphs
+=======================================================
+The pickle protocol that is used as serialization format is very convenient to transfer Python objects 'over the wire' but it also
+has drawbacks. It serializes the whole object graph you're passing, even when only a tiny fraction
+of it is used on the receiving end. Be aware of this: it may be necessary to define special lightweight objects
+for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
+
+Another drawback of pickle is that there are security concerns related to it, see :doc:`security`.
