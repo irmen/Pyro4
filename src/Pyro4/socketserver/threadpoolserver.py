@@ -7,14 +7,13 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import socket, logging, sys
+import socket, logging, sys, os
 try:
     import queue
 except ImportError:
     import Queue as queue
-import time, os
 from Pyro4 import socketutil, threadutil, errors
-import Pyro4
+import Pyro4.threadpool
 
 log=logging.getLogger("Pyro.socketserver.threadpool")
 
@@ -41,7 +40,8 @@ class SocketWorker(threadutil.Thread):
                     break
                 self.csock=socketutil.SocketConnection(self.csock)
                 if self.handleConnection(self.csock):
-                    self.server.threadpool.updateWorking(1)  # tell the pool we're working
+                    shrunk = self.server.threadpool.updateWorking(1)  # tell the pool we're working
+                    self.processPoolShrink(shrunk)
                     try:
                         while self.running:   # loop over all requests during a single connection
                             try:
@@ -56,7 +56,8 @@ class SocketWorker(threadutil.Thread):
                         self.csock.close()
                     finally:
                         # make sure we tell the pool that we are no longer working
-                        self.server.threadpool.updateWorking(-1)
+                        shrunk = self.server.threadpool.updateWorking(-1)
+                        self.processPoolShrink(shrunk)
         # Note: we don't swallow exceptions here anymore because @Pyro4.callback doesn't
         #       do anything anymore if we do (the re-raised exception would be swallowed...)
         #except Exception:
@@ -65,6 +66,11 @@ class SocketWorker(threadutil.Thread):
         finally:
             self.server.threadpool.remove(self)
             log.debug("stopping worker %s", self.getName())
+
+    def processPoolShrink(self, amount):
+        # for every worker removed from the pool, put a 'stop' sentinel in the worker queue to kill a worker thread.
+        for _ in range(amount):
+            self.server.workqueue.put((None, None))
 
     def handleConnection(self, conn):
         try:
@@ -77,61 +83,11 @@ class SocketWorker(threadutil.Thread):
         return False
 
 
-class ThreadPool(object):
-    def __init__(self, server, daemon):
-        self.lock=threadutil.Lock()
-        self.pool=set()
-        self.__server=server
-        self.__daemon=daemon
-        self.__working=0
-        self.__lastshrink=time.time()
-
-    def attemptRemove(self, member):
-        with self.lock:
-            if len(self.pool)>Pyro4.config.THREADPOOL_MINTHREADS:
-                self.pool.remove(member)
-                return True
-            return False
-
-    def remove(self, member):
-        with self.lock:
-            try:
-                self.pool.remove(member)
-            except KeyError:
-                pass
-
-    def attemptSpawn(self):
-        with self.lock:
-            if len(self.pool)<Pyro4.config.THREADPOOL_MAXTHREADS:
-                worker=SocketWorker(self.__server, self.__daemon)
-                self.pool.add(worker)
-                worker.start()
-                return True
-            return False
-
-    def poolCritical(self):
-        idle=len(self.pool)-self.__working
-        return idle<=0
-
-    def updateWorking(self, number):
-        self.shrink()
-        with self.lock:
-            self.__working+=number
-
-    def shrink(self):
-        threads=len(self.pool)
-        if threads>Pyro4.config.THREADPOOL_MINTHREADS:
-            idle=threads-self.__working
-            if idle>Pyro4.config.THREADPOOL_MINTHREADS and (time.time()-self.__lastshrink)>Pyro4.config.THREADPOOL_IDLETIMEOUT:
-                for _ in range(idle-Pyro4.config.THREADPOOL_MINTHREADS):
-                    self.__server.workqueue.put((None, None))  # put a 'stop' sentinel in the worker queue to kill a worker
-                self.__lastshrink=time.time()
-
-
 class SocketServer_Threadpool(object):
     """transport server for socket connections, worker thread pool version."""
     def init(self, daemon, host, port, unixsocket=None):
         log.info("starting thread pool socketserver")
+        self.daemon = daemon
         self.sock=None
         bind_location=unixsocket if unixsocket else (host,port)
         self.sock=socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
@@ -148,10 +104,9 @@ class SocketServer_Threadpool(object):
                 self.locationStr="[%s]:%d" % (host, port)
             else:
                 self.locationStr="%s:%d" % (host, port)
-        self.threadpool=ThreadPool(self, daemon)
         self.workqueue=queue.Queue()
-        for _ in range(Pyro4.config.THREADPOOL_MINTHREADS):
-            self.threadpool.attemptSpawn()
+        self.threadpool=Pyro4.threadpool.ThreadPool()
+        self.threadpool.fill(SocketWorker, self, self.daemon)
         log.info("%d worker threads started", len(self.threadpool.pool))
 
     def __del__(self):
@@ -194,7 +149,7 @@ class SocketServer_Threadpool(object):
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
             if self.threadpool.poolCritical():
-                self.threadpool.attemptSpawn()
+                self.threadpool.attemptSpawn(SocketWorker, self, self.daemon)
             self.workqueue.put((csock, caddr))
         except socket.timeout:
             pass  # just continue the loop on a timeout on accept
@@ -216,7 +171,11 @@ class SocketServer_Threadpool(object):
             except Exception:
                 pass
             self.sock=None
-        for worker in self.threadpool.pool.copy():
+        workers = self.threadpool.pool.copy()
+        if self.workqueue is not None:
+            for _ in range(len(workers)):
+                self.workqueue.put((None, None))  # put a 'stop' sentinel in the worker queue for every worker
+        for worker in workers:
             worker.running=False
             csock=getattr(worker, "csock", None)
             if csock:
@@ -225,8 +184,6 @@ class SocketServer_Threadpool(object):
                 except (EnvironmentError, socket.error):
                     pass
                 csock.close()
-            if self.workqueue is not None:
-                self.workqueue.put((None, None))  # put a 'stop' sentinel in the worker queue
         while joinWorkers:
             try:
                 worker=self.threadpool.pool.pop()

@@ -30,9 +30,16 @@ ERRNO_BADF=[errno.EBADF]
 if hasattr(errno, "WSAEBADF"):
     ERRNO_BADF.append(errno.WSAEBADF)
 
+ERRNO_ENOTSOCK=[errno.ENOTSOCK]
+if hasattr(errno, "WSAENOTSOCK"):
+    ERRNO_ENOTSOCK.append(errno.WSAENOTSOCK)
 if not hasattr(socket, "SOL_TCP"):
     socket.SOL_TCP=socket.IPPROTO_TCP
 
+
+def getIpAddress(hostname=None):
+    """returns the IP address for the current, or another, hostname"""
+    return socket.gethostbyname(hostname or socket.gethostname())
 
 def getIpVersion(hostnameOrAddress):
     """

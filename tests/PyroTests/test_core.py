@@ -619,6 +619,28 @@ class TestSimpleServe(unittest.TestCase):
         self.assertEqual( {o1: "test.o1", o2: None}, d.objects)
 
 
+def futurestestfunc(a, b, extra=None):
+    if extra is None:
+        return a+b
+    else:
+        return a+b+extra
+
+class TestFutures(unittest.TestCase):
+    def testSimpleFuture(self):
+        f=Pyro4.Future(futurestestfunc)
+        r=f(4,5)
+        self.assertTrue(isinstance(r, Pyro4.core.FutureResult))
+        value=r.value
+        self.assertEqual(9, value)
+    def testFutureChain(self):
+        f=Pyro4.Future(futurestestfunc)
+        f.then(futurestestfunc, 6)
+        f.then(futurestestfunc, 7, extra=10)
+        r=f(4,5)
+        value=r.value
+        self.assertEqual(4+5+6+7+10,value)
+
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
