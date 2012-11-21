@@ -15,7 +15,7 @@ symbol in :mod:`Pyro4`              referenced location
 .. py:class:: URI                   :class:`Pyro4.core.URI`
 .. py:class:: Proxy                 :class:`Pyro4.core.Proxy`
 .. py:class:: Daemon                :class:`Pyro4.core.Daemon`
-.. py:class:: Future                :func:`Pyro4.core.Future`
+.. py:class:: Future                :class:`Pyro4.futures.Future`
 .. py:function:: callback           :func:`Pyro4.core.callback`
 .. py:function:: batch              :func:`Pyro4.core.batch`
 .. py:function:: async              :func:`Pyro4.core.async`

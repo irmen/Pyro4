@@ -200,7 +200,7 @@ automatically by Pyro as soon as the result value becomes available.
 
 You create an async proxy wrapper using this: ``async = Pyro4.async(proxy)`` or this (equivalent): ``async = proxy._pyroAsync()``.
 Every remote method call you make on the async proxy wrapper, returns a
-:py:class:`Pyro4.core.FutureResult` object immediately.
+:py:class:`Pyro4.futures.FutureResult` object immediately.
 This object means 'the result of this will be available at some moment in the future' and has the following interface:
 
 .. py:attribute:: value
