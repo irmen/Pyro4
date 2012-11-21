@@ -76,6 +76,10 @@ For normal Python code, Python provides a similar mechanism in the form of the
 :py:class:`Pyro4.core.Future` class (also available as ``Pyro4.Future``).
 With a syntax that is slightly different from normal method calls,
 it provides the same asynchronous function calls as the async proxy has.
+Note that Python itself has a similar thing in the standard library since version 3.2, see
+http://docs.python.org/3/library/concurrent.futures.html#future-objects . However Pyro's Future
+object is available on older Python versions too, and works slightly differently. It's
+also a little bit easier to work with.
 
 You create a ``Future`` object for a callable that you want to execute in the background,
 and receive its results somewhere in the future::
