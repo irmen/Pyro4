@@ -101,8 +101,9 @@ class ServerTestsOnce(unittest.TestCase):
         self.daemonthread.running.wait()
     def tearDown(self):
         time.sleep(0.05)
-        self.daemon.shutdown()
-        self.daemonthread.join()
+        if self.daemon is not None:
+            self.daemon.shutdown()
+            self.daemonthread.join()
         Pyro4.config.HMAC_KEY=None
 
     def testNoDottedNames(self):
@@ -342,6 +343,22 @@ class ServerTestsOnce(unittest.TestCase):
             except Pyro4.errors.ProtocolError:
                 pass
             Pyro4.config.MAX_MESSAGE_SIZE = 0
+
+    def testCleanup(self):
+        p1 = Pyro4.core.Proxy(self.objectUri)
+        p2 = Pyro4.core.Proxy(self.objectUri)
+        p3 = Pyro4.core.Proxy(self.objectUri)
+        p1.echo(42)
+        p2.echo(42)
+        p3.echo(42)
+        # we have several active connections still up, see if we can cleanly shutdown the daemon
+        # (it should interrupt the worker's socket connections)
+        time.sleep(0.1)
+        self.daemon.shutdown()
+        self.daemon=None
+        p1._pyroRelease()
+        p2._pyroRelease()
+        p3._pyroRelease()
 
 
 class ServerTestsThreadNoTimeout(unittest.TestCase):

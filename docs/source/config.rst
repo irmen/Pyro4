@@ -88,7 +88,7 @@ SOCK_REUSE              bool    False          Should SO_REUSEADDR be used on so
 THREADING2              bool    False          Use the threading2 module if available instead of Python's standard threading module
 THREADPOOL_MINTHREADS   int     4              For the thread pool server: minimum amount of worker threads to be spawned
 THREADPOOL_MAXTHREADS   int     50             For the thread pool server: maximum amount of worker threads to be spawned
-THREADPOOL_IDLETIMEOUT  float   5.0            For the thread pool server: number of seconds to pass for an idle worker thread to be terminated
+THREADPOOL_IDLETIMEOUT  float   2.0            For the thread pool server: number of seconds to pass for an idle worker thread to be terminated
 ======================= ======= ============== =======
 
 .. warning::

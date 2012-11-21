@@ -12,15 +12,15 @@ The classes and functions provided are:
 =================================== ==========================
 symbol in :mod:`Pyro4`              referenced location
 =================================== ==========================
-.. py:class:: Pyro4.URI             :class:`Pyro4.core.URI`
-.. py:class:: Pyro4.Proxy           :class:`Pyro4.core.Proxy`
-.. py:class:: Pyro4.Daemon          :class:`Pyro4.core.Daemon`
-.. py:class:: Pyro4.Future          :func:`Pyro4.core.Future`
-.. py:function:: Pyro4.callback     :func:`Pyro4.core.callback`
-.. py:function:: Pyro4.batch        :func:`Pyro4.core.batch`
-.. py:function:: Pyro4.async        :func:`Pyro4.core.async`
-.. py:function:: Pyro4.locateNS     :func:`Pyro4.naming.locateNS`
-.. py:function:: Pyro4.resolve      :func:`Pyro4.naming.resolve`
+.. py:class:: URI                   :class:`Pyro4.core.URI`
+.. py:class:: Proxy                 :class:`Pyro4.core.Proxy`
+.. py:class:: Daemon                :class:`Pyro4.core.Daemon`
+.. py:class:: Future                :func:`Pyro4.core.Future`
+.. py:function:: callback           :func:`Pyro4.core.callback`
+.. py:function:: batch              :func:`Pyro4.core.batch`
+.. py:function:: async              :func:`Pyro4.core.async`
+.. py:function:: locateNS           :func:`Pyro4.naming.locateNS`
+.. py:function:: resolve            :func:`Pyro4.naming.resolve`
 =================================== ==========================
 
 

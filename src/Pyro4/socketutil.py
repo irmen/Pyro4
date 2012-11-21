@@ -296,7 +296,7 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
             # If so, we use select() to wait until the socket is in writable state,
             # essentially rebuilding a blocking connect() call.
             xv = sys.exc_info()[1]
-            errno = xv.errno
+            errno = getattr(xv, "errno", 0)
             if errno in ERRNO_RETRIES:
                 if timeout is _GLOBAL_DEFAULT_TIMEOUT:
                     timeout = None

@@ -74,7 +74,7 @@ class NameServerTests(unittest.TestCase):
         time.sleep(0.01)
         self.nameserver.shutdown()
         self.bcserver.close()
-        self.daemonthread.join()
+        # self.daemonthread.join()
         Pyro4.config.HMAC_KEY=None
         Pyro4.config.NS_HOST=self.old_nsHost
         Pyro4.config.NS_PORT=self.old_nsPort
