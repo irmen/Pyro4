@@ -88,6 +88,14 @@ There are several command line options:
 
    Specify the port to bind the broadcast responder on (0=random).
 
+.. option:: --nathost=NATHOST
+
+   Specify the external host name to use in case of NAT
+
+.. option:: --natport=NATPORT
+
+   Specify the external port use in case of NAT
+
 .. option:: -x, --nobc
 
    Don't start a broadcast responder.
@@ -113,6 +121,8 @@ NS_HOST            the hostname or ip address of the name server
 NS_PORT            the port number of the name server
 NS_BCHOST          the hostname or ip address of the name server's broadcast responder
 NS_BCPORT          the port number of the name server's broadcast responder
+NATHOST            the external hostname in case of NAT
+NATPORT            the external port in case of NAT
 ================== ===========
 
 
@@ -196,6 +206,11 @@ This goes like this: you simply ask Pyro to look up the name server and return a
 It automatically figures out where in your subnet it is running by doing a broadcast and returning
 the first Pyro name server that responds.
 
+There is a config item ``BROADCAST_ADDRS`` that contains a comma separated list of the broadcast
+addresses Pyro should use when doing a broadcast lookup. Depending on your network configuration,
+you may have to change this list to make the lookup work. It could be that you have to add the
+network broadcast address for the specific network that the name server is located on.
+
 .. note::
     Broadcast lookup only works if you started a name server that didn't bind on localhost.
     For instance, the name server started as an example in :ref:`nameserver-nameserver` was told to
@@ -207,7 +222,7 @@ locator function without any arguments.
 If you want to circumvent the broadcast lookup (because you know the location of the
 server already, somehow) you can specify the hostname.
 
-.. function:: locateNS([host=None][, port=None])
+.. function:: locateNS([host=None, port=None])
 
     Get a proxy for a name server somewhere in the network.
     If you're not providing host or port arguments, the configured defaults are used.

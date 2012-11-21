@@ -66,7 +66,7 @@ class CoreTests(unittest.TestCase):
         except AttributeError:
             pass
 
-    def XXtestConfigParseBool(self):
+    def testConfigParseBool(self):
         config=Pyro4.configuration.Configuration()
         self.assertTrue(type(config.COMPRESSION) is bool)
         os.environ["PYRO_COMPRESSION"]="yes"

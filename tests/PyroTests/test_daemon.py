@@ -98,9 +98,9 @@ class DaemonTests(unittest.TestCase):
         Pyro4.config.SERVERTYPE=old_servertype
 
     def testRegisterEtc(self):
+        freeport=Pyro4.socketutil.findProbablyUnusedPort()
+        d=Pyro4.core.Daemon(port=freeport)
         try:
-            freeport=Pyro4.socketutil.findProbablyUnusedPort()
-            d=Pyro4.core.Daemon(port=freeport)
             self.assertEqual(1, len(d.objectsById))
             o1=MyObj("object1")
             o2=MyObj("object2")
@@ -210,9 +210,9 @@ class DaemonTests(unittest.TestCase):
                 pass
         
     def testUriFor(self):
+        freeport=Pyro4.socketutil.findProbablyUnusedPort()
+        d=Pyro4.core.Daemon(port=freeport)
         try:
-            freeport=Pyro4.socketutil.findProbablyUnusedPort()
-            d=Pyro4.core.Daemon(port=freeport)
             locationstr="%s:%d" %(Pyro4.config.HOST, freeport)
             o1=MyObj("object1")
             o2=MyObj("object2")
@@ -272,6 +272,47 @@ class DaemonTests(unittest.TestCase):
             duration=time.time()-start
             self.assertAlmostEqual(0.0, duration, places=1)
 
+    def testNAT(self):
+        with Pyro4.core.Daemon() as d:
+            self.assertTrue(d.natLocationStr is None)
+        with Pyro4.core.Daemon(nathost="nathosttest", natport=12345) as d:
+            self.assertEqual("nathosttest:12345", d.natLocationStr)
+            self.assertNotEqual(d.locationStr, d.natLocationStr)
+            uri=d.register(MyObj(1))
+            self.assertEqual("nathosttest:12345", uri.location)
+            uri=d.uriFor("object")
+            self.assertEqual("nathosttest:12345", uri.location)
+            uri=d.uriFor("object", nat=False)
+            self.assertNotEqual("nathosttest:12345", uri.location)
+        try:
+            d=Pyro4.core.Daemon(nathost="bla")
+            self.fail("expected error")
+        except ValueError:
+            pass
+        try:
+            d=Pyro4.core.Daemon(natport=5555)
+            self.fail("expected error")
+        except ValueError:
+            pass
+        try:
+            d=Pyro4.core.Daemon(nathost="bla", natport=5555, unixsocket="testsock")
+            self.fail("expected error")
+        except ValueError:
+            pass
+
+    def testNATconfig(self):
+        try:
+            Pyro4.config.NATHOST=None
+            Pyro4.config.NATPORT=0
+            with Pyro4.core.Daemon() as d:
+                self.assertTrue(d.natLocationStr is None)
+            Pyro4.config.NATHOST="nathosttest"
+            Pyro4.config.NATPORT=12345
+            with Pyro4.core.Daemon() as d:
+                self.assertEqual("nathosttest:12345", d.natLocationStr)
+        finally:
+            Pyro4.config.NATHOST=None
+            Pyro4.config.NATPORT=0
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
