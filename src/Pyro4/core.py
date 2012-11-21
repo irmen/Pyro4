@@ -940,11 +940,6 @@ class Daemon(object):
         return {}   # a little hack to make it possible to serialize Pyro objects.
 
 
-class __IronPythonExceptionArgs(object):
-    def __init__(self,data):
-        self.data=data
-
-
 # decorators
 
 def callback(object):

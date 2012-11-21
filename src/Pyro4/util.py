@@ -181,6 +181,9 @@ def excepthook(ex_type, ex_value, ex_tb):
 def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
     """function to hack around a bug in IronPython where it doesn't pickle
     exception attributes. We piggyback them into the exception's args."""
+    class __IronPythonExceptionArgs(object):
+        def __init__(self,data):
+            self.data=data
     if hasattr(exceptionObject, "args"):
         if addAttributes:
             # piggyback the attributes on the exception args instead.
