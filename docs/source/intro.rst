@@ -199,7 +199,7 @@ We'll have to modify a few lines in :file:`greeting.py` to make it register the 
     class GreetingMaker(object):
         def get_fortune(self, name):
             return "Hello, {0}. Here is your fortune message:\n" \
-                   "Behold the warranty -- the bold print giveth and the fine print taketh away.".format(name)
+                   "Tomorrow's lucky number is 12345678.".format(name)
 
     greeting_maker=GreetingMaker()
 
@@ -222,7 +222,8 @@ The :file:`client.py` is actually simpler now because we can use the name server
     print greeting_maker.get_fortune(name)
 
 The program now needs a Pyro name server that is running. You can start one by typing the
-following command: :command:`python -m Pyro4.naming` in a separate console window.
+following command: :command:`python -m Pyro4.naming` in a separate console window
+(usually there is just *one* name server running in your network).
 After that, start the server and client as before.
 There's no need to copy-paste the object uri in the client any longer, it will 'discover'
 the server automatically, based on the object name (:kbd:`example.greeting`).
@@ -243,6 +244,14 @@ This concludes this simple Pyro example.
  of example programs that show the various features of Pyro. If you're interested in them
  (it is highly recommended to be so!) you will have to download the Pyro distribution archive.
  Installing Pyro only provides the library modules. For more information, see :doc:`config`.
+
+Other means of creating connections
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The example above showed two of the basic ways to set up connections between your client and server code.
+There are various other options, have a look at the client code details: :ref:`object-discovery`
+and the server code details: :ref:`publish-objects`. The use of the name server is optional, see
+:ref:`name-server` for details.
+
 
 Performance
 ===========

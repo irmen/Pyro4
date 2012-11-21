@@ -124,7 +124,11 @@ class URI(object):
     def __eq__(self, other):
         return (self.protocol, self.object, self.sockname, self.host, self.port) \
                 == (other.protocol, other.object, other.sockname, other.host, other.port)
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     __hash__=object.__hash__
+
     # note: getstate/setstate are not needed if we use pickle protocol 2,
     # but this way it helps pickle to make the representation smaller by omitting all attribute names.
 
@@ -234,7 +238,7 @@ class Proxy(object):
         """Bind this proxy to the exact object from the uri. That means that the proxy's uri
         will be updated with a direct PYRO uri, if it isn't one yet."""
         self._pyroRelease()
-        self.__pyroCreateConnection(True)
+        return self.__pyroCreateConnection(True)
 
     def __pyroGetTimeout(self):
         return self.__pyroTimeout
@@ -292,51 +296,59 @@ class Proxy(object):
             raise errors.ProtocolError(err)
 
     def __pyroCreateConnection(self, replaceUri=False):
-        """Connects this proxy to the remote Pyro daemon. Does connection handshake."""
+        """
+        Connects this proxy to the remote Pyro daemon. Does connection handshake.
+        Returns true if a new connection was made, false if an existing one was already present.
+        """
+        if self._pyroConnection is not None:
+            return False    # already connected
         from Pyro4.naming import resolve  # don't import this globally because of cyclic dependancy
         uri=resolve(self._pyroUri)
         # socket connection (normal or Unix domain socket)
         conn=None
         log.debug("connecting to %s", uri)
         connect_location=uri.sockname if uri.sockname else (uri.host, uri.port)
-        try:
-            with self.__pyroLock:
+        with self.__pyroLock:
+            try:
+                if self._pyroConnection is not None:
+                    return False    # already connected
                 sock=socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout)
                 conn=socketutil.SocketConnection(sock, uri.object)
                 # Do handshake. For now, no need to send anything.
                 msgType, flags, seq, data = MessageFactory.getMessage(conn, None)
                 # any trailing data (dataLen>0) is an error message, if any
-        except Exception:
-            x=sys.exc_info()[1]
-            if conn:
-                conn.close()
-            err="cannot connect: %s" % x
-            log.error(err)
-            if isinstance(x, errors.CommunicationError):
-                raise
-            else:
-                raise errors.CommunicationError(err)
-        else:
-            if msgType==MessageFactory.MSG_CONNECTFAIL:
-                error="connection rejected"
-                if data:
-                    if sys.version_info>=(3,0):
-                        data=str(data,"utf-8")
-                    error+=", reason: "+data
-                conn.close()
-                log.error(error)
-                raise errors.CommunicationError(error)
-            elif msgType==MessageFactory.MSG_CONNECTOK:
-                self._pyroConnection=conn
-                if replaceUri:
-                    log.debug("replacing uri with bound one")
-                    self._pyroUri=uri
-                log.debug("connected to %s", self._pyroUri)
-            else:
-                conn.close()
-                err="connect: invalid msg type %d received" % msgType
+            except Exception:
+                x=sys.exc_info()[1]
+                if conn:
+                    conn.close()
+                err="cannot connect: %s" % x
                 log.error(err)
-                raise errors.ProtocolError(err)
+                if isinstance(x, errors.CommunicationError):
+                    raise
+                else:
+                    raise errors.CommunicationError(err)
+            else:
+                if msgType==MessageFactory.MSG_CONNECTFAIL:
+                    error="connection rejected"
+                    if data:
+                        if sys.version_info>=(3,0):
+                            data=str(data,"utf-8")
+                        error+=", reason: "+data
+                    conn.close()
+                    log.error(error)
+                    raise errors.CommunicationError(error)
+                elif msgType==MessageFactory.MSG_CONNECTOK:
+                    self._pyroConnection=conn
+                    if replaceUri:
+                        log.debug("replacing uri with bound one")
+                        self._pyroUri=uri
+                    log.debug("connected to %s", self._pyroUri)
+                    return True
+                else:
+                    conn.close()
+                    err="connect: invalid msg type %d received" % msgType
+                    log.error(err)
+                    raise errors.ProtocolError(err)
 
     def _pyroReconnect(self, tries=100000000):
         """(re)connect the proxy to the daemon containing the pyro object which the proxy is for"""
@@ -499,9 +511,13 @@ class FutureResult(object):
     def set_value(self, value):
         with self.valueLock:
             self.__value=value
-            for call, args, kwargs in self.callchain:
-                call = functools.partial(call, self.__value)
-                self.__value = call(*args, **kwargs)
+            # walk the call chain but only as long as the result is not an exception
+            if not isinstance(value, _ExceptionWrapper):
+                for call, args, kwargs in self.callchain:
+                    call = functools.partial(call, self.__value)
+                    self.__value = call(*args, **kwargs)
+                    if isinstance(self.__value, _ExceptionWrapper):
+                        break
             self.callchain=[]
             self.__ready.set()
 
@@ -542,7 +558,7 @@ class Future(object):
         """
         chain = self.chain
         del self.chain  # make it impossible to add new calls to the chain once we started executing it
-        result=FutureResult()
+        result=FutureResult()  # notice that the call chain doesn't sit on the result object
         thread=threadutil.Thread(target=self.__asynccall, args=(result, chain, args, kwargs))
         thread.setDaemon(True)
         thread.start()

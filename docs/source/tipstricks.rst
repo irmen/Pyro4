@@ -147,3 +147,33 @@ allow you to specify a nathost and natport for it. See :ref:`nameserver-nameserv
     So if you want it to publish URIs with 'external' locations in them, you have to tell
     the Daemon that registers these URIs to use the correct nathost and natport as well.
 
+
+Binary data transfer
+====================
+Pyro is not meant as a tool to transfer large amounts of binary data (images, sound files, video clips).
+Its wire protocol is not optimized for these kinds of data. The occasional transmission of such data
+is fine (:doc:`flame` even provides a convenience method for that, if you like:
+:meth:`Pyro4.utils.flame.Flame.sendfile`) but usually it is better to use something else to do
+the actual data transfer (file share+file copy, ftp, scp, rsync).
+
+That being said, here is a short overview of the ``pickle`` wire protocol overhead for the possible types
+you can use when transferring binary data using Pyro:
+
+``str``
+    *Python 2.x:* efficient; directly encoded as a byte sequence, because that's what it is.
+    *Python 3.x:* inefficient; encoded in UTF-8 on the wire, because it is a unicode string.
+
+``bytes``
+    *Python 2.x:* same as ``str`` (available in Python 2.6 and 2.7)
+    *Python 3.x:* efficient; directly encoded as a byte sequence.
+
+``bytearray``
+    Inefficient; encoded as UTF-8 on the wire (pickle does this in both Python 2.x and 3.x)
+
+``array("B")`` (array of unsigned ints of size 1)
+    *Python 2.x:* very inefficient; every element is encoded as a separate token+value.
+    *Python 3.x:* efficient; uses machine type encoding on the wire (a byte sequence).
+
+Your best choice, if you want to transfer binary data using Pyro, seems to be to use the ``bytes`` type
+(and possibly the ``array("B")`` type if you're using Python 3.x, or just ``str`` if you're stuck on 2.5).
+Stay clear from the rest. It is strange that the ``bytearray`` type is encoded so inefficiently by pickle.

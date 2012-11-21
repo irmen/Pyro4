@@ -248,11 +248,21 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(p1,p2)
         self.assertNotEqual(p1,p3)
         self.assertNotEqual(p2,p3)
+        self.assertTrue(p1==p2)
+        self.assertFalse(p1==p3)
+        self.assertFalse(p2==p3)
+        self.assertFalse(p1!=p2)
+        self.assertTrue(p1!=p3)
+        self.assertTrue(p2!=p3)
         p2.port=4444
         p2.object="99999"
         self.assertNotEqual(p1,p2)
         self.assertEqual(p2,p3)
-        
+        self.assertFalse(p1==p2)
+        self.assertTrue(p2==p3)
+        self.assertTrue(p1!=p2)
+        self.assertFalse(p2!=p3)
+
     def testLocation(self):
         self.assertTrue(Pyro4.core.URI.isUnixsockLocation("./u:name"))
         self.assertFalse(Pyro4.core.URI.isUnixsockLocation("./p:name"))
@@ -562,7 +572,7 @@ class RemoteMethodTests(unittest.TestCase):
         proxy=self.AsyncProxyMock()
         async=Pyro4.async(proxy)
         begin=time.time()
-        result=async.pause_and_divide(1,10,2)  # returns immediately
+        result=async.pause_and_divide(0.2,10,2)  # returns immediately
         duration=time.time()-begin
         self.assertTrue(duration<0.1)
         self.assertFalse(result.ready)
@@ -577,7 +587,7 @@ class RemoteMethodTests(unittest.TestCase):
                 return value+amount
         proxy=self.AsyncProxyMock()
         async=Pyro4.async(proxy)
-        result=async.pause_and_divide(1,10,2)  # returns immediately
+        result=async.pause_and_divide(0.2,10,2)  # returns immediately
         holder=AsyncFunctionHolder()
         result.then(holder.asyncFunction, amount=2) \
               .then(holder.asyncFunction, amount=4) \
@@ -586,13 +596,28 @@ class RemoteMethodTests(unittest.TestCase):
         self.assertEqual(10//2+2+4+1,value)
         self.assertEqual(3,holder.asyncFunctionCount)
 
+    def testCrashingAsyncCallbackMethod(self):
+        def normalAsyncFunction(value, x):
+            return value+x
+        def crashingAsyncFunction(value):
+            return 1//0  # crash
+        proxy=self.AsyncProxyMock()
+        async=Pyro4.async(proxy)
+        result=async.pause_and_divide(0.2,10,2)  # returns immediately
+        result.then(crashingAsyncFunction).then(normalAsyncFunction,2)
+        try:
+            value=result.value
+            self.fail("expected exception")
+        except ZeroDivisionError:
+            pass  # ok
+
     def testAsyncMethodTimeout(self):
         proxy=self.AsyncProxyMock()
         async=Pyro4.async(proxy)
         result=async.pause_and_divide(1,10,2)  # returns immediately
         self.assertFalse(result.ready)
         self.assertFalse(result.wait(0.5))  # won't be ready after 0.5 sec
-        self.assertTrue(result.wait(2))  # will be ready within 2 seconds
+        self.assertTrue(result.wait(1))  # will be ready within 1 seconds more
         self.assertTrue(result.ready)
         self.assertEqual(5,result.value)
 
@@ -624,6 +649,8 @@ def futurestestfunc(a, b, extra=None):
         return a+b
     else:
         return a+b+extra
+def crashingfuturestestfunc(a):
+    return 1//0  # crash
 
 class TestFutures(unittest.TestCase):
     def testSimpleFuture(self):
@@ -639,6 +666,17 @@ class TestFutures(unittest.TestCase):
         r=f(4,5)
         value=r.value
         self.assertEqual(4+5+6+7+10,value)
+    def testCrashingChain(self):
+        f=Pyro4.Future(futurestestfunc)
+        f.then(futurestestfunc, 6)
+        f.then(crashingfuturestestfunc)
+        f.then(futurestestfunc, 8)
+        r=f(4,5)
+        try:
+            value=r.value
+            self.fail("expected exception")
+        except ZeroDivisionError:
+            pass   #ok
 
 
 if __name__ == "__main__":

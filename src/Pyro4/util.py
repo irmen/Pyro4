@@ -148,6 +148,8 @@ class Serializer(object):
     def __eq__(self, other):
         """this equality method is only to support the unit tests of this class"""
         return type(other) is Serializer and vars(self)==vars(other)
+    def __ne__(self, other):
+        return not self.__eq__(other)
     __hash__=object.__hash__
 
 

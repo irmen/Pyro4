@@ -16,6 +16,8 @@ Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
     :doc:`config` for several config items that you can use to tweak various server side aspects.
 
 
+.. _publish-objects:
+
 Pyro Daemon: publishing Pyro objects
 ====================================
 
@@ -128,6 +130,73 @@ See :doc:`nameserver` for more information.
     If you ever need to create a new uri for an object, you can use :py:meth:`Pyro4.core.Daemon.uriFor`.
     The reason this method exists on the daemon is because an uri contains location information and
     the daemon is the one that knows about this.
+
+Intermission: Example 1: server and client not using name server
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A little code example that shows the very basics of creating a daemon and publishing a Pyro object with it.
+Server code::
+
+    import Pyro4
+
+    class Thing(object):
+        def method(self, arg):
+            return arg*2
+
+    # ------ normal code ------
+    daemon = Pyro4.Daemon()
+    uri = daemon.register(Thing())
+    print "uri=",uri
+    daemon.requestLoop()
+
+    # ------ alternatively, using serveSimple -----
+    Pyro4.Daemon.serveSimple(
+        {
+            Thing(): None
+        },
+        ns=False, verbose=True)
+
+Client code example to connect to this object::
+
+    import Pyro4
+    # use the URI that the server printed:
+    uri = "PYRO:obj_b2459c80671b4d76ac78839ea2b0fb1f@localhost:49383"
+    thing = Pyro4.Proxy(uri)
+    print thing.method(42)   # prints 84
+
+With correct additional parameters --described elsewhere in this chapter-- you can control on which port the daemon is listening,
+on what network interface (ip address/hostname), what the object id is, etc.
+
+Intermission: Example 2: server and client, with name server
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A little code example that shows the very basics of creating a daemon and publishing a Pyro object with it,
+this time using the name server for easier object lookup.
+Server code::
+
+    import Pyro4
+
+    class Thing(object):
+        def method(self, arg):
+            return arg*2
+
+    # ------ normal code ------
+    daemon = Pyro4.Daemon()
+    ns = Pyro4.locateNS()
+    uri = daemon.register(Thing())
+    ns.register("mythingy", uri)
+    daemon.requestLoop()
+
+    # ------ alternatively, using serveSimple -----
+    Pyro4.Daemon.serveSimple(
+        {
+            Thing(): "mythingy"
+        },
+        ns=True, verbose=True)
+
+Client code example to connect to this object::
+
+    import Pyro4
+    thing = Pyro4.Proxy("PYRONAME:mythingy")
+    print thing.method(42)   # prints 84
 
 Unregistering objects
 ---------------------
