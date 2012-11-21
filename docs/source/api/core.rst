@@ -2,7 +2,7 @@
 =====================================
 
 .. automodule:: Pyro4.core
-    :members: URI, Daemon, DaemonObject, callback, batch, async, _AsyncResult
+    :members: URI, Daemon, DaemonObject, callback, batch, async, Future, FutureResult
 
 .. autoclass:: Proxy
     :members:

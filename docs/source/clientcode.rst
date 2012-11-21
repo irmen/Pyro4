@@ -186,8 +186,8 @@ See the :file:`batchedcalls` example for more details.
 
 .. _async-calls:
 
-Asynchronous calls and call chains
-==================================
+Asynchronous ('future') calls & call chains
+===========================================
 You can execute a remote method call and tell Pyro: "hey, I don't need the results right now.
 Go ahead and compute them, I'll come back later once I need them".
 The call will be processed in the background and you can collect the results at a later time.
@@ -199,9 +199,8 @@ automatically by Pyro as soon as the result value becomes available.
 
 You create an async proxy wrapper using this: ``async = Pyro4.async(proxy)`` or this (equivalent): ``async = proxy._pyroAsync()``.
 Every remote method call you make on the async proxy wrapper, returns a
-:py:class:`Pyro4.core._AsyncResult` object immediately.
-
-This object has the following interface:
+:py:class:`Pyro4.core.FutureResult` object immediately.
+This object means 'the result of this will be available at some moment in the future' and has the following interface:
 
 .. py:attribute:: value
 
@@ -219,12 +218,11 @@ This object has the following interface:
     meaning infinite timeout. If the timeout expires before the result value is available, the call
     will return ``False``. If the value has become available, it will return ``True``.
 
-.. py:method:: then(callable [, **kwargs])
+.. py:method:: then(callable [,*args] [, **kwargs])
 
-     Add a callback to the call chain, to be invoked when the results become available.
-     Optional keyword arguments can be given in ``kwargs``.
-     The callables in the chain will be invoked in turn, like this:  ``callable(asyncvalue, **kwargs)``
-     Every next callable in the chain gets the result value from the previous one as ``asyncvalue`` argument.
+     Add a callable to the call chain, to be invoked when the results become available.
+     The result of the current call will be used as the first argument for the next call.
+     Optional extra arguments can be provided via ``args`` and ``kwargs``.
 
 A simple piece of code showing an asynchronous method call::
 
@@ -237,7 +235,7 @@ A simple piece of code showing an asynchronous method call::
 .. note::
     :ref:`batched-calls` can also be executed asynchronously.
     Asynchronous calls are implemented using a background thread that waits for the results.
-    Callables from the call chain are invoked in this background thread.
+    Callables from the call chain are invoked sequentially in this background thread.
 
 See the :file:`async` example for more details and example code for call chains.
 
