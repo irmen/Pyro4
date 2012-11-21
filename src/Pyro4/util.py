@@ -8,7 +8,7 @@ import sys, zlib, logging
 import traceback, linecache
 import Pyro4
 
-log=logging.getLogger("Pyro.util")
+log=logging.getLogger("Pyro4.util")
 
 
 def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):

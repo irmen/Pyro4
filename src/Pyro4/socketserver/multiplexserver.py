@@ -8,7 +8,7 @@ import socket, select, sys, logging, os
 from Pyro4 import socketutil, errors
 import Pyro4
 
-log=logging.getLogger("Pyro.socketserver.multiplexed")
+log=logging.getLogger("Pyro4.socketserver.multiplexed")
 
 
 class MultiplexedSocketServerBase(object):

@@ -15,7 +15,7 @@ except ImportError:
 from Pyro4 import socketutil, threadutil, errors
 import Pyro4.threadpool
 
-log=logging.getLogger("Pyro.socketserver.threadpool")
+log=logging.getLogger("Pyro4.socketserver.threadpool")
 
 
 class SocketWorker(threadutil.Thread):

@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.11**
+
+- changed logger category from Pyro to Pyro4
+
+
 **Pyro 4.10**
 
 - added Future class that provides async (future) function calls for any callable (not just Pyro proxies)
