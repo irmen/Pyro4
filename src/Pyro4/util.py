@@ -193,3 +193,10 @@ def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
                 if isinstance(piggyback, __IronPythonExceptionArgs):
                     exceptionObject.args = exceptionObject.args[:-1]
                     exceptionObject.__dict__.update(piggyback.data)
+
+
+class __IronPythonExceptionArgs(object):
+    """Helper class to hold exception arguments for IronPython.
+    Separate class otherwise pickling the exception will fail."""
+    def __init__(self,data):
+        self.data=data
