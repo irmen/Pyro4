@@ -122,12 +122,15 @@ class URI(object):
         return "<%s.%s at 0x%x, %s>" % (self.__class__.__module__, self.__class__.__name__, id(self), str(self))
 
     def __eq__(self, other):
+        if not isinstance(other, URI):
+            return False
         return (self.protocol, self.object, self.sockname, self.host, self.port) \
                 == (other.protocol, other.object, other.sockname, other.host, other.port)
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    __hash__=object.__hash__
+    def __hash__(self):
+        return hash((self.protocol, self.object, self.sockname, self.host, self.port))
 
     # note: getstate/setstate are not needed if we use pickle protocol 2,
     # but this way it helps pickle to make the representation smaller by omitting all attribute names.
@@ -226,6 +229,19 @@ class Proxy(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._pyroRelease()
+
+    def __eq__(self, other):
+        if other is self:
+            return True
+        return isinstance(other, Proxy) and other._pyroUri == self._pyroUri and other._pyroOneway == self._pyroOneway
+
+    def __ne__(self, other):
+        if other and isinstance(other, Proxy):
+            return other._pyroUri != self._pyroUri or other._pyroOneway != self._pyroOneway
+        return True
+
+    def __hash__(self):
+        return hash(self._pyroUri) ^ hash(frozenset(self._pyroOneway))
 
     def _pyroRelease(self):
         """release the connection to the pyro daemon"""
@@ -747,14 +763,21 @@ class Daemon(object):
         else:
             raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
         self.transportServer.init(self, host, port, unixsocket)
+        #: The location (str of the form ``host:portnumber``) on which the Daemon is listening
         self.locationStr=self.transportServer.locationStr
         log.debug("created daemon on %s", self.locationStr)
-        self.natLocationStr = "%s:%d" % (nathost, natport) if nathost else None
+        natport_for_loc = natport
+        if natport==0:
+            # expose internal port number as NAT port as well. (don't use port because it could be 0 and will be chosen by the OS)
+            natport_for_loc = int(self.locationStr.split(":")[1])
+        #: The NAT-location (str of the form ``nathost:natportnumber``) on which the Daemon is exposed for use with NAT-routing
+        self.natLocationStr = "%s:%d" % (nathost, natport_for_loc) if nathost else None
         if self.natLocationStr:
             log.debug("NAT address is %s", self.natLocationStr)
         self.serializer=util.Serializer()
         pyroObject=DaemonObject(self)
         pyroObject._pyroId=constants.DAEMON_NAME
+        #: Dictionary from Pyro object id to the actual Pyro object registered by this id
         self.objectsById={pyroObject._pyroId: pyroObject}
         self.__mustshutdown=threadutil.Event()
         self.__loopstopped=threadutil.Event()
@@ -936,7 +959,7 @@ class Daemon(object):
                 raise TypeError("objectId must be a string or None")
         else:
             objectId="obj_"+uuid.uuid4().hex   # generate a new objectId
-        if hasattr(obj, "_pyroId"):
+        if hasattr(obj, "_pyroId") and obj._pyroId != "":     # check for empty string is needed for Cython
             raise errors.DaemonError("object already has a Pyro id")
         if objectId in self.objectsById:
             raise errors.DaemonError("object already registered with that id")

@@ -32,6 +32,7 @@ __all__ = ["connect", "start", "createModule", "Flame"]
 # Workaround as written by Ned Batchelder on his blog.
 if sys.version_info > (3, 0):
     def exec_function(source, filename, global_map):
+        source=fixExecSourceNewlines(source)
         exec(compile(source, filename, "exec"), global_map)
 else:
     # OK, this is pretty gross.  In Py2, exec was a statement, but that will
@@ -39,10 +40,19 @@ else:
     # executed.  So hide it inside an evaluated string literal instead.
     eval(compile("""\
 def exec_function(source, filename, global_map):
+    source=fixExecSourceNewlines(source)
     exec compile(source, filename, "exec") in global_map
 """,
     "<exec_function>", "exec"
     ))
+    
+def fixExecSourceNewlines(source):
+    if sys.version_info < (2,7):
+        # for python versions prior to 2.7, compile is kinda picky.
+        # it needs unix type newlines and a trailing newline to work correctly.
+        source = source.replace("\r\n", "\n")
+        source = source.rstrip() + "\n"
+    return source
 
 
 class FlameModule(object):

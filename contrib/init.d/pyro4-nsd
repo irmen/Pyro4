@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# -------------------------------------------------------------------------
+#    <Pyro4 NameServer Daemon Script>
+#    Copyright (C) <2011>  <Pierre PACORY> - ppacory@gmail.com
+# Licensed under the "MIT Software License" for inclusion in Pyro4.
+# -------------------------------------------------------------------------
+
+
+LISTEN_ADDRESS=0.0.0.0
+LISTEN_PORT=9999
+MESSAGEDIR=/var/log/Pyro4
+MESSAGELOG=/var/log/Pyro4/NameServer.log
+PID=/var/run/Pyro4-NameServer.pid
+
+# Add Pyro Config
+# here you can add others ...
+export PYRO_HMAC_KEY=12345
+export PYRO_LOGFILE="$MESSAGELOG"
+export PYRO_LOGLEVEL=DEBUG
+
+# Check the script is being run by root user
+if [ "$(id -u)" != "0" ]; then
+  echo 1>&2 "ERROR: The $0 script must be run as root"
+  exit 1
+fi
+
+# Create the PID File
+touch $PID
+
+case "$1" in
+  start)
+    # create the log directory if not exist
+    [ ! -d "$MESSAGEDIR" ] && mkdir -p "$MESSAGEDIR"
+
+    echo "Starting Pyro4 Name Server"
+    # test if not already running
+    if [ ! -f "/proc/$(cat $PID)/exe" ]; then
+      python -m Pyro4.naming -n "$LISTEN_ADDRESS" -p "$LISTEN_PORT" >/dev/null 2>&1 &
+      echo $!>"$PID"
+    else
+      echo "Pyro4 Name Server already running"
+    fi
+    ;;
+  stop)
+    echo "Stopping Pyro4 Name Server"
+    # test if running
+    if [ -f "/proc/$(cat $PID)/exe" ]; then
+      kill -9 "$(cat $PID)"
+      rm -rf "$PID"
+    else
+      echo "Pyro4 Name Server already stopped"
+    fi
+    ;;
+  restart)
+    $0 start
+    $0 stop
+    ;;
+  *)
+    echo "usage: $0 {start|stop|restart}"
+esac
+exit 0

@@ -3,6 +3,7 @@ include MANIFEST.in
 recursive-include tests *
 recursive-include examples *
 recursive-include docs *
+recursive-include contrib *
 global-exclude */.svn/*
 global-exclude */.idea/*
 global-exclude *.class

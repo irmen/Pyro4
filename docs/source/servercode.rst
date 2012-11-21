@@ -99,7 +99,8 @@ It has a few optional arguments when you create it:
     :param nathost: hostname to use in published addresses (useful when running behind a NAT firewall/router). Default is ``None`` which means to just use the normal host.
                     For more details about NAT, see :ref:`nat-router`.
     :type host: str or None
-    :param natport: port to use in published addresses (useful when running behind a NAT firewall/router)
+    :param natport: port to use in published addresses (useful when running behind a NAT firewall/router). If you use 0 here,
+                    Pyro will replace the NAT-port by the internal port number to facilitate one-to-one NAT port mappings.
     :type port: int
 
 
@@ -271,7 +272,7 @@ appropriate. If in doubt, go with the default setting.
     This server uses a thread pool to handle incoming proxy connections.
     The size of the pool is configurable via various config items.
     Every proxy on a client that connects to the daemon will be assigned to a thread to handle
-    the remote method calls. This way multiple calls can be processed concurrently.
+    the remote method calls. This way multiple calls can potentially be processed concurrently.
     This means your Pyro object must be *thread-safe*! If you access a shared resource from
     your Pyro object you may need to take thread locking measures such as using Queues.
     If the thread pool is too small for the number of proxy connections, new proxy connections will
@@ -292,6 +293,23 @@ appropriate. If in doubt, go with the default setting.
     once more to be 100% clear:
     Currently, you register *objects* with Pyro, not *classes*. This means remote method calls
     to a certain Pyro object always run on the single instance that you registered with Pyro.
+
+*When to choose which server type?*
+With the threadpool server at least you have a chance to achieve concurrency, and
+you don't have to worry much about blocking I/O in your remote calls. The usual
+trouble with using threads in Python still applies though:
+Python threads don't run concurrently unless they release the :abbr:`GIL (Global Interpreter Lock)`.
+If they don't, you will still hang your server process.
+For instance if a particular piece of your code doesn't release the :abbr:`GIL (Global Interpreter Lock)` during
+a longer computation, the other threads will remain asleep waiting to acquire the :abbr:`GIL (Global Interpreter Lock)`. One of these threads may be
+the Pyro server loop and then your whole Pyro server will become unresponsive.
+Doing I/O usually means the :abbr:`GIL (Global Interpreter Lock)` is released.
+Some C extension modules also release it when doing their work. So, depending on your situation, not all hope is lost.
+
+With the multiplexed server you don't have threading problems: everything runs in a single main thread.
+This means your requests are processed sequentially, but it's easier to make the Pyro server
+unresponsive. Any operation that uses blocking I/O or a long-running computation will block
+all remote calls until it has completed.
 
 
 Other features
