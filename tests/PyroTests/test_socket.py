@@ -205,7 +205,14 @@ class TestSocketutil(unittest.TestCase):
         ss=SU.createBroadcastSocket((None, 0))
         port=ss.getsockname()[1]
         cs=SU.createBroadcastSocket()
-        cs.sendto(tobytes("monkey"),0,('<broadcast>',port))
+        for bcaddr in Pyro4.config.parseAddressesString(Pyro4.config.BROADCAST_ADDRS):
+            try:
+                cs.sendto(tobytes("monkey"),0,(bcaddr,port))
+            except socket.error:
+                x=sys.exc_info()[1]
+                err=getattr(x, "errno", x.args[0])
+                if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:    # yeah, windows likes to throw these...
+                    raise
         data,_=ss.recvfrom(500)
         self.assertEqual(tobytes("monkey"),data)
         cs.close()

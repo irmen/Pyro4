@@ -294,16 +294,38 @@ def locateNS(host=None, port=None):
         # broadcast lookup
         if not port:
             port=Pyro4.config.NS_BCPORT
-        log.debug("IPv6 broadcast locate")
-        result = broadcastloop(("::", 0, 0, 0), ("ff02::1", port, 0, 0))
-        if result is not None:
-            return result
-        log.debug("ipv6 broadcast locate failed")
-        log.debug("ipv4 broadcast locate")
-        result = broadcastloop(("0.0.0.0", 0), ("<broadcast>", port))
-        if result is not None:
-            return result
-        log.debug("ipv4 broadcast locate failed, try direct connection on NS_HOST")
+        log.debug("broadcast locate")
+        sock=Pyro4.socketutil.createBroadcastSocket(reuseaddr=Pyro4.config.SOCK_REUSE, timeout=0.7)
+        for _ in range(3):
+            try:
+                for bcaddr in Pyro4.config.parseAddressesString(Pyro4.config.BROADCAST_ADDRS):
+                    try:
+                        sock.sendto(BroadcastServer.REQUEST_NSURI, 0, (bcaddr, port))
+                    except socket.error:
+                        x=sys.exc_info()[1]
+                        err=getattr(x, "errno", x.args[0])
+                        if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:    # yeah, windows likes to throw these...
+                            raise
+                data, _=sock.recvfrom(100)
+                sock.close()
+                if sys.version_info>=(3,0):
+                    data=data.decode("iso-8859-1")
+                log.debug("located NS: %s", data)
+                return core.Proxy(data)
+            except socket.timeout:
+                continue
+        sock.close()
+        log.debug("broadcast locate failed, try direct connection on NS_HOST")
+        # XXX ipv6: log.debug("IPv6 broadcast locate")
+        # XXX ipv6:result = broadcastloop(("::", 0, 0, 0), ("ff02::1", port, 0, 0))
+        # XXX ipv6:if result is not None:
+        # XXX ipv6:    return result
+        # XXX ipv6:log.debug("ipv6 broadcast locate failed")
+        # XXX ipv6:log.debug("ipv4 broadcast locate")
+        # XXX ipv6:result = broadcastloop(("0.0.0.0", 0), ("<broadcast>", port))
+        # XXX ipv6:if result is not None:
+        # XXX ipv6:    return result
+        # XXX ipv6:log.debug("ipv4 broadcast locate failed, try direct connection on NS_HOST")
         # broadcast failed, try PYRO directly on specific host
         host=Pyro4.config.NS_HOST
         port=Pyro4.config.NS_PORT

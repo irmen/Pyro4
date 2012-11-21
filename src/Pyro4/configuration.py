@@ -17,7 +17,8 @@ class Configuration(object):
                "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
                "DETAILED_TRACEBACK", "SOCK_REUSE", "PREFER_IP_VERSION",
                "THREADPOOL_MINTHREADS", "THREADPOOL_MAXTHREADS",
-               "THREADPOOL_IDLETIMEOUT", "HMAC_KEY", "AUTOPROXY")
+               "THREADPOOL_IDLETIMEOUT", "HMAC_KEY", "AUTOPROXY",
+               "BROADCAST_ADDRS")
 
     def __init__(self):
         self.reset()
@@ -46,6 +47,7 @@ class Configuration(object):
         self.THREADPOOL_IDLETIMEOUT = 5.0
         self.HMAC_KEY = None   # must be bytes type
         self.AUTOPROXY = True
+        self.BROADCAST_ADDRS = "<broadcast>"   # comma separated list of broadcast addresses
         self.PREFER_IP_VERSION = 4    # 4, 6 or 0 (let OS choose according to RFC 3484)
 
         if useenvironment:
@@ -78,6 +80,19 @@ class Configuration(object):
         result={}
         for item in self.__slots__:
             result[item]=getattr(self,item)
+        return result
+
+    def parseAddressesString(self, addresses):
+        """
+        Parses the addresses string which contains one or more ip addresses separated by a comma.
+        Returns a sequence of these addresses. '' is replaced by the empty string.
+        """
+        result=[]
+        for addr in addresses.split(','):
+            addr=addr.strip()
+            if addr=="''":
+                addr=""
+            result.append(addr)
         return result
 
     def dump(self):

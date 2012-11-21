@@ -71,11 +71,12 @@ DETAILED_TRACEBACK      bool    False          Enable to get detailed exception 
 DOTTEDNAMES             bool    False          Server side only: Enable to support object traversal using dotted names (a.b.c.d)
 HMAC_KEY                bytes   None           Shared secret key to sign all communication messages
 HOST                    str     localhost      Hostname where Pyro daemons will bind on
-NS_HOST                 str     *equal to      Hostname where the name server is supposed to be found
+NS_HOST                 str     *equal to      Hostname for the name server
                                 HOST*
 NS_PORT                 int     9090           TCP port of the name server
 NS_BCPORT               int     9091           UDP port of the broadcast responder from the name server
-NS_BCHOST               str     None           Hostname where the broadcast responder of the name sever is supposed to be found
+NS_BCHOST               str     None           Hostname for the broadcast responder of the name sever
+BROADCAST_ADDRS         str     <broadcast>    List of comma separated addresses that Pyro should send broadcasts to (for NS lookup)
 ONEWAY_THREADED         bool    True           Enable to make oneway calls be processed in their own separate thread
 POLLTIMEOUT             float   2.0            For the multiplexing server only: the timeout of the select or poll calls
 SERVERTYPE              str     thread         Select the Pyro server type. thread=thread pool based, multiplex=select/poll based

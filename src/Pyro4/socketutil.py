@@ -36,6 +36,10 @@ if hasattr(errno, "WSAENOTSOCK"):
 if not hasattr(socket, "SOL_TCP"):
     socket.SOL_TCP=socket.IPPROTO_TCP
 
+ERRNO_EADDRNOTAVAIL=[errno.EADDRNOTAVAIL]
+if hasattr(errno, "WSAEADDRNOTAVAIL"):
+    ERRNO_EADDRNOTAVAIL.append(errno.WSAEADDRNOTAVAIL)
+
 
 def getIpAddress(hostname=None):
     """returns the IP address for the current, or another, hostname"""
