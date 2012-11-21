@@ -69,12 +69,14 @@ Verbose is set to True because you want it to print out the generated random obj
 there is no way to connect to your object. You can also choose to provide object names yourself,
 to use or not use the name server, etc. See :py:func:`Pyro4.core.Daemon.serveSimple`.
 
-Note that the amount of options you can provide is very limited.
-If you want to control the way the Pyro daemon is constructed (for instance, to make
-it listen on a different ip address than localhost), you'll have to do that by setting
+Note that the amount of options you can provide is quite limited.
+If you want to control the way the Pyro daemon is constructed, you have to do that by setting
 the appropriate config options before calling ``serveSimple``.
 Or you can create a daemon object yourself with the right arguments,
 and pass that to ``serveSimple`` so that it doesn't create a default daemon itself.
+Because they are so frequently used, ``serveSimple`` has a ``host`` and ``port`` parameter
+that you can use to control the host and port of the daemon that it creates (useful if you
+want to make it run on something else as localhost).
 
 Creating a Daemon
 -----------------

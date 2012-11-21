@@ -915,21 +915,20 @@ For more details, refer to the chapters in this manual about the relevant Pyro c
 
 *Warehouse server*
     You'll have to modify :file:`warehouse.py`. Right before the ``serveSimple`` call you have to tell it to bind the daemon on your hostname
-    instead of localhost. You can do this by setting the ``HOST`` config item::
+    instead of localhost. One way to do this is by setting the ``HOST`` config item::
 
         Pyro4.config.HOST="your_hostname_here"
         Pyro4.Daemon.serveSimple(...)
 
     You can also choose to leave the code alone, and instead set the ``PYRO_HOST`` environment variable
     before starting the warehouse server.
-    Another option is to create a daemon yourself with the appropriate host argument::
+    Another option is pass the required host (and perhaps even port) arguments to ``serveSimple``::
 
-        pyrodaemon=Pyro4.Daemon(host="your_hostname_here")
         Pyro4.Daemon.serveSimple(
                 {
                     warehouse: "example.warehouse"
                 },
-                daemon=pyrodaemon,
+                host='your_hostname_here',
                 ns=True)
 
 *Stock market servers*
