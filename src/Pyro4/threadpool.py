@@ -13,18 +13,39 @@ class ThreadPool(object):
     """
     A pool of threads that can grow and shrink between limits set by the
     THREADPOOL_MINTHREADS and THREADPOOL_MAXTHREADS config items.
+    Make sure to set the ``workerFactory`` attribute after creation,
+    to a callable that returns a worker thread object.
+
+    ....this class didn't turn out to be as nice as I wanted; you still need to do
+    quite a lot of work yourself in the worker threads or the controlling code.
+    Worker threads need to call updateWorking with +1 or -1 when they start or finish work,
+    and controlling code needs to call growIfNeeded when processing tasks. Also, when a worker
+    thread exits, it needs to call remove by itself to actually remove it from the pool.
+    Maybe I'll refactor this thing in the future.
     """
     def __init__(self):
         self.lock = Pyro4.threadutil.Lock()
         self.pool = set()
+        self.workerFactory=None   # you must set this after creation
         self.__working = 0
         self.__lastshrink = time.time()
 
-    def fill(self, workertype, *workerargs, **workerkwargs):
+    def __len__(self):
+        return len(self.pool)
+
+    def __repr__(self):
+        return "<%s.%s at 0x%x, poolsize %s>" % (self.__class__.__module__, self.__class__.__name__, id(self), len(self.pool))
+
+    def fill(self):
         """pre-fill the pool with workers"""
         for _ in range(Pyro4.config.THREADPOOL_MINTHREADS):
-            if not self.attemptSpawn(workertype, *workerargs, **workerkwargs):
+            if not self.attemptSpawn():
                 break
+
+    def growIfNeeded(self):
+        """If there are no more idle workers in the pool, spawn a new one, and return True. Otherwise, return False."""
+        if self.poolCritical():
+            return self.attemptSpawn()
 
     def attemptRemove(self, member):
         """
@@ -45,16 +66,15 @@ class ThreadPool(object):
             except KeyError:
                 pass
 
-    def attemptSpawn(self, workerType, *workerArgs, **workerKwargs):
+    def attemptSpawn(self):
         """
         Spawns a new worker thread of the given type and adds it to the pool,
         but only if the pool is still smaller than the maximum size.
-        The args are passed to the workertype constructor if a worker is actually created.
         Returns True if a worker spawned, False if the pool is already full.
         """
         with self.lock:
             if len(self.pool) < Pyro4.config.THREADPOOL_MAXTHREADS:
-                worker = workerType(*workerArgs, **workerKwargs)
+                worker = self.workerFactory()
                 self.pool.add(worker)
                 worker.start()
                 return True
@@ -72,10 +92,9 @@ class ThreadPool(object):
         The number of 'busy' workers is needed to determine of the pool should be grown or shrunk.
         This method returns the number of workers removed in case a pool shrink occurred.
         """
-        shrunk = self.shrink()
         with self.lock:
             self.__working += number
-        return shrunk
+        return self.shrink()
 
     def shrink(self):
         """Cleans up the pool: any excess idle workers are removed. Returns the number of removed workers."""
@@ -85,5 +104,6 @@ class ThreadPool(object):
             idle = threads - self.__working
             if idle > Pyro4.config.THREADPOOL_MINTHREADS and (time.time() - self.__lastshrink) > Pyro4.config.THREADPOOL_IDLETIMEOUT:
                 shrunk = idle - Pyro4.config.THREADPOOL_MINTHREADS
+                # XXX hmm, something should actually remove the idle threads from the pool here ..... instead of depending on the user to do it....
                 self.__lastshrink = time.time()
         return shrunk

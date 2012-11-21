@@ -6,9 +6,12 @@ Change Log
 
 - added Future class that provides async (future) function calls for any callable (not just Pyro proxies)
 - renamed _AsyncResult to FutureResult
+- added Flame (foreign location automatic module exposer) in Pyro4.utils.flame, including docs and example
+- Pyrolite also gained support for Flame (client access)
 - improved FutureResult.then(), it now accepts additional normal arguments as well instead of only kwargs
 - renamed Pyro4.config.refresh to Pyro4.config.reset because reset better describes what it is doing
 - added parameter to config.refresh to make it ignore environment variables
+- refactored internal threadpool into its own module, added unit tests
 
 
 **Pyro 4.9**

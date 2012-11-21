@@ -192,6 +192,7 @@ class Flame(object):
         """
         Send the source of a module to the server and make the server load it.
         Note that you still have to actually ``import`` it on the server to access it.
+        Sending a module again will replace the previous one with the new.
         """
         createModule(modulename, modulesource)
 

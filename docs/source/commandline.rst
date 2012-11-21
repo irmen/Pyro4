@@ -47,6 +47,9 @@ A short explanation of the available options can be printed with the help option
 
 .. seealso:: :ref:`nameserver-nsc` for detailed information
 
+
+.. _command-line-echoserver:
+
 Test echo server
 ================
 :command:`python -m Pyro4.test.echoserver [options]`
