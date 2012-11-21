@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.10**
+
+- renamed Pyro4.config.refresh to Pyro4.config.reset because reset better describes what it is doing
+- added parameter to config.refresh to make it ignore environment variables
+
 **Pyro 4.9**
 
 - removed AsyncResultTimeout exception

@@ -22,6 +22,23 @@ to change the same two settings as above, but by using environment variables, yo
     C:\> set PYRO_COMPRESSION=true
     C:\> set PYRO_SERVERTYPE=multiplex
 
+
+Resetting the config to default values
+--------------------------------------
+
+.. method:: Pyro4.config.reset([useenvironment=True])
+
+    Resets the configuration items to their builtin default values.
+    If `useenvironment` is True, it will overwrite builtin config items with any values set
+    by environment variables. If you don't trust your environment, it may be a good idea
+    to reset the config items to just the builtin defaults (ignoring any environment variables)
+    by calling this method with `useenvironment` set to False.
+    Do this before using any other part of the Pyro library.
+
+
+Inspecting current config
+-------------------------
+
 To inspect the current configuration you have several options:
 
 1. Access individual config items: ``print(Pyro4.config.COMPRESSION)``

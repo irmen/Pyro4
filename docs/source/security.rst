@@ -63,6 +63,14 @@ You can enable it with the ``DOTTEDNAMES`` config item, but be aware of the impl
 The :file:`attributes` example shows one of the exploits you can perform if it is enabled.
 
 
+Environment variables overriding config items
+=============================================
+Almost all config items can be overwritten by an environment variable.
+If you can't trust the environment in which your script is running, it may be a good idea
+to reset the config items to their default builtin values, without using any environment variables.
+See :doc:`config` for the proper way to do this.
+
+
 Preventing arbitrary connections: HMAC signature
 ================================================
 Pyro suggests using a `HMAC signature <http://docs.python.org/library/hmac.html>`_ on every network transfer
