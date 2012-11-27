@@ -8,7 +8,9 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 # PYRO_LOGLEVEL   (enable Pyro log config and set level)
 # PYRO_LOGFILE    (the name of the logfile if you don't like the default)
 
-import os, sys
+import os
+import sys
+import platform
 
 
 class Configuration(object):
@@ -103,11 +105,16 @@ class Configuration(object):
         # easy config diagnostics
         from Pyro4.constants import VERSION
         import inspect
+        if hasattr(platform, "python_implementation"):
+            implementation = platform.python_implementation()
+        else:
+            implementation = "Jython" if os.name=="java" else "???"
         config=self.asDict()
         config["LOGFILE"]=os.environ.get("PYRO_LOGFILE")
         config["LOGLEVEL"]=os.environ.get("PYRO_LOGLEVEL")
         result= ["Pyro version: %s" % VERSION,
                  "Loaded from: %s" % os.path.abspath(os.path.split(inspect.getfile(Configuration))[0]),
+                 "Python version: %s %s (%s, %s)" % (implementation, platform.python_version(), platform.system(), os.name),
                  "Active configuration settings:"]
         for n, v in sorted(config.items()):
             result.append("%s = %s" % (n, v))
