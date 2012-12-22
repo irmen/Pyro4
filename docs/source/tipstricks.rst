@@ -26,6 +26,15 @@ from all possible interfaces), sometimes it is possible to run only the name ser
 The success ratio of all this depends heavily on your network setup.
 
 
+Same major Python version required
+==================================
+
+Because Pyro uses pickle as its serialization format, it is required to have the same *major* Python versions
+on your clients and your servers. Otherwise the different parties cannot decipher each others serialized data.
+This means you cannot let Python 2.x talk to Python 3.x with Pyro. However
+it should be fine to have Python 2.6.2 talk to Python 2.7.3 for instance.
+
+
 Wire protocol version
 =====================
 

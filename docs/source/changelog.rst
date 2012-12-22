@@ -5,10 +5,11 @@ Change Log
 **Pyro 4.17**
 
 - Fixed possible IndentationError problem with sending modules in Flame
-- Can now deal with exceptions that can't be serialized: they're raised as generic PyroError instead with appropriate message
+- Can now deal with exceptions that can't be serialized: they're raised as generic PyroError instead, with appropriate message
 - added new config item FLAME_ENABLED, to enable/disable the use of Pyro Flame on the server. Default is false (disabled).
 - Moved futures from core to new futures module. Code using Pyro4.Future will still work.
 - Added python version info to configuration dump
+- Made it more clear in the manual that you need to have the same major Python version on both sides
 
 
 **Pyro 4.16**
