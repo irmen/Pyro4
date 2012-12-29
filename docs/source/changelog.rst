@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.18**
 
-- ...
+- Added a few best-practices to the manual
 
 
 **Pyro 4.17**
