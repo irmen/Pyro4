@@ -130,7 +130,7 @@ class Serializer(object):
 
     def serialize(self, data, compress=False):
         """Serialize the given data object, try to compress if told so.
-        Returns a tuple of the serialized data and a bool indicating if it is compressed or not."""
+        Returns a tuple of the serialized data (bytes) and a bool indicating if it is compressed or not."""
         data=self.pickle.dumps(data, self.pickle.HIGHEST_PROTOCOL)
         if not compress or len(data)<200:
             return data, False  # don't waste time compressing small messages
@@ -140,7 +140,7 @@ class Serializer(object):
         return data, False
 
     def deserialize(self, data, compressed=False):
-        """Deserializes the given data. Set compressed to True to decompress the data first."""
+        """Deserializes the given data (bytes). Set compressed to True to decompress the data first."""
         if compressed:
             data=zlib.decompress(data)
         return self.pickle.loads(data)
