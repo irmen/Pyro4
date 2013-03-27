@@ -4,6 +4,43 @@
 Tips & Tricks
 *************
 
+Best practices
+==============
+
+Avoid circular communication topologies.
+----------------------------------------
+When you can have a circular communication pattern in your system (A-->B-->C-->A) this can cause some problems:
+
+* when reusing a proxy it causes a deadlock because the proxy is already being used for an active remote call. See the :file:`deadlock` example.
+* with the multiplex servertype, the server itself may also block for all other remote calls because the handling of the first is not yet completed.
+
+Avoid circularity, or use *oneway* method calls on at least one of the links in the chain.
+
+Release your proxies if you can.
+--------------------------------
+A connected proxy that is unused takes up resources on the server. In the case of the threadpool server type,
+it locks up a single thread. If you have too many connected proxies at the same time, the server may run out
+of threads and stops responding. (The multiplex server doesn't have this particular issue).
+It is a good thing to think about when you can release a proxy in your code.
+Don't worry about reconnecting, that's done automatically once it is used again.
+You can use explicit ``_pyroRelease`` calls or use the proxy from within a context manager.
+It's not a good idea to release it after every single remote method call though, because then the cost
+of reconnecting the socket will cause a serious drop in performance (unless every call is at least a few seconds after the previous one).
+
+Avoid large binary blobs over the wire.
+---------------------------------------
+Pyro is not designed to efficiently transfer large amounts of binary data over the network.
+Try to find another protocol that better suits this requirement.
+Read :ref:`binarytransfer` for some more details about this.
+
+Minimize object graphs that travel over the wire.
+-------------------------------------------------
+The pickle protocol that is used as serialization format is very convenient to transfer Python objects 'over the wire' but it also
+has drawbacks. It serializes the whole object graph you're passing, even when only a tiny fraction
+of it is used on the receiving end. Be aware of this: it may be necessary to define special lightweight objects
+for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
+
+
 Logging
 =======
 If you configure it (see :ref:`config-items`) Pyro will write a bit of debug information, errors, and notifications to a log file.
@@ -24,6 +61,15 @@ and it will in fact try to determine the correct ip address of the interface tha
 to contact the name server on. So while you cannot run Pyro daemons on 0.0.0.0 (to respond to requests
 from all possible interfaces), sometimes it is possible to run only the name server on 0.0.0.0.
 The success ratio of all this depends heavily on your network setup.
+
+
+Same major Python version required
+==================================
+
+Because Pyro uses pickle as its serialization format, it is required to have the same *major* Python versions
+on your clients and your servers. Otherwise the different parties cannot decipher each others serialized data.
+This means you cannot let Python 2.x talk to Python 3.x with Pyro. However
+it should be fine to have Python 2.6.2 talk to Python 2.7.3 for instance.
 
 
 Wire protocol version
@@ -160,6 +206,8 @@ allow you to specify a nathost and natport for it. See :ref:`nameserver-nameserv
     to 0, in which case Pyro will replace it by the internal port number.
 
 
+.. _binarytransfer:
+
 Binary data transfer
 ====================
 Pyro is not meant as a tool to transfer large amounts of binary data (images, sound files, video clips).
@@ -189,16 +237,6 @@ you can use when transferring binary data using Pyro:
 Your best choice, if you want to transfer binary data using Pyro, seems to be to use the ``bytes`` type
 (and possibly the ``array("B")`` type if you're using Python 3.x, or just ``str`` if you're stuck on 2.5).
 Stay clear from the rest. It is strange that the ``bytearray`` type is encoded so inefficiently by pickle.
-
-
-Pickling and the risk of serializing huge object graphs
-=======================================================
-The pickle protocol that is used as serialization format is very convenient to transfer Python objects 'over the wire' but it also
-has drawbacks. It serializes the whole object graph you're passing, even when only a tiny fraction
-of it is used on the receiving end. Be aware of this: it may be necessary to define special lightweight objects
-for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
-
-Another drawback of pickle is that there are security concerns related to it, see :doc:`security`.
 
 
 MSG_WAITALL socket option

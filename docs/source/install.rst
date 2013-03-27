@@ -13,9 +13,15 @@ on Python 2.5 (make sure by running the unit tests), but it's not supported for 
 Python 2.6 or newer. Pyro4 will not work at all on anything older than Python 2.5.
 Also see :ref:`should-i-choose-pyro4`.
 
-
 Pyro is written in 100% pure Python, and has no other dependencies than a default Python installation.
 It works on any recent operating system.
+
+.. note::
+    Because Pyro uses pickle as its serialization format, it is required to have the same *major* Python versions
+    on your clients and your servers. Otherwise the different parties cannot decipher each others serialized data.
+    This means you cannot let Python 2.x talk to Python 3.x with Pyro. However
+    it should be fine to have Python 2.6.2 talk to Python 2.7.3 for instance.
+
 
 Obtaining and installing Pyro
 -----------------------------

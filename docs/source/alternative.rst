@@ -41,11 +41,6 @@ Pypy
   `Pypy <http://pypy.org>`_ is a Python implementation written in Python itself, and it usually
   is quite a lot faster than the default implementation because it has a :abbr:`JIT (Just in time)`-compiler.
 
-I haven't used Pypy much let alone with Pyro, but it seems that at least the recent Mac OS X and Linux builds
-of Pypy work fine with Pyro. There are a lot of problems on Windows however which I can't explain (most likely
-due to the fact that the windows build of Pypy is quite old and misses a lot of bug fixes). So *don't use
-Pypy on Windows with Pyro*.
-
-There is one problem with running the unit tests on Pypy: one of the tests freezes and Pypy cannot complete
-the test suite. I hope to fix this in the near future (or maybe it's a bug in Pypy?)
+I haven't used Pypy much let alone with Pyro, but it seems that at least the recent builds (1.9 and newer)
+of Pypy work fine with Pyro.
 
