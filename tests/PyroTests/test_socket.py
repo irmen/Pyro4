@@ -72,12 +72,12 @@ class TestSocketutil(unittest.TestCase):
         self.assertNotEqual(port1,port2)
 
     def testUnusedPort6(self):
-        port1=SU.findUnusedPort(family=socket.AF_INET6)
-        port2=SU.findUnusedPort(family=socket.AF_INET6)
+        port1=SU.findProbablyUnusedPort(family=socket.AF_INET6)
+        port2=SU.findProbablyUnusedPort(family=socket.AF_INET6)
         self.assertTrue(port1>0)
         self.assertNotEqual(port1,port2)
-        port1=SU.findUnusedPort(family=socket.AF_INET6, socktype=socket.SOCK_DGRAM)
-        port2=SU.findUnusedPort(family=socket.AF_INET6, socktype=socket.SOCK_DGRAM)
+        port1=SU.findProbablyUnusedPort(family=socket.AF_INET6, socktype=socket.SOCK_DGRAM)
+        port2=SU.findProbablyUnusedPort(family=socket.AF_INET6, socktype=socket.SOCK_DGRAM)
         self.assertTrue(port1>0)
         self.assertNotEqual(port1,port2)
 
