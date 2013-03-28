@@ -50,6 +50,7 @@ including Python 2.x, Python 3.x, IronPython, Jython and Pypy.""",
                 "Programming Language :: Python :: 2.7",
                 "Programming Language :: Python :: 3",
                 "Programming Language :: Python :: 3.2",
+                "Programming Language :: Python :: 3.3",
                 "Topic :: Software Development :: Object Brokering",
                 "Topic :: System :: Distributed Computing",
                 "Topic :: System :: Networking"
