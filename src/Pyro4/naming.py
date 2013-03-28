@@ -271,24 +271,6 @@ def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None
 
 def locateNS(host=None, port=None):
     """Get a proxy for a name server somewhere in the network."""
-    def broadcastloop(bindaddr, sendaddr):
-        sock=Pyro4.socketutil.createBroadcastSocket(bindaddr, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=0.7)
-        for _ in range(2):
-            try:
-                sock.sendto(BroadcastServer.REQUEST_NSURI, 0, sendaddr)
-                data, _=sock.recvfrom(100)
-                sock.close()
-                if sys.version_info>=(3,0):
-                    data=data.decode("iso-8859-1")
-                log.debug("located NS: %s", data)
-                return core.Proxy(data)
-            except socket.timeout:
-                continue
-            except socket.error:
-                continue
-        sock.close()
-        return None
-
     if host is None:
         # first try localhost if we have a good chance of finding it there
         if Pyro4.config.NS_HOST in ("localhost", "::1") or Pyro4.config.NS_HOST.startswith("127."):
@@ -330,16 +312,6 @@ def locateNS(host=None, port=None):
                 continue
         sock.close()
         log.debug("broadcast locate failed, try direct connection on NS_HOST")
-        # XXX ipv6: log.debug("IPv6 broadcast locate")
-        # XXX ipv6:result = broadcastloop(("::", 0, 0, 0), ("ff02::1", port, 0, 0))
-        # XXX ipv6:if result is not None:
-        # XXX ipv6:    return result
-        # XXX ipv6:log.debug("ipv6 broadcast locate failed")
-        # XXX ipv6:log.debug("ipv4 broadcast locate")
-        # XXX ipv6:result = broadcastloop(("0.0.0.0", 0), ("<broadcast>", port))
-        # XXX ipv6:if result is not None:
-        # XXX ipv6:    return result
-        # XXX ipv6:log.debug("ipv4 broadcast locate failed, try direct connection on NS_HOST")
         # broadcast failed, try PYRO directly on specific host
         host=Pyro4.config.NS_HOST
         port=Pyro4.config.NS_PORT

@@ -239,6 +239,8 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
     Create a socket. Default socket options are keepalive and IPv4 family.
     If 'bind' or 'connect' is a string, it is assumed a Unix domain socket is requested.
     Otherwise, a normal tcp/ip socket is used.
+    Set ipv6=True to create an IPv6 socket rather than IPv4.
+    Set ipv6=None to use the PREFER_IP_VERSION config setting.
     """
     if bind and connect:
         raise ValueError("bind and connect cannot both be specified at the same time")
@@ -323,7 +325,11 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
 
 
 def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TIMEOUT, ipv6=False):
-    """Create a udp broadcast socket."""
+    """
+    Create a udp broadcast socket.
+    Set ipv6=True to create an IPv6 socket rather than IPv4.
+    Set ipv6=None to use the PREFER_IP_VERSION config setting.
+    """
     forceIPv6=ipv6 or (ipv6 == None and Pyro4.config.PREFER_IP_VERSION == 6)
     if not bind:
         family=socket.AF_INET6 if forceIPv6 else socket.AF_INET

@@ -73,6 +73,8 @@ class URI(object):
                 raise errors.PyroError("invalid uri (location)")
         else:
             if location.startswith("["):  # ipv6
+                if location.startswith("[["):  # possible mistake: double-bracketing
+                    raise errors.PyroError("invalid ipv6 address: enclosed in too many brackets")
                 self.host, _, self.port = re.match(r"\[([0-9a-fA-F:%]+)](:(\d+))?", location).groups()
             else:
                 self.host, _, self.port = location.partition(":")

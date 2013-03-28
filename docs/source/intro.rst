@@ -40,7 +40,7 @@ Here's a quick overview of Pyro's features:
 - many simple examples included to show various features and techniques.
 - large amount of unit tests and high test coverage.
 - built upon more than 10 years of existing Pyro history.
-- can use IPv4 and Unix domain sockets (IPv6 is not yet supported but it is being developed)
+- can use IPv4, IPv6 and Unix domain sockets
 
 .. warning::
     Pyro uses the :py:mod:`pickle` module to serialize objects and sends them over the network.
