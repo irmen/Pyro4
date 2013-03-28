@@ -30,17 +30,37 @@ class TestSocketutil(unittest.TestCase):
         Pyro4.config.POLLTIMEOUT=0.1
         
     def testGetIP(self):
-        localip=SU.getIpAddress()
-        localhost=socket.getfqdn(localip)
-        self.assertEqual(localip,SU.getIpAddress(localhost))
-        myip=SU.getMyIpAddress()
+        Pyro4.config.PREFER_IP_VERSION=4
+        myip=SU.getIpAddress("")
         self.assertTrue(len(myip)>4)
-        myip=SU.getMyIpAddress(workaround127=True)
+        myip=SU.getIpAddress("",workaround127=True)
         self.assertTrue(len(myip)>4)
         self.assertFalse(myip.startswith("127."))
-        self.assertEqual("127.0.0.1", SU.getMyIpAddress("127.0.0.1",workaround127=False))
-        self.assertNotEqual("127.0.0.1", SU.getMyIpAddress("127.0.0.1",workaround127=True))
+        self.assertEqual("127.0.0.1", SU.getIpAddress("127.0.0.1",workaround127=False))
+        self.assertNotEqual("127.0.0.1", SU.getIpAddress("127.0.0.1",workaround127=True))
         
+    def testGetIP6(self):
+        self.assertTrue(":" in SU.getIpAddress("::1",ipVersion=6))
+        self.assertTrue(":" in SU.getIpAddress("",ipVersion=6))
+        self.assertTrue(":" in SU.getIpAddress("localhost",ipVersion=6))
+
+    def testGetIpVersion(self):
+        Pyro4.config.PREFER_IP_VERSION=6
+        self.assertEqual(6, SU.getIpVersion("127.0.0.1"))
+        self.assertEqual(6, SU.getIpVersion("::1"))
+        self.assertEqual(6, SU.getIpVersion("localhost"))
+        Pyro4.config.PREFER_IP_VERSION=4
+        self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
+        self.assertEqual(6, SU.getIpVersion("::1"))
+        self.assertEqual(4, SU.getIpVersion("localhost"))
+        Pyro4.config.PREFER_IP_VERSION=0
+        self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
+        self.assertEqual(6, SU.getIpVersion("::1"))
+
+    def testGetInterfaceAddress(self):
+        self.assertTrue(SU.getInterfaceAddress("localhost").startswith("127."))
+        self.assertTrue(":" in SU.getInterfaceAddress("::1"))
+
     def testUnusedPort(self):
         port1=SU.findProbablyUnusedPort()
         port2=SU.findProbablyUnusedPort()
@@ -50,6 +70,17 @@ class TestSocketutil(unittest.TestCase):
         port2=SU.findProbablyUnusedPort(socktype=socket.SOCK_DGRAM)
         self.assertTrue(port1>0)
         self.assertNotEqual(port1,port2)
+
+    def testUnusedPort6(self):
+        port1=SU.findProbablyUnusedPort(family=socket.AF_INET6)
+        port2=SU.findProbablyUnusedPort(family=socket.AF_INET6)
+        self.assertTrue(port1>0)
+        self.assertNotEqual(port1,port2)
+        port1=SU.findProbablyUnusedPort(family=socket.AF_INET6, socktype=socket.SOCK_DGRAM)
+        port2=SU.findProbablyUnusedPort(family=socket.AF_INET6, socktype=socket.SOCK_DGRAM)
+        self.assertTrue(port1>0)
+        self.assertNotEqual(port1,port2)
+
     def testBindUnusedPort(self):
         sock1=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock2=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -62,32 +93,82 @@ class TestSocketutil(unittest.TestCase):
         sock1.close()
         sock2.close()
 
+    def testBindUnusedPort6(self):
+        if os.name=="java":
+            print("Jython/java ipv6 support isn't quite there yet")
+            return
+        sock1=socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        sock2=socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        port1=SU.bindOnUnusedPort(sock1)
+        port2=SU.bindOnUnusedPort(sock2)
+        self.assertTrue(port1>0)
+        self.assertNotEqual(port1,port2)
+        host,port,_,_=sock1.getsockname()
+        self.assertTrue(":" in host)
+        self.assertEqual(port1, port)
+        sock1.close()
+        sock2.close()
+
     def testCreateUnboundSockets(self):
         s=SU.createSocket()
+        self.assertEqual(socket.AF_INET, s.family)
         bs=SU.createBroadcastSocket()
+        self.assertEqual(socket.AF_INET, bs.family)
         try:
             host,port=s.getsockname()
-            self.assertEqual(0, port)
+            # can either fail with socket.error or return (host,0)
+            self.assertEqual(0,port)
         except socket.error:
             pass
         try:
-            if os.name!="java":
-                host,port=bs.getsockname()
-                self.assertEqual(0, port)
+            host,port=bs.getsockname()
+            # can either fail with socket.error or return (host,0)
+            self.assertEqual(0,port)
+        except socket.error:
+            pass
+        s.close()
+        bs.close()
+
+    def testCreateUnboundSockets6(self):
+        s=SU.createSocket(ipv6=True)
+        self.assertEqual(socket.AF_INET6, s.family)
+        bs=SU.createBroadcastSocket(ipv6=True)
+        self.assertEqual(socket.AF_INET6, bs.family)
+        try:
+            host,port,_,_=s.getsockname()
+            # can either fail with socket.error or return (host,0)
+            self.assertEqual(0,port)
+        except socket.error:
+            pass
+        try:
+            host,port,_,_=bs.getsockname()
+            # can either fail with socket.error or return (host,0)
+            self.assertEqual(0,port)
         except socket.error:
             pass
         s.close()
         bs.close()
 
     def testCreateBoundSockets(self):
-        s=SU.createSocket(bind=('localhost',0))
-        bs=SU.createBroadcastSocket(bind=('localhost',0))
+        s=SU.createSocket(bind=('127.0.0.1',0))
+        self.assertEqual(socket.AF_INET, s.family)
+        bs=SU.createBroadcastSocket(bind=('127.0.0.1',0))
         self.assertEqual('127.0.0.1',s.getsockname()[0])
         self.assertEqual('127.0.0.1',bs.getsockname()[0])
         s.close()
         bs.close()
         self.assertRaises(ValueError, SU.createSocket, bind=('localhost',12345), connect=('localhost',1234))
             
+    def testCreateBoundSockets6(self):
+        s=SU.createSocket(bind=('::1',0))
+        self.assertEqual(socket.AF_INET6, s.family)
+        bs=SU.createBroadcastSocket(bind=('::1',0))
+        self.assertTrue(':' in s.getsockname()[0])
+        self.assertTrue(':' in bs.getsockname()[0])
+        s.close()
+        bs.close()
+        self.assertRaises(ValueError, SU.createSocket, bind=('::1',12345), connect=('::1',1234))
+
     def testCreateBoundUnixSockets(self):
         if hasattr(socket,"AF_UNIX"):
             SOCKNAME="test_unixsocket"

@@ -5,7 +5,9 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import socket, os, errno, time, sys
-from Pyro4.errors import ConnectionClosedError, TimeoutError
+import re
+from Pyro4.errors import ConnectionClosedError, TimeoutError, CommunicationError
+import Pyro4
 
 import select
 if os.name=="java":
@@ -36,6 +38,8 @@ if hasattr(errno, "WSAEBADF"):
 ERRNO_ENOTSOCK=[errno.ENOTSOCK]
 if hasattr(errno, "WSAENOTSOCK"):
     ERRNO_ENOTSOCK.append(errno.WSAENOTSOCK)
+if not hasattr(socket, "SOL_TCP"):
+    socket.SOL_TCP=socket.IPPROTO_TCP
 
 ERRNO_EADDRNOTAVAIL=[errno.EADDRNOTAVAIL]
 if hasattr(errno, "WSAEADDRNOTAVAIL"):
@@ -46,27 +50,67 @@ if hasattr(errno, "WSAEADDRINUSE"):
     ERRNO_EADDRINUSE.append(errno.WSAEADDRINUSE)
 
 
-def getIpAddress(hostname=None):
-    """returns the IP address for the current, or another, hostname"""
-    return socket.gethostbyname(hostname or socket.gethostname())
+def getIpVersion(hostnameOrAddress):
+    """
+    Determine what the IP version is of the given hostname or ip address (4 or 6).
+    First, it resolves the hostname or address to get an IP address.
+    Then, if the resolved IP contains a ':' it is considered to be an ipv6 address,
+    and if it contains a '.', it is ipv4.
+    """
+    address = getIpAddress(hostnameOrAddress)
+    if "." in address:
+        return 4
+    elif ":" in address:
+        return 6
+    else:
+        raise CommunicationError("Unknown IP address format" + address)
 
 
-def getMyIpAddress(hostname=None, workaround127=False):
-    """returns our own IP address. If you enable the workaround,
-    it will use a little hack if the system reports our own ip address
-    as being localhost (this is often the case on Linux)"""
-    ip=getIpAddress(hostname)
-    if workaround127 and (ip.startswith("127.") or ip=="0.0.0.0"):
-        ip=getInterfaceAddress("4.2.2.2")   # 'abuse' a level 3 DNS server
-    return ip
+def getIpAddress(hostname, workaround127=False, ipVersion=None):
+    """
+    Returns the IP address for the given host. If you enable the workaround,
+    it will use a little hack if the ip address is found to be the loopback address.
+    The hack tries to discover an externally visible ip address instead (this only works for ipv4 addresses).
+    Set ipVersion=6 to return ipv6 addresses, 4 to return ipv4, 0 to let OS choose the best one or None to use Pyro4.config.PREFER_IP_VERSION.
+    """
+    def getaddr(ipVersion):
+        if ipVersion == 6:
+            family=socket.AF_INET6
+        elif ipVersion == 4:
+            family=socket.AF_INET
+        elif ipVersion == 0:
+            family=socket.AF_UNSPEC
+        else:
+            raise ValueError("unknown value for argument ipVersion.")
+        ip=socket.getaddrinfo(hostname or socket.gethostname(), None, family, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
+        if workaround127 and (ip.startswith("127.") or ip=="0.0.0.0"):
+            ip=getInterfaceAddress("4.2.2.2")
+        return ip
+    try:
+        return getaddr(Pyro4.config.PREFER_IP_VERSION) if ipVersion == None else getaddr(ipVersion)
+    except socket.gaierror:
+        if ipVersion == 6 or (ipVersion == None and Pyro4.config.PREFER_IP_VERSION == 6):
+            # try a (inefficient, but hey) workaround to obtain the ipv6 address:
+            # attempt to connect to one of a few ipv6-servers (google's public dns servers),
+            # and obtain the connected socket's address. (This will only work with an active internet connection)
+            # The Google Public DNS IP addresses are as follows: 8.8.8.8, 8.8.4.4
+            # The Google Public DNS IPv6 addresses are as follows:  2001:4860:4860::8888, 2001:4860:4860::8844
+            for address in ["2001:4860:4860::8888", "2001:4860:4860::8844"]:
+                try:
+                    return getInterfaceAddress(address)
+                except socket.error:
+                    pass
+            raise socket.error("unable to determine IPV6 address")
+        return getaddr(0)
 
 
-def getInterfaceAddress(peer_ip_address):
+def getInterfaceAddress(ip_address):
     """tries to find the ip address of the interface that connects to a given host"""
-    s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect((peer_ip_address, 53))   # 53=dns
-    ip=s.getsockname()[0]
-    s.close()
+    family = socket.AF_INET if getIpVersion(ip_address)==4 else socket.AF_INET6
+    sock = socket.socket(family, socket.SOCK_DGRAM)
+    sock.connect((ip_address, 53))   # 53=dns
+    ip = sock.getsockname()[0]
+    sock.close()
     return ip
 
 
@@ -190,17 +234,51 @@ def sendData(sock, data):
 
 _GLOBAL_DEFAULT_TIMEOUT=object()
 
-def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False):
+def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False, ipv6=False):
     """
-    Create a socket. Default socket options are keepalives.
+    Create a socket. Default socket options are keepalive and IPv4 family.
     If 'bind' or 'connect' is a string, it is assumed a Unix domain socket is requested.
     Otherwise, a normal tcp/ip socket is used.
+    Set ipv6=True to create an IPv6 socket rather than IPv4.
+    Set ipv6=None to use the PREFER_IP_VERSION config setting.
     """
     if bind and connect:
         raise ValueError("bind and connect cannot both be specified at the same time")
-    family=socket.AF_INET
+    forceIPv6=ipv6 or (ipv6 == None and Pyro4.config.PREFER_IP_VERSION == 6)
     if type(bind) is str or type(connect) is str:
         family=socket.AF_UNIX
+    elif not bind and not connect:
+        family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+    elif type(bind) is tuple:
+        if not bind[0]:
+            family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+        else:
+            if getIpVersion(bind[0]) == 4:
+                if forceIPv6:
+                    raise ValueError("IPv4 address is used bind argument with forceIPv6 argument:" + bind[0] + ".")
+                family=socket.AF_INET
+            elif getIpVersion(bind[0]) == 6:
+                family=socket.AF_INET6
+                # replace bind addresses by their ipv6 counterparts (4-tuple)
+                bind=(bind[0], bind[1], 0, 0)
+            else:
+                raise ValueError("unknown bind format.")
+    elif type(connect) is tuple:
+        if not connect[0]:
+            family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+        else:
+            if getIpVersion(connect[0]) == 4:
+                if forceIPv6:
+                    raise ValueError("IPv4 address is used in connect argument with forceIPv6 argument:" + bind[0] + ".")
+                family=socket.AF_INET
+            elif getIpVersion(connect[0]) == 6:
+                family=socket.AF_INET6
+                # replace connect addresses by their ipv6 counterparts (4-tuple)
+                connect=(connect[0], connect[1], 0, 0)
+            else:
+                raise ValueError("unknown connect format.")
+    else:
+        raise ValueError("unknown bind or connect format.")
     sock=socket.socket(family, socket.SOCK_STREAM)
     if reuseaddr:
         setReuseAddr(sock)
@@ -246,10 +324,33 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
     return sock
 
 
-def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TIMEOUT):
-    """Create a udp broadcast socket."""
-    sock=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TIMEOUT, ipv6=False):
+    """
+    Create a udp broadcast socket.
+    Set ipv6=True to create an IPv6 socket rather than IPv4.
+    Set ipv6=None to use the PREFER_IP_VERSION config setting.
+    """
+    forceIPv6=ipv6 or (ipv6 == None and Pyro4.config.PREFER_IP_VERSION == 6)
+    if not bind:
+        family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+    elif type(bind) is tuple:
+        if not bind[0]:
+            family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+        else:
+            if getIpVersion(bind[0]) == 4:
+                if forceIPv6:
+                    raise ValueError("IPv4 address is used with forceIPv6 option:" + bind[0] + ".")
+                family=socket.AF_INET
+            elif getIpVersion(bind[0]) == 6:
+                family=socket.AF_INET6
+                bind=(bind[0], bind[1], 0, 0)
+            else:
+                raise ValueError("unknown bind format: %r" % (bind,))
+    else:
+        raise ValueError("unknown bind format: %r" % (bind,))
+    sock=socket.socket(family, socket.SOCK_DGRAM)
+    if family == socket.AF_INET:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     if reuseaddr:
         setReuseAddr(sock)
     if timeout is None:
@@ -260,12 +361,17 @@ def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TI
             # has a problem with timeouts on udp sockets, see http://bugs.jython.org/issue1018
             sock.settimeout(timeout)
     if bind:
-        host,port=bind
-        host=host or ""
+        host = bind[0] or ""
+        port = bind[1]
         if port==0:
             bindOnUnusedPort(sock, host)
         else:
-            sock.bind((host,port))
+            if len(bind) == 2:
+                sock.bind((host,port))  # ipv4
+            elif len(bind) == 4:
+                sock.bind((host,port,0,0))  # ipv6
+            else:
+                raise ValueError("bind must be None, 2-tuple or 4-tuple")
     return sock
 
 
@@ -362,10 +468,24 @@ def findProbablyUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
 def bindOnUnusedPort(sock, host='localhost'):
     """Bind the socket to a free port and return the port number.
     This code is based on the code in the stdlib's test.test_support module."""
-    if os.name!="java" and sock.family == socket.AF_INET and sock.type == socket.SOCK_STREAM:
+    socketfamily = getattr(sock, "family", socket.AF_INET)   # workaround for jython bug http://bugs.jython.org/issue1803
+    sockettype = getattr(sock, "type", socket.SOCK_STREAM)   # workaround for jython bug http://bugs.jython.org/issue1804
+    if os.name!="java" and socketfamily in(socket.AF_INET, socket.AF_INET6) and sockettype == socket.SOCK_STREAM:
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            # even though Jython has this socket option, it doesn't support it. Hence the check in the if statement above.
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
-    sock.bind((host, 0))
+    if socketfamily == socket.AF_INET:
+        if host == 'localhost':
+            sock.bind(('127.0.0.1', 0))
+        else:
+            sock.bind((host, 0))
+    elif socketfamily == socket.AF_INET6:
+        if host == 'localhost':
+            sock.bind(('::1', 0, 0, 0))
+        else:
+            sock.bind((host, 0, 0, 0))
+    else:
+        raise CommunicationError( "unsupported socket family: " + socketfamily )
     if os.name=="java":
         try:
             sock.listen(100)  # otherwise jython always just returns 0 for the port

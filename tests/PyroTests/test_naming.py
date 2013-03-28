@@ -33,7 +33,7 @@ class BCSetupTests(unittest.TestCase):
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
     def testBCstart(self):
-        myIpAddress=Pyro4.socketutil.getMyIpAddress(workaround127=True)
+        myIpAddress=Pyro4.socketutil.getIpAddress("", workaround127=True)
         nsUri, nameserver, bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=False)
         self.assertTrue(bcserver is None)
         nameserver.close()
@@ -57,7 +57,7 @@ class NameServerTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT=0.1
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
-        myIpAddress=Pyro4.socketutil.getMyIpAddress(workaround127=True)
+        myIpAddress=Pyro4.socketutil.getIpAddress("", workaround127=True)
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0)
         self.assertTrue(self.bcserver is not None,"expected a BC server to be running")
         self.bcserver.runInThread()
@@ -167,7 +167,8 @@ class NameServerTests(unittest.TestCase):
         self.assertEqual("PYRO:12345@host.com:4444", str(resolved1))
         
         ns=Pyro4.naming.locateNS(self.nsUri.host, self.nsUri.port)
-        uri=Pyro4.naming.resolve("PYRONAME:"+Pyro4.constants.NAMESERVER_NAME+"@"+self.nsUri.host+":"+str(self.nsUri.port))
+        host="["+self.nsUri.host+"]" if ":" in self.nsUri.host else self.nsUri.host
+        uri=Pyro4.naming.resolve("PYRONAME:"+Pyro4.constants.NAMESERVER_NAME+"@"+host+":"+str(self.nsUri.port))
         self.assertEqual("PYRO",uri.protocol)
         self.assertEqual(self.nsUri.host,uri.host)
         self.assertEqual(Pyro4.constants.NAMESERVER_NAME,uri.object)
@@ -181,7 +182,7 @@ class NameServerTests(unittest.TestCase):
         self.assertEqual("PYRO",uri.protocol)
 
         # test some errors
-        self.assertRaises(NamingError, Pyro4.naming.resolve, "PYRONAME:unknown_object@"+self.nsUri.host)
+        self.assertRaises(NamingError, Pyro4.naming.resolve, "PYRONAME:unknown_object@"+host)
         self.assertRaises(TypeError, Pyro4.naming.resolve, 999)  #wrong arg type
 
 

@@ -246,3 +246,24 @@ the feature is available and working correctly. On most systems that define the 
 symbol, it does, except on Windows: even though the option is there, it doesn't work reliably.
 If you want to check in your code what Pyro's behavior is, see the ``socketutil.USE_MSG_WAITALL`` attribute
 (it's a boolean that will be set to False if Pyro decides it can't or should not use MSG_WAITALL).
+
+
+IPV6 support
+============
+Pyro4 supports IPv6 since version 4.18. You can use IPv6 addresses in the same places where you would
+normally have used IPv4 addresses. There's one exception: the address notation in a Pyro URI. For a numeric
+IPv6 address in a Pyro URI, you have to enclose it in brackets. For example:
+
+``PYRO:objectname@[::1]:3456``
+
+points at a Pyro object located on the IPv6 "::1" address (localhost). When Pyro displays a numeric
+IPv6 location from an URI it will also use the bracket notation. This bracket notation is only used
+in Pyro URIs, everywhere else you just type the IPv6 address without brackets.
+
+To tell Pyro to prefer using IPv6 you can use the ``PREFER_IP_VERSION`` config item. It is set to 4 by default,
+for backward compatibility reasons.
+This means that unless you change it to 6 (or 0), Pyro will be using IPv4 addressing.
+
+There is a new method to see what IP addressing is used: :py:meth:`Pyro4.socketutil.getIpVersion`,
+and a few other methods in :py:mod:`Pyro4.socketutil`  gained a new optional argument to tell it if
+it needs to deal with an ipv6 address rather than ipv4, but these are rarely used in client code.

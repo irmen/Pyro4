@@ -150,11 +150,18 @@ class BroadcastServer(object):
             bcport=Pyro4.config.NS_BCPORT
         if bchost is None:
             bchost=Pyro4.config.NS_BCHOST
-        self.sock=Pyro4.socketutil.createBroadcastSocket((bchost, bcport), reuseaddr=Pyro4.config.SOCK_REUSE, timeout=2.0)
+        if ":" in nsUri.host:  # ipv6
+            bchost = bchost or "::"
+            self.sock=Pyro4.socketutil.createBroadcastSocket((bchost, bcport, 0, 0), reuseaddr=Pyro4.config.SOCK_REUSE, timeout=2.0)
+        else:
+            self.sock=Pyro4.socketutil.createBroadcastSocket((bchost, bcport), reuseaddr=Pyro4.config.SOCK_REUSE, timeout=2.0)
         self._sockaddr=self.sock.getsockname()
         bchost=bchost or self._sockaddr[0]
         bcport=bcport or self._sockaddr[1]
-        self.locationStr="%s:%d" % (bchost, bcport)
+        if ":" in bchost:  # ipv6
+            self.locationStr="[%s]:%d" % (bchost, bcport)
+        else:
+            self.locationStr="%s:%d" % (bchost, bcport)
         log.info("ns broadcast server created on %s", self.locationStr)
         self.running=True
 
@@ -266,8 +273,11 @@ def locateNS(host=None, port=None):
     """Get a proxy for a name server somewhere in the network."""
     if host is None:
         # first try localhost if we have a good chance of finding it there
-        if Pyro4.config.NS_HOST=="localhost" or Pyro4.config.NS_HOST.startswith("127."):
-            uristring="PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, Pyro4.config.NS_HOST, port or Pyro4.config.NS_PORT)
+        if Pyro4.config.NS_HOST in ("localhost", "::1") or Pyro4.config.NS_HOST.startswith("127."):
+            host = Pyro4.config.NS_HOST
+            if ":" in host:   # ipv6
+                host="[%s]" % host
+            uristring="PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, host, port or Pyro4.config.NS_PORT)
             log.debug("locating the NS: %s", uristring)
             proxy=core.Proxy(uristring)
             try:
@@ -308,6 +318,8 @@ def locateNS(host=None, port=None):
     # pyro direct lookup
     if not port:
         port=Pyro4.config.NS_PORT
+    if ":" in host:
+        host = "[%s]" % host
     if core.URI.isUnixsockLocation(host):
         uristring="PYRO:%s@%s" % (constants.NAMESERVER_NAME, host)
     else:

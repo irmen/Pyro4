@@ -72,13 +72,18 @@ class URI(object):
             if (not self.sockname) or ':' in self.sockname:
                 raise errors.PyroError("invalid uri (location)")
         else:
-            self.host, _, self.port=location.partition(":")
+            if location.startswith("["):  # ipv6
+                if location.startswith("[["):  # possible mistake: double-bracketing
+                    raise errors.PyroError("invalid ipv6 address: enclosed in too many brackets")
+                self.host, _, self.port = re.match(r"\[([0-9a-fA-F:%]+)](:(\d+))?", location).groups()
+            else:
+                self.host, _, self.port = location.partition(":")
             if not self.port:
                 self.port=defaultPort
             try:
                 self.port=int(self.port)
             except (ValueError, TypeError):
-                raise errors.PyroError("invalid uri (port)")
+                raise errors.PyroError("invalid port in uri, port="+str(self.port))
 
     @staticmethod
     def isUnixsockLocation(location):
@@ -89,7 +94,10 @@ class URI(object):
     def location(self):
         """property containing the location string, for instance ``"servername.you.com:5555"``"""
         if self.host:
-            return "%s:%d" % (self.host, self.port)
+            if ":" in self.host:    # ipv6
+                return "[%s]:%d" % (self.host, self.port)
+            else:
+                return "%s:%d" % (self.host, self.port)
         elif self.sockname:
             return "./u:"+self.sockname
         else:

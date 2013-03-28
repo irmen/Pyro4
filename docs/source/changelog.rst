@@ -4,6 +4,15 @@ Change Log
 
 **Pyro 4.18**
 
+- IPV6 support landed in trunk (merged ipv6 branch)
+- added config item PREFER_IP_VERSION  (4,6,0, default=4)
+- socketutil.getIpVersion added
+- socketutil.getMyIpAddress removed, use socketutil.getIpAddress("") instead
+- socketutil.createSocket and createBroadcastSocket got new ipv6 argument to create ipv6 sockets instead of ipv4
+- socketutil.bindOnUnusedPort now knows about ipv6 socket type as well
+- Uri locations using numeric "[...]" ip-address notation are considered to be IPv6
+- When Pyro displays a numeric IPv6 address in a Pyro uri, it will also use the "[...]" notation for the address
+- Added ipv6 related unittests
 - Added a few best-practices to the manual
 
 

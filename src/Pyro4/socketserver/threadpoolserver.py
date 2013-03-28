@@ -84,7 +84,10 @@ class SocketServer_Threadpool(object):
         else:
             host=host or self._socketaddr[0]
             port=port or self._socketaddr[1]
-            self.locationStr="%s:%d" % (host, port)
+            if ":" in host:  # ipv6
+                self.locationStr="[%s]:%d" % (host, port)
+            else:
+                self.locationStr="%s:%d" % (host, port)
         self.jobqueue = Pyro4.tpjobqueue.ThreadPooledJobQueue()
         log.info("%d workers started", self.jobqueue.workercount)
 
