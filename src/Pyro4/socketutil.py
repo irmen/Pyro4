@@ -93,6 +93,18 @@ def getIpAddress(hostname, workaround127=False, ipVersion=None):
     try:
         return getaddr(Pyro4.config.PREFER_IP_VERSION) if ipVersion == None else getaddr(ipVersion)
     except socket.gaierror:
+        if ipVersion == 6:
+            # try a (inefficient, but hey) workaround to obtain the ipv6 address:
+            # attempt to connect to one of a few ipv6-servers (google's public dns servers),
+            # and obtain the connected socket's address. (This will only work with an active internet connection)
+            # The Google Public DNS IP addresses are as follows: 8.8.8.8, 8.8.4.4
+            # The Google Public DNS IPv6 addresses are as follows:  2001:4860:4860::8888, 2001:4860:4860::8844
+            for address in ["2001:4860:4860::8888", "2001:4860:4860::8844"]:
+                try:
+                    return getInterfaceAddress(address)
+                except socket.error:
+                    pass
+            raise socket.error("unable to determine IPV6 address")
         return getaddr(0)
 
 
