@@ -50,10 +50,6 @@ if hasattr(errno, "WSAEADDRINUSE"):
     ERRNO_EADDRINUSE.append(errno.WSAEADDRINUSE)
 
 
-def getIpAddress(hostname=None):
-    """returns the IP address for the current, or another, hostname"""
-    return socket.gethostbyname(hostname or socket.gethostname())
-
 def getIpVersion(hostnameOrAddress):
     """
     Determine what the IP version is of the given hostname or ip address (4 or 6).
