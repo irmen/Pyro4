@@ -85,7 +85,7 @@ def getIpAddress(hostname, workaround127=False, ipVersion=None):
         elif ipVersion == 0:
             family=socket.AF_UNSPEC
         else:
-            raise ValueError("unkown value for argument ipVersion.")
+            raise ValueError("unknown value for argument ipVersion.")
         ip=socket.getaddrinfo(hostname or socket.gethostname(), None, family, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
         if workaround127 and (ip.startswith("127.") or ip=="0.0.0.0"):
             ip=getInterfaceAddress("4.2.2.2")
@@ -264,7 +264,7 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
                 # replace bind addresses by their ipv6 counterparts (4-tuple)
                 bind=(bind[0], bind[1], 0, 0)
             else:
-                raise ValueError("unkown bind format.")
+                raise ValueError("unknown bind format.")
     elif type(connect) is tuple:
         if not connect[0]:
             family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
@@ -278,9 +278,9 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
                 # replace connect addresses by their ipv6 counterparts (4-tuple)
                 connect=(connect[0], connect[1], 0, 0)
             else:
-                raise ValueError("unkown connect format.")
+                raise ValueError("unknown connect format.")
     else:
-        raise ValueError("unkown bind or connect format.")
+        raise ValueError("unknown bind or connect format.")
     sock=socket.socket(family, socket.SOCK_STREAM)
     if reuseaddr:
         setReuseAddr(sock)
