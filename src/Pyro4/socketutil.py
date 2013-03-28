@@ -93,7 +93,7 @@ def getIpAddress(hostname, workaround127=False, ipVersion=None):
     try:
         return getaddr(Pyro4.config.PREFER_IP_VERSION) if ipVersion == None else getaddr(ipVersion)
     except socket.gaierror:
-        if ipVersion == 6:
+        if ipVersion == 6 or (ipVersion == None and Pyro4.config.PREFER_IP_VERSION == 6):
             # try a (inefficient, but hey) workaround to obtain the ipv6 address:
             # attempt to connect to one of a few ipv6-servers (google's public dns servers),
             # and obtain the connected socket's address. (This will only work with an active internet connection)
