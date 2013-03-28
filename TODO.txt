@@ -7,7 +7,6 @@ Ideas / TODO
 
 * connection validator is missing and I want it back with similar features as Pyro3, but see next item
 * clean way to have server hooks for client connects and disconnects
-* IPV6 support (testable in 'ipv6' branch)
 * Alternative serializers (Json, Xmlrpc, pluggable)
 * HMAC: Allow per-proxy HMAC key (to be able to connect to different servers with different keys) -- but perhaps remove HMAC completely once the connection validator logic has been reimplemented
 * Add more topics to the index of the docs
