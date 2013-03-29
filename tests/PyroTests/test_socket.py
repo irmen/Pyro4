@@ -14,6 +14,18 @@ import Pyro4
 from testsupport import *
 
 
+# determine ipv6 capability
+has_ipv6 = socket.has_ipv6
+if has_ipv6:
+    s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+    try:
+        s.connect(("::1", 53))
+        s.close()
+    except socket.error:
+        has_ipv6 = False
+
+print("IPV6?",has_ipv6) # XXX
+
 class TestSocketStuff(unittest.TestCase):
     def testSockname(self):
         s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,15 +52,18 @@ class TestSocketutil(unittest.TestCase):
         self.assertNotEqual("127.0.0.1", SU.getIpAddress("127.0.0.1",workaround127=True))
         
     def testGetIP6(self):
+        if not has_ipv6:
+            return
         self.assertTrue(":" in SU.getIpAddress("::1",ipVersion=6))
         self.assertTrue(":" in SU.getIpAddress("",ipVersion=6))
         self.assertTrue(":" in SU.getIpAddress("localhost",ipVersion=6))
 
     def testGetIpVersion(self):
-        Pyro4.config.PREFER_IP_VERSION=6
-        self.assertEqual(6, SU.getIpVersion("127.0.0.1"))
-        self.assertEqual(6, SU.getIpVersion("::1"))
-        self.assertEqual(6, SU.getIpVersion("localhost"))
+        if has_ipv6:
+            Pyro4.config.PREFER_IP_VERSION=6
+            self.assertEqual(6, SU.getIpVersion("127.0.0.1"))
+            self.assertEqual(6, SU.getIpVersion("::1"))
+            self.assertEqual(6, SU.getIpVersion("localhost"))
         Pyro4.config.PREFER_IP_VERSION=4
         self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
         self.assertEqual(6, SU.getIpVersion("::1"))
@@ -59,7 +74,8 @@ class TestSocketutil(unittest.TestCase):
 
     def testGetInterfaceAddress(self):
         self.assertTrue(SU.getInterfaceAddress("localhost").startswith("127."))
-        self.assertTrue(":" in SU.getInterfaceAddress("::1"))
+        if has_ipv6:
+            self.assertTrue(":" in SU.getInterfaceAddress("::1"))
 
     def testUnusedPort(self):
         port1=SU.findProbablyUnusedPort()
@@ -72,6 +88,8 @@ class TestSocketutil(unittest.TestCase):
         self.assertNotEqual(port1,port2)
 
     def testUnusedPort6(self):
+        if not has_ipv6:
+            return
         port1=SU.findProbablyUnusedPort(family=socket.AF_INET6)
         port2=SU.findProbablyUnusedPort(family=socket.AF_INET6)
         self.assertTrue(port1>0)
@@ -94,6 +112,8 @@ class TestSocketutil(unittest.TestCase):
         sock2.close()
 
     def testBindUnusedPort6(self):
+        if not has_ipv6:
+            return
         if os.name=="java":
             print("Jython/java ipv6 support isn't quite there yet")
             return
@@ -130,6 +150,8 @@ class TestSocketutil(unittest.TestCase):
         bs.close()
 
     def testCreateUnboundSockets6(self):
+        if not has_ipv6:
+            return
         s=SU.createSocket(ipv6=True)
         self.assertEqual(socket.AF_INET6, s.family)
         bs=SU.createBroadcastSocket(ipv6=True)
@@ -160,6 +182,8 @@ class TestSocketutil(unittest.TestCase):
         self.assertRaises(ValueError, SU.createSocket, bind=('localhost',12345), connect=('localhost',1234))
             
     def testCreateBoundSockets6(self):
+        if not has_ipv6:
+            return
         s=SU.createSocket(bind=('::1',0))
         self.assertEqual(socket.AF_INET6, s.family)
         bs=SU.createBroadcastSocket(bind=('::1',0))
