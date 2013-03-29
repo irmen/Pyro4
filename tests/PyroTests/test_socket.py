@@ -24,7 +24,6 @@ if has_ipv6:
     except socket.error:
         has_ipv6 = False
 
-print("IPV6?",has_ipv6) # XXX
 
 class TestSocketStuff(unittest.TestCase):
     def testSockname(self):
