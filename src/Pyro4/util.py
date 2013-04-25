@@ -115,23 +115,46 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
         return traceback.format_exception(ex_type, ex_value, ex_tb)
 
 
-class Serializer(object):
-    """
-    A (de)serializer that wraps a certain serialization protocol.
-    Currently it only supports the standard pickle protocol.
-    It can optionally compress the serialized data, and is thread safe.
-    """
-    try:
-        import cPickle as pickle
-    except ImportError:
-        import pickle
-    if pickle.HIGHEST_PROTOCOL<2:
-        raise RuntimeError("pickle serializer needs to support protocol 2 or higher")
-
-    def serialize(self, data, compress=False):
+class SerializerBase(object):
+    """Base class for (de)serializer implementations (which must be thread safe)"""
+    def serializeData(self, data, compress=False):
         """Serialize the given data object, try to compress if told so.
         Returns a tuple of the serialized data (bytes) and a bool indicating if it is compressed or not."""
-        data=self.pickle.dumps(data, self.pickle.HIGHEST_PROTOCOL)
+        data=self.dumps(data)
+        return self.__compressdata(data, compress)
+
+    def deserializeData(self, data, compressed=False):
+        """Deserializes the given data (bytes). Set compressed to True to decompress the data first."""
+        if compressed:
+            data=zlib.decompress(data)
+        return self.loads(data)
+
+    def serializeCall(self, obj, method, vargs, kwargs, compress=False):
+        """Serialize the given method call parameters, try to compress if told so.
+        Returns a tuple of the serialized data and a bool indicating if it is compressed or not."""
+        data=self.dumpsCall(obj, method, vargs, kwargs)
+        return self.__compressdata(data, compress)
+
+    def deserializeCall(self, data, compressed=False):
+        """Deserializes the given call data back to (object, method, vargs, kwargs) tuple.
+        Set compressed to True to decompress the data first."""
+        if compressed:
+            data=zlib.decompress(data)
+        return self.loadsCall(data)
+
+    def loads(self, data):
+        raise NotImplementedError("implement in subclass")
+
+    def loadsCall(self, data):
+        raise NotImplementedError("implement in subclass")
+
+    def dumps(self, data):
+        raise NotImplementedError("implement in subclass")
+
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        raise NotImplementedError("implement in subclass")
+
+    def __compressdata(self, data, compress):
         if not compress or len(data)<200:
             return data, False  # don't waste time compressing small messages
         compressed=zlib.compress(data)
@@ -139,18 +162,145 @@ class Serializer(object):
             return compressed, True
         return data, False
 
-    def deserialize(self, data, compressed=False):
-        """Deserializes the given data (bytes). Set compressed to True to decompress the data first."""
-        if compressed:
-            data=zlib.decompress(data)
-        return self.pickle.loads(data)
-
     def __eq__(self, other):
         """this equality method is only to support the unit tests of this class"""
-        return type(other) is Serializer and vars(self)==vars(other)
+        return isinstance(other, SerializerBase) and vars(self)==vars(other)
     def __ne__(self, other):
         return not self.__eq__(other)
     __hash__=object.__hash__
+
+
+class PickleSerializer(SerializerBase):
+    """
+    A (de)serializer that wraps the Pickle serialization protocol.
+    It can optionally compress the serialized data, and is thread safe.
+    """
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        return pickle.dumps((obj, method, vargs, kwargs), pickle.HIGHEST_PROTOCOL)
+    def dumps(self, data):
+        return pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
+    def loadsCall(self, data):
+        return pickle.loads(data)
+    def loads(self, data):
+        return pickle.loads(data)
+
+
+class MarshalSerializer(SerializerBase):
+    """(de)serializer that wraps the marshal serialization protocol."""
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        return marshal.dumps((obj, method, vargs, kwargs))
+    def dumps(self, data):
+        return marshal.dumps(data)
+    def loadsCall(self, data):
+        return marshal.loads(data)
+    def loads(self, data):
+        return marshal.loads(data)
+
+
+class SerpentSerializer(SerializerBase):
+    """(de)serializer that wraps the serpent serialization protocol."""
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        return serpent.dumps((obj, method, vargs, kwargs))
+    def dumps(self, data):
+        return serpent.dumps(data)
+    def loadsCall(self, data):
+        return serpent.loads(data)
+    def loads(self, data):
+        return serpent.loads(data)
+
+
+class JsonSerializer(SerializerBase):
+    """(de)serializer that wraps the json serialization protocol."""
+    if sys.version_info<(3,0):
+        def dumpsCall(self, object, method, vargs, kwargs):
+            data = {"object": object, "method": method, "params": vargs, "kwargs": kwargs}
+            return json.dumps(data, ensure_ascii=False)
+        def dumps(self, data):
+            return json.dumps(data, ensure_ascii=False)
+        def loadsCall(self, data):
+            data = json.loads(data)
+            return data["object"], data["method"], data["params"], data["kwargs"]
+        def loads(self, data):
+            return json.loads(data)
+    else:
+        def dumpsCall(self, object, method, vargs, kwargs):
+            data = {"object": object, "method": method, "params": vargs, "kwargs": kwargs}
+            data = json.dumps(data, ensure_ascii=False)
+            return data.encode("utf-8")
+        def dumps(self, data):
+            data = json.dumps(data, ensure_ascii=False)
+            return data.encode("utf-8")
+        def loadsCall(self, data):
+            data=data.decode("utf-8")
+            data = json.loads(data)
+            return data["object"], data["method"], data["params"], data["kwargs"]
+        def loads(self, data):
+            data=data.decode("utf-8")
+            return json.loads(data)
+
+
+class XmlrpcSerializer(SerializerBase):
+    """(de)serializer that wraps the xmlrpc serialization protocol."""
+    if sys.version_info<(3,0):
+        def dumpsCall(self, object, method, vargs, kwargs):
+            data = {"object": object, "method": method, "vargs": vargs, "kwargs": kwargs}
+            return xmlrpc.dumps((data,), "pyrocall", allow_none=True, encoding="utf-8")
+        def dumps(self, data):
+            return xmlrpc.dumps((data,), methodresponse=True, allow_none=True, encoding="utf-8")
+        def loadsCall(self, data):
+            data = xmlrpc.loads(data)[0][0]
+            return data["object"], data["method"], data["vargs"], data["kwargs"]
+        def loads(self, data):
+            return xmlrpc.loads(data)[0][0]
+    else:
+        def dumpsCall(self, object, method, vargs, kwargs):
+            data = {"object": object, "method": method, "vargs": vargs, "kwargs": kwargs}
+            data = xmlrpc.dumps((data,), "pyrocall", allow_none=True, encoding="utf-8")
+            return data.encode("utf-8")
+        def dumps(self, data):
+            data = xmlrpc.dumps((data,), methodresponse=True, allow_none=True, encoding="utf-8")
+            return data.encode("utf-8")
+        def loadsCall(self, data):
+            data=data.decode("utf-8")
+            data = xmlrpc.loads(data)[0][0]
+            return data["object"], data["method"], data["vargs"], data["kwargs"]
+        def loads(self, data):
+            data=data.decode("utf-8")
+            return xmlrpc.loads(data)[0][0]
+
+
+"""The various serializers that are supported"""
+serializers = {}
+
+# determine the serializers that are supported
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+if pickle.HIGHEST_PROTOCOL<2:
+    raise RuntimeError("pickle serializer needs to support protocol 2 or higher")
+serializers["pickle"] = PickleSerializer()
+import marshal
+serializers["marshal"] = MarshalSerializer()
+try:
+    import json
+    serializers["json"] = JsonSerializer()
+except ImportError:
+    pass
+try:
+    import xmlrpclib as xmlrpc
+    serializers["xmlrpc"] = XmlrpcSerializer()
+except ImportError:
+    try:
+        import xmlrpc.client as xmlrpc
+        serializers["xmlrpc"] = XmlrpcSerializer()
+    except ImportError:
+        pass
+try:
+    import serpent
+    serializers["serpent"] = SerpentSerializer()
+except ImportError:
+    pass
 
 
 def resolveDottedAttribute(obj, attr, allowDotted):

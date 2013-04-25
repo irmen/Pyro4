@@ -175,7 +175,7 @@ class Proxy(object):
     .. automethod:: _pyroBatch
     .. automethod:: _pyroAsync
     """
-    _pyroSerializer=util.Serializer()
+    _pyroSerializer=util.serializers["pickle"]
     __pyroAttributes=frozenset(["__getnewargs__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway", "_pyroTimeout", "_pyroSeq"])
 
     def __init__(self, uri):
@@ -277,8 +277,8 @@ class Proxy(object):
         if self._pyroConnection is None:
             # rebind here, don't do it from inside the invoke because deadlock will occur
             self.__pyroCreateConnection()
-        data, compressed=self._pyroSerializer.serialize(
-            (self._pyroConnection.objectId, methodname, vargs, kwargs),
+        data, compressed=self._pyroSerializer.serializeCall(
+            self._pyroConnection.objectId, methodname, vargs, kwargs,
             compress=Pyro4.config.COMPRESSION)
         if compressed:
             flags |= MessageFactory.FLAGS_COMPRESSED
@@ -295,7 +295,7 @@ class Proxy(object):
                 else:
                     msgType, flags, seq, data = MessageFactory.getMessage(self._pyroConnection, MessageFactory.MSG_RESULT)
                     self.__pyroCheckSequence(seq)
-                    data=self._pyroSerializer.deserialize(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
+                    data=self._pyroSerializer.deserializeData(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
                     if flags & MessageFactory.FLAGS_EXCEPTION:
                         if sys.platform=="cli":
                             util.fixIronPythonExceptionForPickle(data, False)
@@ -666,7 +666,7 @@ class Daemon(object):
         self.natLocationStr = "%s:%d" % (nathost, natport_for_loc) if nathost else None
         if self.natLocationStr:
             log.debug("NAT address is %s", self.natLocationStr)
-        self.serializer=util.Serializer()
+        self.serializer=util.serializers["pickle"]
         pyroObject=DaemonObject(self)
         pyroObject._pyroId=constants.DAEMON_NAME
         #: Dictionary from Pyro object id to the actual Pyro object registered by this id
@@ -767,7 +767,7 @@ class Daemon(object):
         isCallback=False
         try:
             msgType, flags, seq, data = MessageFactory.getMessage(conn, MessageFactory.MSG_INVOKE)
-            objId, method, vargs, kwargs=self.serializer.deserialize(
+            objId, method, vargs, kwargs=self.serializer.deserializeData(
                                            data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             del data  # invite GC to collect the object, don't wait for out-of-scope
             obj=self.objectsById.get(objId)
@@ -810,7 +810,7 @@ class Daemon(object):
             if flags & MessageFactory.FLAGS_ONEWAY:
                 return   # oneway call, don't send a response
             else:
-                data, compressed=self.serializer.serialize(data, compress=Pyro4.config.COMPRESSION)
+                data, compressed=self.serializer.serializeData(data, compress=Pyro4.config.COMPRESSION)
                 flags=0
                 if compressed:
                     flags |= MessageFactory.FLAGS_COMPRESSED
@@ -836,7 +836,7 @@ class Daemon(object):
         if sys.platform=="cli":
             util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
         try:
-            data, _=self.serializer.serialize(exc_value)
+            data, _=self.serializer.serializeData(exc_value)
         except:
             # the exception object couldn't be serialized, use a generic PyroError instead
             xt, xv, tb = sys.exc_info()
@@ -845,7 +845,7 @@ class Daemon(object):
             exc_value._pyroTraceback=tbinfo
             if sys.platform=="cli":
                 util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
-            data, _=self.serializer.serialize(exc_value)
+            data, _=self.serializer.serializeData(exc_value)
         msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, MessageFactory.FLAGS_EXCEPTION, seq)
         del data
         connection.send(msg)

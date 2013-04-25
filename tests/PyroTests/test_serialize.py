@@ -20,46 +20,46 @@ class SerializeTests(unittest.TestCase):
     
     def setUp(self):
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
-        self.ser=Pyro4.util.Serializer()
+        self.ser=Pyro4.util.serializers["pickle"]
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
         
     def testSerItself(self):
-        s=Pyro4.util.Serializer()
-        p,_=self.ser.serialize(s)
-        s2=self.ser.deserialize(p)
+        s=Pyro4.util.serializers["pickle"]
+        p,_=self.ser.serializeData(s)
+        s2=self.ser.deserializeData(p)
         self.assertEqual(s,s2)
         self.assertTrue(s==s2)
         self.assertFalse(s!=s2)
 
     def testSerCompression(self):
-        d1,c1=self.ser.serialize("small data", compress=True)
-        d2,c2=self.ser.serialize("small data", compress=False)
+        d1,c1=self.ser.serializeData("small data", compress=True)
+        d2,c2=self.ser.serializeData("small data", compress=False)
         self.assertFalse(c1)
         self.assertEqual(d1,d2)
         bigdata="x"*1000
-        d1,c1=self.ser.serialize(bigdata, compress=False)
-        d2,c2=self.ser.serialize(bigdata, compress=True)
+        d1,c1=self.ser.serializeData(bigdata, compress=False)
+        d2,c2=self.ser.serializeData(bigdata, compress=True)
         self.assertFalse(c1)
         self.assertTrue(c2)
         self.assertTrue(len(d2) < len(d1))
-        self.assertEqual(bigdata, self.ser.deserialize(d1, compressed=False))
-        self.assertEqual(bigdata, self.ser.deserialize(d2, compressed=True))
+        self.assertEqual(bigdata, self.ser.deserializeData(d1, compressed=False))
+        self.assertEqual(bigdata, self.ser.deserializeData(d2, compressed=True))
 
     def testSerErrors(self):
         e1=Pyro4.errors.NamingError("x")
         e2=Pyro4.errors.PyroError("x")
         e3=Pyro4.errors.ProtocolError("x")
-        p,_=self.ser.serialize(e1)
-        e=self.ser.deserialize(p)
+        p,_=self.ser.serializeData(e1)
+        e=self.ser.deserializeData(p)
         self.assertTrue(isinstance(e, Pyro4.errors.NamingError))
         self.assertEqual(repr(e1), repr(e))
-        p,_=self.ser.serialize(e2)
-        e=self.ser.deserialize(p)
+        p,_=self.ser.serializeData(e2)
+        e=self.ser.deserializeData(p)
         self.assertTrue(isinstance(e, Pyro4.errors.PyroError))
         self.assertEqual(repr(e2), repr(e))
-        p,_=self.ser.serialize(e3)
-        e=self.ser.deserialize(p)
+        p,_=self.ser.serializeData(e3)
+        e=self.ser.deserializeData(p)
         self.assertTrue(isinstance(e, Pyro4.errors.ProtocolError))
         self.assertEqual(repr(e3), repr(e))
     
@@ -67,8 +67,8 @@ class SerializeTests(unittest.TestCase):
         ex=ZeroDivisionError("test error")
         ex._pyroTraceback=["test traceback payload"]
         Pyro4.util.fixIronPythonExceptionForPickle(ex,True) # hack for ironpython
-        data,compressed=self.ser.serialize(ex)
-        ex2=self.ser.deserialize(data,compressed)
+        data,compressed=self.ser.serializeData(ex)
+        ex2=self.ser.deserializeData(data,compressed)
         Pyro4.util.fixIronPythonExceptionForPickle(ex2,False) # hack for ironpython
         self.assertEqual(ZeroDivisionError, type(ex2))
         self.assertTrue(hasattr(ex2, "_pyroTraceback"))
@@ -76,8 +76,8 @@ class SerializeTests(unittest.TestCase):
 
     def testSerCoreOffline(self):
         uri=Pyro4.core.URI("PYRO:9999@host.com:4444")
-        p,_=self.ser.serialize(uri)
-        uri2=self.ser.deserialize(p)
+        p,_=self.ser.serializeData(uri)
+        uri2=self.ser.deserializeData(p)
         self.assertEqual(uri, uri2)
         self.assertEqual("PYRO",uri2.protocol)
         self.assertEqual("9999",uri2.object)
@@ -85,8 +85,8 @@ class SerializeTests(unittest.TestCase):
         proxy=Pyro4.core.Proxy("PYRO:9999@host.com:4444")
         proxy._pyroTimeout=42
         self.assertTrue(proxy._pyroConnection is None)
-        p,_=self.ser.serialize(proxy)
-        proxy2=self.ser.deserialize(p)
+        p,_=self.ser.serializeData(proxy)
+        proxy2=self.ser.deserializeData(p)
         self.assertTrue(proxy._pyroConnection is None)
         self.assertTrue(proxy2._pyroConnection is None)
         self.assertEqual(proxy2._pyroUri, proxy._pyroUri)
@@ -98,19 +98,62 @@ class SerializeTests(unittest.TestCase):
         # but only to support serializing Pyro objects.
         # The serialized form of a Daemon should be empty (and thus, useless)
         with Pyro4.core.Daemon(port=0) as daemon:
-            d,_=self.ser.serialize(daemon)
-            d2=self.ser.deserialize(d)
+            d,_=self.ser.serializeData(daemon)
+            d2=self.ser.deserializeData(d)
             self.assertTrue(len(d2.__dict__)==0, "deserialized daemon should be empty")
             try:
                 Pyro4.config.AUTOPROXY=False
                 obj=Something()
                 obj.name="hello"
                 daemon.register(obj)
-                o,_=self.ser.serialize(obj)
-                o2=self.ser.deserialize(o)
+                o,_=self.ser.serializeData(obj)
+                o2=self.ser.deserializeData(o)
                 self.assertEqual("hello", o2.name)
             finally:
                 Pyro4.config.AUTOPROXY=True
+
+
+class SerializersTests(unittest.TestCase):
+    serializernames = ["pickle", "marshal", "json", "xmlrpc", "serpent"]
+
+    def testMinimalSerializers(self):
+        self.assertTrue("pickle" in Pyro4.util.serializers)
+        self.assertTrue("marshal" in Pyro4.util.serializers)
+        try:
+            import json
+            self.assertTrue("json" in Pyro4.util.serializers)
+        except ImportError:
+            pass
+        try:
+            import serpent
+            self.assertTrue("serpent" in Pyro4.util.serializers)
+        except ImportError:
+            pass
+
+
+    def testData(self):
+        for name in self.serializernames:
+            if name not in Pyro4.util.serializers:
+                continue
+            serializer = Pyro4.util.serializers[name]
+            data = [42, "hello"]
+            ser, compressed = serializer.serializeData(data)
+            self.assertFalse(compressed)
+            data2 = serializer.deserializeData(ser, compressed=False)
+            self.assertEqual(data, data2)
+
+    def testCall(self):
+        for name in self.serializernames:
+            if name not in Pyro4.util.serializers:
+                continue
+            serializer = Pyro4.util.serializers[name]
+            ser, compressed = serializer.serializeCall("object", "method", "vargs", "kwargs")
+            self.assertFalse(compressed)
+            obj, method, vargs, kwargs = serializer.deserializeCall(ser, compressed=False)
+            self.assertEqual("object", obj)
+            self.assertEqual("method", method)
+            self.assertEqual("vargs", vargs)
+            self.assertEqual("kwargs", kwargs)
 
 
 if __name__ == "__main__":
