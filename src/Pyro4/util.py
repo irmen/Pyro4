@@ -6,7 +6,9 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import sys, zlib, logging
 import traceback, linecache
+import warnings
 import Pyro4
+import Pyro4.errors
 
 log=logging.getLogger("Pyro4.util")
 
@@ -154,6 +156,14 @@ class SerializerBase(object):
     def dumpsCall(self, obj, method, vargs, kwargs):
         raise NotImplementedError("implement in subclass")
 
+    def serializeException(self, exc_value):
+        """Serialize the given exception value object to data bytes."""
+        raise NotImplementedError("implement in subclass")
+
+    def makeException(self, data):
+        """Recreate an exception object from the data that was deserialized."""
+        raise NotImplementedError("implement in subclass")
+
     def __compressdata(self, data, compress):
         if not compress or len(data)<200:
             return data, False  # don't waste time compressing small messages
@@ -183,6 +193,10 @@ class PickleSerializer(SerializerBase):
         return pickle.loads(data)
     def loads(self, data):
         return pickle.loads(data)
+    def serializeException(self, exc_value):
+        return self.dumps(exc_value)
+    def makeException(self, data):
+        return data
 
 
 class MarshalSerializer(SerializerBase):
@@ -190,11 +204,37 @@ class MarshalSerializer(SerializerBase):
     def dumpsCall(self, obj, method, vargs, kwargs):
         return marshal.dumps((obj, method, vargs, kwargs))
     def dumps(self, data):
-        return marshal.dumps(data)
+        return marshal.dumps(data)      # @todo wrap it in a dict when it can't be marshaled?
     def loadsCall(self, data):
         return marshal.loads(data)
     def loads(self, data):
         return marshal.loads(data)
+    def serializeException(self, exc_value):
+        exc = {
+            "type": type(exc_value).__name__,
+            "args": exc_value.args
+            }
+        return self.dumps(exc)
+    def makeException(self, data):
+        return createException(data["type"], *data["args"])
+
+
+def createException(type_name, *args):
+    """recreate an exception value based on the exception type name and arguments"""
+    x = getattr(Pyro4.errors, type_name, None)
+    if x is not None:
+        return x(*args)
+    try:
+        try:
+            import exceptions
+            return getattr(exceptions, type_name)(*args)
+        except ImportError:
+            import builtins
+            return getattr(builtins, type_name)(*args)
+    except:
+        args = list(args)
+        args.insert(0, type_name)
+        return Pyro4.errors.PyroError(*args)
 
 
 class SerpentSerializer(SerializerBase):
@@ -207,6 +247,10 @@ class SerpentSerializer(SerializerBase):
         return serpent.loads(data)
     def loads(self, data):
         return serpent.loads(data)
+    def serializeException(self, exc_value):
+        return serpent.dumps(exc_value)
+    def makeException(self, data):
+        return createException(data["__class__"], *data["args"])
 
 
 class JsonSerializer(SerializerBase):
@@ -216,7 +260,7 @@ class JsonSerializer(SerializerBase):
             data = {"object": object, "method": method, "params": vargs, "kwargs": kwargs}
             return json.dumps(data, ensure_ascii=False)
         def dumps(self, data):
-            return json.dumps(data, ensure_ascii=False)
+            return json.dumps(data, ensure_ascii=False)  # @todo wrap it in a dict when it can't be marshaled?
         def loadsCall(self, data):
             data = json.loads(data)
             return data["object"], data["method"], data["params"], data["kwargs"]
@@ -228,7 +272,7 @@ class JsonSerializer(SerializerBase):
             data = json.dumps(data, ensure_ascii=False)
             return data.encode("utf-8")
         def dumps(self, data):
-            data = json.dumps(data, ensure_ascii=False)
+            data = json.dumps(data, ensure_ascii=False)  # @todo wrap it in a dict when it can't be marshaled?
             return data.encode("utf-8")
         def loadsCall(self, data):
             data=data.decode("utf-8")
@@ -237,6 +281,14 @@ class JsonSerializer(SerializerBase):
         def loads(self, data):
             data=data.decode("utf-8")
             return json.loads(data)
+    def serializeException(self, exc_value):
+        exc = {
+            "type": type(exc_value).__name__,
+            "args": exc_value.args
+            }
+        return self.dumps(exc)
+    def makeException(self, data):
+        return createException(data["type"], *data["args"])
 
 
 class XmlrpcSerializer(SerializerBase):
@@ -267,6 +319,14 @@ class XmlrpcSerializer(SerializerBase):
         def loads(self, data):
             data=data.decode("utf-8")
             return xmlrpc.loads(data)[0][0]
+    def serializeException(self, exc_value):
+        exc = {
+            "type": type(exc_value).__name__,
+            "args": exc_value.args
+            }
+        return self.dumps(exc)
+    def makeException(self, data):
+        return createException(data["type"], *data["args"])
 
 
 """The various serializers that are supported"""
@@ -300,8 +360,8 @@ try:
     import serpent
     serializers["serpent"] = SerpentSerializer()
 except ImportError:
+    #warnings.warn("serpent serializer not available", RuntimeWarning)
     pass
-
 
 def resolveDottedAttribute(obj, attr, allowDotted):
     """

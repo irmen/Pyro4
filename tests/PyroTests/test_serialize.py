@@ -112,6 +112,13 @@ class SerializeTests(unittest.TestCase):
             finally:
                 Pyro4.config.AUTOPROXY=True
 
+    def testSerializeException(self):
+        e = ZeroDivisionError("hello")
+        d = self.ser.serializeException(e)
+        e2 = self.ser.makeException(self.ser.deserializeData(d))
+        self.assertIsInstance(e2, ZeroDivisionError)
+        self.assertEqual("hello", str(e2))
+
 
 class SerializersTests(unittest.TestCase):
     serializernames = ["pickle", "marshal", "json", "xmlrpc", "serpent"]
@@ -154,6 +161,18 @@ class SerializersTests(unittest.TestCase):
             self.assertEqual("method", method)
             self.assertEqual("vargs", vargs)
             self.assertEqual("kwargs", kwargs)
+
+    def testException(self):
+        e = ZeroDivisionError("hello")
+        for name in self.serializernames:
+            if name not in Pyro4.util.serializers:
+                continue
+            serializer = Pyro4.util.serializers[name]
+            ser = serializer.serializeException(e)
+            e2 = serializer.deserializeData(ser)
+            e2 = serializer.makeException(e2)
+            self.assertIsInstance(e2, ZeroDivisionError)
+            self.assertEqual("hello", str(e2))
 
 
 if __name__ == "__main__":

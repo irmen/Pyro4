@@ -175,7 +175,7 @@ class Proxy(object):
     .. automethod:: _pyroBatch
     .. automethod:: _pyroAsync
     """
-    _pyroSerializer=util.serializers["pickle"]
+    _pyroSerializer=util.serializers[Pyro4.config.SERIALIZER]
     __pyroAttributes=frozenset(["__getnewargs__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway", "_pyroTimeout", "_pyroSeq"])
 
     def __init__(self, uri):
@@ -294,12 +294,14 @@ class Proxy(object):
                     return None    # oneway call, no response data
                 else:
                     msgType, flags, seq, data = MessageFactory.getMessage(self._pyroConnection, MessageFactory.MSG_RESULT)
+                    print("GOT", msgType, data)  # XXX weg
                     self.__pyroCheckSequence(seq)
                     data=self._pyroSerializer.deserializeData(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
                     if flags & MessageFactory.FLAGS_EXCEPTION:
                         if sys.platform=="cli":
                             util.fixIronPythonExceptionForPickle(data, False)
-                        raise data
+                        print("OMG EXCEPTION!", data)  # XXX weg
+                        raise self._pyroSerializer.makeException(data)
                     else:
                         return data
             except (errors.CommunicationError, KeyboardInterrupt):
@@ -666,7 +668,7 @@ class Daemon(object):
         self.natLocationStr = "%s:%d" % (nathost, natport_for_loc) if nathost else None
         if self.natLocationStr:
             log.debug("NAT address is %s", self.natLocationStr)
-        self.serializer=util.serializers["pickle"]
+        self.serializer=util.serializers[Pyro4.config.SERIALIZER]
         pyroObject=DaemonObject(self)
         pyroObject._pyroId=constants.DAEMON_NAME
         #: Dictionary from Pyro object id to the actual Pyro object registered by this id
@@ -767,7 +769,8 @@ class Daemon(object):
         isCallback=False
         try:
             msgType, flags, seq, data = MessageFactory.getMessage(conn, MessageFactory.MSG_INVOKE)
-            objId, method, vargs, kwargs=self.serializer.deserializeData(
+            print("GOT",msgType,data) # XXX
+            objId, method, vargs, kwargs=self.serializer.deserializeCall(
                                            data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             del data  # invite GC to collect the object, don't wait for out-of-scope
             obj=self.objectsById.get(objId)
@@ -836,7 +839,7 @@ class Daemon(object):
         if sys.platform=="cli":
             util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
         try:
-            data, _=self.serializer.serializeData(exc_value)
+            data =self.serializer.serializeException(exc_value)
         except:
             # the exception object couldn't be serialized, use a generic PyroError instead
             xt, xv, tb = sys.exc_info()
@@ -845,7 +848,7 @@ class Daemon(object):
             exc_value._pyroTraceback=tbinfo
             if sys.platform=="cli":
                 util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
-            data, _=self.serializer.serializeData(exc_value)
+            data =self.serializer.serializeException(exc_value)
         msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, MessageFactory.FLAGS_EXCEPTION, seq)
         del data
         connection.send(msg)
