@@ -839,7 +839,7 @@ class Daemon(object):
         if sys.platform=="cli":
             util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
         try:
-            data =self.serializer.serializeException(exc_value)
+            data, compressed =self.serializer.serializeData(exc_value)
         except:
             # the exception object couldn't be serialized, use a generic PyroError instead
             xt, xv, tb = sys.exc_info()
@@ -848,8 +848,11 @@ class Daemon(object):
             exc_value._pyroTraceback=tbinfo
             if sys.platform=="cli":
                 util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
-            data =self.serializer.serializeException(exc_value)
-        msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, MessageFactory.FLAGS_EXCEPTION, seq)
+            data, compressed =self.serializer.serializeData(exc_value)
+        flags = MessageFactory.FLAGS_EXCEPTION
+        if compressed:
+            flags |= MessageFactory.FLAGS_COMPRESSED
+        msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags, seq)
         del data
         connection.send(msg)
 

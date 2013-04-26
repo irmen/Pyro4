@@ -156,14 +156,6 @@ class SerializerBase(object):
     def dumpsCall(self, obj, method, vargs, kwargs):
         raise NotImplementedError("implement in subclass")
 
-    def serializeException(self, exc_value):
-        """Serialize the given exception value object to data bytes."""
-        raise NotImplementedError("implement in subclass")
-
-    def makeException(self, data):
-        """Recreate an exception object from the data that was deserialized."""
-        raise NotImplementedError("implement in subclass")
-
     def __compressdata(self, data, compress):
         if not compress or len(data)<200:
             return data, False  # don't waste time compressing small messages
@@ -171,6 +163,63 @@ class SerializerBase(object):
         if len(compressed)<len(data):
             return compressed, True
         return data, False
+
+    def class_to_dict(self, obj):
+        """convert a non-serializable object to a dict"""
+        if isinstance(obj, Exception):
+            # special case for exceptions
+            value={"args": obj.args}
+            value["__class__"] = type(obj).__module__ + "." + type(obj).__name__
+            return value
+        try:
+            value = obj.__getstate__()
+        except AttributeError:
+            pass
+        else:
+            if isinstance(value, dict):
+                return value
+        try:
+            value = dict(vars(obj))  # make sure we can serialize anything that resembles a dict
+            value["__class__"] = type(obj).__module__ + "." + type(obj).__name__
+            return value
+        except TypeError:
+            if hasattr(obj, "__slots__"):
+                # use the __slots__ instead of the vars dict
+                value = {}
+                for slot in obj.__slots__:
+                    value[slot] = getattr(obj, slot)
+                value["__class__"] = type(obj).__module__ + "." + type(obj).__name__
+                return value
+            else:
+                raise Pyro4.errors.ProtocolError("don't know how to serialize class " + str(type(obj)) + ". Give it vars() or an appropriate __getstate__")
+
+    def dict_to_class(self, data):
+        """
+        Recreate an object out of a dict containing the class name and the attributes.
+        Only a fixed set of classes are recognized.
+        """
+        classname = data.get("__class__", "<unknown>")
+        if classname.startswith("Pyro4.core."):
+            if classname=="Pyro4.core.URI":
+                if data["host"] is not None:
+                    uri = "{protocol}:{object}@{host}:{port}".format(**data)
+                else:
+                    uri = "{protocol}:{object}@./u:{sockname}".format(**data)
+                return Pyro4.core.URI(uri)
+        elif classname.startswith("Pyro4.util."):
+            if classname=="Pyro4.util.PickleSerializer":
+                return PickleSerializer()
+            elif classname=="Pyro4.util.MarshalSerializer":
+                return MarshalSerializer()
+            elif classname=="Pyro4.util.JsonSerializer":
+                return JsonSerializer()
+            elif classname=="Pyro4.util.SerpentSerializer":
+                return SerpentSerializer()
+            elif classname=="Pyro4.util.XmlrpcSerializer":
+                return XmlrpcSerializer()
+        elif classname.startswith("Pyro4.errors."):
+            pass
+        raise Pyro4.errors.ProtocolError("unsupported serialized class: "+classname)
 
     def __eq__(self, other):
         """this equality method is only to support the unit tests of this class"""
@@ -193,33 +242,22 @@ class PickleSerializer(SerializerBase):
         return pickle.loads(data)
     def loads(self, data):
         return pickle.loads(data)
-    def serializeException(self, exc_value):
-        return self.dumps(exc_value)
-    def makeException(self, data):
-        return data
-
 
 class MarshalSerializer(SerializerBase):
     """(de)serializer that wraps the marshal serialization protocol."""
     def dumpsCall(self, obj, method, vargs, kwargs):
         return marshal.dumps((obj, method, vargs, kwargs))
     def dumps(self, data):
-        return marshal.dumps(data)      # @todo wrap it in a dict when it can't be marshaled?
+        try:
+            return marshal.dumps(data)
+        except (ValueError, TypeError):
+            return marshal.dumps(self.class_to_dict(data))
     def loadsCall(self, data):
         return marshal.loads(data)
     def loads(self, data):
         return marshal.loads(data)
-    def serializeException(self, exc_value):
-        exc = {
-            "type": type(exc_value).__name__,
-            "args": exc_value.args
-            }
-        return self.dumps(exc)
-    def makeException(self, data):
-        return createException(data["type"], *data["args"])
 
-
-def createException(type_name, *args):
+def createException(type_name, *args):      # XXX no longer needed?
     """recreate an exception value based on the exception type name and arguments"""
     x = getattr(Pyro4.errors, type_name, None)
     if x is not None:
@@ -247,11 +285,6 @@ class SerpentSerializer(SerializerBase):
         return serpent.loads(data)
     def loads(self, data):
         return serpent.loads(data)
-    def serializeException(self, exc_value):
-        return serpent.dumps(exc_value)
-    def makeException(self, data):
-        return createException(data["__class__"], *data["args"])
-
 
 class JsonSerializer(SerializerBase):
     """(de)serializer that wraps the json serialization protocol."""
@@ -260,7 +293,10 @@ class JsonSerializer(SerializerBase):
             data = {"object": object, "method": method, "params": vargs, "kwargs": kwargs}
             return json.dumps(data, ensure_ascii=False)
         def dumps(self, data):
-            return json.dumps(data, ensure_ascii=False)  # @todo wrap it in a dict when it can't be marshaled?
+            try:
+                return json.dumps(data, ensure_ascii=False)
+            except TypeError:
+                return json.dumps(self.class_to_dict(data), ensure_ascii=False)
         def loadsCall(self, data):
             data = json.loads(data)
             return data["object"], data["method"], data["params"], data["kwargs"]
@@ -272,7 +308,10 @@ class JsonSerializer(SerializerBase):
             data = json.dumps(data, ensure_ascii=False)
             return data.encode("utf-8")
         def dumps(self, data):
-            data = json.dumps(data, ensure_ascii=False)  # @todo wrap it in a dict when it can't be marshaled?
+            try:
+                data = json.dumps(data, ensure_ascii=False)
+            except TypeError:
+                data = json.dumps(self.class_to_dict(data), ensure_ascii=False)
             return data.encode("utf-8")
         def loadsCall(self, data):
             data=data.decode("utf-8")
@@ -281,14 +320,6 @@ class JsonSerializer(SerializerBase):
         def loads(self, data):
             data=data.decode("utf-8")
             return json.loads(data)
-    def serializeException(self, exc_value):
-        exc = {
-            "type": type(exc_value).__name__,
-            "args": exc_value.args
-            }
-        return self.dumps(exc)
-    def makeException(self, data):
-        return createException(data["type"], *data["args"])
 
 
 class XmlrpcSerializer(SerializerBase):
@@ -298,7 +329,10 @@ class XmlrpcSerializer(SerializerBase):
             data = {"object": object, "method": method, "vargs": vargs, "kwargs": kwargs}
             return xmlrpc.dumps((data,), "pyrocall", allow_none=True, encoding="utf-8")
         def dumps(self, data):
-            return xmlrpc.dumps((data,), methodresponse=True, allow_none=True, encoding="utf-8")
+            try:
+                return xmlrpc.dumps((data,), methodresponse=True, allow_none=True, encoding="utf-8")
+            except TypeError:
+                return xmlrpc.dumps((self.class_to_dict(data),), methodresponse=True, allow_none=True, encoding="utf-8")
         def loadsCall(self, data):
             data = xmlrpc.loads(data)[0][0]
             return data["object"], data["method"], data["vargs"], data["kwargs"]
@@ -310,7 +344,10 @@ class XmlrpcSerializer(SerializerBase):
             data = xmlrpc.dumps((data,), "pyrocall", allow_none=True, encoding="utf-8")
             return data.encode("utf-8")
         def dumps(self, data):
-            data = xmlrpc.dumps((data,), methodresponse=True, allow_none=True, encoding="utf-8")
+            try:
+                data = xmlrpc.dumps((data,), methodresponse=True, allow_none=True, encoding="utf-8")
+            except TypeError:
+                data = xmlrpc.dumps((self.class_to_dict(data),), methodresponse=True, allow_none=True, encoding="utf-8")
             return data.encode("utf-8")
         def loadsCall(self, data):
             data=data.decode("utf-8")
@@ -319,14 +356,6 @@ class XmlrpcSerializer(SerializerBase):
         def loads(self, data):
             data=data.decode("utf-8")
             return xmlrpc.loads(data)[0][0]
-    def serializeException(self, exc_value):
-        exc = {
-            "type": type(exc_value).__name__,
-            "args": exc_value.args
-            }
-        return self.dumps(exc)
-    def makeException(self, data):
-        return createException(data["type"], *data["args"])
 
 
 """The various serializers that are supported"""

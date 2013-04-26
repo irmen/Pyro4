@@ -13,19 +13,20 @@ from testsupport import *
 
 
 class Something(object):
-    pass
+    def __init__(self):
+        self.value=42
 
 
 class SerializeTests(unittest.TestCase):
-    
+    SERIALIZER="pickle"
     def setUp(self):
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
-        self.ser=Pyro4.util.serializers["pickle"]
+        self.ser=Pyro4.util.serializers[self.SERIALIZER]
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
         
     def testSerItself(self):
-        s=Pyro4.util.serializers["pickle"]
+        s=Pyro4.util.serializers[self.SERIALIZER]
         p,_=self.ser.serializeData(s)
         s2=self.ser.deserializeData(p)
         self.assertEqual(s,s2)
@@ -82,6 +83,19 @@ class SerializeTests(unittest.TestCase):
         self.assertEqual("PYRO",uri2.protocol)
         self.assertEqual("9999",uri2.object)
         self.assertEqual("host.com:4444",uri2.location)
+        self.assertEqual(4444, uri2.port)
+        self.assertIsNone(uri2.sockname)
+
+        uri=Pyro4.core.URI("PYRO:12345@./u:/tmp/socketname")
+        p,_=self.ser.serializeData(uri)
+        uri2=self.ser.deserializeData(p)
+        self.assertEqual(uri, uri2)
+        self.assertEqual("PYRO",uri2.protocol)
+        self.assertEqual("12345",uri2.object)
+        self.assertEqual("./u:/tmp/socketname",uri2.location)
+        self.assertIsNone(uri2.port)
+        self.assertEqual("/tmp/socketname", uri2.sockname)
+
         proxy=Pyro4.core.Proxy("PYRO:9999@host.com:4444")
         proxy._pyroTimeout=42
         self.assertTrue(proxy._pyroConnection is None)
@@ -114,10 +128,58 @@ class SerializeTests(unittest.TestCase):
 
     def testSerializeException(self):
         e = ZeroDivisionError("hello")
-        d = self.ser.serializeException(e)
-        e2 = self.ser.makeException(self.ser.deserializeData(d))
+        d, c = self.ser.serializeData(e)
+        e2 = self.ser.deserializeData(d, c)
         self.assertIsInstance(e2, ZeroDivisionError)
         self.assertEqual("hello", str(e2))
+
+    def testPyroClasses(self):
+        uri = Pyro4.core.URI("PYRO:object@host:4444")
+        s, c = self.ser.serializeData(uri)
+        x = self.ser.deserializeData(s, c)
+        self.assertEqual(uri, x)
+        uri=Pyro4.core.URI("PYRO:12345@./u:/tmp/socketname")
+        s, c = self.ser.serializeData(uri)
+        x = self.ser.deserializeData(s, c)
+        self.assertEqual(uri, x)
+
+    def testCustomClassFail(self):
+        if self.SERIALIZER=="pickle":
+            self.skipTest("pickle simply serializes custom classes")
+        o = Something()
+        s, c = self.ser.serializeData(o)
+        try:
+            x = self.ser.deserializeData(s, c)
+            self.fail("error expected, shouldn't deserialize unknown class")
+        except Pyro4.errors.ProtocolError:
+            pass
+
+    def testDictClassFail(self):
+        o = Something()
+        d = self.ser.class_to_dict(o)
+        self.assertEqual({"__class__": "test_serialize.Something", "value": 42}, d)
+        try:
+            x = self.ser.dict_to_class(d)
+            self.fail("error expected")
+        except Pyro4.errors.ProtocolError:
+            pass
+
+    def testDictException(self):
+        x = ZeroDivisionError("hello", 42)
+        d = self.ser.class_to_dict(x)
+        self.assertEqual({"__class__": "builtins.ZeroDivisionError", "args": ("hello", 42)}, d)
+
+    def testDictClassOk(self):
+        uri = Pyro4.core.URI("PYRO:object@host:4444")
+        d = self.ser.class_to_dict(uri)
+        self.assertEqual({"__class__": "Pyro4.core.URI", "protocol": "PYRO", "object": "object", "host":"host", "port": 4444, "sockname": None}, d)
+        x = self.ser.dict_to_class(d)
+        self.assertEqual(uri, x)
+        uri = Pyro4.core.URI("PYRO:12345@./u:/tmp/socketname")
+        d = self.ser.class_to_dict(uri)
+        self.assertEqual({"__class__": "Pyro4.core.URI", "protocol": "PYRO", "object": "12345", "host": None, "port": None, "sockname": "/tmp/socketname"}, d)
+        x = self.ser.dict_to_class(d)
+        self.assertEqual(uri, x)
 
 
 class SerializersTests(unittest.TestCase):
@@ -168,11 +230,23 @@ class SerializersTests(unittest.TestCase):
             if name not in Pyro4.util.serializers:
                 continue
             serializer = Pyro4.util.serializers[name]
-            ser = serializer.serializeException(e)
-            e2 = serializer.deserializeData(ser)
-            e2 = serializer.makeException(e2)
+            ser, compressed = serializer.serializeData(e)
+            e2 = serializer.deserializeData(ser, compressed)
             self.assertIsInstance(e2, ZeroDivisionError)
             self.assertEqual("hello", str(e2))
+
+
+class SerializeTests_serpent(SerializeTests):
+    SERIALIZER="serpent"
+
+class SerializeTests_json(SerializeTests):
+    SERIALIZER="json"
+
+class SerializeTests_xmlrpc(SerializeTests):
+    SERIALIZER="xmlrpc"
+
+class SerializeTests_marshal(SerializeTests):
+    SERIALIZER="marshal"
 
 
 if __name__ == "__main__":

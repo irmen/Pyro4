@@ -172,7 +172,24 @@ class ServerTestsOnce(unittest.TestCase):
             except TypeError:
                 pass
 
-    def testNonserializableException(self):
+    def testNonserializableException_other(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            try:
+                p.nonserializableException()
+                self.fail("should crash")
+            except Exception:
+                xt, xv, tb = sys.exc_info()
+                self.assertEqual(xt, Pyro4.errors.PyroError)
+                tblines = "\n".join(Pyro4.util.getPyroTraceback())
+                self.assertTrue("PyroError: Error serializing exception" in tblines)
+                s1 = "Original exception: <class '__main__.NonserializableError'>:"
+                s2 = "Original exception: <class 'PyroTests.test_server.NonserializableError'>:"
+                self.assertTrue(s1 in tblines or s2 in tblines)
+                self.assertTrue("raise NonserializableError((\"xantippe" in tblines)
+
+    def testNonserializableException_pickle(self):
+        if Pyro4.config.SERIALIZER!="pickle":
+            self.skipTest("only for pickle-serializer")
         with Pyro4.core.Proxy(self.objectUri) as p:
             try:
                 p.nonserializableException()
