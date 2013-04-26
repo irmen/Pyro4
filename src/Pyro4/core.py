@@ -301,7 +301,7 @@ class Proxy(object):
                         if sys.platform=="cli":
                             util.fixIronPythonExceptionForPickle(data, False)
                         print("OMG EXCEPTION!", data)  # XXX weg
-                        raise self._pyroSerializer.makeException(data)
+                        raise data
                     else:
                         return data
             except (errors.CommunicationError, KeyboardInterrupt):
