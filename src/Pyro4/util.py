@@ -194,7 +194,7 @@ class SerializerBase(object):
         if isinstance(obj, Exception):
             # special case for exceptions
             value={"args": obj.args}
-            value["__class__"] = type(obj).__module__ + "." + type(obj).__name__
+            value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
             return value
         try:
             value = obj.__getstate__()
@@ -205,7 +205,7 @@ class SerializerBase(object):
                 return value
         try:
             value = dict(vars(obj))  # make sure we can serialize anything that resembles a dict
-            value["__class__"] = type(obj).__module__ + "." + type(obj).__name__
+            value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
             return value
         except TypeError:
             if hasattr(obj, "__slots__"):
@@ -213,10 +213,10 @@ class SerializerBase(object):
                 value = {}
                 for slot in obj.__slots__:
                     value[slot] = getattr(obj, slot)
-                value["__class__"] = type(obj).__module__ + "." + type(obj).__name__
+                value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
                 return value
             else:
-                raise Pyro4.errors.ProtocolError("don't know how to serialize class " + str(type(obj)) + ". Give it vars() or an appropriate __getstate__")
+                raise Pyro4.errors.ProtocolError("don't know how to serialize class " + str(obj.__class__) + ". Give it vars() or an appropriate __getstate__")
 
     @staticmethod
     def dict_to_class(data):
@@ -226,7 +226,7 @@ class SerializerBase(object):
         """
         classname = data.get("__class__", "<unknown>")
         if "__" in classname:
-            raise Pyro4.errors.SecurityError("refuse to deserialize types with double underscores in their name")
+            raise Pyro4.errors.SecurityError("refuse to deserialize types with double underscores in their name: "+classname)
         if classname.startswith("Pyro4.core."):
             if classname=="Pyro4.core.URI":
                 uri = Pyro4.core.URI.__new__(Pyro4.core.URI)
@@ -267,7 +267,7 @@ class SerializerBase(object):
             return all_exceptions[classname](*data["args"])
         # try one of the serializer classes
         for serializer in _serializers.values():
-            if classname == type(serializer).__name__:
+            if classname == serializer.__class__.__name__:
                 return serializer
         raise Pyro4.errors.ProtocolError("unsupported serialized class: "+classname)
 

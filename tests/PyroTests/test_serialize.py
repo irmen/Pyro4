@@ -10,7 +10,7 @@ import sys
 import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
-from PyroTests.testsupport import *
+from testsupport import *
 
 
 class Something(object):
@@ -228,7 +228,9 @@ class GenericTests(unittest.TestCase):
     def testDictClassFail(self):
         o = Something()
         d = Pyro4.util.SerializerBase.class_to_dict(o)
-        self.assertEqual({"__class__": "test_serialize.Something", "value": 42}, d)
+        self.assertEqual(2, len(d))
+        self.assertEqual(42, d["value"])
+        self.assertTrue(d["__class__"].endswith(".Something"))
         try:
             x = Pyro4.util.SerializerBase.dict_to_class(d)
             self.fail("error expected")

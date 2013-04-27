@@ -990,7 +990,7 @@ except ImportError:
 
 def serialize_core_object_to_dict(obj):
     return {
-        "__class__": "Pyro4.core." + type(obj).__name__,
+        "__class__": "Pyro4.core." + obj.__class__.__name__,
         "state": obj.__getstate_for_dict__()
     }
 
