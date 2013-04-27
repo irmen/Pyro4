@@ -195,6 +195,8 @@ class SerializerBase(object):
             # special case for exceptions
             value={"args": obj.args}
             value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
+            if hasattr(obj, "_pyroTraceback"):
+                value["__remote_traceback__"] = obj._pyroTraceback
             return value
         try:
             value = obj.__getstate__()
@@ -254,22 +256,29 @@ class SerializerBase(object):
         elif classname.startswith("Pyro4.errors."):
             errortype = getattr(Pyro4.errors, classname.split('.', 2)[2])
             if issubclass(errortype, Pyro4.errors.PyroError):
-                return errortype(*data["args"])
+                return SerializerBase.make_exception(errortype, data)
         elif classname.startswith("builtins."):
             exceptiontype = getattr(builtins, classname.split('.', 1)[1])
             if issubclass(exceptiontype, Exception):
-                return exceptiontype(*data["args"])
+                return SerializerBase.make_exception(exceptiontype, data)
         elif classname.startswith("exceptions."):
             exceptiontype = getattr(exceptions, classname.split('.', 1)[1])
             if issubclass(exceptiontype, Exception):
-                return exceptiontype(*data["args"])
+                return SerializerBase.make_exception(exceptiontype, data)
         elif classname in all_exceptions:
-            return all_exceptions[classname](*data["args"])
+            return SerializerBase.make_exception(all_exceptions[classname], data)
         # try one of the serializer classes
         for serializer in _serializers.values():
             if classname == serializer.__class__.__name__:
                 return serializer
         raise Pyro4.errors.ProtocolError("unsupported serialized class: "+classname)
+
+    @staticmethod
+    def make_exception(exceptiontype, data):
+        ex = exceptiontype(*data["args"])
+        if "__remote_traceback__" in data:
+            ex._pyroTraceback = data["__remote_traceback__"]
+        return ex
 
     def recreate_classes(self, literal):
         t = type(literal)

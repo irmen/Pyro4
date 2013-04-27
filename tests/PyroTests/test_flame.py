@@ -12,10 +12,6 @@ import Pyro4.errors
 from testsupport import *
 
 
-class Something(object):
-    pass
-
-
 class FlameDisabledTests(unittest.TestCase):
     def testFlameDisabled(self):
         with Pyro4.core.Daemon() as d:

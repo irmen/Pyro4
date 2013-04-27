@@ -13,8 +13,6 @@ import Pyro4.socketutil
 from Pyro4.errors import DaemonError,PyroError
 from testsupport import *
 
-Pyro4.config.reset(useenvironment=False)
-
 
 class MyObj(object):
     def __init__(self, arg):

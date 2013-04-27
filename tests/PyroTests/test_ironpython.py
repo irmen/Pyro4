@@ -8,6 +8,7 @@ import unittest
 import sys
 import pickle
 
+
 if sys.platform=="cli":
 
     class IronPythonWeirdnessTests(unittest.TestCase):

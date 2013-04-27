@@ -7,15 +7,11 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 from __future__ import with_statement, absolute_import
 import unittest
 import sys
+import pprint
 import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
 from testsupport import *
-
-
-class Something(object):
-    def __init__(self):
-        self.value=42
 
 
 class SerializeTests_pickle(unittest.TestCase):
@@ -53,12 +49,14 @@ class SerializeTests_pickle(unittest.TestCase):
 
     def testSerErrors(self):
         e1=Pyro4.errors.NamingError(unicode("x"))
+        e1._pyroTraceback = ["this is the remote traceback"]
         e2=Pyro4.errors.PyroError(unicode("x"))
         e3=Pyro4.errors.ProtocolError(unicode("x"))
         p,_=self.ser.serializeData(e1)
         e=self.ser.deserializeData(p)
         self.assertTrue(isinstance(e, Pyro4.errors.NamingError))
         self.assertEqual(repr(e1), repr(e))
+        self.assertEqual(["this is the remote traceback"], e._pyroTraceback, "remote traceback info should be present")
         p,_=self.ser.serializeData(e2)
         e=self.ser.deserializeData(p)
         self.assertTrue(isinstance(e, Pyro4.errors.PyroError))
@@ -121,14 +119,15 @@ class SerializeTests_pickle(unittest.TestCase):
             self.assertTrue(len(d2.__dict__)==0, "deserialized daemon should be empty")
             try:
                 Pyro4.config.AUTOPROXY=False
-                obj=Something()
+                obj=pprint.PrettyPrinter(stream="dummy", width=42)
                 obj.name="hello"
                 daemon.register(obj)
                 o,_=self.ser.serializeData(obj)
                 if self.SERIALIZER=="pickle":
-                    # only pickle can deserialize the Something class
+                    # only pickle can deserialize the PrettyPrinter class without the need of explicit deserialization function
                     o2=self.ser.deserializeData(o)
                     self.assertEqual("hello", o2.name)
+                    self.assertEqual(42, o2._width)
             finally:
                 Pyro4.config.AUTOPROXY=True
 
@@ -161,7 +160,7 @@ class SerializeTests_pickle(unittest.TestCase):
     def testCustomClassFail(self):
         if self.SERIALIZER=="pickle":
             self.skipTest("pickle simply serializes custom classes")
-        o = Something()
+        o = pprint.PrettyPrinter(stream="dummy", width=42)
         s, c = self.ser.serializeData(o)
         try:
             x = self.ser.deserializeData(s, c)
@@ -228,11 +227,10 @@ class GenericTests(unittest.TestCase):
             Pyro4.config.SERIALIZER=previous_serializer
 
     def testDictClassFail(self):
-        o = Something()
+        o = pprint.PrettyPrinter(stream="dummy", width=42)
         d = Pyro4.util.SerializerBase.class_to_dict(o)
-        self.assertEqual(2, len(d))
-        self.assertEqual(42, d["value"])
-        self.assertTrue(d["__class__"].endswith(".Something"))
+        self.assertEqual(42, d["_width"])
+        self.assertEqual("pprint.PrettyPrinter", d["__class__"])
         try:
             x = Pyro4.util.SerializerBase.dict_to_class(d)
             self.fail("error expected")
