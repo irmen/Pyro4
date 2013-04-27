@@ -186,10 +186,12 @@ class SerializeTests_pickle(unittest.TestCase):
 
     def testException(self):
         e = ZeroDivisionError("hello")
+        e.custom_attribute = 999
         ser, compressed = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(ser, compressed)
         self.assertIsInstance(e2, ZeroDivisionError)
         self.assertEqual("hello", str(e2))
+        self.assertEqual(999, e2.custom_attribute)
 
 
 class SerializeTests_serpent(SerializeTests_pickle):
@@ -239,11 +241,21 @@ class GenericTests(unittest.TestCase):
 
     def testDictException(self):
         x = ZeroDivisionError("hello", 42)
-        d = Pyro4.util.SerializerBase.class_to_dict(x)
+        expected = {
+            "__class__": None,
+            "args": ("hello", 42),
+            "attributes": {}
+        }
         if sys.version_info < (3, 0):
-            self.assertEqual({"__class__": "exceptions.ZeroDivisionError", "args": ("hello", 42)}, d)
+            expected["__class__"] = "exceptions.ZeroDivisionError"
         else:
-            self.assertEqual({"__class__": "builtins.ZeroDivisionError", "args": ("hello", 42)}, d)
+            expected["__class__"] = "builtins.ZeroDivisionError"
+        d = Pyro4.util.SerializerBase.class_to_dict(x)
+        self.assertEqual(expected, d)
+        x.custom_attribute = 999
+        expected["attributes"] = {"custom_attribute": 999}
+        d = Pyro4.util.SerializerBase.class_to_dict(x)
+        self.assertEqual(expected, d)
 
     def testDictClassOk(self):
         uri = Pyro4.core.URI("PYRO:object@host:4444")

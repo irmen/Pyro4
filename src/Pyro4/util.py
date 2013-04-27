@@ -195,8 +195,7 @@ class SerializerBase(object):
             # special case for exceptions
             value={"args": obj.args}
             value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
-            if hasattr(obj, "_pyroTraceback"):
-                value["__remote_traceback__"] = obj._pyroTraceback
+            value["attributes"] = vars(obj)  # add custom exception attributes
             return value
         try:
             value = obj.__getstate__()
@@ -276,8 +275,10 @@ class SerializerBase(object):
     @staticmethod
     def make_exception(exceptiontype, data):
         ex = exceptiontype(*data["args"])
-        if "__remote_traceback__" in data:
-            ex._pyroTraceback = data["__remote_traceback__"]
+        if "attributes" in data:
+            # restore custom attributes on the exception object
+            for attr, value in data["attributes"].items():
+                setattr(ex, attr, value)
         return ex
 
     def recreate_classes(self, literal):
