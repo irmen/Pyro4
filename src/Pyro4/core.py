@@ -294,6 +294,8 @@ class Proxy(object):
             flags |= MessageFactory.FLAGS_ONEWAY
         with self.__pyroLock:
             self._pyroSeq=(self._pyroSeq+1)&0xffff
+            if Pyro4.config.LOGWIRE:
+                log.debug("proxy wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (MessageFactory.MSG_INVOKE, flags, self._pyroSeq, data))  # XXX
             data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags, self._pyroSeq)
             try:
                 self._pyroConnection.send(data)
@@ -302,6 +304,8 @@ class Proxy(object):
                     return None    # oneway call, no response data
                 else:
                     msgType, flags, seq, data = MessageFactory.getMessage(self._pyroConnection, MessageFactory.MSG_RESULT)
+                    if Pyro4.config.LOGWIRE:
+                        log.debug("proxy wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msgType, flags, seq, data) )
                     self.__pyroCheckSequence(seq)
                     data=self._pyroSerializer.deserializeData(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
                     if flags & MessageFactory.FLAGS_EXCEPTION:
@@ -775,6 +779,8 @@ class Daemon(object):
         isCallback=False
         try:
             msgType, flags, seq, data = MessageFactory.getMessage(conn, MessageFactory.MSG_INVOKE)
+            if Pyro4.config.LOGWIRE:
+                log.debug("daemon wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msgType, flags, seq, data) )
             objId, method, vargs, kwargs = self.serializer.deserializeCall(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             del data  # invite GC to collect the object, don't wait for out-of-scope
             obj=self.objectsById.get(objId)
@@ -823,6 +829,8 @@ class Daemon(object):
                     flags |= MessageFactory.FLAGS_COMPRESSED
                 if wasBatched:
                     flags |= MessageFactory.FLAGS_BATCH
+                if Pyro4.config.LOGWIRE:
+                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (MessageFactory.MSG_RESULT, flags, seq, data))  # XXX
                 msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags, seq)
                 del data
                 conn.send(msg)
