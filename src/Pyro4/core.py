@@ -18,12 +18,12 @@ from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer
 from Pyro4 import futures
 import Pyro4
 
-__all__=["URI", "Proxy", "Daemon", "callback", "batch", "async"]
+__all__ = ["URI", "Proxy", "Daemon", "callback", "batch", "async"]
 
-if sys.version_info>=(3,0):
-    basestring=str
+if sys.version_info >= (3, 0):
+    basestring = str
 
-log=logging.getLogger("Pyro4.core")
+log = logging.getLogger("Pyro4.core")
 
 
 class URI(object):
@@ -37,8 +37,8 @@ class URI(object):
     There is also a 'Magic format' for simple name resolution using Name server:
       ``PYRONAME:objectname[@location]``  (optional name server location, can also omit location port)
     """
-    uriRegEx=re.compile(r"(?P<protocol>PYRO[A-Z]*):(?P<object>\S+?)(@(?P<location>\S+))?$")
-    __slots__=("protocol", "object", "sockname", "host", "port", "object")
+    uriRegEx = re.compile(r"(?P<protocol>PYRO[A-Z]*):(?P<object>\S+?)(@(?P<location>\S+))?$")
+    __slots__ = ("protocol", "object", "sockname", "host", "port", "object")
 
     def __init__(self, uri):
         if isinstance(uri, URI):
@@ -113,7 +113,7 @@ class URI(object):
 
     def __str__(self):
         string=self.asString()
-        if sys.version_info<(3,0) and type(string) is unicode:
+        if sys.version_info<(3, 0) and type(string) is unicode:
             return string.encode("ascii", "replace")
         return string
 
@@ -127,7 +127,8 @@ class URI(object):
         if not isinstance(other, URI):
             return False
         return (self.protocol, self.object, self.sockname, self.host, self.port) \
-                == (other.protocol, other.object, other.sockname, other.host, other.port)
+            == (other.protocol, other.object, other.sockname, other.host, other.port)
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -164,7 +165,7 @@ def _check_hmac():
     if Pyro4.config.HMAC_KEY is None or len(Pyro4.config.HMAC_KEY)==0:
         import warnings
         warnings.warn("HMAC_KEY not set, protocol data may not be secure")
-    elif sys.version_info>=(3,0) and type(Pyro4.config.HMAC_KEY) is not bytes:
+    elif sys.version_info>=(3, 0) and type(Pyro4.config.HMAC_KEY) is not bytes:
         raise errors.PyroError("HMAC_KEY must be bytes type")
 
 
@@ -178,7 +179,6 @@ class Proxy(object):
     .. automethod:: _pyroBatch
     .. automethod:: _pyroAsync
     """
-    _pyroSerializer=util.serializers[Pyro4.config.SERIALIZER]
     __pyroAttributes=frozenset(["__getnewargs__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway", "_pyroTimeout", "_pyroSeq"])
 
     def __init__(self, uri):
@@ -195,6 +195,7 @@ class Proxy(object):
         self._pyroConnection=None
         self._pyroOneway=set()
         self._pyroSeq=0    # message sequence number
+        self._pyroSerializer = util.serializers[Pyro4.config.SERIALIZER]
         self.__pyroTimeout=Pyro4.config.COMMTIMEOUT
         self.__pyroLock=threadutil.Lock()
         self.__pyroConnLock=threadutil.Lock()
@@ -212,21 +213,22 @@ class Proxy(object):
     def __repr__(self):
         connected="connected" if self._pyroConnection else "not connected"
         return "<%s.%s at 0x%x, %s, for %s>" % (self.__class__.__module__, self.__class__.__name__,
-            id(self), connected, self._pyroUri)
+               id(self), connected, self._pyroUri)
 
     def __unicode__(self):
         return str(self)
 
     def __getstate__(self):
-        return self._pyroUri, self._pyroOneway, self._pyroSerializer, self.__pyroTimeout    # skip the connection
+        return self._pyroUri, self._pyroOneway, self.__pyroTimeout    # skip the connection
 
     def __getstate_for_dict__(self):
         return self._pyroUri.asString(), tuple(self._pyroOneway), self.__pyroTimeout
 
     def __setstate__(self, state):
-        self._pyroUri, self._pyroOneway, self._pyroSerializer, self.__pyroTimeout = state
+        self._pyroUri, self._pyroOneway, self.__pyroTimeout = state
         self._pyroConnection=None
         self._pyroSeq=0
+        self._pyroSerializer = util.serializers[Pyro4.config.SERIALIZER]
         self.__pyroLock=threadutil.Lock()
         self.__pyroConnLock=threadutil.Lock()
 
@@ -300,13 +302,11 @@ class Proxy(object):
                     return None    # oneway call, no response data
                 else:
                     msgType, flags, seq, data = MessageFactory.getMessage(self._pyroConnection, MessageFactory.MSG_RESULT)
-                    print("GOT", msgType, data)  # XXX weg
                     self.__pyroCheckSequence(seq)
                     data=self._pyroSerializer.deserializeData(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
                     if flags & MessageFactory.FLAGS_EXCEPTION:
                         if sys.platform=="cli":
                             util.fixIronPythonExceptionForPickle(data, False)
-                        print("OMG EXCEPTION!", data)  # XXX weg
                         raise data
                     else:
                         return data
@@ -363,9 +363,9 @@ class Proxy(object):
                     if msgType==MessageFactory.MSG_CONNECTFAIL:
                         error="connection rejected"
                         if data:
-                            if sys.version_info>=(3,0):
-                                data=str(data,"utf-8")
-                            error+=", reason: "+data
+                            if sys.version_info>=(3, 0):
+                                data=str(data, "utf-8")
+                            error+=", reason: " + data
                         conn.close()
                         log.error(error)
                         raise errors.CommunicationError(error)
@@ -465,7 +465,7 @@ class _BatchProxyAdapter(object):
             if not oneway:
                 return self.__resultsgenerator(results)
 
-    def _pyroInvoke(self,name,args,kwargs):
+    def _pyroInvoke(self, name, args, kwargs):
         # ignore all parameters, we just need to execute the batch
         results=self.__proxy._pyroInvokeBatch(self.__calls)
         self.__calls=[]   # clear for re-use
@@ -541,7 +541,7 @@ class MessageFactory(object):
     FLAGS_HMAC = 1<<3
     FLAGS_BATCH = 1<<4
     MAGIC = 0x34E9
-    if sys.version_info>=(3,0):
+    if sys.version_info>=(3, 0):
         empty_bytes = bytes([])
         pyro_tag = bytes("PYRO", "ASCII")
         empty_hmac = bytes(hashlib.sha1().digest_size)
@@ -605,7 +605,7 @@ class MessageFactory(object):
 
 def pyroObjectSerializer(self):
     """reduce function that automatically replaces Pyro objects by a Proxy"""
-    daemon=getattr(self,"_pyroDaemon",None)
+    daemon=getattr(self, "_pyroDaemon", None)
     if daemon:
         # only return a proxy if the object is a registered pyro object
         return Pyro4.core.Proxy, (daemon.uriFor(self),)
@@ -656,7 +656,7 @@ class Daemon(object):
             if os.name=="java":
                 raise NotImplementedError("select or poll-based server is not supported for jython, use thread server instead")
             import select
-            if hasattr(select,"poll"):
+            if hasattr(select, "poll"):
                 self.transportServer=SocketServer_Poll()
             else:
                 self.transportServer=SocketServer_Select()
@@ -757,8 +757,8 @@ class Daemon(object):
         # on some systems... (messages smaller than 40 bytes)
         # Return True for successful handshake, False if something was wrong.
         data="ok"
-        if sys.version_info>=(3,0):
-            data=bytes(data,"utf-8")
+        if sys.version_info>=(3, 0):
+            data=bytes(data, "utf-8")
         msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK, data, 0, 1)
         conn.send(msg)
         return True
@@ -775,9 +775,7 @@ class Daemon(object):
         isCallback=False
         try:
             msgType, flags, seq, data = MessageFactory.getMessage(conn, MessageFactory.MSG_INVOKE)
-            print("GOT",msgType,data) # XXX
-            objId, method, vargs, kwargs=self.serializer.deserializeCall(
-                                           data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
+            objId, method, vargs, kwargs = self.serializer.deserializeCall(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             del data  # invite GC to collect the object, don't wait for out-of-scope
             obj=self.objectsById.get(objId)
             if obj is not None:
@@ -787,12 +785,12 @@ class Daemon(object):
                 if flags & MessageFactory.FLAGS_BATCH:
                     # batched method calls, loop over them all and collect all results
                     data=[]
-                    for method,vargs,kwargs in vargs:
+                    for method, vargs, kwargs in vargs:
                         method=util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
                         try:
                             result=method(*vargs, **kwargs)   # this is the actual method call to the Pyro object
                         except Exception:
-                            xt,xv=sys.exc_info()[0:2]
+                            xt, xv = sys.exc_info()[0:2]
                             log.debug("Exception occurred while handling batched request: %s", xv)
                             xv._pyroTraceback=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
                             if sys.platform=="cli":
@@ -829,7 +827,7 @@ class Daemon(object):
                 del data
                 conn.send(msg)
         except Exception:
-            xt,xv=sys.exc_info()[0:2]
+            xt, xv = sys.exc_info()[0:2]
             if xt is not errors.ConnectionClosedError:
                 log.debug("Exception occurred while handling request: %r", xv)
                 if not flags & MessageFactory.FLAGS_ONEWAY:
@@ -883,7 +881,7 @@ class Daemon(object):
         if Pyro4.config.AUTOPROXY:
             # register a custom serializer for the type to automatically return proxies
             try:
-                copyreg.pickle(type(obj),pyroObjectSerializer)
+                copyreg.pickle(type(obj), pyroObjectSerializer)
             except TypeError:
                 pass
         # register the object in the mapping
@@ -946,7 +944,7 @@ class Daemon(object):
 
     def __repr__(self):
         return "<%s.%s at 0x%x, %s, %d objects>" % (self.__class__.__module__, self.__class__.__name__,
-            id(self), self.locationStr, len(self.objectsById))
+               id(self), self.locationStr, len(self.objectsById))
 
     def __enter__(self):
         if not self.transportServer:
@@ -984,8 +982,8 @@ try:
         d = Pyro4.util.SerializerBase.class_to_dict(obj)
         serializer.ser_builtins_dict(d, stream, level)
     serpent.register_class(URI, pyro_class_serpent_serializer)
-    #serpent.register_class(Proxy, pyro_class_serpent_serializer)
-    #serpent.register_class(Daemon, pyro_class_serpent_serializer)
+    serpent.register_class(Proxy, pyro_class_serpent_serializer)
+    serpent.register_class(Daemon, pyro_class_serpent_serializer)
 except ImportError:
     pass
 

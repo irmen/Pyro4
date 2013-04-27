@@ -304,7 +304,7 @@ def locateNS(host=None, port=None):
                                 raise
                 data, _=sock.recvfrom(100)
                 sock.close()
-                if sys.version_info>=(3,0):
+                if sys.version_info>=(3, 0):
                     data=data.decode("iso-8859-1")
                 log.debug("located NS: %s", data)
                 return core.Proxy(data)
@@ -358,7 +358,7 @@ def main(args):
     parser=OptionParser()
     parser.add_option("-n", "--host", dest="host", help="hostname to bind server on")
     parser.add_option("-p", "--port", dest="port", type="int", help="port to bind server on (0=random)")
-    parser.add_option("-u","--unixsocket", help="Unix domain socket name to bind server on")
+    parser.add_option("-u", "--unixsocket", help="Unix domain socket name to bind server on")
     parser.add_option("", "--bchost", dest="bchost", help="hostname to bind broadcast server on (default is \"\")")
     parser.add_option("", "--bcport", dest="bcport", type="int",
                       help="port to bind broadcast server on (0=random)")

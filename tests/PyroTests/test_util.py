@@ -218,22 +218,6 @@ class TestUtils(unittest.TestCase):
                 processed_args=function(*(1,2,3), **{ unichr(0x20ac): 42 })
                 self.assertEqual( ((1,2,3), { unichr(0x20ac): 42}), processed_args)
 
-    def testCreateException(self):
-        x = Pyro4.util.createException("ZeroDivisionError")
-        self.assertIsInstance(x, ZeroDivisionError)
-        x = Pyro4.util.createException("ZeroDivisionError", "hello")
-        self.assertIsInstance(x, ZeroDivisionError)
-        self.assertEqual("hello", str(x))
-        x = Pyro4.util.createException("DoesNotExistExceptionType", "bye")
-        self.assertIsInstance(x, Pyro4.errors.PyroError)
-        self.assertEqual("('DoesNotExistExceptionType', 'bye')", str(x))
-        x = Pyro4.util.createException("PyroError", "bye")
-        self.assertIsInstance(x, Pyro4.errors.PyroError)
-        self.assertEqual("bye", str(x))
-        x = Pyro4.util.createException("ProtocolError", "bye")
-        self.assertIsInstance(x, Pyro4.errors.PyroError)
-        self.assertEqual("bye", str(x))
-
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

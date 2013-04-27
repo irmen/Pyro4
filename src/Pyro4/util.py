@@ -71,7 +71,7 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                     return "<ERROR>"
         try:
             result=["-"*52+"\n"]
-            result.append(" EXCEPTION %s: %s\n" % (ex_type,ex_value))
+            result.append(" EXCEPTION %s: %s\n" % (ex_type, ex_value))
             result.append(" Extended stacktrace follows (most recent call last)\n")
             skipLocals=True  # don't print the locals of the very first stackframe
             while ex_tb:
@@ -87,19 +87,19 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                 result.append("    "+linecache.getline(sourceFileName, ex_tb.tb_lineno).strip()+"\n")
                 if not skipLocals:
                     names=set()
-                    names.update(getattr(frame.f_code,"co_varnames",()))
-                    names.update(getattr(frame.f_code,"co_names",()))
-                    names.update(getattr(frame.f_code,"co_cellvars",()))
-                    names.update(getattr(frame.f_code,"co_freevars",()))
+                    names.update(getattr(frame.f_code, "co_varnames", ()))
+                    names.update(getattr(frame.f_code, "co_names", ()))
+                    names.update(getattr(frame.f_code, "co_cellvars", ()))
+                    names.update(getattr(frame.f_code, "co_freevars", ()))
                     result.append("Local values:\n")
                     for name in sorted(names):
                         if name in frame.f_locals:
                             value=frame.f_locals[name]
-                            result.append("    %s = %s\n" % (name,makeStrValue(value)))
+                            result.append("    %s = %s\n" % (name, makeStrValue(value)))
                             if name=="self":
                                 # print the local variables of the class instance
-                                for name,value in vars(value).items():
-                                    result.append("        self.%s = %s\n" % (name,makeStrValue(value)))
+                                for name, value in vars(value).items():
+                                    result.append("        self.%s = %s\n" % (name, makeStrValue(value)))
                 skipLocals=False
                 ex_tb=ex_tb.tb_next
             result.append("-"*52+"\n")
@@ -108,9 +108,9 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
             return result
         except Exception:
             return ["-"*52+"\nError building extended traceback!!! :\n",
-                  "".join(traceback.format_exception(*sys.exc_info())) + '-'*52 + '\n',
-                  "Original Exception follows:\n",
-                  "".join(traceback.format_exception(ex_type, ex_value, ex_tb))]
+                    "".join(traceback.format_exception(*sys.exc_info())) + '-'*52 + '\n',
+                    "Original Exception follows:\n",
+                    "".join(traceback.format_exception(ex_type, ex_value, ex_tb))]
     else:
         # default traceback format.
         return traceback.format_exception(ex_type, ex_value, ex_tb)
@@ -122,7 +122,8 @@ if sys.version_info < (3, 0):
 else:
     import builtins
     all_exceptions = {name: t for name, t in vars(builtins).items() if type(t) is type and issubclass(t, Exception)}
-all_exceptions.update( {name:t for name, t in vars(Pyro4.errors).items() if type(t) is type and issubclass(t, Pyro4.errors.PyroError)} )
+all_exceptions.update({name: t for name, t in vars(Pyro4.errors).items() if type(t) is type and issubclass(t, Pyro4.errors.PyroError)})
+
 
 class SerializerBase(object):
     """Base class for (de)serializer implementations (which must be thread safe)"""
@@ -237,7 +238,7 @@ class SerializerBase(object):
                 uri = Pyro4.core.URI(state[0])
                 oneway = set(state[1])
                 timeout = state[2]
-                proxy.__setstate__((uri, oneway, Pyro4.core.Proxy._pyroSerializer, timeout))
+                proxy.__setstate__((uri, oneway, timeout))
                 return proxy
             elif classname=="Pyro4.core.Daemon":
                 return Pyro4.core.Daemon.__new__(Pyro4.core.Daemon)
@@ -273,7 +274,6 @@ class SerializerBase(object):
         raise Pyro4.errors.ProtocolError("unsupported serialized class: "+classname)
 
     def recreate_classes(self, literal):
-        print("RECREATE CLASSES", literal)
         t = type(literal)
         if t is dict and "__class__" in literal:
             return self.dict_to_class(literal)
@@ -282,6 +282,7 @@ class SerializerBase(object):
     def __eq__(self, other):
         """this equality method is only to support the unit tests of this class"""
         return isinstance(other, SerializerBase) and vars(self)==vars(other)
+
     def __ne__(self, other):
         return not self.__eq__(other)
     __hash__=object.__hash__
@@ -294,59 +295,53 @@ class PickleSerializer(SerializerBase):
     """
     def dumpsCall(self, obj, method, vargs, kwargs):
         return pickle.dumps((obj, method, vargs, kwargs), pickle.HIGHEST_PROTOCOL)
+
     def dumps(self, data):
         return pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
+
     def loadsCall(self, data):
         return pickle.loads(data)
+
     def loads(self, data):
         return pickle.loads(data)
+
 
 class MarshalSerializer(SerializerBase):
     """(de)serializer that wraps the marshal serialization protocol."""
     def dumpsCall(self, obj, method, vargs, kwargs):
         return marshal.dumps((obj, method, vargs, kwargs))
+
     def dumps(self, data):
         try:
             return marshal.dumps(data)
         except (ValueError, TypeError):
             return marshal.dumps(self.class_to_dict(data))
+
     def loadsCall(self, data):
         return marshal.loads(data)
+
     def loads(self, data):
         return self.recreate_classes(marshal.loads(data))
-
-def createException(type_name, *args):      # XXX no longer needed?
-    """recreate an exception value based on the exception type name and arguments"""
-    x = getattr(Pyro4.errors, type_name, None)   # XXX unsafe!
-    if x is not None:
-        return x(*args)
-    try:
-        try:
-            import exceptions
-            return getattr(exceptions, type_name)(*args)   # XXX unsafe!?
-        except ImportError:
-            import builtins
-            return getattr(builtins, type_name)(*args)   # XXX unsafe!
-    except:
-        args = list(args)
-        args.insert(0, type_name)
-        return Pyro4.errors.PyroError(*args)
 
 
 class SerpentSerializer(SerializerBase):
     """(de)serializer that wraps the serpent serialization protocol."""
     def dumpsCall(self, obj, method, vargs, kwargs):
         return serpent.dumps((obj, method, vargs, kwargs))
+
     def dumps(self, data):
         return serpent.dumps(data)
+
     def loadsCall(self, data):
         return serpent.loads(data)
+
     def loads(self, data):
         return self.recreate_classes(serpent.loads(data))
 
+
 class JsonSerializer(SerializerBase):
     """(de)serializer that wraps the json serialization protocol."""
-    if sys.version_info<(3,0):
+    if sys.version_info<(3, 0):
         def dumpsCall(self, object, method, vargs, kwargs):
             data = {"object": object, "method": method, "params": vargs, "kwargs": kwargs}
             return json.dumps(data, ensure_ascii=False)
@@ -380,42 +375,6 @@ class JsonSerializer(SerializerBase):
             return self.recreate_classes(json.loads(data))
 
 
-class XmlrpcSerializer(SerializerBase):
-    """(de)serializer that wraps the xmlrpc serialization protocol."""
-    if sys.version_info<(3,0):
-        def dumpsCall(self, object, method, vargs, kwargs):
-            data = {"object": object, "method": method, "vargs": vargs, "kwargs": kwargs}
-            return xmlrpc.dumps((data,), "pyrocall", allow_none=True, encoding="utf-8")
-        def dumps(self, data):
-            try:
-                return xmlrpc.dumps((data,), methodresponse=True, allow_none=True, encoding="utf-8")
-            except TypeError:
-                return xmlrpc.dumps((self.class_to_dict(data),), methodresponse=True, allow_none=True, encoding="utf-8")
-        def loadsCall(self, data):
-            data = xmlrpc.loads(data)[0][0]
-            return data["object"], data["method"], data["vargs"], data["kwargs"]
-        def loads(self, data):
-            return self.recreate_classes(mlrpc.loads(data)[0][0])
-    else:
-        def dumpsCall(self, object, method, vargs, kwargs):
-            data = {"object": object, "method": method, "vargs": vargs, "kwargs": kwargs}
-            data = xmlrpc.dumps((data,), "pyrocall", allow_none=True, encoding="utf-8")
-            return data.encode("utf-8")
-        def dumps(self, data):
-            try:
-                data = xmlrpc.dumps((data,), methodresponse=True, allow_none=True, encoding="utf-8")
-            except TypeError:
-                data = xmlrpc.dumps((self.class_to_dict(data),), methodresponse=True, allow_none=True, encoding="utf-8")
-            return data.encode("utf-8")
-        def loadsCall(self, data):
-            data=data.decode("utf-8")
-            data = xmlrpc.loads(data)[0][0]
-            return data["object"], data["method"], data["vargs"], data["kwargs"]
-        def loads(self, data):
-            data=data.decode("utf-8")
-            return self.recreate_classes(xmlrpc.loads(data)[0][0])
-
-
 """The various serializers that are supported"""
 serializers = {}
 
@@ -435,20 +394,12 @@ try:
 except ImportError:
     pass
 try:
-    import xmlrpclib as xmlrpc
-    serializers["xmlrpc"] = XmlrpcSerializer()
-except ImportError:
-    try:
-        import xmlrpc.client as xmlrpc
-        serializers["xmlrpc"] = XmlrpcSerializer()
-    except ImportError:
-        pass
-try:
     import serpent
     serializers["serpent"] = SerpentSerializer()
 except ImportError:
     #warnings.warn("serpent serializer not available", RuntimeWarning)
     pass
+
 
 def resolveDottedAttribute(obj, attr, allowDotted):
     """

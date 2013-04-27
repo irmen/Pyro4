@@ -196,9 +196,6 @@ class SerializeTests_serpent(SerializeTests_pickle):
 class SerializeTests_json(SerializeTests_pickle):
     SERIALIZER="json"
 
-class SerializeTests_xmlrpc(SerializeTests_pickle):
-    SERIALIZER="xmlrpc"
-
 class SerializeTests_marshal(SerializeTests_pickle):
     SERIALIZER="marshal"
 
