@@ -21,12 +21,13 @@ class Something(object):
 class SerializeTests_pickle(unittest.TestCase):
     SERIALIZER="pickle"
     def setUp(self):
+        self.previous_serializer=Pyro4.config.SERIALIZER
         Pyro4.config.SERIALIZER=self.SERIALIZER
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
         self.ser=Pyro4.util.get_serializer()
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
-        Pyro4.config.SERIALIZER="serpent"
+        Pyro4.config.SERIALIZER=self.previous_serializer
         
     def testSerItself(self):
         s=Pyro4.util.get_serializer()
@@ -205,6 +206,7 @@ class SerializeTests_marshal(SerializeTests_pickle):
 
 class GenericTests(unittest.TestCase):
     def testSerializersAvailable(self):
+        previous_serializer=Pyro4.config.SERIALIZER
         try:
             Pyro4.config.SERIALIZER="pickle"
             Pyro4.util.get_serializer()
@@ -223,7 +225,7 @@ class GenericTests(unittest.TestCase):
             except ImportError:
                 pass
         finally:
-            Pyro4.config.SERIALIZER="serpent"
+            Pyro4.config.SERIALIZER=previous_serializer
 
     def testDictClassFail(self):
         o = Something()
