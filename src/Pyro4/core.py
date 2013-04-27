@@ -195,7 +195,7 @@ class Proxy(object):
         self._pyroConnection=None
         self._pyroOneway=set()
         self._pyroSeq=0    # message sequence number
-        self._pyroSerializer = util.serializers[Pyro4.config.SERIALIZER]
+        self._pyroSerializer = util.get_serializer()
         self.__pyroTimeout=Pyro4.config.COMMTIMEOUT
         self.__pyroLock=threadutil.Lock()
         self.__pyroConnLock=threadutil.Lock()
@@ -228,7 +228,7 @@ class Proxy(object):
         self._pyroUri, self._pyroOneway, self.__pyroTimeout = state
         self._pyroConnection=None
         self._pyroSeq=0
-        self._pyroSerializer = util.serializers[Pyro4.config.SERIALIZER]
+        self._pyroSerializer = util.get_serializer()
         self.__pyroLock=threadutil.Lock()
         self.__pyroConnLock=threadutil.Lock()
 
@@ -674,7 +674,7 @@ class Daemon(object):
         self.natLocationStr = "%s:%d" % (nathost, natport_for_loc) if nathost else None
         if self.natLocationStr:
             log.debug("NAT address is %s", self.natLocationStr)
-        self.serializer=util.serializers[Pyro4.config.SERIALIZER]
+        self.serializer=util.get_serializer()
         pyroObject=DaemonObject(self)
         pyroObject._pyroId=constants.DAEMON_NAME
         #: Dictionary from Pyro object id to the actual Pyro object registered by this id

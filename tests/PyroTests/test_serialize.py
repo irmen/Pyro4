@@ -21,13 +21,15 @@ class Something(object):
 class SerializeTests_pickle(unittest.TestCase):
     SERIALIZER="pickle"
     def setUp(self):
+        Pyro4.config.SERIALIZER=self.SERIALIZER
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
-        self.ser=Pyro4.util.serializers[self.SERIALIZER]
+        self.ser=Pyro4.util.get_serializer()
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
+        Pyro4.config.SERIALIZER="serpent"
         
     def testSerItself(self):
-        s=Pyro4.util.serializers[self.SERIALIZER]
+        s=Pyro4.util.get_serializer()
         p,_=self.ser.serializeData(s)
         s2=self.ser.deserializeData(p)
         self.assertEqual(s,s2)
@@ -202,19 +204,26 @@ class SerializeTests_marshal(SerializeTests_pickle):
 
 
 class GenericTests(unittest.TestCase):
-    def testMinimalSerializers(self):
-        self.assertTrue("pickle" in Pyro4.util.serializers)
-        self.assertTrue("marshal" in Pyro4.util.serializers)
+    def testSerializersAvailable(self):
         try:
-            import json
-            self.assertTrue("json" in Pyro4.util.serializers)
-        except ImportError:
-            pass
-        try:
-            import serpent
-            self.assertTrue("serpent" in Pyro4.util.serializers)
-        except ImportError:
-            pass
+            Pyro4.config.SERIALIZER="pickle"
+            Pyro4.util.get_serializer()
+            Pyro4.config.SERIALIZER="marshal"
+            Pyro4.util.get_serializer()
+            try:
+                import json
+                Pyro4.config.SERIALIZER="json"
+                Pyro4.util.get_serializer()
+            except ImportError:
+                pass
+            try:
+                import serpent
+                Pyro4.config.SERIALIZER="serpent"
+                Pyro4.util.get_serializer()
+            except ImportError:
+                pass
+        finally:
+            Pyro4.config.SERIALIZER="serpent"
 
     def testDictClassFail(self):
         o = Something()

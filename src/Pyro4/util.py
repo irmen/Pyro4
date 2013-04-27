@@ -251,8 +251,6 @@ class SerializerBase(object):
                 return JsonSerializer()
             elif classname=="Pyro4.util.SerpentSerializer":
                 return SerpentSerializer()
-            elif classname=="Pyro4.util.XmlrpcSerializer":
-                return XmlrpcSerializer()
         elif classname.startswith("Pyro4.errors."):
             errortype = getattr(Pyro4.errors, classname.split('.', 2)[2])
             if issubclass(errortype, Pyro4.errors.PyroError):
@@ -268,7 +266,7 @@ class SerializerBase(object):
         elif classname in all_exceptions:
             return all_exceptions[classname](*data["args"])
         # try one of the serializer classes
-        for serializer in serializers.values():
+        for serializer in _serializers.values():
             if classname == type(serializer).__name__:
                 return serializer
         raise Pyro4.errors.ProtocolError("unsupported serialized class: "+classname)
@@ -376,7 +374,12 @@ class JsonSerializer(SerializerBase):
 
 
 """The various serializers that are supported"""
-serializers = {}
+_serializers = {}
+def get_serializer():
+    try:
+        return _serializers[Pyro4.config.SERIALIZER]
+    except KeyError:
+        raise Pyro4.errors.ProtocolError("configured serializer '%s' is unknown or not available" % Pyro4.config.SERIALIZER)
 
 # determine the serializers that are supported
 try:
@@ -385,17 +388,17 @@ except ImportError:
     import pickle
 if pickle.HIGHEST_PROTOCOL<2:
     raise RuntimeError("pickle serializer needs to support protocol 2 or higher")
-serializers["pickle"] = PickleSerializer()
+_serializers["pickle"] = PickleSerializer()
 import marshal
-serializers["marshal"] = MarshalSerializer()
+_serializers["marshal"] = MarshalSerializer()
 try:
     import json
-    serializers["json"] = JsonSerializer()
+    _serializers["json"] = JsonSerializer()
 except ImportError:
     pass
 try:
     import serpent
-    serializers["serpent"] = SerpentSerializer()
+    _serializers["serpent"] = SerpentSerializer()
 except ImportError:
     #warnings.warn("serpent serializer not available", RuntimeWarning)
     pass

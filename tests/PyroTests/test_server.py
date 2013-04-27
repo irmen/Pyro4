@@ -534,7 +534,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
 
     def testSerializeConnected(self):
         # online serialization tests
-        ser=Pyro4.util.serializers["pickle"]
+        ser=Pyro4.util.get_serializer()
         proxy=Pyro4.core.Proxy(self.objectUri)
         proxy._pyroBind()
         self.assertFalse(proxy._pyroConnection is None)
