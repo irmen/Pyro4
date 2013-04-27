@@ -295,7 +295,7 @@ class Proxy(object):
         with self.__pyroLock:
             self._pyroSeq=(self._pyroSeq+1)&0xffff
             if Pyro4.config.LOGWIRE:
-                log.debug("proxy wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (MessageFactory.MSG_INVOKE, flags, self._pyroSeq, data))  # XXX
+                log.debug("proxy wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (MessageFactory.MSG_INVOKE, flags, self._pyroSeq, data))
             data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags, self._pyroSeq)
             try:
                 self._pyroConnection.send(data)
@@ -830,7 +830,7 @@ class Daemon(object):
                 if wasBatched:
                     flags |= MessageFactory.FLAGS_BATCH
                 if Pyro4.config.LOGWIRE:
-                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (MessageFactory.MSG_RESULT, flags, seq, data))  # XXX
+                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (MessageFactory.MSG_RESULT, flags, seq, data))
                 msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags, seq)
                 del data
                 conn.send(msg)
