@@ -140,6 +140,9 @@ class URI(object):
     def __getstate__(self):
         return self.protocol, self.object, self.sockname, self.host, self.port
 
+    def __getstate_for_dict__(self):
+        return self.__getstate__()
+
     def __setstate__(self, state):
         self.protocol, self.object, self.sockname, self.host, self.port = state
 
@@ -216,6 +219,9 @@ class Proxy(object):
 
     def __getstate__(self):
         return self._pyroUri, self._pyroOneway, self._pyroSerializer, self.__pyroTimeout    # skip the connection
+
+    def __getstate_for_dict__(self):
+        return self._pyroUri.asString(), tuple(self._pyroOneway), self.__pyroTimeout
 
     def __setstate__(self, state):
         self._pyroUri, self._pyroOneway, self._pyroSerializer, self.__pyroTimeout = state
@@ -953,6 +959,9 @@ class Daemon(object):
     def __getstate__(self):
         return {}   # a little hack to make it possible to serialize Pyro objects.
 
+    def __getstate_for_dict__(self):
+        return self.__getstate__()
+
 
 # decorators
 
@@ -966,4 +975,27 @@ def callback(object):
     return object
 
 
-# backward compatibility
+try:
+    import serpent
+    def pyro_class_serpent_serializer(obj, serializer, stream, level):
+        # Override the default way that a Pyro URI/proxy/daemon is serialized.
+        # Because it defines a getstate it would otherwise just be a tuple,
+        # and not be deserialized as a class.
+        d = Pyro4.util.SerializerBase.class_to_dict(obj)
+        serializer.ser_builtins_dict(d, stream, level)
+    serpent.register_class(URI, pyro_class_serpent_serializer)
+    #serpent.register_class(Proxy, pyro_class_serpent_serializer)
+    #serpent.register_class(Daemon, pyro_class_serpent_serializer)
+except ImportError:
+    pass
+
+
+def serialize_core_object_to_dict(obj):
+    return {
+        "__class__": "Pyro4.core." + type(obj).__name__,
+        "state": obj.__getstate_for_dict__()
+    }
+
+Pyro4.util.SerializerBase.register_class_to_dict(URI, serialize_core_object_to_dict)
+Pyro4.util.SerializerBase.register_class_to_dict(Proxy, serialize_core_object_to_dict)
+Pyro4.util.SerializerBase.register_class_to_dict(Daemon, serialize_core_object_to_dict)

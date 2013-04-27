@@ -6,7 +6,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import sys, zlib, logging
 import traceback, linecache
-import warnings
 import Pyro4
 import Pyro4.errors
 
@@ -22,7 +21,7 @@ def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
         result=[" +--- This exception occured remotely (Pyro) - Remote traceback:"]
         for line in remote_tb_lines:
             if line.endswith("\n"):
-                line=line[:-1]
+                line = line[:-1]
             lines = line.split("\n")
             for line in lines:
                 result.append("\n | ")
@@ -117,8 +116,18 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
         return traceback.format_exception(ex_type, ex_value, ex_tb)
 
 
+if sys.version_info < (3, 0):
+    import exceptions
+    all_exceptions = {name: t for name, t in vars(exceptions).items() if type(t) is type and issubclass(t, Exception)}
+else:
+    import builtins
+    all_exceptions = {name: t for name, t in vars(builtins).items() if type(t) is type and issubclass(t, Exception)}
+all_exceptions.update( {name:t for name, t in vars(Pyro4.errors).items() if type(t) is type and issubclass(t, Pyro4.errors.PyroError)} )
+
 class SerializerBase(object):
     """Base class for (de)serializer implementations (which must be thread safe)"""
+    __custom_class_to_dict_registry = {}
+
     def serializeData(self, data, compress=False):
         """Serialize the given data object, try to compress if told so.
         Returns a tuple of the serialized data (bytes) and a bool indicating if it is compressed or not."""
@@ -164,8 +173,23 @@ class SerializerBase(object):
             return compressed, True
         return data, False
 
-    def class_to_dict(self, obj):
-        """convert a non-serializable object to a dict"""
+    @classmethod
+    def register_class_to_dict(cls, clazz, converter):
+        cls.__custom_class_to_dict_registry[clazz] = converter
+
+    @classmethod
+    def unregister_class_to_dict(cls, clazz):
+        if clazz in cls.__custom_class_to_dict_registry:
+            del cls.__custom_class_to_dict_registry[clazz]
+
+    @classmethod
+    def class_to_dict(cls, obj):
+        """Convert a non-serializable object to a dict. Mostly borrowed from serpent."""
+        for clazz in cls.__custom_class_to_dict_registry:
+            if isinstance(obj, clazz):
+                return cls.__custom_class_to_dict_registry[clazz](obj)
+        if hasattr(obj, "_pyroDaemon"):
+            obj._pyroDaemon = None
         if isinstance(obj, Exception):
             # special case for exceptions
             value={"args": obj.args}
@@ -193,19 +217,30 @@ class SerializerBase(object):
             else:
                 raise Pyro4.errors.ProtocolError("don't know how to serialize class " + str(type(obj)) + ". Give it vars() or an appropriate __getstate__")
 
-    def dict_to_class(self, data):
+    @staticmethod
+    def dict_to_class(data):
         """
         Recreate an object out of a dict containing the class name and the attributes.
         Only a fixed set of classes are recognized.
         """
         classname = data.get("__class__", "<unknown>")
+        if "__" in classname:
+            raise Pyro4.errors.SecurityError("refuse to deserialize types with double underscores in their name")
         if classname.startswith("Pyro4.core."):
             if classname=="Pyro4.core.URI":
-                if data["host"] is not None:
-                    uri = "{protocol}:{object}@{host}:{port}".format(**data)
-                else:
-                    uri = "{protocol}:{object}@./u:{sockname}".format(**data)
-                return Pyro4.core.URI(uri)
+                uri = Pyro4.core.URI.__new__(Pyro4.core.URI)
+                uri.__setstate__(data["state"])
+                return uri
+            elif classname=="Pyro4.core.Proxy":
+                proxy = Pyro4.core.Proxy.__new__(Pyro4.core.Proxy)
+                state = data["state"]
+                uri = Pyro4.core.URI(state[0])
+                oneway = set(state[1])
+                timeout = state[2]
+                proxy.__setstate__((uri, oneway, Pyro4.core.Proxy._pyroSerializer, timeout))
+                return proxy
+            elif classname=="Pyro4.core.Daemon":
+                return Pyro4.core.Daemon.__new__(Pyro4.core.Daemon)
         elif classname.startswith("Pyro4.util."):
             if classname=="Pyro4.util.PickleSerializer":
                 return PickleSerializer()
@@ -218,8 +253,31 @@ class SerializerBase(object):
             elif classname=="Pyro4.util.XmlrpcSerializer":
                 return XmlrpcSerializer()
         elif classname.startswith("Pyro4.errors."):
-            pass
+            errortype = getattr(Pyro4.errors, classname.split('.', 2)[2])
+            if issubclass(errortype, Pyro4.errors.PyroError):
+                return errortype(*data["args"])
+        elif classname.startswith("builtins."):
+            exceptiontype = getattr(builtins, classname.split('.', 1)[1])
+            if issubclass(exceptiontype, Exception):
+                return exceptiontype(*data["args"])
+        elif classname.startswith("exceptions."):
+            exceptiontype = getattr(exceptions, classname.split('.', 1)[1])
+            if issubclass(exceptiontype, Exception):
+                return exceptiontype(*data["args"])
+        elif classname in all_exceptions:
+            return all_exceptions[classname](*data["args"])
+        # try one of the serializer classes
+        for serializer in serializers.values():
+            if classname == type(serializer).__name__:
+                return serializer
         raise Pyro4.errors.ProtocolError("unsupported serialized class: "+classname)
+
+    def recreate_classes(self, literal):
+        print("RECREATE CLASSES", literal)
+        t = type(literal)
+        if t is dict and "__class__" in literal:
+            return self.dict_to_class(literal)
+        return literal
 
     def __eq__(self, other):
         """this equality method is only to support the unit tests of this class"""
@@ -255,20 +313,20 @@ class MarshalSerializer(SerializerBase):
     def loadsCall(self, data):
         return marshal.loads(data)
     def loads(self, data):
-        return marshal.loads(data)
+        return self.recreate_classes(marshal.loads(data))
 
 def createException(type_name, *args):      # XXX no longer needed?
     """recreate an exception value based on the exception type name and arguments"""
-    x = getattr(Pyro4.errors, type_name, None)
+    x = getattr(Pyro4.errors, type_name, None)   # XXX unsafe!
     if x is not None:
         return x(*args)
     try:
         try:
             import exceptions
-            return getattr(exceptions, type_name)(*args)
+            return getattr(exceptions, type_name)(*args)   # XXX unsafe!?
         except ImportError:
             import builtins
-            return getattr(builtins, type_name)(*args)
+            return getattr(builtins, type_name)(*args)   # XXX unsafe!
     except:
         args = list(args)
         args.insert(0, type_name)
@@ -284,7 +342,7 @@ class SerpentSerializer(SerializerBase):
     def loadsCall(self, data):
         return serpent.loads(data)
     def loads(self, data):
-        return serpent.loads(data)
+        return self.recreate_classes(serpent.loads(data))
 
 class JsonSerializer(SerializerBase):
     """(de)serializer that wraps the json serialization protocol."""
@@ -301,7 +359,7 @@ class JsonSerializer(SerializerBase):
             data = json.loads(data)
             return data["object"], data["method"], data["params"], data["kwargs"]
         def loads(self, data):
-            return json.loads(data)
+            return self.recreate_classes(json.loads(data))
     else:
         def dumpsCall(self, object, method, vargs, kwargs):
             data = {"object": object, "method": method, "params": vargs, "kwargs": kwargs}
@@ -319,7 +377,7 @@ class JsonSerializer(SerializerBase):
             return data["object"], data["method"], data["params"], data["kwargs"]
         def loads(self, data):
             data=data.decode("utf-8")
-            return json.loads(data)
+            return self.recreate_classes(json.loads(data))
 
 
 class XmlrpcSerializer(SerializerBase):
@@ -337,7 +395,7 @@ class XmlrpcSerializer(SerializerBase):
             data = xmlrpc.loads(data)[0][0]
             return data["object"], data["method"], data["vargs"], data["kwargs"]
         def loads(self, data):
-            return xmlrpc.loads(data)[0][0]
+            return self.recreate_classes(mlrpc.loads(data)[0][0])
     else:
         def dumpsCall(self, object, method, vargs, kwargs):
             data = {"object": object, "method": method, "vargs": vargs, "kwargs": kwargs}
@@ -355,7 +413,7 @@ class XmlrpcSerializer(SerializerBase):
             return data["object"], data["method"], data["vargs"], data["kwargs"]
         def loads(self, data):
             data=data.decode("utf-8")
-            return xmlrpc.loads(data)[0][0]
+            return self.recreate_classes(xmlrpc.loads(data)[0][0])
 
 
 """The various serializers that are supported"""
@@ -413,7 +471,7 @@ def resolveDottedAttribute(obj, attr, allowDotted):
 
 def excepthook(ex_type, ex_value, ex_tb):
     """An exception hook you can use for ``sys.excepthook``, to automatically print remote Pyro tracebacks"""
-    traceback="".join(getPyroTraceback(ex_type, ex_value, ex_tb))
+    traceback = "".join(getPyroTraceback(ex_type, ex_value, ex_tb))
     sys.stderr.write(traceback)
 
 
@@ -423,19 +481,15 @@ def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
     if hasattr(exceptionObject, "args"):
         if addAttributes:
             # piggyback the attributes on the exception args instead.
-            exceptionObject.args+=(__IronPythonExceptionArgs(vars(exceptionObject)),)
+            ironpythonArgs = vars(exceptionObject)
+            ironpythonArgs["__ironpythonargs__"] = True
+            exceptionObject.args += (ironpythonArgs,)
         else:
             # check if there is a piggybacked object in the args
             # if there is, extract the exception attributes from it.
             if len(exceptionObject.args) > 0:
                 piggyback = exceptionObject.args[-1]
-                if isinstance(piggyback, __IronPythonExceptionArgs):
+                if type(piggyback) is dict and piggyback.get("__ironpythonargs__"):
+                    del piggyback["__ironpythonargs__"]
                     exceptionObject.args = exceptionObject.args[:-1]
-                    exceptionObject.__dict__.update(piggyback.data)
-
-
-class __IronPythonExceptionArgs(object):
-    """Helper class to hold exception arguments for IronPython.
-    Separate class otherwise pickling the exception will fail."""
-    def __init__(self,data):
-        self.data=data
+                    exceptionObject.__dict__.update(piggyback)
