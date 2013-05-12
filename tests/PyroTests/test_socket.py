@@ -21,6 +21,7 @@ if has_ipv6:
     try:
         s.connect(("::1", 53))
         s.close()
+        socket.getaddrinfo("localhost",None,socket.AF_INET6)
     except socket.error:
         has_ipv6 = False
 
