@@ -323,7 +323,7 @@ class MarshalSerializer(SerializerBase):
         try:
             return marshal.dumps(data)
         except (ValueError, TypeError):
-            return marshal.dumps(self.class_to_dict(data))
+            return marshal.dumps(self.class_to_dict(data))      # note: this doesn't work recursively
 
     def loadsCall(self, data):
         return marshal.loads(data)
@@ -349,15 +349,12 @@ class SerpentSerializer(SerializerBase):
 
 class JsonSerializer(SerializerBase):
     """(de)serializer that wraps the json serialization protocol."""
-    def dumpsCall(self, object, method, vargs, kwargs):
-        data = {"object": object, "method": method, "params": vargs, "kwargs": kwargs}
-        data = json.dumps(data, ensure_ascii=False)
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        data = {"object": obj, "method": method, "params": vargs, "kwargs": kwargs}
+        data = json.dumps(data, ensure_ascii=False, default=self.default)
         return data.encode("utf-8")
     def dumps(self, data):
-        try:
-            data = json.dumps(data, ensure_ascii=False)
-        except TypeError:
-            data = json.dumps(self.class_to_dict(data), ensure_ascii=False)
+        data = json.dumps(data, ensure_ascii=False, default=self.default)
         return data.encode("utf-8")
     def loadsCall(self, data):
         data=data.decode("utf-8")
@@ -366,7 +363,8 @@ class JsonSerializer(SerializerBase):
     def loads(self, data):
         data=data.decode("utf-8")
         return self.recreate_classes(json.loads(data))
-
+    def default(self, obj):
+        return self.class_to_dict(obj)
 
 """The various serializers that are supported"""
 _serializers = {}

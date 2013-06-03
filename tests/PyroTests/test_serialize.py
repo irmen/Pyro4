@@ -116,6 +116,26 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(proxy2._pyroSerializer, proxy._pyroSerializer)
         self.assertEqual(42, proxy2._pyroTimeout)
 
+    def testNested(self):
+        if Pyro4.config.SERIALIZER=="marshal":
+            self.skipTest("nested skipped because marshal's class-to-dict doesn't work recursively")
+        uri1=Pyro4.core.URI("PYRO:1111@host.com:111")
+        uri2=Pyro4.core.URI("PYRO:2222@host.com:222")
+        data=[uri1, uri2]
+        p,_=self.ser.serializeData(data)
+        [u1, u2]=self.ser.deserializeData(p)
+        if Pyro4.config.SERIALIZER=="json":
+            self.assertEqual({'state': ['PYRO', '1111', None, 'host.com', 111], '__class__': 'Pyro4.core.URI'}, u1)
+            self.assertEqual({'state': ['PYRO', '2222', None, 'host.com', 222], '__class__': 'Pyro4.core.URI'}, u2)
+        elif Pyro4.config.SERIALIZER=="serpent":
+            self.assertEqual({'state': ('PYRO', '1111', None, 'host.com', 111), '__class__': 'Pyro4.core.URI'}, u1)
+            self.assertEqual({'state': ('PYRO', '2222', None, 'host.com', 222), '__class__': 'Pyro4.core.URI'}, u2)
+        elif Pyro4.config.SERIALIZER=="pickle":
+            self.assertEqual(uri1, u1)
+            self.assertEqual(uri2, u2)
+        else:
+            self.fail("unchecked serializer type "+Pyro4.config.SERIALIZER)
+
     def testSerDaemonHack(self):
         # This tests the hack that a Daemon should be serializable,
         # but only to support serializing Pyro objects.
