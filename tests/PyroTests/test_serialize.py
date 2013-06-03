@@ -34,10 +34,10 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertFalse(s!=s2)
 
     def testSerUnicode(self):
-        data = u"\u20ac"
+        data = unicode("x")
         ser,_ = self.ser.serializeData(data)
         self.assertIs(type(ser), bytes)
-        ser,_ = self.ser.serializeCall(data, u"method", [], {})
+        ser,_ = self.ser.serializeCall(data, unicode("method"), [], {})
         self.assertIs(type(ser), bytes)
 
     def testSerCompression(self):
