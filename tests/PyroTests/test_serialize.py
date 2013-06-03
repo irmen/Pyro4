@@ -4,7 +4,7 @@ Tests for the data serializer.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement, absolute_import
+from __future__ import with_statement
 import unittest
 import sys
 import pprint
