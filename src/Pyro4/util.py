@@ -227,7 +227,7 @@ class SerializerBase(object):
         """
         classname = data.get("__class__", "<unknown>")
         if "__" in classname:
-            raise Pyro4.errors.SecurityError("refuse to deserialize types with double underscores in their name: "+classname)
+            raise Pyro4.errors.SecurityError("refused to deserialize types with double underscores in their name: "+classname)
         if classname.startswith("Pyro4.core."):
             if classname=="Pyro4.core.URI":
                 uri = Pyro4.core.URI.__new__(Pyro4.core.URI)
