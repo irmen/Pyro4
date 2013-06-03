@@ -218,8 +218,11 @@ class SerializeTests_pickle(unittest.TestCase):
         obj, method, vargs, kwargs = self.ser.deserializeCall(ser, compressed=False)
         self.assertEqual("object", obj)
         self.assertEqual("method", method)
-        self.assertEqual("[ZeroDivisionError('hello',)]", repr(vargs))
-        self.assertEqual("{'thing': ZeroDivisionError('hello',)}", repr(kwargs))
+        self.assertIsInstance(vargs, list)
+        self.assertIsInstance(vargs[0], ZeroDivisionError)
+        self.assertEqual("hello", str(vargs[0]))
+        self.assertIsInstance(kwargs["thing"], ZeroDivisionError)
+        self.assertEqual("hello", str(kwargs["thing"]))
 
     def testException(self):
         e = ZeroDivisionError("hello")
