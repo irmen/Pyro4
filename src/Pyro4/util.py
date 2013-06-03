@@ -349,38 +349,23 @@ class SerpentSerializer(SerializerBase):
 
 class JsonSerializer(SerializerBase):
     """(de)serializer that wraps the json serialization protocol."""
-    if sys.version_info<(3, 0):
-        def dumpsCall(self, object, method, vargs, kwargs):
-            data = {"object": object, "method": method, "params": vargs, "kwargs": kwargs}
-            return json.dumps(data, ensure_ascii=False)
-        def dumps(self, data):
-            try:
-                return json.dumps(data, ensure_ascii=False)
-            except TypeError:
-                return json.dumps(self.class_to_dict(data), ensure_ascii=False)
-        def loadsCall(self, data):
-            data = json.loads(data)
-            return data["object"], data["method"], data["params"], data["kwargs"]
-        def loads(self, data):
-            return self.recreate_classes(json.loads(data))
-    else:
-        def dumpsCall(self, object, method, vargs, kwargs):
-            data = {"object": object, "method": method, "params": vargs, "kwargs": kwargs}
+    def dumpsCall(self, object, method, vargs, kwargs):
+        data = {"object": object, "method": method, "params": vargs, "kwargs": kwargs}
+        data = json.dumps(data, ensure_ascii=False)
+        return data.encode("utf-8")
+    def dumps(self, data):
+        try:
             data = json.dumps(data, ensure_ascii=False)
-            return data.encode("utf-8")
-        def dumps(self, data):
-            try:
-                data = json.dumps(data, ensure_ascii=False)
-            except TypeError:
-                data = json.dumps(self.class_to_dict(data), ensure_ascii=False)
-            return data.encode("utf-8")
-        def loadsCall(self, data):
-            data=data.decode("utf-8")
-            data = json.loads(data)
-            return data["object"], data["method"], data["params"], data["kwargs"]
-        def loads(self, data):
-            data=data.decode("utf-8")
-            return self.recreate_classes(json.loads(data))
+        except TypeError:
+            data = json.dumps(self.class_to_dict(data), ensure_ascii=False)
+        return data.encode("utf-8")
+    def loadsCall(self, data):
+        data=data.decode("utf-8")
+        data = json.loads(data)
+        return data["object"], data["method"], data["params"], data["kwargs"]
+    def loads(self, data):
+        data=data.decode("utf-8")
+        return self.recreate_classes(json.loads(data))
 
 
 """The various serializers that are supported"""

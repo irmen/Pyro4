@@ -40,7 +40,7 @@ class MyThing(object):
         time.sleep(delay)
         return "slept for "+str(id)
     def testargs(self,x,*args,**kwargs):
-        return x,args,kwargs
+        return [x, list(args), kwargs]    # don't return tuples, this enables us to test json serialization as well.
     def nonserializableException(self):
         raise NonserializableError(("xantippe", lambda x: 0))
 
@@ -130,12 +130,12 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testSomeArgumentTypes(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            self.assertEqual((1,(),{}), p.testargs(1))
-            self.assertEqual((1,(2,3),{'a':4}), p.testargs(1,2,3,a=4))
-            self.assertEqual((1,(),{'a':2}), p.testargs(1, **{'a':2}))
+            self.assertEqual([1,[],{}], p.testargs(1))
+            self.assertEqual([1,[2,3],{'a':4}], p.testargs(1,2,3,a=4))
+            self.assertEqual([1,[],{'a':2}], p.testargs(1, **{'a':2}))
             if sys.version_info>=(2,6,5):
                 # python 2.6.5 and later support unicode keyword args
-                self.assertEqual((1,(),{unichr(65):2}), p.testargs(1, **{unichr(65):2}))
+                self.assertEqual([1,[],{unichr(65):2}], p.testargs(1, **{unichr(65):2}))
                 if platform.python_implementation()!="PyPy":
                     # PyPy doesn't accept unicode kwargs that cannot be encoded to ascii, see https://bugs.pypy.org/issue751
                     result=p.testargs(1, **{unichr(0x20ac):2})
@@ -179,7 +179,7 @@ class ServerTestsOnce(unittest.TestCase):
                 self.fail("should crash")
             except Exception:
                 xt, xv, tb = sys.exc_info()
-                self.assertEqual(xt, Pyro4.errors.PyroError)
+                self.assertTrue(issubclass(xt, Pyro4.errors.PyroError))
                 tblines = "\n".join(Pyro4.util.getPyroTraceback())
                 self.assertTrue("PyroError: Error serializing exception" in tblines)
                 s1 = "Original exception: <class '__main__.NonserializableError'>:"

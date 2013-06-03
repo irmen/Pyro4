@@ -33,6 +33,13 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertTrue(s==s2)
         self.assertFalse(s!=s2)
 
+    def testSerUnicode(self):
+        data = u"\u20ac"
+        ser,_ = self.ser.serializeData(data)
+        self.assertIs(type(ser), bytes)
+        ser,_ = self.ser.serializeCall(data, u"method", [], {})
+        self.assertIs(type(ser), bytes)
+
     def testSerCompression(self):
         d1,c1=self.ser.serializeData("small data", compress=True)
         d2,c2=self.ser.serializeData("small data", compress=False)
@@ -171,6 +178,7 @@ class SerializeTests_pickle(unittest.TestCase):
     def testData(self):
         data = [42, "hello"]
         ser, compressed = self.ser.serializeData(data)
+        self.assertIs(type(ser), bytes)
         self.assertFalse(compressed)
         data2 = self.ser.deserializeData(ser, compressed=False)
         self.assertEqual(data, data2)
