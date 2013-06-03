@@ -283,8 +283,16 @@ class SerializerBase(object):
 
     def recreate_classes(self, literal):
         t = type(literal)
-        if t is dict and "__class__" in literal:
-            return self.dict_to_class(literal)
+        if t is set:
+            return {self.recreate_classes(x) for x in literal}
+        if t is list:
+            return [self.recreate_classes(x) for x in literal]
+        if t is tuple:
+            return tuple(self.recreate_classes(x) for x in literal)
+        if t is dict:
+            if "__class__" in literal:
+                return self.dict_to_class(literal)
+            return {key: self.recreate_classes(value) for key, value in literal.items()}
         return literal
 
     def __eq__(self, other):
@@ -323,10 +331,13 @@ class MarshalSerializer(SerializerBase):
         try:
             return marshal.dumps(data)
         except (ValueError, TypeError):
-            return marshal.dumps(self.class_to_dict(data))      # note: this doesn't work recursively
+            return marshal.dumps(self.class_to_dict(data))
 
     def loadsCall(self, data):
-        return marshal.loads(data)
+        obj, method, vargs, kwargs = marshal.loads(data)
+        vargs = self.recreate_classes(vargs)
+        kwargs = self.recreate_classes(kwargs)
+        return obj, method, vargs, kwargs
 
     def loads(self, data):
         return self.recreate_classes(marshal.loads(data))
@@ -341,7 +352,10 @@ class SerpentSerializer(SerializerBase):
         return serpent.dumps(data)
 
     def loadsCall(self, data):
-        return serpent.loads(data)
+        obj, method, vargs, kwargs = serpent.loads(data)
+        vargs = self.recreate_classes(vargs)
+        kwargs = self.recreate_classes(kwargs)
+        return obj, method, vargs, kwargs
 
     def loads(self, data):
         return self.recreate_classes(serpent.loads(data))
@@ -359,7 +373,9 @@ class JsonSerializer(SerializerBase):
     def loadsCall(self, data):
         data=data.decode("utf-8")
         data = json.loads(data)
-        return data["object"], data["method"], data["params"], data["kwargs"]
+        vargs = self.recreate_classes(data["params"])
+        kwargs = self.recreate_classes(data["kwargs"])
+        return data["object"], data["method"], vargs, kwargs
     def loads(self, data):
         data=data.decode("utf-8")
         return self.recreate_classes(json.loads(data))
