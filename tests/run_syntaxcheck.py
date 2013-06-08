@@ -21,32 +21,13 @@ def Pyflakes(path, modules):
     print("%d warnings occurred in pyflakes check" % warnings)
 
 
-def Pylint(path, modules):
-    try:
-        from pylint import lint
-    except ImportError:
-        print("PYLINT not installed. Skipping.")
-        return
-    args=["--rcfile=pylint.rc","--files-output=y"]
-    for m in modules:
-        m=m[:-3]
-        if m and m!="__init__":
-            args.append("Pyro4."+m)
-    try:
-        lint.Run(args)  # this will exit the interpreter... :( 
-    finally:
-        print("Lint done. Check the output files (pylint_*.txt)")
-
 def main(args):
     pyropath="../src/Pyro4"
     pyromodules=[module for module in os.listdir(pyropath) if module.endswith(".py")]
-    checkers=args or ["flakes","lint"]
+    checkers=args or ["flakes"]
     if "flakes" in checkers:
         print("-"*20+"PYFLAKES")
         Pyflakes(pyropath, pyromodules)
-    if "lint" in checkers:
-        print("-"*20+"PYLINT")
-        Pylint(pyropath, pyromodules)    # lint always last because it wil exit the interpreter! :(
 
 
 if __name__=="__main__":

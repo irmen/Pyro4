@@ -2,6 +2,15 @@
 Change Log
 **********
 
+**Pyro 4.20**
+
+- multiple serializers supported instead of just pickle. (pickle, serpent, json, marshal)
+  pickle is unsafe/unsecure, so a choice of safe/secure serializers is now available
+- config item SERIALIZER added to select desired serializer, default is 'serpent'
+- wire protocol version bumped because of this (45)
+- config item LOGWIRE added to be able to see in the logfile what passes over the wire
+
+
 **Pyro 4.18**
 
 - IPV6 support landed in trunk (merged ipv6 branch)

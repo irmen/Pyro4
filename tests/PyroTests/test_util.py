@@ -10,6 +10,7 @@ import sys, imp, os, platform
 import Pyro4.util
 from testsupport import *
 
+
 if not hasattr(imp,"reload"):
     imp.reload=reload   # python 2.5 doesn't have imp.reload
 
@@ -133,7 +134,7 @@ class TestUtils(unittest.TestCase):
         if "PYRO_HOST" in os.environ: del os.environ["PYRO_HOST"]
         if "PYRO_NS_PORT" in os.environ: del os.environ["PYRO_NS_PORT"]
         if "PYRO_COMPRESSION" in os.environ: del os.environ["PYRO_COMPRESSION"]
-        Pyro4.config.reset(useenvironment=False)
+        Pyro4.config.reset()
     
     def testConfig(self):
         self.clearEnv()
@@ -159,16 +160,17 @@ class TestUtils(unittest.TestCase):
 
     def testConfigReset(self):
         try:
-            Pyro4.config.reset(useenvironment=False)
+            Pyro4.config.reset()
             self.assertEqual("localhost", Pyro4.config.HOST)
             Pyro4.config.HOST="foobar"
             self.assertEqual("foobar", Pyro4.config.HOST)
-            Pyro4.config.reset(useenvironment=False)
+            Pyro4.config.reset()
             self.assertEqual("localhost", Pyro4.config.HOST)
             os.environ["PYRO_HOST"]="foobar"
-            Pyro4.config.reset(useenvironment=True)
+            Pyro4.config.reset()
             self.assertEqual("foobar", Pyro4.config.HOST)
-            Pyro4.config.reset(useenvironment=False)
+            del os.environ["PYRO_HOST"]
+            Pyro4.config.reset()
             self.assertEqual("localhost", Pyro4.config.HOST)
         finally:
             self.clearEnv()
@@ -217,6 +219,7 @@ class TestUtils(unittest.TestCase):
             if platform.python_implementation()!="PyPy":
                 processed_args=function(*(1,2,3), **{ unichr(0x20ac): 42 })
                 self.assertEqual( ((1,2,3), { unichr(0x20ac): 42}), processed_args)
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

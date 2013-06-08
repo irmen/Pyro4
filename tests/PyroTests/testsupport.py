@@ -8,8 +8,10 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 from __future__ import with_statement
 import sys
 import threading
+import pickle
 
-__all__=["tobytes", "unicode", "unichr", "StringIO", "next", "AtomicCounter"]
+
+__all__=["tobytes", "unicode", "unichr", "StringIO", "next", "AtomicCounter", "NonserializableError", "MyThing2"]
 
 if sys.version_info<(3,0):
     from StringIO import StringIO
@@ -45,3 +47,11 @@ class AtomicCounter(object):
         with self.lock:
             return self.count
 
+
+class NonserializableError(Exception):
+    def __reduce__(self):
+        raise pickle.PicklingError("to make this error non-serializable")
+
+
+class MyThing2(object):
+    pass

@@ -7,6 +7,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import sys, zlib, logging
 import traceback, linecache
 import Pyro4
+import Pyro4.errors
 
 log=logging.getLogger("Pyro4.util")
 
@@ -20,7 +21,7 @@ def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
         result=[" +--- This exception occured remotely (Pyro) - Remote traceback:"]
         for line in remote_tb_lines:
             if line.endswith("\n"):
-                line=line[:-1]
+                line = line[:-1]
             lines = line.split("\n")
             for line in lines:
                 result.append("\n | ")
@@ -70,7 +71,7 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                     return "<ERROR>"
         try:
             result=["-"*52+"\n"]
-            result.append(" EXCEPTION %s: %s\n" % (ex_type,ex_value))
+            result.append(" EXCEPTION %s: %s\n" % (ex_type, ex_value))
             result.append(" Extended stacktrace follows (most recent call last)\n")
             skipLocals=True  # don't print the locals of the very first stackframe
             while ex_tb:
@@ -86,19 +87,19 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                 result.append("    "+linecache.getline(sourceFileName, ex_tb.tb_lineno).strip()+"\n")
                 if not skipLocals:
                     names=set()
-                    names.update(getattr(frame.f_code,"co_varnames",()))
-                    names.update(getattr(frame.f_code,"co_names",()))
-                    names.update(getattr(frame.f_code,"co_cellvars",()))
-                    names.update(getattr(frame.f_code,"co_freevars",()))
+                    names.update(getattr(frame.f_code, "co_varnames", ()))
+                    names.update(getattr(frame.f_code, "co_names", ()))
+                    names.update(getattr(frame.f_code, "co_cellvars", ()))
+                    names.update(getattr(frame.f_code, "co_freevars", ()))
                     result.append("Local values:\n")
                     for name in sorted(names):
                         if name in frame.f_locals:
                             value=frame.f_locals[name]
-                            result.append("    %s = %s\n" % (name,makeStrValue(value)))
+                            result.append("    %s = %s\n" % (name, makeStrValue(value)))
                             if name=="self":
                                 # print the local variables of the class instance
-                                for name,value in vars(value).items():
-                                    result.append("        self.%s = %s\n" % (name,makeStrValue(value)))
+                                for name, value in vars(value).items():
+                                    result.append("        self.%s = %s\n" % (name, makeStrValue(value)))
                 skipLocals=False
                 ex_tb=ex_tb.tb_next
             result.append("-"*52+"\n")
@@ -107,31 +108,65 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
             return result
         except Exception:
             return ["-"*52+"\nError building extended traceback!!! :\n",
-                  "".join(traceback.format_exception(*sys.exc_info())) + '-'*52 + '\n',
-                  "Original Exception follows:\n",
-                  "".join(traceback.format_exception(ex_type, ex_value, ex_tb))]
+                    "".join(traceback.format_exception(*sys.exc_info())) + '-'*52 + '\n',
+                    "Original Exception follows:\n",
+                    "".join(traceback.format_exception(ex_type, ex_value, ex_tb))]
     else:
         # default traceback format.
         return traceback.format_exception(ex_type, ex_value, ex_tb)
 
 
-class Serializer(object):
-    """
-    A (de)serializer that wraps a certain serialization protocol.
-    Currently it only supports the standard pickle protocol.
-    It can optionally compress the serialized data, and is thread safe.
-    """
-    try:
-        import cPickle as pickle
-    except ImportError:
-        import pickle
-    if pickle.HIGHEST_PROTOCOL<2:
-        raise RuntimeError("pickle serializer needs to support protocol 2 or higher")
+if sys.version_info < (3, 0):
+    import exceptions
+    all_exceptions = {name: t for name, t in vars(exceptions).items() if type(t) is type and issubclass(t, Exception)}
+else:
+    import builtins
+    all_exceptions = {name: t for name, t in vars(builtins).items() if type(t) is type and issubclass(t, Exception)}
+all_exceptions.update({name: t for name, t in vars(Pyro4.errors).items() if type(t) is type and issubclass(t, Pyro4.errors.PyroError)})
 
-    def serialize(self, data, compress=False):
+
+class SerializerBase(object):
+    """Base class for (de)serializer implementations (which must be thread safe)"""
+    __custom_class_to_dict_registry = {}
+
+    def serializeData(self, data, compress=False):
         """Serialize the given data object, try to compress if told so.
         Returns a tuple of the serialized data (bytes) and a bool indicating if it is compressed or not."""
-        data=self.pickle.dumps(data, self.pickle.HIGHEST_PROTOCOL)
+        data=self.dumps(data)
+        return self.__compressdata(data, compress)
+
+    def deserializeData(self, data, compressed=False):
+        """Deserializes the given data (bytes). Set compressed to True to decompress the data first."""
+        if compressed:
+            data=zlib.decompress(data)
+        return self.loads(data)
+
+    def serializeCall(self, obj, method, vargs, kwargs, compress=False):
+        """Serialize the given method call parameters, try to compress if told so.
+        Returns a tuple of the serialized data and a bool indicating if it is compressed or not."""
+        data=self.dumpsCall(obj, method, vargs, kwargs)
+        return self.__compressdata(data, compress)
+
+    def deserializeCall(self, data, compressed=False):
+        """Deserializes the given call data back to (object, method, vargs, kwargs) tuple.
+        Set compressed to True to decompress the data first."""
+        if compressed:
+            data=zlib.decompress(data)
+        return self.loadsCall(data)
+
+    def loads(self, data):
+        raise NotImplementedError("implement in subclass")
+
+    def loadsCall(self, data):
+        raise NotImplementedError("implement in subclass")
+
+    def dumps(self, data):
+        raise NotImplementedError("implement in subclass")
+
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        raise NotImplementedError("implement in subclass")
+
+    def __compressdata(self, data, compress):
         if not compress or len(data)<200:
             return data, False  # don't waste time compressing small messages
         compressed=zlib.compress(data)
@@ -139,18 +174,245 @@ class Serializer(object):
             return compressed, True
         return data, False
 
-    def deserialize(self, data, compressed=False):
-        """Deserializes the given data (bytes). Set compressed to True to decompress the data first."""
-        if compressed:
-            data=zlib.decompress(data)
-        return self.pickle.loads(data)
+    @classmethod
+    def register_class_to_dict(cls, clazz, converter):
+        cls.__custom_class_to_dict_registry[clazz] = converter
+
+    @classmethod
+    def unregister_class_to_dict(cls, clazz):
+        if clazz in cls.__custom_class_to_dict_registry:
+            del cls.__custom_class_to_dict_registry[clazz]
+
+    @classmethod
+    def class_to_dict(cls, obj):
+        """Convert a non-serializable object to a dict. Mostly borrowed from serpent."""
+        for clazz in cls.__custom_class_to_dict_registry:
+            if isinstance(obj, clazz):
+                return cls.__custom_class_to_dict_registry[clazz](obj)
+        if type(obj) in (set, dict, tuple, list):
+            raise Pyro4.errors.ProtocolError("couldn't serialize sequence " + str(obj.__class__) + ", one of its elements is unserializable")
+        if hasattr(obj, "_pyroDaemon"):
+            obj._pyroDaemon = None
+        if isinstance(obj, Exception):
+            # special case for exceptions
+            value={"args": obj.args}
+            value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
+            value["attributes"] = vars(obj)  # add custom exception attributes
+            return value
+        try:
+            value = obj.__getstate__()
+        except AttributeError:
+            pass
+        else:
+            if isinstance(value, dict):
+                return value
+        try:
+            value = dict(vars(obj))  # make sure we can serialize anything that resembles a dict
+            value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
+            return value
+        except TypeError:
+            if hasattr(obj, "__slots__"):
+                # use the __slots__ instead of the vars dict
+                value = {}
+                for slot in obj.__slots__:
+                    value[slot] = getattr(obj, slot)
+                value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
+                return value
+            else:
+                raise Pyro4.errors.ProtocolError("don't know how to serialize class " + str(obj.__class__) + ". Give it vars() or an appropriate __getstate__")
+
+    @staticmethod
+    def dict_to_class(data):
+        """
+        Recreate an object out of a dict containing the class name and the attributes.
+        Only a fixed set of classes are recognized.
+        """
+        classname = data.get("__class__", "<unknown>")
+        if "__" in classname:
+            raise Pyro4.errors.SecurityError("refused to deserialize types with double underscores in their name: "+classname)
+        if classname.startswith("Pyro4.core."):
+            if classname=="Pyro4.core.URI":
+                uri = Pyro4.core.URI.__new__(Pyro4.core.URI)
+                uri.__setstate__(data["state"])
+                return uri
+            elif classname=="Pyro4.core.Proxy":
+                proxy = Pyro4.core.Proxy.__new__(Pyro4.core.Proxy)
+                state = data["state"]
+                uri = Pyro4.core.URI(state[0])
+                oneway = set(state[1])
+                timeout = state[2]
+                proxy.__setstate__((uri, oneway, timeout))
+                return proxy
+            elif classname=="Pyro4.core.Daemon":
+                return Pyro4.core.Daemon.__new__(Pyro4.core.Daemon)
+        elif classname.startswith("Pyro4.util."):
+            if classname=="Pyro4.util.PickleSerializer":
+                return PickleSerializer()
+            elif classname=="Pyro4.util.MarshalSerializer":
+                return MarshalSerializer()
+            elif classname=="Pyro4.util.JsonSerializer":
+                return JsonSerializer()
+            elif classname=="Pyro4.util.SerpentSerializer":
+                return SerpentSerializer()
+        elif classname.startswith("Pyro4.errors."):
+            errortype = getattr(Pyro4.errors, classname.split('.', 2)[2])
+            if issubclass(errortype, Pyro4.errors.PyroError):
+                return SerializerBase.make_exception(errortype, data)
+        elif classname.startswith("builtins."):
+            exceptiontype = getattr(builtins, classname.split('.', 1)[1])
+            if issubclass(exceptiontype, Exception):
+                return SerializerBase.make_exception(exceptiontype, data)
+        elif classname.startswith("exceptions."):
+            exceptiontype = getattr(exceptions, classname.split('.', 1)[1])
+            if issubclass(exceptiontype, Exception):
+                return SerializerBase.make_exception(exceptiontype, data)
+        elif classname in all_exceptions:
+            return SerializerBase.make_exception(all_exceptions[classname], data)
+        # try one of the serializer classes
+        for serializer in _serializers.values():
+            if classname == serializer.__class__.__name__:
+                return serializer
+        raise Pyro4.errors.ProtocolError("unsupported serialized class: "+classname)
+
+    @staticmethod
+    def make_exception(exceptiontype, data):
+        ex = exceptiontype(*data["args"])
+        if "attributes" in data:
+            # restore custom attributes on the exception object
+            for attr, value in data["attributes"].items():
+                setattr(ex, attr, value)
+        return ex
+
+    def recreate_classes(self, literal):
+        t = type(literal)
+        if t is set:
+            return {self.recreate_classes(x) for x in literal}
+        if t is list:
+            return [self.recreate_classes(x) for x in literal]
+        if t is tuple:
+            return tuple(self.recreate_classes(x) for x in literal)
+        if t is dict:
+            if "__class__" in literal:
+                return self.dict_to_class(literal)
+            return {key: self.recreate_classes(value) for key, value in literal.items()}
+        return literal
 
     def __eq__(self, other):
         """this equality method is only to support the unit tests of this class"""
-        return type(other) is Serializer and vars(self)==vars(other)
+        return isinstance(other, SerializerBase) and vars(self)==vars(other)
+
     def __ne__(self, other):
         return not self.__eq__(other)
     __hash__=object.__hash__
+
+
+class PickleSerializer(SerializerBase):
+    """
+    A (de)serializer that wraps the Pickle serialization protocol.
+    It can optionally compress the serialized data, and is thread safe.
+    """
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        return pickle.dumps((obj, method, vargs, kwargs), pickle.HIGHEST_PROTOCOL)
+
+    def dumps(self, data):
+        return pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
+
+    def loadsCall(self, data):
+        return pickle.loads(data)
+
+    def loads(self, data):
+        return pickle.loads(data)
+
+
+class MarshalSerializer(SerializerBase):
+    """(de)serializer that wraps the marshal serialization protocol."""
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        return marshal.dumps((obj, method, vargs, kwargs))
+
+    def dumps(self, data):
+        try:
+            return marshal.dumps(data)
+        except (ValueError, TypeError):
+            return marshal.dumps(self.class_to_dict(data))
+
+    def loadsCall(self, data):
+        obj, method, vargs, kwargs = marshal.loads(data)
+        vargs = self.recreate_classes(vargs)
+        kwargs = self.recreate_classes(kwargs)
+        return obj, method, vargs, kwargs
+
+    def loads(self, data):
+        return self.recreate_classes(marshal.loads(data))
+
+
+class SerpentSerializer(SerializerBase):
+    """(de)serializer that wraps the serpent serialization protocol."""
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        return serpent.dumps((obj, method, vargs, kwargs))
+
+    def dumps(self, data):
+        return serpent.dumps(data)
+
+    def loadsCall(self, data):
+        obj, method, vargs, kwargs = serpent.loads(data)
+        vargs = self.recreate_classes(vargs)
+        kwargs = self.recreate_classes(kwargs)
+        return obj, method, vargs, kwargs
+
+    def loads(self, data):
+        return self.recreate_classes(serpent.loads(data))
+
+
+class JsonSerializer(SerializerBase):
+    """(de)serializer that wraps the json serialization protocol."""
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        data = {"object": obj, "method": method, "params": vargs, "kwargs": kwargs}
+        data = json.dumps(data, ensure_ascii=False, default=self.default)
+        return data.encode("utf-8")
+    def dumps(self, data):
+        data = json.dumps(data, ensure_ascii=False, default=self.default)
+        return data.encode("utf-8")
+    def loadsCall(self, data):
+        data=data.decode("utf-8")
+        data = json.loads(data)
+        vargs = self.recreate_classes(data["params"])
+        kwargs = self.recreate_classes(data["kwargs"])
+        return data["object"], data["method"], vargs, kwargs
+    def loads(self, data):
+        data=data.decode("utf-8")
+        return self.recreate_classes(json.loads(data))
+    def default(self, obj):
+        return self.class_to_dict(obj)
+
+"""The various serializers that are supported"""
+_serializers = {}
+def get_serializer():
+    try:
+        return _serializers[Pyro4.config.SERIALIZER]
+    except KeyError:
+        raise Pyro4.errors.ProtocolError("configured serializer '%s' is unknown or not available" % Pyro4.config.SERIALIZER)
+
+# determine the serializers that are supported
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+if pickle.HIGHEST_PROTOCOL<2:
+    raise RuntimeError("pickle serializer needs to support protocol 2 or higher")
+_serializers["pickle"] = PickleSerializer()
+import marshal
+_serializers["marshal"] = MarshalSerializer()
+try:
+    import json
+    _serializers["json"] = JsonSerializer()
+except ImportError:
+    pass
+try:
+    import serpent
+    _serializers["serpent"] = SerpentSerializer()
+except ImportError:
+    #warnings.warn("serpent serializer not available", RuntimeWarning)
+    pass
 
 
 def resolveDottedAttribute(obj, attr, allowDotted):
@@ -174,7 +436,7 @@ def resolveDottedAttribute(obj, attr, allowDotted):
 
 def excepthook(ex_type, ex_value, ex_tb):
     """An exception hook you can use for ``sys.excepthook``, to automatically print remote Pyro tracebacks"""
-    traceback="".join(getPyroTraceback(ex_type, ex_value, ex_tb))
+    traceback = "".join(getPyroTraceback(ex_type, ex_value, ex_tb))
     sys.stderr.write(traceback)
 
 
@@ -184,19 +446,15 @@ def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
     if hasattr(exceptionObject, "args"):
         if addAttributes:
             # piggyback the attributes on the exception args instead.
-            exceptionObject.args+=(__IronPythonExceptionArgs(vars(exceptionObject)),)
+            ironpythonArgs = vars(exceptionObject)
+            ironpythonArgs["__ironpythonargs__"] = True
+            exceptionObject.args += (ironpythonArgs,)
         else:
             # check if there is a piggybacked object in the args
             # if there is, extract the exception attributes from it.
             if len(exceptionObject.args) > 0:
                 piggyback = exceptionObject.args[-1]
-                if isinstance(piggyback, __IronPythonExceptionArgs):
+                if type(piggyback) is dict and piggyback.get("__ironpythonargs__"):
+                    del piggyback["__ironpythonargs__"]
                     exceptionObject.args = exceptionObject.args[:-1]
-                    exceptionObject.__dict__.update(piggyback.data)
-
-
-class __IronPythonExceptionArgs(object):
-    """Helper class to hold exception arguments for IronPython.
-    Separate class otherwise pickling the exception will fail."""
-    def __init__(self,data):
-        self.data=data
+                    exceptionObject.__dict__.update(piggyback)

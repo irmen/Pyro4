@@ -5,7 +5,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import pickle
 import unittest
 import Pyro4.core
 import Pyro4.errors
@@ -13,11 +12,6 @@ import Pyro4.util
 import time, os, sys, platform
 from Pyro4 import threadutil
 from testsupport import *
-
-
-class NonserializableError(Exception):
-    def __reduce__(self):
-        raise pickle.PicklingError("to make this error non-serializable")
 
 
 class MyThing(object):
@@ -40,12 +34,10 @@ class MyThing(object):
         time.sleep(delay)
         return "slept for "+str(id)
     def testargs(self,x,*args,**kwargs):
-        return x,args,kwargs
+        return [x, list(args), kwargs]    # don't return tuples, this enables us to test json serialization as well.
     def nonserializableException(self):
         raise NonserializableError(("xantippe", lambda x: 0))
 
-class MyThing2(object):
-    pass
 
 class DaemonLoopThread(threadutil.Thread):
     def __init__(self, pyrodaemon):
@@ -73,6 +65,7 @@ class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
 class ServerTestsBrokenHandshake(unittest.TestCase):
     def setUp(self):
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.SERIALIZER="pickle"
         self.daemon=DaemonWithSabotagedHandshake(port=0)
         obj=MyThing()
         uri=self.daemon.register(obj, "something")
@@ -85,6 +78,7 @@ class ServerTestsBrokenHandshake(unittest.TestCase):
         self.daemon.shutdown()
         self.daemonthread.join()
         Pyro4.config.HMAC_KEY=None
+        Pyro4.config.SERIALIZER="serpent"
     def testDaemonConnectFail(self):
         # check what happens when the daemon responds with a failed connection msg
         with Pyro4.Proxy(self.objectUri) as p:
@@ -100,6 +94,7 @@ class ServerTestsOnce(unittest.TestCase):
     """tests that are fine to run with just a single server type"""
     def setUp(self):
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.SERIALIZER="pickle"
         self.daemon=Pyro4.core.Daemon(port=0)
         obj=MyThing()
         uri=self.daemon.register(obj, "something")
@@ -113,6 +108,7 @@ class ServerTestsOnce(unittest.TestCase):
             self.daemon.shutdown()
             self.daemonthread.join()
         Pyro4.config.HMAC_KEY=None
+        Pyro4.config.SERIALIZER="serpent"
 
     def testNoDottedNames(self):
         Pyro4.config.DOTTEDNAMES=False
@@ -130,12 +126,12 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testSomeArgumentTypes(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            self.assertEqual((1,(),{}), p.testargs(1))
-            self.assertEqual((1,(2,3),{'a':4}), p.testargs(1,2,3,a=4))
-            self.assertEqual((1,(),{'a':2}), p.testargs(1, **{'a':2}))
+            self.assertEqual([1,[],{}], p.testargs(1))
+            self.assertEqual([1,[2,3],{'a':4}], p.testargs(1,2,3,a=4))
+            self.assertEqual([1,[],{'a':2}], p.testargs(1, **{'a':2}))
             if sys.version_info>=(2,6,5):
                 # python 2.6.5 and later support unicode keyword args
-                self.assertEqual((1,(),{unichr(65):2}), p.testargs(1, **{unichr(65):2}))
+                self.assertEqual([1,[],{unichr(65):2}], p.testargs(1, **{unichr(65):2}))
                 if platform.python_implementation()!="PyPy":
                     # PyPy doesn't accept unicode kwargs that cannot be encoded to ascii, see https://bugs.pypy.org/issue751
                     result=p.testargs(1, **{unichr(0x20ac):2})
@@ -172,7 +168,24 @@ class ServerTestsOnce(unittest.TestCase):
             except TypeError:
                 pass
 
-    def testNonserializableException(self):
+    def testNonserializableException_other(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            try:
+                p.nonserializableException()
+                self.fail("should crash")
+            except Exception:
+                xt, xv, tb = sys.exc_info()
+                self.assertTrue(issubclass(xt, Pyro4.errors.PyroError))
+                tblines = "\n".join(Pyro4.util.getPyroTraceback())
+                self.assertTrue("PyroError: Error serializing exception" in tblines)
+                s1 = "Original exception: <class 'testsupport.NonserializableError'>:"
+                s2 = "Original exception: <class 'PyroTests.testsupport.NonserializableError'>:"
+                self.assertTrue(s1 in tblines or s2 in tblines)
+                self.assertTrue("raise NonserializableError((\"xantippe" in tblines)
+
+    def testNonserializableException_pickle(self):
+        if Pyro4.config.SERIALIZER!="pickle":
+            self.skipTest("only for pickle-serializer")
         with Pyro4.core.Proxy(self.objectUri) as p:
             try:
                 p.nonserializableException()
@@ -182,8 +195,8 @@ class ServerTestsOnce(unittest.TestCase):
                 self.assertEqual(xt, Pyro4.errors.PyroError)
                 tblines = "\n".join(Pyro4.util.getPyroTraceback())
                 self.assertTrue("PyroError: Error serializing exception" in tblines)
-                s1 = "Original exception: <class '__main__.NonserializableError'>:"
-                s2 = "Original exception: <class 'PyroTests.test_server.NonserializableError'>:"
+                s1 = "Original exception: <class 'testsupport.NonserializableError'>:"
+                s2 = "Original exception: <class 'PyroTests.testsupport.NonserializableError'>:"
                 self.assertTrue(s1 in tblines or s2 in tblines)
                 self.assertTrue("raise NonserializableError((\"xantippe" in tblines)
 
@@ -407,6 +420,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro4.config.THREADPOOL_MINTHREADS=10
         Pyro4.config.THREADPOOL_MAXTHREADS=20
         Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.SERIALIZER="pickle"
         self.daemon=Pyro4.core.Daemon(port=0)
         obj=MyThing()
         uri=self.daemon.register(obj, "something")
@@ -421,6 +435,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro4.config.SERVERTYPE="thread"
         Pyro4.config.COMMTIMEOUT=None
         Pyro4.config.HMAC_KEY=None
+        Pyro4.config.SERIALIZER="serpent"
 
     def testConnectionStuff(self):
         p1=Pyro4.core.Proxy(self.objectUri)
@@ -517,12 +532,12 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
 
     def testSerializeConnected(self):
         # online serialization tests
-        ser=Pyro4.util.Serializer()
+        ser=Pyro4.util.get_serializer()
         proxy=Pyro4.core.Proxy(self.objectUri)
         proxy._pyroBind()
         self.assertFalse(proxy._pyroConnection is None)
-        p,_=ser.serialize(proxy)
-        proxy2=ser.deserialize(p)
+        p,_=ser.serializeData(proxy)
+        proxy2=ser.deserializeData(p)
         self.assertTrue(proxy2._pyroConnection is None)
         self.assertFalse(proxy._pyroConnection is None)
         self.assertEqual(proxy2._pyroUri, proxy._pyroUri)

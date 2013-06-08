@@ -38,6 +38,8 @@ including Python 2.x, Python 3.x, IronPython, Jython and Pypy.""",
         "packages": ['Pyro4', 'Pyro4.socketserver', 'Pyro4.test', 'Pyro4.utils'],
         "scripts": [],
         "platforms": "any",
+        "install_requires": ["serpent>=1.2"],
+        "requires": ["serpent"],
         "classifiers": [
                 "Development Status :: 5 - Production/Stable",
                 "Intended Audience :: Developers",

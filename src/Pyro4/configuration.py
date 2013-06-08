@@ -21,7 +21,7 @@ class Configuration(object):
                "THREADPOOL_MINTHREADS", "THREADPOOL_MAXTHREADS",
                "THREADPOOL_IDLETIMEOUT", "HMAC_KEY", "AUTOPROXY",
                "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
-               "FLAME_ENABLED" )
+               "FLAME_ENABLED", "SERIALIZER", "LOGWIRE" )
 
     def __init__(self):
         self.reset()
@@ -56,6 +56,8 @@ class Configuration(object):
         self.BROADCAST_ADDRS = "<broadcast>, 0.0.0.0"   # comma separated list of broadcast addresses
         self.FLAME_ENABLED = False
         self.PREFER_IP_VERSION = 4    # 4, 6 or 0 (let OS choose according to RFC 3484)
+        self.SERIALIZER = "serpent"
+        self.LOGWIRE = False   # log wire-level messages
 
         if useenvironment:
             # process enviroment variables

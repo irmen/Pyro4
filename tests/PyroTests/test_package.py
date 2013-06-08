@@ -15,6 +15,7 @@ import Pyro4.socketutil
 import Pyro4.threadutil
 import Pyro4.util
 
+
 class TestPackage(unittest.TestCase):
     def testPyro4(self):
         self.assertEqual(Pyro4.core.Daemon, Pyro4.Daemon)

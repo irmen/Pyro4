@@ -91,6 +91,8 @@ THREADPOOL_MINTHREADS   int     4              For the thread pool server: minim
 THREADPOOL_MAXTHREADS   int     50             For the thread pool server: maximum amount of worker threads to be spawned
 THREADPOOL_IDLETIMEOUT  float   2.0            For the thread pool server: number of seconds to pass for an idle worker thread to be terminated
 FLAME_ENABLED           bool    False          Should Pyro Flame be enabled on the server
+SERIALIZER              str     serpent        The wire protocol serializer to use (serpent, json, marshal, pickle)
+LOGWIRE                 bool    False          If wire-level message data should be written to the logfile (you may want to disable COMPRESSION)
 ======================= ======= ============== =======
 
 

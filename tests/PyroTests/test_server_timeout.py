@@ -8,6 +8,7 @@ import unittest
 import os
 import test_server
 
+
 class ServerTestsThreadTimeout(test_server.ServerTestsThreadNoTimeout):
     SERVERTYPE="thread"
     COMMTIMEOUT=2.0

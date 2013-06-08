@@ -1,13 +1,12 @@
 BUGS
 
-- jython 2.5.3 hangs on testBClookup0000 in test_naming on Windows
+- quite a lot of errors in the test suite when running on Jython or Ironpython
 - remote flame console won't close in IronPython
 
 Ideas / TODO
 
 * connection validator is missing and I want it back with similar features as Pyro3, but see next item
 * clean way to have server hooks for client connects and disconnects
-* Alternative serializers (Json, Xmlrpc, pluggable)
 * HMAC: Allow per-proxy HMAC key (to be able to connect to different servers with different keys) -- but perhaps remove HMAC completely once the connection validator logic has been reimplemented
 * Add more topics to the index of the docs
 * More decorators? @synchronized, @oneway, @expose (also on attributes?)

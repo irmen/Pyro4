@@ -35,8 +35,7 @@ Read :ref:`binarytransfer` for some more details about this.
 
 Minimize object graphs that travel over the wire.
 -------------------------------------------------
-The pickle protocol that is used as serialization format is very convenient to transfer Python objects 'over the wire' but it also
-has drawbacks. It serializes the whole object graph you're passing, even when only a tiny fraction
+Pyro will serialize the whole object graph you're passing, even when only a tiny fraction
 of it is used on the receiving end. Be aware of this: it may be necessary to define special lightweight objects
 for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
 
@@ -66,10 +65,11 @@ The success ratio of all this depends heavily on your network setup.
 Same major Python version required
 ==================================
 
-Because Pyro uses pickle as its serialization format, it is required to have the same *major* Python versions
+When Pyro is configured to use pickle as its serialization format, it is required to have the same *major* Python versions
 on your clients and your servers. Otherwise the different parties cannot decipher each others serialized data.
 This means you cannot let Python 2.x talk to Python 3.x with Pyro. However
 it should be fine to have Python 2.6.2 talk to Python 2.7.3 for instance.
+Using one of the implementation independent protocols (serpent or json) will avoid this limitation.
 
 
 Wire protocol version
@@ -215,6 +215,9 @@ Its wire protocol is not optimized for these kinds of data. The occasional trans
 is fine (:doc:`flame` even provides a convenience method for that, if you like:
 :meth:`Pyro4.utils.flame.Flame.sendfile`) but usually it is better to use something else to do
 the actual data transfer (file share+file copy, ftp, scp, rsync).
+
+The serpent and json serializers are particularly inefficient when dealing with binary data,
+so try to avoid it, or don't rely on efficient transfer of large amounts of binary data.
 
 That being said, here is a short overview of the ``pickle`` wire protocol overhead for the possible types
 you can use when transferring binary data using Pyro:

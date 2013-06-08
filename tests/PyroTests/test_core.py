@@ -17,7 +17,6 @@ import Pyro4.constants
 import Pyro4.futures
 from testsupport import *
 
-Pyro4.config.reset(useenvironment=False)
 
 if sys.version_info>=(3,0):
     import imp
@@ -34,7 +33,7 @@ class Thing(object):
 class CoreTestsWithoutHmac(unittest.TestCase):
     def setUp(self):
         warnings.simplefilter("ignore")
-        Pyro4.config.reset(useenvironment=False)
+        Pyro4.config.reset()
     def testProxy(self):
         Pyro4.config.HMAC_KEY=None
         # check that proxy without hmac is possible
@@ -79,7 +78,7 @@ class CoreTests(unittest.TestCase):
         os.environ["PYRO_COMPRESSION"]="foobar"
         self.assertRaises(ValueError, config.reset)
         del os.environ["PYRO_COMPRESSION"]
-        config.reset(useenvironment=False)
+        config.reset()
 
     def testConfigDump(self):
         config=Pyro4.configuration.Configuration()
