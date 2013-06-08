@@ -116,15 +116,17 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
         return traceback.format_exception(ex_type, ex_value, ex_tb)
 
 
+all_exceptions = {}
 if sys.version_info < (3, 0):
     import exceptions
-    all_exceptions = {}
     for name, t in vars(exceptions).items():
         if type(t) is type and issubclass(t, Exception):
             all_exceptions[name] = t
 else:
     import builtins
-    all_exceptions = {name: t for name, t in vars(builtins).items() if type(t) is type and issubclass(t, Exception)}
+    for name, t in vars(builtins).items():
+        if type(t) is type and issubclass(t, Exception):
+            all_exceptions[name] = t
 for name, t in vars(Pyro4.errors).items():
     if type(t) is type and issubclass(t, Pyro4.errors.PyroError):
         all_exceptions[name] = t
@@ -291,7 +293,7 @@ class SerializerBase(object):
     def recreate_classes(self, literal):
         t = type(literal)
         if t is set:
-            return {self.recreate_classes(x) for x in literal}
+            return set([self.recreate_classes(x) for x in literal])
         if t is list:
             return [self.recreate_classes(x) for x in literal]
         if t is tuple:
@@ -299,7 +301,10 @@ class SerializerBase(object):
         if t is dict:
             if "__class__" in literal:
                 return self.dict_to_class(literal)
-            return {key: self.recreate_classes(value) for key, value in literal.items()}
+            result = {}
+            for key, value in literal.items():
+                result[key] = self.recreate_classes(value)
+            return result
         return literal
 
     def __eq__(self, other):

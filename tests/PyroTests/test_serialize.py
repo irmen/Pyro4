@@ -36,9 +36,9 @@ class SerializeTests_pickle(unittest.TestCase):
     def testSerUnicode(self):
         data = unicode("x")
         ser,_ = self.ser.serializeData(data)
-        self.assertIs(type(ser), bytes)
+        self.assertTrue(type(ser) is bytes)
         ser,_ = self.ser.serializeCall(data, unicode("method"), [], {})
-        self.assertIs(type(ser), bytes)
+        self.assertTrue(type(ser) is bytes)
 
     def testSerCompression(self):
         d1,c1=self.ser.serializeData("small data", compress=True)
@@ -93,7 +93,7 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual("9999",uri2.object)
         self.assertEqual("host.com:4444",uri2.location)
         self.assertEqual(4444, uri2.port)
-        self.assertIsNone(uri2.sockname)
+        self.assertEqual(None, uri2.sockname)
 
         uri=Pyro4.core.URI("PYRO:12345@./u:/tmp/socketname")
         p,_=self.ser.serializeData(uri)
@@ -102,7 +102,7 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual("PYRO",uri2.protocol)
         self.assertEqual("12345",uri2.object)
         self.assertEqual("./u:/tmp/socketname",uri2.location)
-        self.assertIsNone(uri2.port)
+        self.assertEqual(None, uri2.port)
         self.assertEqual("/tmp/socketname", uri2.sockname)
 
         proxy=Pyro4.core.Proxy("PYRO:9999@host.com:4444")
@@ -154,7 +154,7 @@ class SerializeTests_pickle(unittest.TestCase):
         e = ZeroDivisionError("hello")
         d, c = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(d, c)
-        self.assertIsInstance(e2, ZeroDivisionError)
+        self.assertTrue(isinstance(e2, ZeroDivisionError))
         self.assertEqual("hello", str(e2))
 
     def testPyroClasses(self):
@@ -190,7 +190,7 @@ class SerializeTests_pickle(unittest.TestCase):
     def testData(self):
         data = [42, "hello"]
         ser, compressed = self.ser.serializeData(data)
-        self.assertIs(type(ser), bytes)
+        self.assertTrue(type(ser) is bytes)
         self.assertFalse(compressed)
         data2 = self.ser.deserializeData(ser, compressed=False)
         self.assertEqual(data, data2)
@@ -225,10 +225,10 @@ class SerializeTests_pickle(unittest.TestCase):
         obj, method, vargs, kwargs = self.ser.deserializeCall(ser, compressed=False)
         self.assertEqual("object", obj)
         self.assertEqual("method", method)
-        self.assertIsInstance(vargs, list)
-        self.assertIsInstance(vargs[0], ZeroDivisionError)
+        self.assertTrue(isinstance(vargs, list))
+        self.assertTrue(isinstance(vargs[0], ZeroDivisionError))
         self.assertEqual("hello", str(vargs[0]))
-        self.assertIsInstance(kwargs["thing"], ZeroDivisionError)
+        self.assertTrue(isinstance(kwargs["thing"], ZeroDivisionError))
         self.assertEqual("hello", str(kwargs["thing"]))
 
     def testException(self):
@@ -236,7 +236,7 @@ class SerializeTests_pickle(unittest.TestCase):
         e.custom_attribute = 999
         ser, compressed = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(ser, compressed)
-        self.assertIsInstance(e2, ZeroDivisionError)
+        self.assertTrue(isinstance(e2, ZeroDivisionError))
         self.assertEqual("hello", str(e2))
         self.assertEqual(999, e2.custom_attribute)
 
