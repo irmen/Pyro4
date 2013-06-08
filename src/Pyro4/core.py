@@ -985,7 +985,7 @@ try:
     import serpent
     def pyro_class_serpent_serializer(obj, serializer, stream, level):
         # Override the default way that a Pyro URI/proxy/daemon is serialized.
-        # Because it defines a getstate it would otherwise just be a tuple,
+        # Because it defines a __getstate__ it would otherwise just become a tuple,
         # and not be deserialized as a class.
         d = Pyro4.util.SerializerBase.class_to_dict(obj)
         serializer.ser_builtins_dict(d, stream, level)

@@ -189,6 +189,8 @@ class SerializerBase(object):
         for clazz in cls.__custom_class_to_dict_registry:
             if isinstance(obj, clazz):
                 return cls.__custom_class_to_dict_registry[clazz](obj)
+        if type(obj) in (set, dict, tuple, list):
+            raise Pyro4.errors.ProtocolError("couldn't serialize sequence " + str(obj.__class__) + ", one of its elements is unserializable")
         if hasattr(obj, "_pyroDaemon"):
             obj._pyroDaemon = None
         if isinstance(obj, Exception):

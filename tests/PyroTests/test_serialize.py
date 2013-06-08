@@ -117,8 +117,11 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(42, proxy2._pyroTimeout)
 
     def testNested(self):
+        if self.SERIALIZER=="marshal":
+            self.skipTest("marshal can't serialize custom objects")
         uri1=Pyro4.core.URI("PYRO:1111@host.com:111")
         uri2=Pyro4.core.URI("PYRO:2222@host.com:222")
+        _=self.ser.serializeData(uri1)
         data=[uri1, uri2]
         p,_=self.ser.serializeData(data)
         [u1, u2]=self.ser.deserializeData(p)
@@ -202,6 +205,8 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual("kwargs", kwargs)
 
     def testCallPyroObjAsArg(self):
+        if self.SERIALIZER=="marshal":
+            self.skipTest("marshal can't serialize custom objects")
         uri = Pyro4.core.URI("PYRO:555@localhost:80")
         ser, compressed = self.ser.serializeCall("object", "method", [uri], {"thing": uri})
         self.assertFalse(compressed)
@@ -212,6 +217,8 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual({"thing": uri}, kwargs)
 
     def testCallCustomObjAsArg(self):
+        if self.SERIALIZER=="marshal":
+            self.skipTest("marshal can't serialize custom objects")
         e = ZeroDivisionError("hello")
         ser, compressed = self.ser.serializeCall("object", "method", [e], {"thing": e})
         self.assertFalse(compressed)

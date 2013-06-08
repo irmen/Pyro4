@@ -9,7 +9,7 @@ Change Log
 - config item SERIALIZER added to select desired serializer, default is 'serpent'
 - wire protocol version bumped because of this (45)
 - config item LOGWIRE added to be able to see in the logfile what passes over the wire
-- @todo: other things?
+- @TODO other things?
 
 
 **Pyro 4.18**
