@@ -23,7 +23,9 @@ Pyro is written in **100% pure Python** and therefore runs on many platforms and
 Here's a quick overview of Pyro's features:
 
 - written in 100% Python so extremely portable.
-- support for all Python data types that are pickleable.
+- defaults to a safe serializer (`serpent <https://pypi.python.org/pypi/serpent>`_) that supports many Python data types.
+- supports different serializers (serpent, json, marshal, pickle).
+- support for all Python data types that are pickleable when using the 'pickle' serializer.
 - runs on normal Python 2.x, Python **3.x**, IronPython, Jython, Pypy.
 - works between systems on different architectures and operating systems (64-bit, 32-bit, Intel, PowerPC...)
 - designed to be very easy to use and get out of your way as much as possible.
@@ -43,16 +45,16 @@ Here's a quick overview of Pyro's features:
 - can use IPv4, IPv6 and Unix domain sockets
 
 .. warning::
-    Pyro uses the :py:mod:`pickle` module to serialize objects and sends them over the network.
-    It is well known that using :py:mod:`pickle` for this purpose is a security risk
-    (The main problem is that allowing your program to unpickle arbitrary data can cause
-    arbitrary code execution and may wreck or compromise your system).
-    However, Pyro has some security measures in place to deal with this.
+    When configured to use the :py:mod:`pickle` serializer, your system may be vulnerable
+    because of the sercurity risks of the pickle protocol (possibility of arbitrary
+    code execution).
+    Pyro does have some security measures in place to mitigate this risk somewhat.
     They are described in the :doc:`security` chapter. It is strongly advised to read it.
+    By default, Pyro is configured to use a different serializer, so you won't have
+    to deal with this unless you change it explicitly.
 
 .. note::
-    The pickle protocol is very convenient to transfer Python objects 'over the wire' but it also
-    has a drawback: it serializes the whole object graph you're passing, even when only a tiny fraction
+    Pyro will send the whole object graph you're passing over the wire, even when only a tiny fraction
     of it is used on the receiving end. Be aware of this: it may be necessary to define special objects
     for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
 
@@ -261,7 +263,7 @@ and the server code details: :ref:`publish-objects`. The use of the name server 
 
 Performance
 ===========
-Pyro4 is really fast at what it does. This is due to its low overhead and use of native Python serialization (pickle).
+Pyro4 is really fast at what it does. This is due to its low overhead and optional use of native Python serialization (pickle).
 Here are some measurements done between two processes running on a Core 2 Duo 3Ghz, Windows 7 machine.
 
 :benchmark/connections.py:
@@ -288,3 +290,7 @@ Here are some measurements done between two processes running on a Core 2 Duo 3G
     | executing batch, there will be no result values. Check server to see printed messages...
     | total time taken 0.19 seconds (215000 calls/sec)
     | oneway batched calls were 22.2 times faster than normal remote calls
+
+
+Other serialization protocols (serpent, json, marshal) will usually be slower than pickle.
+But because of the security risks of the pickle protocol, a slower but safer protocol is used by default.
