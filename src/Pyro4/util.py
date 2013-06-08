@@ -118,11 +118,16 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
 
 if sys.version_info < (3, 0):
     import exceptions
-    all_exceptions = {name: t for name, t in vars(exceptions).items() if type(t) is type and issubclass(t, Exception)}
+    all_exceptions = {}
+    for name, t in vars(exceptions).items():
+        if type(t) is type and issubclass(t, Exception):
+            all_exceptions[name] = t
 else:
     import builtins
     all_exceptions = {name: t for name, t in vars(builtins).items() if type(t) is type and issubclass(t, Exception)}
-all_exceptions.update({name: t for name, t in vars(Pyro4.errors).items() if type(t) is type and issubclass(t, Pyro4.errors.PyroError)})
+for name, t in vars(Pyro4.errors).items():
+    if type(t) is type and issubclass(t, Pyro4.errors.PyroError):
+        all_exceptions[name] = t
 
 
 class SerializerBase(object):
