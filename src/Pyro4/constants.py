@@ -5,7 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 # Pyro version
-VERSION = "4.20"
+VERSION = "4.21-svn"
 
 # standard object name for the Daemon object
 DAEMON_NAME = "Pyro.Daemon"
