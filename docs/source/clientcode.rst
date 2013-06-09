@@ -87,6 +87,23 @@ to call the remote methods and deal with the return values, or even exceptions::
 
 For normal usage, there's not a single line of Pyro specific code once you have a proxy!
 
+
+Serialization
+=============
+
+Pyro will serialize the objects that you pass to the remote methods, so they can be sent across
+a network connection. Depending on the serializer that is being used, there will be some limitations
+on what objects you can use.
+
+* serpent: serializes into Python literal expressions. Accepts quite a lot of different types.
+  Many will be serialized as dicts. You might need to explicitly translate literals back to specific types
+  on the receiving end if so desired, because most custom classes aren't dealt with automatically.
+  Requires third party library module.
+* json: more restricted as serpent, less types supported. Part of Python's standard library.
+* marshal: a very limited but fast serializer. Can deal with a small range of types only. Part of the standard library.
+* pickle: the legacy serializer. Fast and supports almost all types. Has security problems though.
+
+
 Proxies, connections, threads and cleaning up
 =============================================
 Here are some rules:

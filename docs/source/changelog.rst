@@ -4,6 +4,11 @@ Change Log
 
 **Pyro 4.20**
 
+.. note::
+    The serializer-change is backwards-incompatible.
+    You may have to change your remote object method contracts to deal with the
+    changes. (or switch back to pickle if you can deal with its inherent security risk)
+
 - multiple serializers supported instead of just pickle. (pickle, serpent, json, marshal)
   pickle is unsafe/unsecure, so a choice of safe/secure serializers is now available
 - config item SERIALIZER added to select desired serializer, default is 'serpent'
