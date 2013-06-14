@@ -2,7 +2,7 @@
 ========================================
 
 Pyro's configuration is available in the ``Pyro4.config`` object.
-Detailed information about the API of this object is available in the :doc:`config` chapter.
+Detailed information about the API of this object is available in the :doc:`/config` chapter.
 
 .. note:: creation of the ``Pyro4.config`` object
 

@@ -103,6 +103,18 @@ on what objects you can use.
 * marshal: a very limited but fast serializer. Can deal with a small range of types only. Part of the standard library.
 * pickle: the legacy serializer. Fast and supports almost all types. Has security problems though.
 
+.. note::
+    Since Pyro 4.20 the default serializer is "``serpent``".
+    Before that, it used to be "``pickle``".
+    Serpent is less expressive (not all types can be serialized, some types are serialized
+    in a different form such as strings) but doesn't have pickle's security issues.
+
+    You select the serializer to be used by setting the ``SERIALIZER`` config item. (See the :doc:`/config` chapter).
+    The range of valid choices is the name of the serializer from the list mentioned above.
+    The introduction of different serializers is a change that is *not* backwards compatible,
+    even if you change the setting back to "``pickle``".
+
+
 
 Proxies, connections, threads and cleaning up
 =============================================
