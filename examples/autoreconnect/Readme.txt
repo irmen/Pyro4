@@ -1,4 +1,5 @@
-This is an example that shows the auto reconnect feature.
+This is an example that shows the auto reconnect feature,
+from a client's perspective.
 
 Start the server and the client.
 You can stop the server while it's running.

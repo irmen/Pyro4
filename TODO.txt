@@ -5,6 +5,7 @@ BUGS
 
 Ideas / TODO
 
+* add MSG_PING messagetype to just check for a live connection (no-op call that returns a MSG_PING type as well) -> improve disconnect client example
 * connection validator is missing and I want it back with similar features as Pyro3, but see next item
 * clean way to have server hooks for client connects and disconnects
 * HMAC: Allow per-proxy HMAC key (to be able to connect to different servers with different keys) -- but perhaps remove HMAC completely once the connection validator logic has been reimplemented
