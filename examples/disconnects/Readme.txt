@@ -15,11 +15,3 @@ client example does.
 
 A drawback of the code shown is that it is not very efficient; it now requires
 two remote calls for every method invocation on the proxy.
-Perhaps it can be improved to not use the 'ping' method
-and simply retrying the actual method if that fails. The problem with that is
-unfortunately we have no way of knowing if the first call was received and processed by
-the server and the disconnect happened only after that (before receiving the response).
-Calling the same method again after reconnecting might result in the method being
-invoked twice in the server, and that's usually not what you want to happen.
-
-

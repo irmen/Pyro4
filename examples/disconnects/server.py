@@ -10,9 +10,6 @@ Pyro4.config.POLLTIMEOUT = 5.0  # only used for multiplexing server
 
 
 class TestDisconnect(object):
-    def ping(self):
-        return
-
     def echo(self, arg):
         print("echo: ", arg)
         return arg

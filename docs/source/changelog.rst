@@ -2,6 +2,12 @@
 Change Log
 **********
 
+**Pyro 4.21**
+
+- MSG_PING message type added
+- disconnects example added that uses MSG_PING
+
+
 **Pyro 4.20**
 
 .. note::

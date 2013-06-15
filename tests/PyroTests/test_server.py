@@ -110,6 +110,14 @@ class ServerTestsOnce(unittest.TestCase):
         Pyro4.config.HMAC_KEY=None
         Pyro4.config.SERIALIZER="serpent"
 
+    def testPingMessage(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            p._pyroBind()
+            conn = p._pyroConnection
+            data = Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_PING, None, 0, 0)
+            conn.send(data)
+            Pyro4.core.MessageFactory.getMessage(conn, [Pyro4.core.MessageFactory.MSG_PING])
+
     def testNoDottedNames(self):
         Pyro4.config.DOTTEDNAMES=False
         with Pyro4.core.Proxy(self.objectUri) as p:

@@ -303,7 +303,7 @@ class Proxy(object):
                 if flags & MessageFactory.FLAGS_ONEWAY:
                     return None    # oneway call, no response data
                 else:
-                    msgType, flags, seq, data = MessageFactory.getMessage(self._pyroConnection, MessageFactory.MSG_RESULT)
+                    msgType, flags, seq, data = MessageFactory.getMessage(self._pyroConnection, [MessageFactory.MSG_RESULT])
                     if Pyro4.config.LOGWIRE:
                         log.debug("proxy wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msgType, flags, seq, data) )
                     self.__pyroCheckSequence(seq)
@@ -539,6 +539,7 @@ class MessageFactory(object):
     MSG_CONNECTFAIL = 3
     MSG_INVOKE = 4
     MSG_RESULT = 5
+    MSG_PING = 6
     FLAGS_EXCEPTION = 1<<0
     FLAGS_COMPRESSED = 1<<1
     FLAGS_ONEWAY = 1<<2
@@ -582,7 +583,7 @@ class MessageFactory(object):
         return msgType, flags, seq, dataLen, datahmac
 
     @classmethod
-    def getMessage(cls, connection, requiredMsgType):
+    def getMessage(cls, connection, requiredMsgTypes):
         headerdata = connection.recv(cls.HEADERSIZE)
         msgType, flags, seq, datalen, datahmac = cls.parseMessageHeader(headerdata)
         if 0 < Pyro4.config.MAX_MESSAGE_SIZE < datalen:
@@ -590,8 +591,8 @@ class MessageFactory(object):
             log.error("connection "+str(connection)+": "+errorMsg)
             connection.close()   # close the socket because at this point we can't return the correct sequence number for returning an error message
             raise errors.ProtocolError(errorMsg)
-        if requiredMsgType is not None and msgType != requiredMsgType:
-            err="invalid msg type %d received" % msgType
+        if requiredMsgTypes and msgType not in requiredMsgTypes:
+            err = "invalid msg type %d received" % msgType
             log.error(err)
             raise errors.ProtocolError(err)
         databytes=connection.recv(datalen)
@@ -778,9 +779,13 @@ class Daemon(object):
         wasBatched=False
         isCallback=False
         try:
-            msgType, flags, seq, data = MessageFactory.getMessage(conn, MessageFactory.MSG_INVOKE)
+            msgType, flags, seq, data = MessageFactory.getMessage(conn, [MessageFactory.MSG_INVOKE, MessageFactory.MSG_PING])
             if Pyro4.config.LOGWIRE:
                 log.debug("daemon wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msgType, flags, seq, data) )
+            if msgType == MessageFactory.MSG_PING:
+                msg = MessageFactory.createMessage(MessageFactory.MSG_PING, None, 0, 0)
+                conn.send(msg)
+                return
             objId, method, vargs, kwargs = self.serializer.deserializeCall(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
             del data  # invite GC to collect the object, don't wait for out-of-scope
             obj=self.objectsById.get(objId)
