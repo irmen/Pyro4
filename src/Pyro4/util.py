@@ -120,12 +120,12 @@ all_exceptions = {}
 if sys.version_info < (3, 0):
     import exceptions
     for name, t in vars(exceptions).items():
-        if type(t) is type and issubclass(t, Exception):
+        if type(t) is type and issubclass(t, BaseException):
             all_exceptions[name] = t
 else:
     import builtins
     for name, t in vars(builtins).items():
-        if type(t) is type and issubclass(t, Exception):
+        if type(t) is type and issubclass(t, BaseException):
             all_exceptions[name] = t
 for name, t in vars(Pyro4.errors).items():
     if type(t) is type and issubclass(t, Pyro4.errors.PyroError):
@@ -200,7 +200,7 @@ class SerializerBase(object):
             raise Pyro4.errors.ProtocolError("couldn't serialize sequence " + str(obj.__class__) + ", one of its elements is unserializable")
         if hasattr(obj, "_pyroDaemon"):
             obj._pyroDaemon = None
-        if isinstance(obj, Exception):
+        if isinstance(obj, BaseException):
             # special case for exceptions
             value={"args": obj.args}
             value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
@@ -267,11 +267,11 @@ class SerializerBase(object):
                 return SerializerBase.make_exception(errortype, data)
         elif classname.startswith("builtins."):
             exceptiontype = getattr(builtins, classname.split('.', 1)[1])
-            if issubclass(exceptiontype, Exception):
+            if issubclass(exceptiontype, BaseException):
                 return SerializerBase.make_exception(exceptiontype, data)
         elif classname.startswith("exceptions."):
             exceptiontype = getattr(exceptions, classname.split('.', 1)[1])
-            if issubclass(exceptiontype, Exception):
+            if issubclass(exceptiontype, BaseException):
                 return SerializerBase.make_exception(exceptiontype, data)
         elif classname in all_exceptions:
             return SerializerBase.make_exception(all_exceptions[classname], data)

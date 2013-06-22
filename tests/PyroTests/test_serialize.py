@@ -150,13 +150,6 @@ class SerializeTests_pickle(unittest.TestCase):
             finally:
                 Pyro4.config.AUTOPROXY=True
 
-    def testSerializeException(self):
-        e = ZeroDivisionError("hello")
-        d, c = self.ser.serializeData(e)
-        e2 = self.ser.deserializeData(d, c)
-        self.assertTrue(isinstance(e2, ZeroDivisionError))
-        self.assertEqual("hello", str(e2))
-
     def testPyroClasses(self):
         uri = Pyro4.core.URI("PYRO:object@host:4444")
         s, c = self.ser.serializeData(uri)
@@ -231,14 +224,30 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertTrue(isinstance(kwargs["thing"], ZeroDivisionError))
         self.assertEqual("hello", str(kwargs["thing"]))
 
-    def testException(self):
+    def testSerializeException(self):
+        e = ZeroDivisionError()
+        d, c = self.ser.serializeData(e)
+        e2 = self.ser.deserializeData(d, c)
+        self.assertTrue(isinstance(e2, ZeroDivisionError))
+        self.assertEqual("", str(e2))
         e = ZeroDivisionError("hello")
+        d, c = self.ser.serializeData(e)
+        e2 = self.ser.deserializeData(d, c)
+        self.assertTrue(isinstance(e2, ZeroDivisionError))
+        self.assertEqual("hello", str(e2))
         e.custom_attribute = 999
         ser, compressed = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(ser, compressed)
         self.assertTrue(isinstance(e2, ZeroDivisionError))
         self.assertEqual("hello", str(e2))
         self.assertEqual(999, e2.custom_attribute)
+
+    def testSerializeSpecialException(self):
+        self.assertTrue("GeneratorExit" in Pyro4.util.all_exceptions)
+        e = GeneratorExit()
+        d, c = self.ser.serializeData(e)
+        e2 = self.ser.deserializeData(d, c)
+        self.assertTrue(isinstance(e2, GeneratorExit))
 
     def testRecreateClasses(self):
         self.assertEqual([1,2,3], self.ser.recreate_classes([1,2,3]))
