@@ -14,7 +14,7 @@ phase 1:
 
 phase 2:
     Pyro is now used to make the warehouse a standalone component.
-    You can still visit it ofcourse. visit.py does need the URI of the
+    You can still visit it of course. visit.py does need the URI of the
     warehouse however. (It is printed as soon as the warehouse is started)
     The code of the Warehouse and the Person classes is unchanged.
 
@@ -27,3 +27,6 @@ phase 3:
     not present!)
     The code of the Warehouse and the Person classes is still unchanged.
 
+
+Note: to avoid having to deal with serialization issues, this example only
+passes primitive types (strings in this case) to the remote method calls.

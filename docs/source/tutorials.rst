@@ -93,6 +93,13 @@ Pyro name server
     The name in Pyro's case is the logical name of a remote object. The number is the exact location where Pyro can contact the object.
     Usually there is just *one* name server running in your network.
 
+Serialization
+    This is the process of transforming objects into streams of bytes that can be transported
+    over the network. The receiver deserializes them back into actual objects. Pyro needs to do
+    this with all the data that is passed as arguments to remote method calls, and their response
+    data. Not all objects can be serialized, so it is possible that passing a certain object to
+    Pyro won't work even though a normal method call would accept it just fine.
+
 
 Starting a name server
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -191,18 +198,19 @@ to take an item or to store an item. Here is the code (:file:`warehouse.py`)::
 
     class Warehouse(object):
         def __init__(self):
-            self.contents=["chair","bike","flashlight","laptop","couch"]  # some initial items
+            self.contents = ["chair", "bike", "flashlight", "laptop", "couch"]
 
         def list_contents(self):
             return self.contents
 
-        def take(self, person, item):
+        def take(self, name, item):
             self.contents.remove(item)
-            print("{0} took the {1}.".format(person.name, item))
+            print("{0} took the {1}.".format(name, item))
 
-        def store(self, person, item):
+        def store(self, name, item):
             self.contents.append(item)
-            print("{0} stored the {1}.".format(person.name, item))
+            print("{0} stored the {1}.".format(name, item))
+
 
 Then there is a ``Person`` that can visit the warehouse. The person has a name and deposit and retrieve actions
 on a particular warehouse. Here is the code (:file:`person.py`)::
@@ -210,13 +218,13 @@ on a particular warehouse. Here is the code (:file:`person.py`)::
     from __future__ import print_function
     import sys
 
-    if sys.version_info<(3,0):
-        input=raw_input
+    if sys.version_info < (3, 0):
+        input = raw_input
 
 
     class Person(object):
         def __init__(self, name):
-            self.name=name
+            self.name = name
         def visit(self, warehouse):
             print("This is {0}.".format(self.name))
             self.deposit(warehouse)
@@ -224,14 +232,14 @@ on a particular warehouse. Here is the code (:file:`person.py`)::
             print("Thank you, come again!")
         def deposit(self, warehouse):
             print("The warehouse contains:", warehouse.list_contents())
-            item=input("Type a thing you want to store (or empty): ").strip()
+            item = input("Type a thing you want to store (or empty): ").strip()
             if item:
-                warehouse.store(self, item)
+                warehouse.store(self.name, item)
         def retrieve(self, warehouse):
             print("The warehouse contains:", warehouse.list_contents())
-            item=input("Type something you want to take (or empty): ").strip()
+            item = input("Type something you want to take (or empty): ").strip()
             if item:
-                warehouse.take(self, item)
+                warehouse.take(self.name, item)
 
 
 Finally you need a small script that actually runs the code. It creates the warehouse and two visitors, and
@@ -241,11 +249,12 @@ makes the visitors perform their actions in the warehouse. Here is the code (:fi
     from warehouse import Warehouse
     from person import Person
 
-    warehouse=Warehouse()
-    janet=Person("Janet")
-    henry=Person("Henry")
+    warehouse = Warehouse()
+    janet = Person("Janet")
+    henry = Person("Henry")
     janet.visit(warehouse)
     henry.visit(warehouse)
+
 
 Run this simple program. It will output something like this::
 
@@ -255,15 +264,15 @@ Run this simple program. It will output something like this::
     Type a thing you want to store (or empty): television   # typed in
     Janet stored the television.
     The warehouse contains: ['chair', 'bike', 'flashlight', 'laptop', 'couch', 'television']
-    Type something you want to take (or empty): couch    # typed in
+    Type something you want to take (or empty): couch    # <-- typed in
     Janet took the couch.
     Thank you, come again!
     This is Henry.
     The warehouse contains: ['chair', 'bike', 'flashlight', 'laptop', 'television']
-    Type a thing you want to store (or empty): bricks   # typed in
+    Type a thing you want to store (or empty): bricks   # <-- typed in
     Henry stored the bricks.
     The warehouse contains: ['chair', 'bike', 'flashlight', 'laptop', 'television', 'bricks']
-    Type something you want to take (or empty): bike   # typed in
+    Type something you want to take (or empty): bike   # <-- typed in
     Henry took the bike.
     Thank you, come again!
 
@@ -277,12 +286,12 @@ start a Pyro server for the warehouse object. The easiest way to do this is to c
 that you want to make available as Pyro object, and register it with a 'Pyro daemon' (the server that
 listens for and processes incoming remote method calls)::
 
-        warehouse=Warehouse()
+        warehouse = Warehouse()
         Pyro4.Daemon.serveSimple(
                 {
                     warehouse: "example.warehouse"
                 },
-                ns=False)
+                ns = False)
 
 You'll also need to add a little ``main`` function so it will be started correctly, which should
 make the code now look like this (:file:`warehouse.py`)::
@@ -294,30 +303,31 @@ make the code now look like this (:file:`warehouse.py`)::
 
     class Warehouse(object):
         def __init__(self):
-            self.contents=["chair","bike","flashlight","laptop","couch"]
+            self.contents = ["chair", "bike", "flashlight", "laptop", "couch"]
 
         def list_contents(self):
             return self.contents
 
-        def take(self, person, item):
+        def take(self, name, item):
             self.contents.remove(item)
-            print("{0} took the {1}.".format(person.name, item))
+            print("{0} took the {1}.".format(name, item))
 
-        def store(self, person, item):
+        def store(self, name, item):
             self.contents.append(item)
-            print("{0} stored the {1}.".format(person.name, item))
+            print("{0} stored the {1}.".format(name, item))
 
 
     def main():
-        warehouse=Warehouse()
+        warehouse = Warehouse()
         Pyro4.Daemon.serveSimple(
                 {
                     warehouse: "example.warehouse"
                 },
-                ns=False)
+                ns = False)
 
     if __name__=="__main__":
         main()
+
 
 Start the warehouse in a new console window, it will print something like this::
 
@@ -334,8 +344,8 @@ it can connect to it. This is the **uri** that is printed by the warehouse progr
 You'll need to ask the user to enter that uri string into the program, and use Pyro to
 create a `proxy` to the remote object::
 
-    uri=input("Enter the uri of the warehouse: ").strip()
-    warehouse=Pyro4.Proxy(uri)
+    uri = input("Enter the uri of the warehouse: ").strip()
+    warehouse = Pyro4.Proxy(uri)
 
 That is all you need to change. Pyro will transparently forward the calls you make on the
 warehouse object to the remote object, and return the results to your code. So the code will now look like this (:file:`visit.py`)::
@@ -346,14 +356,15 @@ warehouse object to the remote object, and return the results to your code. So t
     from person import Person
 
     if sys.version_info<(3,0):
-        input=raw_input
+        input = raw_input
 
-    uri=input("Enter the uri of the warehouse: ").strip()
-    warehouse=Pyro4.Proxy(uri)
-    janet=Person("Janet")
-    henry=Person("Henry")
+    uri = input("Enter the uri of the warehouse: ").strip()
+    warehouse = Pyro4.Proxy(uri)
+    janet = Person("Janet")
+    henry = Person("Henry")
     janet.visit(warehouse)
     henry.visit(warehouse)
+
 
 Notice that the code of ``Warehouse`` and ``Person`` classes didn't change *at all*.
 
@@ -365,13 +376,13 @@ Run the program. It will output something like this::
     The warehouse contains: ['chair', 'bike', 'flashlight', 'laptop', 'couch']
     Type a thing you want to store (or empty): television   # typed in
     The warehouse contains: ['chair', 'bike', 'flashlight', 'laptop', 'couch', 'television']
-    Type something you want to take (or empty): couch   # typed in
+    Type something you want to take (or empty): couch   # <-- typed in
     Thank you, come again!
     This is Henry.
     The warehouse contains: ['chair', 'bike', 'flashlight', 'laptop', 'television']
-    Type a thing you want to store (or empty): bricks   # typed in
+    Type a thing you want to store (or empty): bricks   # <-- typed in
     The warehouse contains: ['chair', 'bike', 'flashlight', 'laptop', 'television', 'bricks']
-    Type something you want to take (or empty): bike    # typed in
+    Type something you want to take (or empty): bike    # <-- typed in
     Thank you, come again!
 
 And notice that in the other console window, where the warehouse server is running, the following is printed::
@@ -397,7 +408,7 @@ from phase 2. You will get a ``ValueError: list.remove(x): x not in list`` but w
 Okay, stop the warehouse program from phase 2 if it is still running, and check if the name server
 that you started in `Starting a name server`_ is still running in its own console window.
 
-In :file:`warehouse.py` locate the statement ``Pyro4.Daemon.serveSimple(...`` and change the ``ns=False`` argument to ``ns=True``.
+In :file:`warehouse.py` locate the statement ``Pyro4.Daemon.serveSimple(...`` and change the ``ns = False`` argument to ``ns = True``.
 This tells Pyro to use a name server to register the objects in.
 (The ``Pyro4.Daemon.serveSimple`` is a very easy way to start a Pyro server but it provides very little control.
 You will learn about another way of starting a server in `Building a Stock market simulator`_).
@@ -405,7 +416,7 @@ You will learn about another way of starting a server in `Building a Stock marke
 In :file:`visit.py` remove the input statement that asks for the warehouse uri, and change the way the warehouse proxy
 is created. Because you are now using a name server you can ask Pyro to locate the warehouse object automatically::
 
-    warehouse=Pyro4.Proxy("PYRONAME:example.warehouse")
+    warehouse = Pyro4.Proxy("PYRONAME:example.warehouse")
 
 Finally, install the ``Pyro4.util.excepthook`` as excepthook. You'll soon see what this does to the exceptions and
 stack traces your program produces when something goes wrong with a Pyro object.
@@ -417,13 +428,14 @@ So the code should look something like this (:file:`visit.py`)::
     import Pyro4.util
     from person import Person
 
-    sys.excepthook=Pyro4.util.excepthook
+    sys.excepthook = Pyro4.util.excepthook
 
-    warehouse=Pyro4.Proxy("PYRONAME:example.warehouse")
-    janet=Person("Janet")
-    henry=Person("Henry")
+    warehouse = Pyro4.Proxy("PYRONAME:example.warehouse")
+    janet = Person("Janet")
+    henry = Person("Henry")
     janet.visit(warehouse)
     henry.visit(warehouse)
+
 
 Start the warehouse program again in a separate console window. It will print something like this::
 
@@ -453,23 +465,24 @@ and try to take something from the warehouse that is not present (for instance, 
     Traceback (most recent call last):
       File "visit.py", line 12, in <module>
         janet.visit(warehouse)
-      File "E:\projects\Pyro4\examples\warehouse\phase3\person.py", line 14, in visit
+      File "d:\PROJECTS\Pyro4\examples\warehouse\phase3\person.py", line 14, in visit
         self.retrieve(warehouse)
-      File "E:\projects\Pyro4\examples\warehouse\phase3\person.py", line 25, in retrieve
-        warehouse.take(self, item)
-      File "E:\Projects\Pyro4\src\Pyro4\core.py", line 136, in __call__
+      File "d:\PROJECTS\Pyro4\examples\warehouse\phase3\person.py", line 25, in retrieve
+        warehouse.take(self.name, item)
+      File "d:\PROJECTS\Pyro4\src\Pyro4\core.py", line 161, in __call__
         return self.__send(self.__name, args, kwargs)
-      File "E:\Projects\Pyro4\src\Pyro4\core.py", line 248, in _pyroInvoke
+      File "d:\PROJECTS\Pyro4\src\Pyro4\core.py", line 314, in _pyroInvoke
         raise data
     ValueError: list.remove(x): x not in list
      +--- This exception occured remotely (Pyro) - Remote traceback:
      | Traceback (most recent call last):
-     |   File "E:\Projects\Pyro4\src\Pyro4\core.py", line 766, in handleRequest
+     |   File "d:\PROJECTS\Pyro4\src\Pyro4\core.py", line 824, in handleRequest
      |     data=method(*vargs, **kwargs)   # this is the actual method call to the Pyro object
-     |   File "warehouse.py", line 13, in take
-     |     def take(self, person, item):
+     |   File "warehouse.py", line 14, in take
+     |     self.contents.remove(item)
      | ValueError: list.remove(x): x not in list
      +--- End of remote traceback
+
 
 What you can see now is that you not only get the usual exception traceback, *but also the exception
 that occurred in the remote warehouse object on the server* (the "remote traceback"). This can greatly

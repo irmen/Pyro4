@@ -1,7 +1,10 @@
 BUGS
 
+- multiplexserver: can be DOSsed when sending invalid protocol version messages (parseMessageHeader will crash, killing the server?)
+- autoproxy only works with pickle, daemon.register only registers proxy serializer with pickle
 - quite a lot of errors in the test suite when running on Jython or Ironpython
 - remote flame console won't close in IronPython
+
 
 Ideas / TODO
 
