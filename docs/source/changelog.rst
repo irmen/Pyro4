@@ -7,6 +7,7 @@ Change Log
 - MSG_PING message type added
 - disconnects example added that uses MSG_PING
 - more exception types recognised in the serializers (such as GeneratorExit)
+- fixed warehouse and stockmarket tutorials to work with new serializer logic
 
 
 **Pyro 4.20**
