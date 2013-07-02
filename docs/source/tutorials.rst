@@ -680,8 +680,9 @@ for an easier transition).
     ``Pyro4.config.SERIALIZER = 'pickle'``
 
     For now, ignore the exact meaning of this particular setting. It is needed to get the stock market
-    tutorial running in the form presented here. In other chapters the meaning of this
-    setting will be explained.
+    tutorial running in the form presented here. Basically it enables Pyro to transfer actual Python objects
+    to remote calls, instead of only simple types such as lists and strings.
+    In other chapters the meaning of this setting will be explained in more detail.
 
 
 main
