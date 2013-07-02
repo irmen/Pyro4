@@ -1,7 +1,7 @@
 class Aggregator(object):
     def __init__(self):
-        self.viewers={}
-        self.symbols=[]
+        self.viewers = {}
+        self.symbols = []
 
     def add_symbols(self, symbols):
         self.symbols.extend(symbols)
@@ -10,7 +10,7 @@ class Aggregator(object):
         return self.symbols
 
     def view(self, viewer, symbols):
-        self.viewers[viewer]=symbols
+        self.viewers[viewer] = symbols
 
     def quotes(self, market, stockquotes):
         for symbol, value in stockquotes.items():

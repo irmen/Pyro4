@@ -4,21 +4,23 @@ import threading
 import time
 import Pyro4
 
+Pyro4.config.SERIALIZER = 'pickle'
+
 
 class StockMarket(object):
     def __init__(self, marketname, symbols):
-        self.name=marketname
-        self.symbolmeans={}
+        self.name = marketname
+        self.symbolmeans = {}
         for symbol in symbols:
-            self.symbolmeans[symbol]=random.uniform(20,200)
-        self.aggregators=[]
+            self.symbolmeans[symbol] = random.uniform(20, 200)
+        self.aggregators = []
 
     def generate(self):
-        quotes={}
-        for symbol,mean in self.symbolmeans.items():
-            if random.random()<0.2:
-                quotes[symbol]=round(random.normalvariate(mean,20),2)
-        print("new quotes generated for",self.name)
+        quotes = {}
+        for symbol, mean in self.symbolmeans.items():
+            if random.random() < 0.2:
+                quotes[symbol] = round(random.normalvariate(mean, 20), 2)
+        print("new quotes generated for", self.name)
         for aggregator in self.aggregators:
             aggregator.quotes(self.name, quotes)
 
@@ -34,21 +36,21 @@ class StockMarket(object):
             while True:
                 time.sleep(random.random())
                 self.generate()
-        thread=threading.Thread(target=generate_symbols)
+        thread = threading.Thread(target=generate_symbols)
         thread.setDaemon(True)
         thread.start()
 
 
 def main():
-    nasdaq=StockMarket("NASDAQ", ["AAPL", "CSCO", "MSFT", "GOOG"])
-    newyork=StockMarket("NYSE", ["IBM", "HPQ", "BP"])
+    nasdaq = StockMarket("NASDAQ", ["AAPL", "CSCO", "MSFT", "GOOG"])
+    newyork = StockMarket("NYSE", ["IBM", "HPQ", "BP"])
 
-    daemon=Pyro4.Daemon()
-    nasdaq_uri=daemon.register(nasdaq)
-    newyork_uri=daemon.register(newyork)
-    ns=Pyro4.locateNS()
-    ns.register("example.stockmarket.nasdaq",nasdaq_uri)
-    ns.register("example.stockmarket.newyork",newyork_uri)
+    daemon = Pyro4.Daemon()
+    nasdaq_uri = daemon.register(nasdaq)
+    newyork_uri = daemon.register(newyork)
+    ns = Pyro4.locateNS()
+    ns.register("example.stockmarket.nasdaq", nasdaq_uri)
+    ns.register("example.stockmarket.newyork", newyork_uri)
 
     nasdaq.run()
     newyork.run()

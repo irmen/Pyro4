@@ -5,10 +5,10 @@ from aggregator import Aggregator
 from viewer import Viewer
 
 def main():
-    nasdaq=StockMarket("NASDAQ", ["AAPL", "CSCO", "MSFT", "GOOG"])
-    newyork=StockMarket("NYSE", ["IBM", "HPQ", "BP"])
+    nasdaq = StockMarket("NASDAQ", ["AAPL", "CSCO", "MSFT", "GOOG"])
+    newyork = StockMarket("NYSE", ["IBM", "HPQ", "BP"])
 
-    agg=Aggregator()
+    agg = Aggregator()
     agg.add_symbols(nasdaq.symbols())
     agg.add_symbols(newyork.symbols())
     print("aggregated symbols:", agg.available_symbols())
@@ -16,7 +16,7 @@ def main():
     nasdaq.listener(agg)
     newyork.listener(agg)
 
-    view=Viewer()
+    view = Viewer()
     agg.view(view, ["IBM", "AAPL", "MSFT"])
     print("")
     while True:

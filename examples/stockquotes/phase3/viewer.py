@@ -2,8 +2,10 @@ from __future__ import print_function
 import sys
 import Pyro4
 
-if sys.version_info<(3,0):
-    input=raw_input
+Pyro4.config.SERIALIZER = 'pickle'
+
+if sys.version_info < (3,0):
+    input = raw_input
 
 
 class Viewer(object):
@@ -12,15 +14,15 @@ class Viewer(object):
 
 
 def main():
-    viewer=Viewer()
-    daemon=Pyro4.Daemon()
+    viewer = Viewer()
+    daemon = Pyro4.Daemon()
     daemon.register(viewer)
-    aggregator=Pyro4.Proxy("PYRONAME:example.stockquote.aggregator")
-    print("Available stock symbols:",aggregator.available_symbols())
-    symbols=input("Enter symbols you want to view (comma separated):")
-    symbols=[symbol.strip() for symbol in symbols.split(",")]
+    aggregator = Pyro4.Proxy("PYRONAME:example.stockquote.aggregator")
+    print("Available stock symbols:", aggregator.available_symbols())
+    symbols = input("Enter symbols you want to view (comma separated):")
+    symbols = [symbol.strip() for symbol in symbols.split(",")]
     aggregator.view(viewer, symbols)
-    print("Viewer listening on symbols",symbols)
+    print("Viewer listening on symbols", symbols)
     daemon.requestLoop()
 
 if __name__ == "__main__":

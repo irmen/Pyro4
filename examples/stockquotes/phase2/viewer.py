@@ -6,6 +6,6 @@ class Viewer(object):
 
 
 def main(aggregator):
-    viewer=Viewer()
+    viewer = Viewer()
     aggregator.view(viewer, ["IBM", "AAPL", "MSFT"])
     return viewer

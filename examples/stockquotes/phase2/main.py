@@ -4,12 +4,12 @@ import aggregator
 import viewer
 import sys
 
-if sys.version_info<(3,0):
-    input=raw_input
+if sys.version_info < (3,0):
+    input = raw_input
 
 def main():
-    markets=stockmarket.main()
-    aggr=aggregator.main(markets)
+    markets = stockmarket.main()
+    aggr = aggregator.main(markets)
     viewer.main(aggr)
     print("\nPress enter to quit.\n")
     input()
