@@ -1,28 +1,18 @@
-BUGS
-
-- multiplexserver: can be DOSsed when sending invalid protocol version messages (parseMessageHeader will crash, killing the server?)
-- autoproxy only works with pickle, daemon.register only registers proxy serializer with pickle
-- quite a lot of errors in the test suite when running on Jython or Ironpython
-- remote flame console won't close in IronPython
-
-
 Ideas / TODO
 
-* connection validator is missing and I want it back with similar features as Pyro3, but see next item
-* clean way to have server hooks for client connects and disconnects
+The most pressing issues can be found in the issue tracker on Github.
+
 * daemon (nameserver) should be able to disconnect clients that haven't been active over the past X seconds
 * HMAC: Allow per-proxy HMAC key (to be able to connect to different servers with different keys) -- but perhaps remove HMAC completely once the connection validator logic has been reimplemented
-* Add more topics to the index of the docs
 * More decorators? @synchronized, @oneway, @expose (also on attributes?)
 * let async/Future use a client-side threadpool instead of spawning endless new threads
-* explain callbacks better
 * automatic callback handling if you pass a callable to the server
 * Make Pyro support listening to multiple network interfaces at the same time (and returning the correct URI from the daemon. Name server is harder...)
-* Add to docs: how to use the socketserver API to write your own implementation
+* docs: explain callbacks better
+* docs: how to use the socketserver API to write your own implementation
 * add multiprocess server (forking?) based on multiprocessing?
 * simplify the shutdown/close methods so that they only signal a shutdown condition and let the eventloop thread clean up nicely. This to avoid all kinds of exceptions on shutdown (mainly socketserver on ironpython now)
 * on proxy connect: query the server about the object. Can be a method on the DaemonObject itself. Query for meta info about the object: oneway methods, security settings, exposed attributes (to create properties?), whatever.
 * object activation / object registration strategies: instance_per_call, instance_per_connection, shared_instance (let the daemon instantiate your object's class instead of user code)
 * persistent Name Server (store namespace in a database on disk) use sqlite because it needs multithreading/transactions
-* look at SSL support. The standard ssl module should be enough to do this without the need of 3rd party stuff such as m2crypto or pyopenssl
 * Pyro-over-SSH (not SSL) using Paramiko
