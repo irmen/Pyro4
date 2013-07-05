@@ -41,8 +41,7 @@ The `serpent <https://pypi.python.org/pypi/serpent>`_ serialization library is i
     If you decide to get the distribution archive (.tar.gz) and use that,
     one way to extract it is to use the (free) `7-zip <http://www.7-zip.org>`_ archive utility.
 
-If you want you can also obtain the source directly from my source repository (subversion, read only access):
-:kbd:`svn://svn.razorvine.net/Pyro/Pyro4`
+If you want you can also obtain the source directly from Github: https://github.com/irmen/Pyro4
 
 
 Stuff you get in the distribution archive
