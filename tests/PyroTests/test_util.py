@@ -4,12 +4,15 @@ Tests for the utility functions.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-import unittest
-
 import sys, imp, os, platform
 import Pyro4.util
 from testsupport import *
 
+if (sys.version_info >= (2, 7) and sys.version_info < (3, 0)) or \
+        (sys.version_info >= (3, 1)):
+    import unittest
+else:
+    import unittest2 as unittest
 
 if not hasattr(imp,"reload"):
     imp.reload=reload   # python 2.5 doesn't have imp.reload

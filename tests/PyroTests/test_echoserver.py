@@ -4,13 +4,18 @@ Tests for the built-in test echo server.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-import unittest
+import sys
 import time
 import Pyro4.test.echoserver as echoserver
 import Pyro4
 from threading import Thread,Event
 from testsupport import *
 
+if (sys.version_info >= (2, 7) and sys.version_info < (3, 0)) or \
+        (sys.version_info >= (3, 1)):
+    import unittest
+else:
+    import unittest2 as unittest
 
 class EchoServerThread(Thread):
     def __init__(self):

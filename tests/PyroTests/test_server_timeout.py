@@ -4,10 +4,15 @@ Tests for a running Pyro server, with timeouts.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-import unittest
+import sys
 import os
 import test_server
 
+if (sys.version_info >= (2, 7) and sys.version_info < (3, 0)) or \
+        (sys.version_info >= (3, 1)):
+    import unittest
+else:
+    import unittest2 as unittest
 
 class ServerTestsThreadTimeout(test_server.ServerTestsThreadNoTimeout):
     SERVERTYPE="thread"

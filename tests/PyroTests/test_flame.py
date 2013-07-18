@@ -5,12 +5,17 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import unittest
 import Pyro4.utils.flame
 import Pyro4.utils.flameserver
 import Pyro4.errors
+import sys
 from testsupport import *
 
+if (sys.version_info >= (2, 7) and sys.version_info < (3, 0)) or \
+        (sys.version_info >= (3, 1)):
+    import unittest
+else:
+    import unittest2 as unittest
 
 class FlameDisabledTests(unittest.TestCase):
     def testFlameDisabled(self):

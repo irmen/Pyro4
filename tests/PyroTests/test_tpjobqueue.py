@@ -5,12 +5,17 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import unittest
+import sys
 import time
 import random
 from Pyro4.tpjobqueue import ThreadPooledJobQueue, JobQueueError
 import Pyro4.threadutil
 
+if (sys.version_info >= (2, 7) and sys.version_info < (3, 0)) or \
+        (sys.version_info >= (3, 1)):
+    import unittest
+else:
+    import unittest2 as unittest
 
 MIN_POOL_SIZE = 5
 MAX_POOL_SIZE = 10

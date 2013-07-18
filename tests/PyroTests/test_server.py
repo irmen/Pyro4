@@ -5,7 +5,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import unittest
 import Pyro4.core
 import Pyro4.errors
 import Pyro4.util
@@ -13,6 +12,11 @@ import time, os, sys, platform
 from Pyro4 import threadutil
 from testsupport import *
 
+if (sys.version_info >= (2, 7) and sys.version_info < (3, 0)) or \
+        (sys.version_info >= (3, 1)):
+    import unittest
+else:
+    import unittest2 as unittest
 
 class MyThing(object):
     def __init__(self):
