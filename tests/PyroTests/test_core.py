@@ -5,7 +5,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import unittest
 import copy
 import logging
 import os, sys, time
@@ -17,6 +16,11 @@ import Pyro4.constants
 import Pyro4.futures
 from testsupport import *
 
+if (sys.version_info >= (2, 7) and sys.version_info < (3, 0)) or \
+        (sys.version_info >= (3, 1)):
+    import unittest
+else:
+    import unittest2 as unittest
 
 if sys.version_info>=(3,0):
     import imp

@@ -4,7 +4,6 @@ Tests for the low level socket functions.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-import unittest
 import socket, os, sys
 import Pyro4.socketutil as SU
 from Pyro4 import threadutil
@@ -13,6 +12,11 @@ from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 import Pyro4
 from testsupport import *
 
+if (sys.version_info >= (2, 7) and sys.version_info < (3, 0)) or \
+        (sys.version_info >= (3, 1)):
+    import unittest
+else:
+    import unittest2 as unittest
 
 # determine ipv6 capability
 has_ipv6 = socket.has_ipv6
