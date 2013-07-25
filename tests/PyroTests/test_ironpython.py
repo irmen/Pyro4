@@ -4,7 +4,6 @@ Tests for some Ironpython peculiarities.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-import unittest
 import sys
 import pickle
 

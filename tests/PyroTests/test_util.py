@@ -4,8 +4,6 @@ Tests for the utility functions.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-import unittest
-
 import sys, imp, os, platform
 import Pyro4.util
 from testsupport import *

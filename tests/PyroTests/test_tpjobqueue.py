@@ -5,12 +5,11 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import unittest
 import time
 import random
 from Pyro4.tpjobqueue import ThreadPooledJobQueue, JobQueueError
 import Pyro4.threadutil
-
+from testsupport import unittest
 
 MIN_POOL_SIZE = 5
 MAX_POOL_SIZE = 10
