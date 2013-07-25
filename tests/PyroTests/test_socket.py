@@ -4,7 +4,6 @@ Tests for the low level socket functions.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-import unittest
 import socket, os, sys
 import Pyro4.socketutil as SU
 from Pyro4 import threadutil
