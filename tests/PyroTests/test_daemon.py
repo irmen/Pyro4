@@ -6,7 +6,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement
 import os, time, socket
-import unittest
 import Pyro4.core
 import Pyro4.constants
 import Pyro4.socketutil

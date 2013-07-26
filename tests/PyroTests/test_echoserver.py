@@ -4,7 +4,6 @@ Tests for the built-in test echo server.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-import unittest
 import time
 import Pyro4.test.echoserver as echoserver
 import Pyro4

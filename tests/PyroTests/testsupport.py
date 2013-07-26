@@ -11,7 +11,8 @@ import threading
 import pickle
 
 
-__all__=["tobytes", "unicode", "unichr", "StringIO", "next", "AtomicCounter", "NonserializableError", "MyThing2"]
+__all__=["tobytes", "unicode", "unichr", "StringIO", "next", "AtomicCounter",
+        "NonserializableError", "MyThing2", "unittest" ]
 
 if sys.version_info<(3,0):
     from StringIO import StringIO
@@ -32,6 +33,13 @@ if sys.version_info<(2,6):
         return iterable.next()
 else:
     next=next
+
+
+if (sys.version_info >= (2, 7) and sys.version_info < (3, 0)) or \
+        (sys.version_info >= (3, 1)):
+    import unittest
+else:
+    import unittest2 as unittest
 
 
 class AtomicCounter(object):
