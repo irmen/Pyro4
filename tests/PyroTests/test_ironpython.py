@@ -6,6 +6,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import sys
 import pickle
+from testsupport import unittest
 
 
 if sys.platform=="cli":

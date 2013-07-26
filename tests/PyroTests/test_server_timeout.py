@@ -6,6 +6,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import os
 import test_server
+from testsupport import unittest
 
 
 class ServerTestsThreadTimeout(test_server.ServerTestsThreadNoTimeout):
