@@ -8,6 +8,7 @@ Change Log
 - disconnects example added that uses MSG_PING
 - more exception types recognised in the serializers (such as GeneratorExit)
 - fixed warehouse and stockmarket tutorials to work with new serializer logic
+- fixed tests to use unittest2 on Python 2.6
 
 
 **Pyro 4.20**
