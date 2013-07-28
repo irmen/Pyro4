@@ -9,6 +9,7 @@ Change Log
 - more exception types recognised in the serializers (such as GeneratorExit)
 - fixed warehouse and stockmarket tutorials to work with new serializer logic
 - fixed tests to use unittest2 on Python 2.6
+- no longer supports jython 2.5. You'll have to upgrade to jython 2.7.
 
 
 **Pyro 4.20**

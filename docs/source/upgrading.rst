@@ -14,7 +14,7 @@ Should you use Pyro 4 or Pyro 3 for your project? This depends on a few things.
 **Dependencies on older systems**
 
 Pyro 4 has more modern system requirements than Pyro 3.
-It is unsupported on Python versions below 2.6 (except Jython 2.5).
+It is unsupported on Python versions below 2.6.
 Pyro 3 runs fine on Python 2.5, and Pyro versions before 3.13 should run on even older Python versions.
 So if you cannot use Python 2.6 or newer, you should use Pyro 3.
 

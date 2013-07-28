@@ -16,6 +16,7 @@ Jython
 
   `Jython <http://jython.org>`_ is a Python implementation running on the Java virtual machine.
 
+- You'll need to use Jython 2.7 or newer (2.5 is no longer supported by Pyro)
 - The multiplexing server type (select/poll-based server) is not reliable on Jython.
   You can only use the threadpool server type.
 - You cannot use the ``other`` parameter to the requestloop of a Threadpool server.

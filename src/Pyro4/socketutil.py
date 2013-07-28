@@ -468,24 +468,22 @@ def findProbablyUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
 def bindOnUnusedPort(sock, host='localhost'):
     """Bind the socket to a free port and return the port number.
     This code is based on the code in the stdlib's test.test_support module."""
-    socketfamily = getattr(sock, "family", socket.AF_INET)   # workaround for jython bug http://bugs.jython.org/issue1803
-    sockettype = getattr(sock, "type", socket.SOCK_STREAM)   # workaround for jython bug http://bugs.jython.org/issue1804
-    if os.name!="java" and socketfamily in(socket.AF_INET, socket.AF_INET6) and sockettype == socket.SOCK_STREAM:
+    if os.name!="java" and sock.family in(socket.AF_INET, socket.AF_INET6) and sock.type == socket.SOCK_STREAM:
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
             # even though Jython has this socket option, it doesn't support it. Hence the check in the if statement above.
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
-    if socketfamily == socket.AF_INET:
+    if sock.family == socket.AF_INET:
         if host == 'localhost':
             sock.bind(('127.0.0.1', 0))
         else:
             sock.bind((host, 0))
-    elif socketfamily == socket.AF_INET6:
+    elif sock.family == socket.AF_INET6:
         if host == 'localhost':
             sock.bind(('::1', 0, 0, 0))
         else:
             sock.bind((host, 0, 0, 0))
     else:
-        raise CommunicationError( "unsupported socket family: " + socketfamily )
+        raise CommunicationError( "unsupported socket family: " + sock.family )
     if os.name=="java":
         try:
             sock.listen(100)  # otherwise jython always just returns 0 for the port

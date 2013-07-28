@@ -6,11 +6,7 @@ This chapter will show how to obtain and install Pyro.
 
 Requirements
 ------------
-Short version: you need Python 2.6 or newer for Pyro4.
-
-Longer version: Pyro4 is 'unsupported' on Python 2.5 or older (except Jython 2.5). This means it will probably work
-on Python 2.5 (make sure by running the unit tests), but it's not supported for it. If at all possible, use
-Python 2.6 or newer. Pyro4 will not work at all on anything older than Python 2.5.
+You need Python 2.6 or newer for Pyro4.
 Also see :ref:`should-i-choose-pyro4`.
 
 Pyro is written in 100% pure Python. It works on any recent operating system.
