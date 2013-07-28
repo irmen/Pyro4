@@ -82,7 +82,7 @@ def getIpAddress(hostname, workaround127=False, ipVersion=None):
             family=socket.AF_UNSPEC
         else:
             raise ValueError("unknown value for argument ipVersion.")
-        ip=socket.getaddrinfo(hostname or socket.gethostname(), None, family, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
+        ip=socket.getaddrinfo(hostname or socket.gethostname(), 80, family, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
         if workaround127 and (ip.startswith("127.") or ip=="0.0.0.0"):
             ip=getInterfaceAddress("4.2.2.2")
         return ip
