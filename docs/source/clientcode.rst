@@ -88,6 +88,8 @@ to call the remote methods and deal with the return values, or even exceptions::
 For normal usage, there's not a single line of Pyro specific code once you have a proxy!
 
 
+.. _object-serialization:
+
 Serialization
 =============
 

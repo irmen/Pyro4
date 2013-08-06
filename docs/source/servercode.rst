@@ -312,6 +312,20 @@ unresponsive. Any operation that uses blocking I/O or a long-running computation
 all remote calls until it has completed.
 
 
+Serialization
+=============
+Pyro will serialize the objects that you pass to the remote methods, so they can be sent across
+a network connection. Depending on the serializer that is being used for your Pyro server,
+there will be some limitations on what objects you can use, and what serialization format is
+required of the clients that connect to your server.
+
+You select the serializer to be used by setting the ``SERIALIZER`` config item. (See the :doc:`/config` chapter).
+See :ref:`object-serialization` for more details.
+
+.. note::
+    Since Pyro 4.20 the default serializer is "``serpent``". It used to be "``pickle``" in older versions.
+
+
 Other features
 ==============
 
