@@ -27,26 +27,30 @@ class ClientConnectionJob(object):
 
     def __call__(self):
         if self.handleConnection():
-            while True:
-                try:
-                    self.daemon.handleRequest(self.csock)
-                except (socket.error, errors.ConnectionClosedError):
-                    # client went away.
-                    log.debug("disconnected %s", self.caddr)
-                    break
-                except errors.SecurityError:
-                    log.debug("security error on client %s", self.caddr)
-                    break
-            self.csock.close()
+            try:
+                while True:
+                    try:
+                        self.daemon.handleRequest(self.csock)
+                    except (socket.error, errors.ConnectionClosedError):
+                        # client went away.
+                        log.debug("disconnected %s", self.caddr)
+                        break
+                    except errors.SecurityError:
+                        log.debug("security error on client %s", self.caddr)
+                        break
+                    # other errors simply crash the client worker thread (and close its connection)
+            finally:
+                self.csock.close()
 
     def handleConnection(self):
         # connection handshake
         try:
             if self.daemon._handshake(self.csock):
                 return True
-        except (socket.error, errors.PyroError):
-            x=sys.exc_info()[1]
-            log.warn("error during connect: %s", x)
+        except:
+            ex_t, ex_v, ex_tb = sys.exc_info()
+            tb = Pyro4.util.formatTraceback(ex_t, ex_v, ex_tb)
+            log.warn("error during connect/handshake: %s; %s", ex_v, "\n".join(tb))
             self.csock.close()
         return False
 

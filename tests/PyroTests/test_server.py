@@ -113,9 +113,12 @@ class ServerTestsOnce(unittest.TestCase):
         with Pyro4.core.Proxy(self.objectUri) as p:
             p._pyroBind()
             conn = p._pyroConnection
-            data = Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_PING, None, 0, 0)
+            data = Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_PING, b"abc", 0, 999)
             conn.send(data)
-            Pyro4.core.MessageFactory.getMessage(conn, [Pyro4.core.MessageFactory.MSG_PING])
+            msgType, flags, seq, data = Pyro4.core.MessageFactory.getMessage(conn, [Pyro4.core.MessageFactory.MSG_PING])
+            self.assertEqual(Pyro4.core.MessageFactory.MSG_PING, msgType)
+            self.assertEqual(999, seq)
+            self.assertEqual(b"", data)
 
     def testNoDottedNames(self):
         Pyro4.config.DOTTEDNAMES=False

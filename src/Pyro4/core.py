@@ -350,7 +350,7 @@ class Proxy(object):
                         return False    # already connected
                     sock=socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout)
                     conn=socketutil.SocketConnection(sock, uri.object)
-                    # Do handshake. For now, no need to send anything.
+                    # Do handshake. For now, no need to send anything. (message type CONNECT is not yet used)
                     msgType, flags, seq, data = MessageFactory.getMessage(conn, None)
                     # any trailing data (dataLen>0) is an error message, if any
                 except Exception:
@@ -660,11 +660,7 @@ class Daemon(object):
             # choose the 'best' multiplexing implementation
             if os.name=="java":
                 raise NotImplementedError("select or poll-based server is not supported for jython, use thread server instead")
-            import select
-            if hasattr(select, "poll"):
-                self.transportServer=SocketServer_Poll()
-            else:
-                self.transportServer=SocketServer_Select()
+            self.transportServer = SocketServer_Poll() if socketutil.hasPoll else SocketServer_Select()
         else:
             raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
         self.transportServer.init(self, host, port, unixsocket)
@@ -783,7 +779,8 @@ class Daemon(object):
             if Pyro4.config.LOGWIRE:
                 log.debug("daemon wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msgType, flags, seq, data) )
             if msgType == MessageFactory.MSG_PING:
-                msg = MessageFactory.createMessage(MessageFactory.MSG_PING, None, 0, 0)
+                # return same seq, but ignore any data (it's a ping, not an echo)
+                msg = MessageFactory.createMessage(MessageFactory.MSG_PING, None, 0, seq)
                 conn.send(msg)
                 return
             objId, method, vargs, kwargs = self.serializer.deserializeCall(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)

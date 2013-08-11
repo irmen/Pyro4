@@ -491,3 +491,11 @@ def bindOnUnusedPort(sock, host='localhost'):
             pass  # jython sometimes throws errors here
     port = sock.getsockname()[1]
     return port
+
+
+"""is select() available?"""
+hasSelect = select and hasattr(select, "select")
+
+"""is poll() available?"""
+hasPoll = select and hasattr(select, "poll")
+

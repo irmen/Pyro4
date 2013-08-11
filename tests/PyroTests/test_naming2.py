@@ -164,7 +164,7 @@ class OfflineNameServerTests(unittest.TestCase):
         myIpAddress=Pyro4.socketutil.getIpAddress("",workaround127=True)
         uri1,ns1,bc1=Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=True)
         self.assertTrue(bc1.fileno() > 0)
-        if hasattr(select, "poll"):
+        if Pyro4.socketutil.hasPoll:
             p=select.poll()
             if os.name=="java":
                 # jython requires nonblocking sockets for poll

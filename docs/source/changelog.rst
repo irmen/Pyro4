@@ -4,7 +4,8 @@ Change Log
 
 **Pyro 4.21**
 
-- MSG_PING message type added
+- fixed denial of service vulnerabilities in socket servers
+- MSG_PING message type added (internal server ping mechanism)
 - disconnects example added that uses MSG_PING
 - more exception types recognised in the serializers (such as GeneratorExit)
 - fixed warehouse and stockmarket tutorials to work with new serializer logic

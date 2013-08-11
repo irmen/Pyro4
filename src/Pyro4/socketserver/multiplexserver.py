@@ -5,7 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import socket, select, sys, logging, os
-from Pyro4 import socketutil, errors
+from Pyro4 import socketutil, errors, util
 import Pyro4
 
 log=logging.getLogger("Pyro4.socketserver.multiplexed")
@@ -82,9 +82,10 @@ class MultiplexedSocketServerBase(object):
             conn=socketutil.SocketConnection(csock)
             if self.daemon._handshake(conn):
                 return conn
-        except (socket.error, errors.PyroError):
-            x=sys.exc_info()[1]
-            log.warn("error during connect: %s", x)
+        except:     # catch all errors, otherwise the event loop could terminate
+            ex_t, ex_v, ex_tb = sys.exc_info()
+            tb = util.formatTraceback(ex_t, ex_v, ex_tb)
+            log.warn("error during connect/handshake: %s; %s", ex_v, "\n".join(tb))
             csock.close()
         return None
 
@@ -141,11 +142,7 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
                 for (fd, mask) in polls:
                     conn=fileno2connection[fd]
                     if conn is self.sock:
-                        try:
-                            conn=self._handleConnection(self.sock)
-                        except errors.ConnectionClosedError:
-                            log.info("server socket was closed, stopping requestloop")
-                            return
+                        conn=self._handleConnection(self.sock)
                         if conn:
                             poll.register(conn.fileno(), select.POLLIN | select.POLLPRI)
                             fileno2connection[conn.fileno()]=conn
@@ -195,23 +192,31 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                         rlist.remove(self.sock)
                     except ValueError:
                         pass  # this can occur when closing down, even when we just tested for presence in the list
-                    try:
-                        conn=self._handleConnection(self.sock)
-                        if conn:
-                            self.clients.append(conn)
-                    except errors.ConnectionClosedError:
-                        log.info("server socket was closed, stopping requestloop")
-                        return
+                    conn=self._handleConnection(self.sock)
+                    if conn:
+                        self.clients.append(conn)
                 for conn in rlist[:]:
                     if conn in self.clients:
                         rlist.remove(conn)
                         try:
+                            must_close = False
                             self.daemon.handleRequest(conn)
                         except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
-                            # client went away or caused a security error
-                            conn.close()
-                            if conn in self.clients:
-                                self.clients.remove(conn)
+                            # client went away or caused a security error.
+                            # close the connection silently.
+                            must_close = True
+                        except:
+                            # other error occurred, close the connection, but also log a warning
+                            ex_t, ex_v, ex_tb = sys.exc_info()
+                            tb = util.formatTraceback(ex_t, ex_v, ex_tb)
+                            log.warn("error during handleRequest: %s; %s", ex_v, "\n".join(tb))
+                            must_close = True
+                        finally:
+                            if must_close:
+                                conn.close()
+                                if conn in self.clients:
+                                    self.clients.remove(conn)
+
             except socket.timeout:
                 pass   # just continue the loop on a timeout
             except KeyboardInterrupt:
