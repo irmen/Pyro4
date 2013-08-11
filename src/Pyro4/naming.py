@@ -139,7 +139,7 @@ class NameServerDaemon(core.Daemon):
 
 
 class BroadcastServer(object):
-    REQUEST_NSURI=b"GET_NSURI"
+    REQUEST_NSURI = "GET_NSURI" if sys.platform=="cli" else b"GET_NSURI"
 
     def __init__(self, nsUri, bchost=None, bcport=None):
         self.nsUri=nsUri
@@ -165,6 +165,7 @@ class BroadcastServer(object):
     def close(self):
         log.debug("ns broadcast server closing")
         self.running=False
+        self.sock.shutdown(socket.SHUT_RDWR)
         self.sock.close()
 
     def getPort(self):
@@ -298,6 +299,7 @@ def locateNS(host=None, port=None):
                             if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:     # and jython likes to throw thses...
                                 raise
                 data, _=sock.recvfrom(100)
+                sock.shutdown(socket.SHUT_RDWR)
                 sock.close()
                 if sys.version_info>=(3, 0):
                     data=data.decode("iso-8859-1")
@@ -305,6 +307,7 @@ def locateNS(host=None, port=None):
                 return core.Proxy(data)
             except socket.timeout:
                 continue
+        sock.shutdown(socket.SHUT_RDWR)
         sock.close()
         log.debug("broadcast locate failed, try direct connection on NS_HOST")
         # broadcast failed, try PYRO directly on specific host

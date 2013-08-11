@@ -86,6 +86,7 @@ class MultiplexedSocketServerBase(object):
             ex_t, ex_v, ex_tb = sys.exc_info()
             tb = util.formatTraceback(ex_t, ex_v, ex_tb)
             log.warn("error during connect/handshake: %s; %s", ex_v, "\n".join(tb))
+            csock.shutdown(socket.SHUT_RDWR)
             csock.close()
         return None
 
@@ -118,10 +119,7 @@ class MultiplexedSocketServerBase(object):
 
     def wakeup(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
-        try:
-            self.sock.send(b"!"*16)
-        except socket.error:
-            pass
+        socketutil.triggerSocket(self.sock)
 
 
 class SocketServer_Poll(MultiplexedSocketServerBase):

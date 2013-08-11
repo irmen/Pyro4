@@ -5,7 +5,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import socket, os, errno, time, sys
-import re
 from Pyro4.errors import ConnectionClosedError, TimeoutError, CommunicationError
 import Pyro4
 
@@ -135,6 +134,9 @@ def receiveData(sock, size):
         retrydelay=0.0
         msglen=0
         chunks=[]
+        EMPTY_BYTES = b""
+        if sys.platform=="cli":
+            EMPTY_BYTES = ""
         if USE_MSG_WAITALL:
             # waitall is very convenient and if a socket error occurs,
             # we can assume the receive has failed. No need for a loop,
@@ -170,7 +172,7 @@ def receiveData(sock, size):
                         break
                     chunks.append(chunk)
                     msglen+=len(chunk)
-                data = b"".join(chunks)
+                data = EMPTY_BYTES.join(chunks)
                 del chunks
                 if len(data)!=size:
                     err=ConnectionClosedError("receiving: not enough data")
@@ -434,6 +436,10 @@ class SocketConnection(object):
         return receiveData(self.sock, size)
 
     def close(self):
+        try:
+            self.sock.shutdown(socket.SHUT_RDWR)
+        except (OSError, socket.error):
+            pass
         self.sock.close()
 
     def fileno(self):
@@ -493,3 +499,12 @@ hasSelect = select and hasattr(select, "select")
 """is poll() available?"""
 hasPoll = select and hasattr(select, "poll")
 
+def triggerSocket(sock):
+    """send a small data packet over the socket, to trigger it"""
+    try:
+        data = b"!"*16
+        if sys.platform=="cli":
+            data = "!"*16
+        sock.send(data)
+    except socket.error:
+        pass
