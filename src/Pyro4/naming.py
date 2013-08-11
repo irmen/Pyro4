@@ -165,7 +165,10 @@ class BroadcastServer(object):
     def close(self):
         log.debug("ns broadcast server closing")
         self.running=False
-        self.sock.shutdown(socket.SHUT_RDWR)
+        try:
+            self.sock.shutdown(socket.SHUT_RDWR)
+        except (OSError, socket.error):
+            pass
         self.sock.close()
 
     def getPort(self):
@@ -299,7 +302,10 @@ def locateNS(host=None, port=None):
                             if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:     # and jython likes to throw thses...
                                 raise
                 data, _=sock.recvfrom(100)
-                sock.shutdown(socket.SHUT_RDWR)
+                try:
+                    sock.shutdown(socket.SHUT_RDWR)
+                except (OSError, socket.error):
+                    pass
                 sock.close()
                 if sys.version_info>=(3, 0):
                     data=data.decode("iso-8859-1")
@@ -307,7 +313,10 @@ def locateNS(host=None, port=None):
                 return core.Proxy(data)
             except socket.timeout:
                 continue
-        sock.shutdown(socket.SHUT_RDWR)
+        try:
+            sock.shutdown(socket.SHUT_RDWR)
+        except (OSError, socket.error):
+            pass
         sock.close()
         log.debug("broadcast locate failed, try direct connection on NS_HOST")
         # broadcast failed, try PYRO directly on specific host

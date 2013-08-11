@@ -86,7 +86,10 @@ class MultiplexedSocketServerBase(object):
             ex_t, ex_v, ex_tb = sys.exc_info()
             tb = util.formatTraceback(ex_t, ex_v, ex_tb)
             log.warning("error during connect/handshake: %s; %s", ex_v, "\n".join(tb))
-            csock.shutdown(socket.SHUT_RDWR)
+            try:
+                csock.shutdown(socket.SHUT_RDWR)
+            except (OSError, socket.error):
+                pass
             csock.close()
         return None
 

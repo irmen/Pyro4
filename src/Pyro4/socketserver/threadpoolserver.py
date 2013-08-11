@@ -59,7 +59,7 @@ class ClientConnectionJob(object):
         try:
             self.csock.sock.shutdown(socket.SHUT_RDWR)
             self.csock.sock.setblocking(False)
-        except socket.error:
+        except (OSError, socket.error):
             pass
         if hasattr(socket, "SO_RCVTIMEO"):
             # setting a recv timeout seems to break the blocking call to recv() on some systems
@@ -178,7 +178,10 @@ def interruptSocket(address):
     try:
         sock=socketutil.createSocket(connect=address, keepalive=False, timeout=None)
         socketutil.triggerSocket(sock)
-        sock.shutdown(socket.SHUT_RDWR)
+        try:
+            sock.shutdown(socket.SHUT_RDWR)
+        except (OSError, socket.error):
+            pass
         sock.close()
     except socket.error:
         pass
