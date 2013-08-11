@@ -85,9 +85,7 @@ def main(args, returnWithoutLooping=False):
     if os.name!="java":
         Pyro4.config.SERVERTYPE="multiplex"
 
-    hmac=options.key
-    if hmac and sys.version_info>=(3,0):
-        hmac=bytes(hmac,"utf-8")
+    hmac = (options.key or "").encode("utf-8")
     Pyro4.config.HMAC_KEY=hmac or Pyro4.config.HMAC_KEY
     if not options.quiet and Pyro4.config.HMAC_KEY:
         print("HMAC_KEY set to: %s" % Pyro4.config.HMAC_KEY)

@@ -9,8 +9,9 @@ Change Log
 - disconnects example added that uses MSG_PING
 - more exception types recognised in the serializers (such as GeneratorExit)
 - fixed warehouse and stockmarket tutorials to work with new serializer logic
-- fixed tests to use unittest2 on Python 2.6
+- fixed unit tests to use unittest2 on Python 2.6
 - no longer supports jython 2.5. You'll have to upgrade to jython 2.7.
+- got rid of some byte/str handling cruft (because we no longer need to deal with jython 2.5)
 
 
 **Pyro 4.20**

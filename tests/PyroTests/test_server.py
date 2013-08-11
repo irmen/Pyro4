@@ -56,14 +56,13 @@ class DaemonLoopThread(threadutil.Thread):
 class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
     def _handshake(self, conn):
         # a bit of a hack, overriding this internal method to return a CONNECTFAIL...
-        data=tobytes("rigged connection failure")
-        msg=Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_CONNECTFAIL, data, 0, 1)
+        msg=Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_CONNECTFAIL, b"rigged connection failure", 0, 1)
         conn.send(msg)
         return False
     
 class ServerTestsBrokenHandshake(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.HMAC_KEY=b"testsuite"
         Pyro4.config.SERIALIZER="pickle"
         self.daemon=DaemonWithSabotagedHandshake(port=0)
         obj=MyThing()
@@ -92,7 +91,7 @@ class ServerTestsBrokenHandshake(unittest.TestCase):
 class ServerTestsOnce(unittest.TestCase):
     """tests that are fine to run with just a single server type"""
     def setUp(self):
-        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.HMAC_KEY=b"testsuite"
         Pyro4.config.SERIALIZER="pickle"
         self.daemon=Pyro4.core.Daemon(port=0)
         obj=MyThing()
@@ -429,7 +428,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro4.config.COMMTIMEOUT=self.COMMTIMEOUT
         Pyro4.config.THREADPOOL_MINTHREADS=10
         Pyro4.config.THREADPOOL_MAXTHREADS=20
-        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.HMAC_KEY=b"testsuite"
         Pyro4.config.SERIALIZER="pickle"
         self.daemon=Pyro4.core.Daemon(port=0)
         obj=MyThing()

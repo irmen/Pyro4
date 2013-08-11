@@ -546,19 +546,13 @@ class MessageFactory(object):
     FLAGS_HMAC = 1<<3
     FLAGS_BATCH = 1<<4
     MAGIC = 0x34E9
-    if sys.version_info>=(3, 0):
-        empty_bytes = bytes([])
-        pyro_tag = bytes("PYRO", "ASCII")
-        empty_hmac = bytes(hashlib.sha1().digest_size)
-    else:
-        empty_bytes = ""
-        pyro_tag = "PYRO"
-        empty_hmac = "\0"*hashlib.sha1().digest_size
+    pyro_tag = b"PYRO"
+    empty_hmac = b"\0"*hashlib.sha1().digest_size
 
     @classmethod
     def createMessage(cls, msgType, databytes, flags, seq):
         """creates a message containing a header followed by the given databytes"""
-        databytes=databytes or cls.empty_bytes
+        databytes=databytes or b""
         if 0 < Pyro4.config.MAX_MESSAGE_SIZE < len(databytes):
             raise errors.ProtocolError("max message size exceeded (%d where max=%d)" % (len(databytes), Pyro4.config.MAX_MESSAGE_SIZE))
         if Pyro4.config.HMAC_KEY:
@@ -757,10 +751,7 @@ class Daemon(object):
         # We need a minimal amount of data or the socket will remain blocked
         # on some systems... (messages smaller than 40 bytes)
         # Return True for successful handshake, False if something was wrong.
-        data="ok"
-        if sys.version_info>=(3, 0):
-            data=bytes(data, "utf-8")
-        msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK, data, 0, 1)
+        msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK, b"ok", 0, 1)
         conn.send(msg)
         return True
 

@@ -139,10 +139,7 @@ class NameServerDaemon(core.Daemon):
 
 
 class BroadcastServer(object):
-    if sys.version_info>=(3, 0):
-        REQUEST_NSURI=bytes("GET_NSURI", "ASCII")
-    else:
-        REQUEST_NSURI="GET_NSURI"
+    REQUEST_NSURI=b"GET_NSURI"
 
     def __init__(self, nsUri, bchost=None, bcport=None):
         self.nsUri=nsUri
@@ -202,9 +199,7 @@ class BroadcastServer(object):
                     except socket.error:
                         pass
                 log.debug("responding to broadcast request from %s: interface %s", addr[0], responsedata.host)
-                responsedata=str(responsedata)
-                if sys.version_info>=(3, 0):
-                    responsedata=bytes(responsedata, "iso-8859-1")
+                responsedata = str(responsedata).encode("iso-8859-1")
                 self.sock.sendto(responsedata, 0, addr)
         except socket.error:
             pass

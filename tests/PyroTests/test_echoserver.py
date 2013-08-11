@@ -25,7 +25,7 @@ class EchoServerThread(Thread):
         
 class TestEchoserver(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.HMAC_KEY = b"testsuite"
         self.echoserverthread=EchoServerThread()
         self.echoserverthread.start()
         self.echoserverthread.started.wait()

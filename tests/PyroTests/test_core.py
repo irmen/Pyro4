@@ -46,9 +46,9 @@ class CoreTestsWithoutHmac(unittest.TestCase):
 
 class CoreTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.HMAC_KEY = b"testsuite"
     def tearDown(self):
-        Pyro4.config.HMAC_KEY=None
+        Pyro4.config.HMAC_KEY = None
 
     def testConfig(self):
         self.assertTrue(type(Pyro4.config.COMPRESSION) is bool)
@@ -277,23 +277,22 @@ class CoreTests(unittest.TestCase):
     def testMsgFactory(self):
         import hashlib, hmac
         def pyrohmac(data):
-            data=tobytes(data)
             return hmac.new(Pyro4.config.HMAC_KEY, data, digestmod=hashlib.sha1).digest()
         MF=Pyro4.core.MessageFactory
         MF.createMessage(99, None, 0,0) # doesn't check msg type here
         self.assertRaises(Pyro4.errors.ProtocolError, MF.parseMessageHeader, "FOOBAR")
-        hdr=MF.createMessage(MF.MSG_CONNECT, tobytes("hello"),0,0)[:-5]
+        hdr=MF.createMessage(MF.MSG_CONNECT, b"hello",0,0)[:-5]
         msgType,flags,seq,dataLen,datahmac=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_CONNECT, msgType)
         self.assertEqual(MF.FLAGS_HMAC, flags)
         self.assertEqual(5, dataLen)
-        self.assertEqual(pyrohmac("hello"), datahmac)
+        self.assertEqual(pyrohmac(b"hello"), datahmac)
         hdr=MF.createMessage(MF.MSG_RESULT, None,0,0)
         msgType,flags,seq,dataLen,datahmac=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_RESULT, msgType)
         self.assertEqual(MF.FLAGS_HMAC, flags)
         self.assertEqual(0, dataLen)
-        hdr=MF.createMessage(MF.MSG_RESULT, tobytes("hello"), 42, 0)[:-5]
+        hdr=MF.createMessage(MF.MSG_RESULT, b"hello", 42, 0)[:-5]
         msgType,flags,seq,dataLen,datahmac=MF.parseMessageHeader(hdr)
         self.assertEqual(MF.MSG_RESULT, msgType)
         self.assertEqual(42, flags)
@@ -305,7 +304,7 @@ class CoreTests(unittest.TestCase):
         msg=MF.createMessage(1,None,flags=253,seq=254)
         self.assertEqual(38,len(msg))
         # compression is a job of the code supplying the data, so the messagefactory should leave it untouched
-        data=tobytes("x"*1000)
+        data=b"x"*1000
         msg=MF.createMessage(MF.MSG_INVOKE, data, 0,0)
         msg2=MF.createMessage(MF.MSG_INVOKE, data, MF.FLAGS_COMPRESSED,0)
         self.assertEqual(len(msg),len(msg2))
@@ -313,7 +312,7 @@ class CoreTests(unittest.TestCase):
     def testMsgFactoryProtocolVersion(self):
         version=Pyro4.constants.PROTOCOL_VERSION
         Pyro4.constants.PROTOCOL_VERSION=0     # fake invalid protocol version number
-        msg=Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_RESULT, tobytes("result"), 0, 1)
+        msg=Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_RESULT, b"result", 0, 1)
         try:
             Pyro4.core.MessageFactory.parseMessageHeader(msg)
             self.fail("expected protocolerror")
@@ -499,9 +498,9 @@ class RemoteMethodTests(unittest.TestCase):
                 raise NotImplementedError(methodname)
 
     def setUp(self):
-        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.HMAC_KEY = b"testsuite"
     def tearDown(self):
-        Pyro4.config.HMAC_KEY=None
+        Pyro4.config.HMAC_KEY = None
 
     def testRemoteMethod(self):
         class ProxyMock(object):

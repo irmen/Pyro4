@@ -28,7 +28,7 @@ class NSLoopThread(threadutil.Thread):
 
 class BCSetupTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.HMAC_KEY=b"testsuite"
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
     def testBCstart(self):
@@ -44,18 +44,10 @@ class BCSetupTests(unittest.TestCase):
         bcserver.close()
 
 
-#This test is disabled because otherwise the suite won't succeed if you have a name server running somewhere:
-#class NameServerNotRunningTests(unittest.TestCase):
-#    def testLocate(self):
-#        Pyro4.config.HMAC_KEY=tobytes("testsuite")
-#        self.assertRaises(NamingError, Pyro4.naming.locateNS)
-#        Pyro4.config.HMAC_KEY=None
-
-
 class NameServerTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT=0.1
-        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.HMAC_KEY=b"testsuite"
         myIpAddress=Pyro4.socketutil.getIpAddress("", workaround127=True)
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0)
         self.assertTrue(self.bcserver is not None,"expected a BC server to be running")
@@ -196,7 +188,7 @@ class NameServerTests(unittest.TestCase):
 class NameServerTests0000(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT=0.1
-        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.HMAC_KEY=b"testsuite"
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host="", port=0, bcport=0)
         self.assertEqual("0.0.0.0", self.nsUri.host, "for hostname \"\" the resulting ip must be 0.0.0.0")
         self.assertTrue(self.bcserver is not None,"expected a BC server to be running")

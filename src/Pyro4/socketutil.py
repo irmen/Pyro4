@@ -124,12 +124,6 @@ def __nextRetrydelay(delay):
     return delay+0.1
 
 
-if sys.version_info<(3, 0):
-    EMPTY_BYTES=""
-else:
-    EMPTY_BYTES=bytes([])
-
-
 def receiveData(sock, size):
     """Retrieve a given number of bytes from a socket.
     It is expected the socket is able to supply that number of bytes.
@@ -176,7 +170,7 @@ def receiveData(sock, size):
                         break
                     chunks.append(chunk)
                     msglen+=len(chunk)
-                data=EMPTY_BYTES.join(chunks)
+                data = b"".join(chunks)
                 del chunks
                 if len(data)!=size:
                     err=ConnectionClosedError("receiving: not enough data")

@@ -177,11 +177,7 @@ def interruptSocket(address):
     """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
     try:
         sock=socketutil.createSocket(connect=address, keepalive=False, timeout=None)
-        if sys.version_info<(3, 0):
-            sock.send("!"*16)
-        else:
-            sock.send(bytes([1]*16))
+        sock.send(b"!"*16)
         sock.close()
     except socket.error:
         pass
-

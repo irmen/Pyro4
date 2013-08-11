@@ -29,11 +29,9 @@ def main(args, returnWithoutLooping=False):
     if not options.quiet:
         print("Starting Pyro Flame server.")
 
-    hmac = options.key
+    hmac = (options.key or "").encode("utf-8")
     if not hmac:
         print("Warning: HMAC key not set. Anyone can connect to this server!")
-    if hmac and sys.version_info >= (3, 0):
-        hmac = bytes(hmac, "utf-8")
     Pyro4.config.HMAC_KEY = hmac or Pyro4.config.HMAC_KEY
     if not options.quiet and Pyro4.config.HMAC_KEY:
         print("HMAC_KEY set to: %s" % Pyro4.config.HMAC_KEY)

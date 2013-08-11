@@ -17,7 +17,7 @@ from testsupport import *
 
 class OfflineNameServerTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.HMAC_KEY=b"testsuite"
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
     def testRegister(self):

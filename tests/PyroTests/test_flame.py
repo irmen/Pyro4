@@ -24,7 +24,7 @@ class FlameDisabledTests(unittest.TestCase):
 class FlameTests(unittest.TestCase):
     
     def setUp(self):
-        Pyro4.config.HMAC_KEY=tobytes("testsuite")
+        Pyro4.config.HMAC_KEY=b"testsuite"
         Pyro4.config.FLAME_ENABLED=True
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None

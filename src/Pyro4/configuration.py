@@ -80,9 +80,8 @@ class Configuration(object):
                         else:
                             envvalue=valuetype(envvalue)  # just cast the value to the appropriate type
                     setattr(self, symbol, envvalue)
-        if self.HMAC_KEY and sys.version_info>=(3,0):
-            if type(self.HMAC_KEY) is not bytes:
-                self.HMAC_KEY=bytes(self.HMAC_KEY, "utf-8")     # convert to bytes
+        if self.HMAC_KEY and type(self.HMAC_KEY) is not bytes:
+            self.HMAC_KEY = self.HMAC_KEY.encode("utf-8")     # convert to bytes
 
     def asDict(self):
         """returns the current config as a regular dictionary"""

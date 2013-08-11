@@ -209,13 +209,13 @@ class TestSocketutil(unittest.TestCase):
         ss=SU.createSocket(bind=("localhost",0))
         port=ss.getsockname()[1]
         cs=SU.createSocket(connect=("localhost",port))
-        SU.sendData(cs,tobytes("foobar!"*10))
+        SU.sendData(cs,b"foobar!"*10)
         cs.shutdown(socket.SHUT_WR)
         a=ss.accept()
         data=SU.receiveData(a[0], 5)
-        self.assertEqual(tobytes("fooba"),data)
+        self.assertEqual(b"fooba",data)
         data=SU.receiveData(a[0], 5)
-        self.assertEqual(tobytes("r!foo"),data)
+        self.assertEqual(b"r!foo",data)
         a[0].close()
         ss.close()
         cs.close()
@@ -225,13 +225,13 @@ class TestSocketutil(unittest.TestCase):
             SOCKNAME="test_unixsocket"
             ss=SU.createSocket(bind=SOCKNAME)
             cs=SU.createSocket(connect=SOCKNAME)
-            SU.sendData(cs,tobytes("foobar!"*10))
+            SU.sendData(cs,b"foobar!"*10)
             cs.shutdown(socket.SHUT_WR)
             a=ss.accept()
             data=SU.receiveData(a[0], 5)
-            self.assertEqual(tobytes("fooba"),data)
+            self.assertEqual(b"fooba",data)
             data=SU.receiveData(a[0], 5)
-            self.assertEqual(tobytes("r!foo"),data)
+            self.assertEqual(b"r!foo",data)
             a[0].close()
             ss.close()
             cs.close()
@@ -243,7 +243,7 @@ class TestSocketutil(unittest.TestCase):
         cs=SU.createBroadcastSocket()
         for bcaddr in Pyro4.config.parseAddressesString(Pyro4.config.BROADCAST_ADDRS):
             try:
-                cs.sendto(tobytes("monkey"),0,(bcaddr,port))
+                cs.sendto(b"monkey",0,(bcaddr,port))
             except socket.error:
                 x=sys.exc_info()[1]
                 err=getattr(x, "errno", x.args[0])
@@ -251,7 +251,7 @@ class TestSocketutil(unittest.TestCase):
                     if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:     # and jython likes to throw thses...
                         raise
         data,_=ss.recvfrom(500)
-        self.assertEqual(tobytes("monkey"),data)
+        self.assertEqual(b"monkey",data)
         cs.close()
         ss.close()
         
@@ -262,7 +262,7 @@ class TestSocketutil(unittest.TestCase):
         a=ss.accept()
         # test some sizes that might be problematic with MSG_WAITALL
         for size in [1000,10000,32000,32768,32780,41950,41952,42000,65000,65535,65600,80000]:
-            SU.sendData(cs,tobytes("x")*size)
+            SU.sendData(cs,b"x"*size)
             data=SU.receiveData(a[0],size)
             SU.sendData(a[0], data)
             data=SU.receiveData(cs,size)
@@ -292,7 +292,7 @@ class TestSocketutil(unittest.TestCase):
         cs=SU.createSocket(connect=("localhost",port), timeout=0.5)
         # test some sizes that might be problematic with MSG_WAITALL
         for size in SIZES:
-            SU.sendData(cs,tobytes("x")*size)
+            SU.sendData(cs,b"x"*size)
             data=SU.receiveData(cs,size)
             self.assertEqual(size, len(data))
         serverthread.join()
