@@ -13,6 +13,7 @@ Change Log
 - no longer supports jython 2.5. You'll have to upgrade to jython 2.7.
 - got rid of some byte/str handling cruft (because we no longer need to deal with jython 2.5)
 - implemented autoproxy support for serpent and json serializers. It is not possible to do this for marshal as well.
+- fixed serpent serialization problem with backslash escapes in unicode strings (requires serpent >= 1.3)
 
 
 **Pyro 4.20**
