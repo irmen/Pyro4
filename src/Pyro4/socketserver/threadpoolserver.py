@@ -50,7 +50,7 @@ class ClientConnectionJob(object):
         except:
             ex_t, ex_v, ex_tb = sys.exc_info()
             tb = Pyro4.util.formatTraceback(ex_t, ex_v, ex_tb)
-            log.warn("error during connect/handshake: %s; %s", ex_v, "\n".join(tb))
+            log.warning("error during connect/handshake: %s; %s", ex_v, "\n".join(tb))
             self.csock.close()
         return False
 
@@ -82,7 +82,7 @@ class SocketServer_Threadpool(object):
         self._socketaddr=self.sock.getsockname()
         if self._socketaddr[0].startswith("127."):
             if host is None or host.lower()!="localhost" and not host.startswith("127."):
-                log.warn("weird DNS setup: %s resolves to localhost (127.x.x.x)", host)
+                log.warning("weird DNS setup: %s resolves to localhost (127.x.x.x)", host)
         if unixsocket:
             self.locationStr="./u:"+unixsocket
         else:

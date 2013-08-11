@@ -23,7 +23,7 @@ class MultiplexedSocketServerBase(object):
         sockaddr=self.sock.getsockname()
         if sockaddr[0].startswith("127."):
             if host is None or host.lower()!="localhost" and not host.startswith("127."):
-                log.warn("weird DNS setup: %s resolves to localhost (127.x.x.x)", host)
+                log.warning("weird DNS setup: %s resolves to localhost (127.x.x.x)", host)
         if unixsocket:
             self.locationStr="./u:"+unixsocket
         else:
@@ -72,7 +72,7 @@ class MultiplexedSocketServerBase(object):
             err=getattr(x, "errno", x.args[0])
             if err in socketutil.ERRNO_RETRIES:
                 # just ignore this error for now and continue
-                log.warn("accept() failed errno=%d, shouldn't happen", err)
+                log.warning("accept() failed errno=%d, shouldn't happen", err)
                 return None
             if err in socketutil.ERRNO_BADF or err in socketutil.ERRNO_ENOTSOCK:
                 # our server socket got destroyed
@@ -85,7 +85,7 @@ class MultiplexedSocketServerBase(object):
         except:     # catch all errors, otherwise the event loop could terminate
             ex_t, ex_v, ex_tb = sys.exc_info()
             tb = util.formatTraceback(ex_t, ex_v, ex_tb)
-            log.warn("error during connect/handshake: %s; %s", ex_v, "\n".join(tb))
+            log.warning("error during connect/handshake: %s; %s", ex_v, "\n".join(tb))
             csock.shutdown(socket.SHUT_RDWR)
             csock.close()
         return None
@@ -204,7 +204,7 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                             # other error occurred, close the connection, but also log a warning
                             ex_t, ex_v, ex_tb = sys.exc_info()
                             tb = util.formatTraceback(ex_t, ex_v, ex_tb)
-                            log.warn("error during handleRequest: %s; %s", ex_v, "\n".join(tb))
+                            log.warning("error during handleRequest: %s; %s", ex_v, "\n".join(tb))
                             must_close = True
                         finally:
                             if must_close:

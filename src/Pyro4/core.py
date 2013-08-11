@@ -597,7 +597,7 @@ class MessageFactory(object):
         elif flags&MessageFactory.FLAGS_HMAC != local_hmac_set:
             # Message contains hmac and local HMAC_KEY not set, or vice versa. This is not allowed.
             err="hmac key config not symmetric"
-            log.warn(err)
+            log.warning(err)
             raise errors.SecurityError(err)
         return msgType, flags, seq, databytes
 
