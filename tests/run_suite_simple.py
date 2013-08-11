@@ -23,8 +23,8 @@ sys.path.insert(1,"PyroTests")
 
 if __name__=="__main__":
     # add test modules here
-    modules=[module[:-3] for module in os.listdir("PyroTests") if module.endswith(".py") and not module.startswith("__")]
-     
+    modules = [module[:-3] for module in sorted(os.listdir("PyroTests")) if module.endswith(".py") and not module.startswith("__")]
+
     print("gathering testcases from %s" % modules)
 
     suite=unittest.TestSuite()
