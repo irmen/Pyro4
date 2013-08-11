@@ -33,3 +33,9 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# java stuff
+*.class
+
+# logfiles
+*.log
