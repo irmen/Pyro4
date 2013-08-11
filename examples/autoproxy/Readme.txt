@@ -11,3 +11,4 @@ the old behaviour. You can try it with this example too, set the environment
 variable PYRO_AUTOPROXY to false and restart the server to see what
 the effect is.
 
+Note that when using the marshal serializer, this feature will not work.

@@ -168,6 +168,26 @@ class SerializeTests_pickle(unittest.TestCase):
         x = self.ser.deserializeData(s, c)
         self.assertTrue(isinstance(x, Pyro4.core.Daemon))
 
+    def testAutoProxy(self):
+        if self.SERIALIZER=="marshal":
+            self.skipTest("marshal can't serialize custom objects")
+        self.ser.register_type_replacement(MyThing2, Pyro4.core.pyroObjectToAutoProxy)
+        t1 = MyThing2("1")
+        t2 = MyThing2("2")
+        with Pyro4.core.Daemon() as d:
+            d.register(t1, "thingy1")
+            d.register(t2, "thingy2")
+            data = [t1, ["apple", t2] ]
+            s, c = self.ser.serializeData(data)
+            data = self.ser.deserializeData(s, c)
+            self.assertEqual("apple", data[1][0])
+            p1 = data[0]
+            p2 = data[1][1]
+            self.assertIsInstance(p1, Pyro4.core.Proxy)
+            self.assertIsInstance(p2, Pyro4.core.Proxy)
+            self.assertEqual("thingy1", p1._pyroUri.object)
+            self.assertEqual("thingy2", p2._pyroUri.object)
+
     def testCustomClassFail(self):
         if self.SERIALIZER=="pickle":
             self.skipTest("pickle simply serializes custom classes")
@@ -342,7 +362,6 @@ class GenericTests(unittest.TestCase):
         x = Pyro4.util.SerializerBase.dict_to_class(d)
         self.assertEqual(uri, x)
         self.assertEqual("/tmp/socketname", x.sockname)
-
 
 
 if __name__ == "__main__":

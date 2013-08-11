@@ -62,4 +62,7 @@ class NonserializableError(Exception):
 
 
 class MyThing2(object):
-    pass
+    def __init__(self, name="?"):
+        self.name = name
+
+

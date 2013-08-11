@@ -64,7 +64,7 @@ Overview of Config Items
 ======================= ======= ============== =======
 config item             type    default        meaning
 ======================= ======= ============== =======
-AUTOPROXY               bool    True           Enable to make Pyro automatically replace Pyro objects by proxies in the method arguments and return values of remote method calls
+AUTOPROXY               bool    True           Enable to make Pyro automatically replace Pyro objects by proxies in the method arguments and return values of remote method calls. Doesn't work with marshal serializer.
 COMMTIMEOUT             float   0.0            network communication timeout in seconds. 0.0=no timeout (infinite wait)
 COMPRESSION             bool    False          Enable to make Pyro compress the data that travels over the network
 DETAILED_TRACEBACK      bool    False          Enable to get detailed exception tracebacks (including the value of local variables per stack frame)

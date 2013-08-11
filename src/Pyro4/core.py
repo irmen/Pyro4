@@ -8,10 +8,6 @@ from __future__ import with_statement
 import re, struct, sys, time, os
 import logging, uuid
 import hashlib, hmac
-try:
-    import copyreg
-except ImportError:
-    import copy_reg as copyreg
 from Pyro4 import constants, threadutil, util, socketutil, errors
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
@@ -602,19 +598,14 @@ class MessageFactory(object):
         return msgType, flags, seq, databytes
 
 
-def pyroObjectSerializer(self):
+def pyroObjectToAutoProxy(self):
     """reduce function that automatically replaces Pyro objects by a Proxy"""
-    daemon=getattr(self, "_pyroDaemon", None)
-    if daemon:
-        # only return a proxy if the object is a registered pyro object
-        return Pyro4.core.Proxy, (daemon.uriFor(self),)
-    else:
-        return self.__reduce__()
-
-
-def defaultObjectSerializer(self):
-    """reduce function that uses the default implementation"""
-    return self.__reduce__()
+    if Pyro4.config.AUTOPROXY:
+        daemon = getattr(self, "_pyroDaemon", None)
+        if daemon:
+            # only return a proxy if the object is a registered pyro object
+            return Pyro4.core.Proxy(daemon.uriFor(self))
+    return self
 
 
 class DaemonObject(object):
@@ -881,10 +872,7 @@ class Daemon(object):
         obj._pyroDaemon=self
         if Pyro4.config.AUTOPROXY:
             # register a custom serializer for the type to automatically return proxies
-            try:
-                copyreg.pickle(type(obj), pyroObjectSerializer)
-            except TypeError:
-                pass
+            self.serializer.register_type_replacement(type(obj), pyroObjectToAutoProxy)
         # register the object in the mapping
         self.objectsById[obj._pyroId]=obj
         return self.uriFor(objectId)
@@ -910,11 +898,8 @@ class Daemon(object):
             if objectOrId is not None:
                 del objectOrId._pyroId
                 del objectOrId._pyroDaemon
-                # Don't remove the custom type serializer (copyreg.pickle) because there
-                # may be other registered objects of the same type still depending on it.
-                # Also, it would require an inefficient linear search through the registered
-                # objects map to scan for types. Finally, the copyreg module doesn't seem
-                # to be designed with cleanup in mind (it has no explicit unregister function)
+                # Don't remove the custom type serializer because there may be
+                # other registered objects of the same type still depending on it.
 
     def uriFor(self, objectOrId=None, nat=True):
         """

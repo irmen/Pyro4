@@ -259,6 +259,10 @@ and the client won't be able to interact with the actual new Pyro object in the 
 There is a :file:`autoproxy` example that shows the use of this feature,
 and several other examples also make use of it.
 
+Note that when using the marshal serializer, this feature doesn't work. You have to use
+one of the other serializers to use autoproxying.
+
+
 Server types and Object concurrency model
 =========================================
 Pyro supports multiple server types (the way the Daemon listens for requests). Select the
