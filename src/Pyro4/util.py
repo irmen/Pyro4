@@ -6,6 +6,10 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import sys, zlib, logging
 import traceback, linecache
+try:
+    import copyreg
+except ImportError:
+    import copy_reg as copyreg
 import Pyro4
 import Pyro4.errors
 
@@ -182,6 +186,10 @@ class SerializerBase(object):
         return data, False
 
     @classmethod
+    def register_type_replacement(cls, object_type, replacement_function):
+        raise NotImplementedError("implement in subclass")
+
+    @classmethod
     def register_class_to_dict(cls, clazz, converter):
         cls.__custom_class_to_dict_registry[clazz] = converter
 
@@ -333,6 +341,16 @@ class PickleSerializer(SerializerBase):
     def loads(self, data):
         return pickle.loads(data)
 
+    @classmethod
+    def register_type_replacement(cls, object_type, replacement_function):
+        def copyreg_function(obj):
+            return replacement_function(obj).__reduce__()
+
+        try:
+            copyreg.pickle(object_type, copyreg_function)
+        except TypeError:
+            pass
+
 
 class MarshalSerializer(SerializerBase):
     """(de)serializer that wraps the marshal serialization protocol."""
@@ -354,6 +372,10 @@ class MarshalSerializer(SerializerBase):
     def loads(self, data):
         return self.recreate_classes(marshal.loads(data))
 
+    @classmethod
+    def register_type_replacement(cls, object_type, replacement_function):
+        pass    # marshal serializer doesn't support per-type hooks
+
 
 class SerpentSerializer(SerializerBase):
     """(de)serializer that wraps the serpent serialization protocol."""
@@ -372,9 +394,20 @@ class SerpentSerializer(SerializerBase):
     def loads(self, data):
         return self.recreate_classes(serpent.loads(data))
 
+    @classmethod
+    def register_type_replacement(cls, object_type, replacement_function):
+        def custom_serializer(object, serpent_serializer, outputstream, indentlevel):
+            replaced = replacement_function(object)
+            if replaced is object:
+                serpent_serializer.ser_default_class(replaced, outputstream, indentlevel)
+            else:
+                serpent_serializer._serialize(replaced, outputstream, indentlevel)
+        serpent.register_class(object_type, custom_serializer)
+
 
 class JsonSerializer(SerializerBase):
     """(de)serializer that wraps the json serialization protocol."""
+    __type_replacements = {}
     def dumpsCall(self, obj, method, vargs, kwargs):
         data = {"object": obj, "method": method, "params": vargs, "kwargs": kwargs}
         data = json.dumps(data, ensure_ascii=False, default=self.default)
@@ -392,7 +425,14 @@ class JsonSerializer(SerializerBase):
         data=data.decode("utf-8")
         return self.recreate_classes(json.loads(data))
     def default(self, obj):
+        replacer = self.__type_replacements.get(type(obj), None)
+        if replacer:
+            obj = replacer(obj)
         return self.class_to_dict(obj)
+    @classmethod
+    def register_type_replacement(cls, object_type, replacement_function):
+        cls.__type_replacements[object_type] = replacement_function
+
 
 """The various serializers that are supported"""
 _serializers = {}
