@@ -138,3 +138,10 @@ class _ExceptionWrapper(object):
         if sys.platform=="cli":
             util.fixIronPythonExceptionForPickle(self.exception, False)
         raise self.exception
+
+    def __serialized_dict__(self):
+        """serialized form as a dictionary"""
+        return {
+            "__class__": "Pyro4.futures._ExceptionWrapper",
+            "exception": util.SerializerBase.class_to_dict(self.exception)
+        }

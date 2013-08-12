@@ -102,7 +102,7 @@ on what objects you can use.
   on the receiving end if so desired, because most custom classes aren't dealt with automatically.
   Requires third party library module.
 * json: more restricted as serpent, less types supported. Part of Python's standard library.
-* marshal: a very limited but fast serializer. Can deal with a small range of types only. Part of the standard library.
+* marshal: a very limited but fast serializer. Can deal with a small range of builtin types only, no custom classes can be serialized. Part of the standard library.
 * pickle: the legacy serializer. Fast and supports almost all types. Has security problems though.
 
 .. note::

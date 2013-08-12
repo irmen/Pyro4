@@ -273,6 +273,9 @@ class SerializerBase(object):
             errortype = getattr(Pyro4.errors, classname.split('.', 2)[2])
             if issubclass(errortype, Pyro4.errors.PyroError):
                 return SerializerBase.make_exception(errortype, data)
+        elif classname == "Pyro4.futures._ExceptionWrapper":
+            ex = SerializerBase.dict_to_class(data["exception"])
+            return Pyro4.futures._ExceptionWrapper(ex)
         elif classname.startswith("builtins."):
             exceptiontype = getattr(builtins, classname.split('.', 1)[1])
             if issubclass(exceptiontype, BaseException):

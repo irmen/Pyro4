@@ -10,6 +10,7 @@ import pprint
 import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
+import Pyro4.futures
 from testsupport import *
 
 
@@ -167,6 +168,11 @@ class SerializeTests_pickle(unittest.TestCase):
         s, c = self.ser.serializeData(daemon)
         x = self.ser.deserializeData(s, c)
         self.assertTrue(isinstance(x, Pyro4.core.Daemon))
+        wrapper = Pyro4.futures._ExceptionWrapper(ZeroDivisionError("divided by zero"))
+        s, c = self.ser.serializeData(wrapper)
+        x = self.ser.deserializeData(s, c)
+        self.assertIsInstance(x, Pyro4.futures._ExceptionWrapper)
+        self.assertEquals("divided by zero", str(x.exception))
 
     def testAutoProxy(self):
         if self.SERIALIZER=="marshal":

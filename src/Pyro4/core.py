@@ -970,6 +970,7 @@ try:
     serpent.register_class(URI, pyro_class_serpent_serializer)
     serpent.register_class(Proxy, pyro_class_serpent_serializer)
     serpent.register_class(Daemon, pyro_class_serpent_serializer)
+    serpent.register_class(futures._ExceptionWrapper, pyro_class_serpent_serializer)
 except ImportError:
     pass
 
@@ -983,3 +984,4 @@ def serialize_core_object_to_dict(obj):
 Pyro4.util.SerializerBase.register_class_to_dict(URI, serialize_core_object_to_dict)
 Pyro4.util.SerializerBase.register_class_to_dict(Proxy, serialize_core_object_to_dict)
 Pyro4.util.SerializerBase.register_class_to_dict(Daemon, serialize_core_object_to_dict)
+Pyro4.util.SerializerBase.register_class_to_dict(futures._ExceptionWrapper, futures._ExceptionWrapper.__serialized_dict__)
