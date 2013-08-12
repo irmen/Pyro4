@@ -21,8 +21,8 @@ print("got back from the server: %s" % response)
 try:
     echoserver.error()
 except:
-    print("\ncaught an exception, traceback:")
+    print("\ncaught an exception (expected), traceback:")
     print("".join(Pyro4.util.getPyroTraceback()))
 
-print("\nshutting down the test echo server.")
+print("\nshutting down the test echo server. (restart it if you want to run this again)")
 echoserver.shutdown()

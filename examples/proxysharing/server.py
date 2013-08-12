@@ -16,10 +16,7 @@ class RemoteObject(object):
     def get_work_done(self):
         return self.amount
 
-ns=Pyro4.naming.locateNS()
-daemon=Pyro4.core.Daemon()
-obj=RemoteObject()
-uri=daemon.register(obj)
-ns.register("example.proxysharing", uri)
-print("Server is ready.")
-daemon.requestLoop()
+
+Pyro4.Daemon.serveSimple({
+        RemoteObject(): "example.proxysharing"
+    })

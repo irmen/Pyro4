@@ -5,6 +5,9 @@ import remote
 import Pyro4
 
 
+Pyro4.config.SERIALIZER = "pickle"   # because we're using some custom classes over the wire
+
+
 class DrunkenGameObserver(remote.GameObserver):
     def world_update(self, iteration, world, robotdata):
         # change directions randomly

@@ -5,6 +5,8 @@ import Pyro4.utils.flame
 if sys.version_info<(3,0):
     input=raw_input
 
+Pyro4.config.SERIALIZER = "pickle"  # flame requires pickle serializer
+
 print("Start a Pyro Flame server somewhere.")
 location = input("what is the location of the flame server, hostname:portnumber? ")
 print

@@ -242,6 +242,7 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
         print("external URI = %s" % nsUri)
     else:
         print("URI = %s" % nsUri)
+    log.info("using serializer: %s" % Pyro4.config.SERIALIZER)   # only clients using the same serializer can connect
     try:
         daemon.requestLoop()
     finally:

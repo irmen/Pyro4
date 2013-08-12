@@ -28,10 +28,6 @@ class Server(object):
 
 ######## main program
 
-daemon=Pyro4.core.Daemon()
-obj=Server()
-uri=daemon.register(obj)
-ns=Pyro4.naming.locateNS()
-ns.register("example.oneway", uri)
-print("Server is ready.")
-daemon.requestLoop()
+Pyro4.Daemon.serveSimple({
+        Server(): "example.oneway"
+    })

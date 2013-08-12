@@ -1,77 +1,73 @@
 
-# the bank uses this exception to say there's something wrong:
-class BankError(Exception):
-    pass
-
 # Unrestricted account.
 class Account(object):
-    def __init__(s):
-        s._balance=0.0
-    def withdraw(s, amount):
-        s._balance-=amount
-    def deposit(s,amount):
-        s._balance+=amount
-    def balance(s):
-        return s._balance
+    def __init__(self):
+        self._balance = 0.0
+    def withdraw(self, amount):
+        self._balance -= amount
+    def deposit(self, amount):
+        self._balance += amount
+    def balance(self):
+        return self._balance
 
 # Restricted withdrawal account.
 class RestrictedAccount(Account):
-    def withdraw(s, amount):
-        if amount<=s._balance:
-            s._balance-=amount
+    def withdraw(self, amount):
+        if amount <= self._balance:
+            self._balance -= amount
         else:
-            raise BankError('insufficent balance')
+            raise ValueError('insufficent balance')
 
 # Abstract bank.
 class Bank(object):
-    def __init__(s):
-        s.accounts={}
-    def name(s):
+    def __init__(self):
+        self.accounts = {}
+    def name(self):
         pass  # must override this!
-    def createAccount(s, name):
+    def createAccount(self, name):
         pass  # must override this!
-    def deleteAccount(s, name):
+    def deleteAccount(self, name):
         try:
-            del s.accounts[name]
+            del self.accounts[name]
         except KeyError:
-            raise BankError('unknown account')
-    def deposit(s, name, amount):
+            raise KeyError('unknown account')
+    def deposit(self, name, amount):
         try:
-            return s.accounts[name].deposit(amount)
+            return self.accounts[name].deposit(amount)
         except KeyError:
-            raise BankError('unknown account')
-    def withdraw(s, name, amount):
+            raise KeyError('unknown account')
+    def withdraw(self, name, amount):
         try:
-            return s.accounts[name].withdraw(amount)
+            return self.accounts[name].withdraw(amount)
         except KeyError:
-            raise BankError('unknown account')
-    def balance(s, name):
+            raise KeyError('unknown account')
+    def balance(self, name):
         try:
-            return s.accounts[name].balance()
+            return self.accounts[name].balance()
         except KeyError:
-            raise BankError('unknown account')
-    def allAccounts(s):
+            raise KeyError('unknown account')
+    def allAccounts(self):
         accs = {}
-        for name in s.accounts.keys():
-            accs[name] = s.accounts[name].balance()
+        for name in self.accounts.keys():
+            accs[name] = self.accounts[name].balance()
         return accs
 
 
 # Special bank: Rabobank. It has unrestricted accounts.
 class Rabobank(Bank):
-    def name(s):
+    def name(self):
         return 'Rabobank'
-    def createAccount(s,name):
-        if name in s.accounts:
-            raise BankError('Account already exists')
-        s.accounts[name]=Account()
+    def createAccount(self, name):
+        if name in self.accounts:
+            raise ValueError('Account already exists')
+        self.accounts[name] = Account()
 
 
 # Special bank: ABN. It has restricted accounts.
 class ABN(Bank):
-    def name(s):
+    def name(self):
         return 'ABN bank'
-    def createAccount(s,name):
-        if name in s.accounts:
-            raise BankError('Account already exists')
-        s.accounts[name]=RestrictedAccount()
+    def createAccount(self, name):
+        if name in self.accounts:
+            raise ValueError('Account already exists')
+        self.accounts[name] = RestrictedAccount()

@@ -4,6 +4,10 @@ import Pyro4
 import socket
 
 
+#  You can get a lot more info about scripting iTunes here:
+#  http://dougscripts.com/itunes/
+
+
 class ITunes(object):
     def __init__(self):
         # start itunes

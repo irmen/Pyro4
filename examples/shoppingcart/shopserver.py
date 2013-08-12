@@ -66,10 +66,6 @@ class Shop(object):
 
 ######## main program
 
-daemon=Pyro4.Daemon()
-shop=Shop()
-uri=daemon.register(shop)
-ns=Pyro4.locateNS()
-ns.register("example.shop", uri)
-print("Shop Server is ready.")
-daemon.requestLoop()
+Pyro4.Daemon.serveSimple({
+        Shop(): "example.shop"
+    })

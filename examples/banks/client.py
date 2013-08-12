@@ -8,7 +8,6 @@
 from __future__ import print_function
 import sys
 import Pyro4
-from banks import BankError
 
 # A bank client.
 class client(object):
@@ -19,7 +18,7 @@ class client(object):
         print("Creating account")
         try:
             bank.createAccount(self.name)
-        except BankError:
+        except ValueError:
             x=sys.exc_info()[1]
             print("Failed: %s" % x)
             print("Removing account and trying again")
@@ -36,7 +35,7 @@ class client(object):
         print("Withdraw money (overdraw)")
         try:
             bank.withdraw(self.name, 400.00)
-        except BankError:
+        except ValueError:
             x=sys.exc_info()[1]
             print("Failed: %s" % x)
         print("End balance=%.2f" % bank.balance(self.name))
@@ -45,7 +44,7 @@ class client(object):
         try:
             bank.withdraw('GOD',2222.22)
             print("!!! Succeeded?!? That is an error")
-        except BankError:
+        except KeyError:
             x=sys.exc_info()[1]
             print("Failed as expected: %s" % x)
 
@@ -53,7 +52,7 @@ class client(object):
         try:
             bank.deleteAccount('GOD')
             print("!!! Succeeded?!? That is an error")
-        except BankError:
+        except KeyError:
             x=sys.exc_info()[1]
             print("Failed as expected: %s" % x)
 

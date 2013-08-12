@@ -1,9 +1,6 @@
 import pickle
 
 
-class MyError(Exception):
-    pass
-
 class UnserializableError(Exception):
     def __reduce__(self):
         raise pickle.PicklingError("make this nonpickleable")
@@ -17,9 +14,7 @@ class TestClass(object):
     def error2(self):
         return ValueError('a valueerror! Great!')
     def othererr(self):
-        raise MyError('my error!')
-    def othererr2(self):
-        return MyError('my error!')
+        raise RuntimeError('a runtime error!')
     def complexerror(self):
         x=Foo()
         x.crash()

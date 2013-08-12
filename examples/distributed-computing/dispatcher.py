@@ -6,6 +6,9 @@ except ImportError:
     import Queue as queue
 import Pyro4
 
+Pyro4.config.SERIALIZER='pickle'   # we're using custom classes
+
+
 class DispatcherQueue(object):
     def __init__(self):
         self.workqueue = queue.Queue()

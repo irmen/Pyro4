@@ -10,6 +10,10 @@ except ImportError:
 import Pyro4
 from Pyro4 import threadutil
 
+
+Pyro4.config.SERIALIZER = "pickle"   # because we're using some custom classes over the wire
+
+
 class VisibleRobot(robot.Robot):
     """represents a robot that is visible on the screen."""
     def __init__(self, name, position, direction, grid, color='red'):

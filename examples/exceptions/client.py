@@ -1,7 +1,6 @@
 from __future__ import print_function
 import sys
 import Pyro4
-from excep import MyError
 
 test = Pyro4.core.Proxy("PYRONAME:example.exceptions")
 
@@ -27,13 +26,8 @@ except ValueError:
 try:
     result=test.othererr()
     print("%r, %s" % (result,result))
-except MyError:
-    print("MYERROR: %s" % sys.exc_info()[1])
-try:
-    result=test.othererr2()
-    print("%r, %s" % (result,result))
-except MyError:
-    print("MYERROR: %s" % sys.exc_info()[1])
+except Exception:
+    print("ANOTHER ERROR: %s" % sys.exc_info()[1])
 try:
     result=test.unserializable()
     print("%r, %s" % (result,result))

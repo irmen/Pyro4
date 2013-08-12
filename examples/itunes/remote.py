@@ -15,12 +15,6 @@ itunes.play()
 print("Current song:", itunes.currentsong())
 time.sleep(6)
 
-print("setting Playlist 'itunes DJ'...")
-itunes.playlist("itunes DJ")
-itunes.play()
-print("Current song:", itunes.currentsong())
-time.sleep(6)
-
 print("next song...")
 itunes.next()
 print("Current song:", itunes.currentsong())

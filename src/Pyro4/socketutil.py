@@ -104,7 +104,7 @@ def getIpAddress(hostname, workaround127=False, ipVersion=None):
 
 
 def getInterfaceAddress(ip_address):
-    """tries to find the ip address of the interface that connects to a given host"""
+    """tries to find the ip address of the interface that connects to the given host's address"""
     family = socket.AF_INET if getIpVersion(ip_address)==4 else socket.AF_INET6
     sock = socket.socket(family, socket.SOCK_DGRAM)
     sock.connect((ip_address, 53))   # 53=dns

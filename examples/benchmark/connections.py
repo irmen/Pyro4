@@ -43,3 +43,4 @@ for loop in range(ITERATIONS):
     p.ping()
 duration=time.time()-begin
 print("%d calls in %.3f sec = %.0f calls/sec" % (ITERATIONS, duration, ITERATIONS/duration))
+print("Serializer used:", Pyro4.config.SERIALIZER)

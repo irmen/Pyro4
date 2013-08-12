@@ -7,6 +7,8 @@ import random
 import Pyro4
 from workitem import Workitem
 
+Pyro4.config.SERIALIZER='pickle'   # we're using custom classes
+
 NUMBER_OF_ITEMS = 40
 
 
@@ -22,7 +24,7 @@ def main():
 def placework(dispatcher):
     print("placing work items into dispatcher queue.")
     for i in range(NUMBER_OF_ITEMS):
-        number=random.randint(3211, 5000)*random.randint(177,3000)*37
+        number = random.randint(3211, 4999999) * random.randint(3211, 999999)
         item = Workitem(i+1, number)
         dispatcher.putWork(item)
 

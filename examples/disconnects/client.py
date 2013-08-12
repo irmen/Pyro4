@@ -6,7 +6,8 @@ from Pyro4.core import MessageFactory
 if sys.version_info < (3, 0):
     input = raw_input
 
-print("Make sure you run this client on a different computer so you can disable the network connection (by yanking out the lan cable or whatever).")
+print("You can run this client on a different computer so you can disable the network connection (by yanking out the lan cable or whatever).")
+print("Alternatively, wait for a timeout on the server, which will then close its connection.")
 uri = input("Uri of server? ").strip()
 
 

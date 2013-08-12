@@ -13,7 +13,10 @@ the results and prints them to the screen once everything is complete.
 
 
 *** Starting up ***
-- start the Name Server
+- We're using a Name Server:
+    * configure it to use the pickle serializer, for instance by setting
+      the environment variable: PYRO_SERIALIZER=pickle
+    * start the name server.
 - start the dispatcher (dispatcher.py)
 - start one or more workers (worker.py). For best results, start one of
     these on every machine/CPU in your network :-)
@@ -23,3 +26,6 @@ the results and prints them to the screen once everything is complete.
 Note: The dispatcher is pretty braindead. It only has a single work and
 result queue. Running multiple clients will probably break the system.
 Improvements are left as an exercise.
+
+Note: because custom classes are passed over the network (such as
+WorkItem and queue.Empty) the pickle serializer is used.

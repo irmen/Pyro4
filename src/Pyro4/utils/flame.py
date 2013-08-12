@@ -1,6 +1,7 @@
 """
 Pyro FLAME:  Foreign Location Automatic Module Exposer.
 Easy but potentially very dangerous way of exposing remote modules and builtins.
+Flame requires the pickle serializer to be used.
 
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
@@ -181,6 +182,10 @@ class Flame(object):
     Usually created by using :py:meth:`Pyro4.core.Daemon.startFlame`.
     Be *very* cautious before starting this: it allows the clients full access to everything on your system.
     """
+    def __init__(self):
+        if Pyro4.config.SERIALIZER != "pickle":
+            raise RuntimeError("flame requires the pickle serializer")
+
     def module(self, name):
         """import a module on the server given by the module name and returns a proxy to it"""
         if importlib:

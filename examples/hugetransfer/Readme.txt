@@ -16,3 +16,14 @@ A couple of problems could be exposed by this test:
   Windows causes memory errors when the receive buffer is too large.
   Pyro's receive loop works with comfortable smaller data chunks,
   to avoid these kind of problems.
+
+
+Performance numbers with the various serializers on my local network:
+
+serializer | performance (string) | performance (bytes)
+-----------+---------------------------------------------
+   pickle  |     33260 kb/sec     |   33450 kb/sec
+  marshal  |     27900 kb/sec     |   32300 kb/sec
+     json  |     23856 kb/sec     |   not supported
+  serpent  |     13358 kb/sec     |    9066 kb/sec
+

@@ -61,7 +61,7 @@ print('total time %.3f seconds' % duration)
 amount=len(funcs)*iters
 print('total method calls: %d' % (amount))
 avg_pyro_msec = 1000.0*duration/amount
-print('avg. time per method call: %.3f msec (%d/sec)' % (avg_pyro_msec,amount/duration))
+print('avg. time per method call: %.3f msec (%d/sec) (serializer: %s)' % (avg_pyro_msec,amount/duration, Pyro4.config.SERIALIZER))
 
 print('-------- BENCHMARK LOCAL OBJECT ---------')
 object=bench.bench()

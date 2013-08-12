@@ -36,6 +36,8 @@ def main(args, returnWithoutLooping=False):
     if not options.quiet and Pyro4.config.HMAC_KEY:
         print("HMAC_KEY set to: %s" % Pyro4.config.HMAC_KEY)
 
+    Pyro4.config.SERIALIZER = "pickle"   # flame requires pickle serializer
+
     daemon = Pyro4.core.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
     uri = Pyro4.utils.flame.start(daemon)
     if not options.quiet:

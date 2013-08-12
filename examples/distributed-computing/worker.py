@@ -11,6 +11,8 @@ from workitem import Workitem
 if sys.version_info<(3,0):
     range=xrange
 
+Pyro4.config.SERIALIZER='pickle'   # we're using custom classes
+
 WORKERNAME = "Worker_%d@%s" % (os.getpid(), socket.gethostname())
 
 def factorize(n):
