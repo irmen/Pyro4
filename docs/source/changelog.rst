@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.22**
+
+- ...
+
+
 **Pyro 4.21**
 
 - fixed denial of service vulnerabilities in socket servers
