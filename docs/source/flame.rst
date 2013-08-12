@@ -32,9 +32,17 @@ function with your daemon that you want to enable flame on::
     import Pyro4.utils.flame
     Pyro4.utils.flame.start(daemon)
 
-Additionally, you have to set the ``FLAME_ENABLED`` config item to True, otherwise you'll
+Additionally, you have to make two configuration changes:
+
+* set the ``FLAME_ENABLED`` config item to True
+* set the ``SERIALIZER`` config item to "pickle"
+
+You'll have to explicitly enable Flame. When you don't, you'll
 get an error when trying to start Flame. The config item is False by default
 to avoid unintentionally running Flame servers.
+Also, Flame requires the pickle serializer. It doesn't work when using one of
+the secure serializers, because it needs to be able to transfer custom python objects.
+
 
 Command line server
 ===================
@@ -61,6 +69,9 @@ or by using the convenience function :py:func:`Pyro4.utils.flame.connect`.
 A little example follows. You have to have running flame server, and then you can write a client like this::
 
     import Pyro4.utils.flame
+
+    Pyro4.config.SERIALIZER = "pickle"    # flame requires pickle serializer
+
     flame = Pyro4.utils.flame.connect("hostname:9999")    # or whatever the server runs at
 
     socketmodule = flame.module("socket")

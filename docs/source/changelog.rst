@@ -8,11 +8,13 @@ Change Log
 - MSG_PING message type added (internal server ping mechanism)
 - disconnects example added that uses MSG_PING
 - more exception types recognised in the serializers (such as GeneratorExit)
+- fixed async regression when dealing with errors (properly serialize exceptionwrapper)
 - fixed warehouse and stockmarket tutorials to work with new serializer logic
+- fixed examples that didn't yet work with new serializer logic
 - fixed unit tests to use unittest2 on Python 2.6
 - no longer supports jython 2.5. You'll have to upgrade to jython 2.7.
 - got rid of some byte/str handling cruft (because we no longer need to deal with jython 2.5)
-- implemented autoproxy support for serpent and json serializers. It is not possible to do this for marshal as well.
+- implemented autoproxy support for serpent and json serializers. It is not possible to do this for marshal.
 - fixed serpent serialization problem with backslash escapes in unicode strings (requires serpent >= 1.3)
 
 
