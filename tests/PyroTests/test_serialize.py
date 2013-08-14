@@ -172,7 +172,7 @@ class SerializeTests_pickle(unittest.TestCase):
         s, c = self.ser.serializeData(wrapper)
         x = self.ser.deserializeData(s, c)
         self.assertIsInstance(x, Pyro4.futures._ExceptionWrapper)
-        self.assertEquals("divided by zero", str(x.exception))
+        self.assertEqual("divided by zero", str(x.exception))
 
     def testAutoProxy(self):
         if self.SERIALIZER=="marshal":
@@ -264,12 +264,12 @@ class SerializeTests_pickle(unittest.TestCase):
         d, c = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(d, c)
         self.assertTrue(isinstance(e2, ZeroDivisionError))
-        self.assertEqual("('hello', 42)", str(e2))
+        self.assertTrue(str(e2) in ("('hello', 42)", "(u'hello', 42)"))
         e.custom_attribute = 999
         ser, compressed = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(ser, compressed)
         self.assertTrue(isinstance(e2, ZeroDivisionError))
-        self.assertEqual("('hello', 42)", str(e2))
+        self.assertTrue(str(e2) in ("('hello', 42)", "(u'hello', 42)"))
         self.assertEqual(999, e2.custom_attribute)
 
     def testSerializeSpecialException(self):
