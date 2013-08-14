@@ -260,11 +260,16 @@ class SerializeTests_pickle(unittest.TestCase):
         e2 = self.ser.deserializeData(d, c)
         self.assertTrue(isinstance(e2, ZeroDivisionError))
         self.assertEqual("hello", str(e2))
+        e = ZeroDivisionError("hello", 42)
+        d, c = self.ser.serializeData(e)
+        e2 = self.ser.deserializeData(d, c)
+        self.assertTrue(isinstance(e2, ZeroDivisionError))
+        self.assertEqual("('hello', 42)", str(e2))
         e.custom_attribute = 999
         ser, compressed = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(ser, compressed)
         self.assertTrue(isinstance(e2, ZeroDivisionError))
-        self.assertEqual("hello", str(e2))
+        self.assertEqual("('hello', 42)", str(e2))
         self.assertEqual(999, e2.custom_attribute)
 
     def testSerializeSpecialException(self):
