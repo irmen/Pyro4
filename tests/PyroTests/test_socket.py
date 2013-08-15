@@ -304,7 +304,9 @@ class ServerCallback(object):
     def _handshake(self, connection):
         if not isinstance(connection, SU.SocketConnection):
             raise TypeError("handshake expected SocketConnection parameter")
-        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTOK, b"ok", 0, 1)
+        serializer = Pyro4.util.get_serializer("marshal")
+        data = serializer.dumps("ok")
+        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTOK, data, serializer.serializer_id, 0, 1)
         msg.send(connection)
         return True
     def handleRequest(self, connection):
@@ -312,7 +314,7 @@ class ServerCallback(object):
             raise TypeError("handleRequest expected SocketConnection parameter")
         msg = Pyro4.message.Message.recv(connection, [Pyro4.message.MSG_PING])
         if msg.type == Pyro4.message.MSG_PING:
-            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"", 0, 0)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"", msg.serializer_id, 0, msg.seq)
             msg.send(connection)
         else:
             print("unhandled message type", msg.type)
@@ -452,7 +454,7 @@ class TestServerDOS_select(unittest.TestCase):
             # invoke something, but screw up the message (in this case, mess with the protocol version)
             orig_protocol_version = Pyro4.constants.PROTOCOL_VERSION
             Pyro4.constants.PROTOCOL_VERSION = 9999
-            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"", 0, 0).to_bytes()
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"", 42, 0, 0).to_bytes()
             Pyro4.constants.PROTOCOL_VERSION = orig_protocol_version
             conn.send(msg) # this should cause an error in the server because of invalid msg
             try:
@@ -466,7 +468,7 @@ class TestServerDOS_select(unittest.TestCase):
             # invoke something again, this should still work (server must still be running)
             conn.close()
             conn = connect(host, port)
-            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"abc", 0, 999)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"abc", 42, 0, 999)
             msg.send(conn)
             msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_PING])
             self.assertEqual(Pyro4.message.MSG_PING, msg.type)

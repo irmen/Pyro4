@@ -57,7 +57,9 @@ class DaemonLoopThread(threadutil.Thread):
 class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
     def _handshake(self, conn):
         # a bit of a hack, overriding this internal method to return a CONNECTFAIL...
-        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTFAIL, b"rigged connection failure", 0, 1)
+        serializer = Pyro4.util.get_serializer("marshal")
+        data = serializer.dumps("rigged connection failure")
+        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTFAIL, data, serializer.serializer_id, 0, 1)
         msg.send(conn)
         return False
     
@@ -114,7 +116,7 @@ class ServerTestsOnce(unittest.TestCase):
         with Pyro4.core.Proxy(self.objectUri) as p:
             p._pyroBind()
             conn = p._pyroConnection
-            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"abc", 0, 999)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"abc", 42, 0, 999)
             msg.send(conn)
             msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_PING])
             self.assertEqual(Pyro4.message.MSG_PING, msg.type)
@@ -552,7 +554,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         self.assertTrue(proxy2._pyroConnection is None)
         self.assertFalse(proxy._pyroConnection is None)
         self.assertEqual(proxy2._pyroUri, proxy._pyroUri)
-        self.assertEqual(proxy2._pyroSerializer, proxy._pyroSerializer)
         proxy2._pyroBind()
         self.assertFalse(proxy2._pyroConnection is None)
         self.assertFalse(proxy2._pyroConnection is proxy._pyroConnection)
@@ -569,7 +570,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         self.assertFalse(proxy._pyroConnection is None)
         self.assertEqual(proxy3._pyroUri, proxy._pyroUri)
         self.assertFalse(proxy3._pyroUri is proxy._pyroUri)
-        self.assertEqual(proxy3._pyroSerializer, proxy._pyroSerializer)        
         proxy._pyroRelease()
         proxy2._pyroRelease()
         proxy3._pyroRelease()

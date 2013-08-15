@@ -11,6 +11,7 @@ import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
 import Pyro4.futures
+import Pyro4.message
 from testsupport import *
 
 
@@ -113,7 +114,6 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertTrue(proxy._pyroConnection is None)
         self.assertTrue(proxy2._pyroConnection is None)
         self.assertEqual(proxy2._pyroUri, proxy._pyroUri)
-        self.assertEqual(proxy2._pyroSerializer, proxy._pyroSerializer)
         self.assertEqual(42, proxy2._pyroTimeout)
 
     def testNested(self):
@@ -328,6 +328,11 @@ class GenericTests(unittest.TestCase):
                 pass
         finally:
             Pyro4.config.SERIALIZER=previous_serializer
+
+    def testSerializersAvailableById(self):
+        Pyro4.util.get_serializer(sid=Pyro4.message.SERIALIZER_PICKLE)
+        Pyro4.util.get_serializer(sid=Pyro4.message.SERIALIZER_MARSHAL)
+        self.assertRaises(Pyro4.errors.ProtocolError, lambda: Pyro4.util.get_serializer(sid=9999999))
 
     def testDictClassFail(self):
         o = pprint.PrettyPrinter(stream="dummy", width=42)

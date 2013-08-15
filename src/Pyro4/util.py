@@ -12,6 +12,7 @@ except ImportError:
     import copy_reg as copyreg
 import Pyro4
 import Pyro4.errors
+import Pyro4.message
 
 log=logging.getLogger("Pyro4.util")
 
@@ -332,6 +333,8 @@ class PickleSerializer(SerializerBase):
     A (de)serializer that wraps the Pickle serialization protocol.
     It can optionally compress the serialized data, and is thread safe.
     """
+    serializer_id = Pyro4.message.SERIALIZER_PICKLE
+
     def dumpsCall(self, obj, method, vargs, kwargs):
         return pickle.dumps((obj, method, vargs, kwargs), pickle.HIGHEST_PROTOCOL)
 
@@ -348,7 +351,6 @@ class PickleSerializer(SerializerBase):
     def register_type_replacement(cls, object_type, replacement_function):
         def copyreg_function(obj):
             return replacement_function(obj).__reduce__()
-
         try:
             copyreg.pickle(object_type, copyreg_function)
         except TypeError:
@@ -357,6 +359,8 @@ class PickleSerializer(SerializerBase):
 
 class MarshalSerializer(SerializerBase):
     """(de)serializer that wraps the marshal serialization protocol."""
+    serializer_id = Pyro4.message.SERIALIZER_MARSHAL
+
     def dumpsCall(self, obj, method, vargs, kwargs):
         return marshal.dumps((obj, method, vargs, kwargs))
 
@@ -382,6 +386,8 @@ class MarshalSerializer(SerializerBase):
 
 class SerpentSerializer(SerializerBase):
     """(de)serializer that wraps the serpent serialization protocol."""
+    serializer_id = Pyro4.message.SERIALIZER_SERPENT
+
     def dumpsCall(self, obj, method, vargs, kwargs):
         return serpent.dumps((obj, method, vargs, kwargs))
 
@@ -410,6 +416,8 @@ class SerpentSerializer(SerializerBase):
 
 class JsonSerializer(SerializerBase):
     """(de)serializer that wraps the json serialization protocol."""
+    serializer_id = Pyro4.message.SERIALIZER_JSON
+
     __type_replacements = {}
     def dumpsCall(self, obj, method, vargs, kwargs):
         data = {"object": obj, "method": method, "params": vargs, "kwargs": kwargs}
@@ -439,33 +447,47 @@ class JsonSerializer(SerializerBase):
 
 """The various serializers that are supported"""
 _serializers = {}
-def get_serializer():
+_serializers_by_id = {}
+def get_serializer(name=None, sid=None):
+    if sid:
+        try:
+            return _serializers_by_id[sid]
+        except KeyError:
+            raise Pyro4.errors.ProtocolError("no serializer available for id %d" % sid)
     try:
-        return _serializers[Pyro4.config.SERIALIZER]
+        return _serializers[name or Pyro4.config.SERIALIZER]
     except KeyError:
-        raise Pyro4.errors.ProtocolError("configured serializer '%s' is unknown or not available" % Pyro4.config.SERIALIZER)
+        raise Pyro4.errors.ProtocolError("serializer '%s' is unknown or not available" % Pyro4.config.SERIALIZER)
 
 # determine the serializers that are supported
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
-if pickle.HIGHEST_PROTOCOL<2:
-    raise RuntimeError("pickle serializer needs to support protocol 2 or higher")
-_serializers["pickle"] = PickleSerializer()
+assert pickle.HIGHEST_PROTOCOL>=2, "pickle needs to support protocol 2 or higher"
+_ser = PickleSerializer()
+_serializers["pickle"] = _ser
+_serializers_by_id[_ser.serializer_id] = _ser
 import marshal
-_serializers["marshal"] = MarshalSerializer()
+_ser = MarshalSerializer()
+_serializers["marshal"] = _ser
+_serializers_by_id[_ser.serializer_id] = _ser
 try:
     import json
-    _serializers["json"] = JsonSerializer()
+    _ser = JsonSerializer()
+    _serializers["json"] = _ser
+    _serializers_by_id[_ser.serializer_id] = _ser
 except ImportError:
     pass
 try:
     import serpent
-    _serializers["serpent"] = SerpentSerializer()
+    _ser = SerpentSerializer()
+    _serializers["serpent"] = _ser
+    _serializers_by_id[_ser.serializer_id] = _ser
 except ImportError:
     #warnings.warn("serpent serializer not available", RuntimeWarning)
     pass
+del _ser
 
 
 def resolveDottedAttribute(obj, attr, allowDotted):

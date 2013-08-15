@@ -17,4 +17,4 @@ NAMESERVER_NAME = "Pyro.NameServer"
 FLAME_NAME = "Pyro.Flame"
 
 # wire protocol version
-PROTOCOL_VERSION = 45
+PROTOCOL_VERSION = 46

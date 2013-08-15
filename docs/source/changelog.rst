@@ -7,6 +7,8 @@ Change Log
 - refactored core.MessageFactory: new submodule Pyro4.message. If you used MessageFactory
   in your own code you'll need to refactor it to use the new Pyro4.message.Message API instead.
 - ``disconnects`` example client code updated to reflect this API change
+- wire protocol now contains serializer used for the data payload
+- wire protocol version bumped because of this (46)
 
 
 **Pyro 4.21**

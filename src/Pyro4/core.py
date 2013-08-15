@@ -191,7 +191,6 @@ class Proxy(object):
         self._pyroConnection=None
         self._pyroOneway=set()
         self._pyroSeq=0    # message sequence number
-        self._pyroSerializer = util.get_serializer()
         self.__pyroTimeout=Pyro4.config.COMMTIMEOUT
         self.__pyroLock=threadutil.Lock()
         self.__pyroConnLock=threadutil.Lock()
@@ -224,7 +223,6 @@ class Proxy(object):
         self._pyroUri, self._pyroOneway, self.__pyroTimeout = state
         self._pyroConnection=None
         self._pyroSeq=0
-        self._pyroSerializer = util.get_serializer()
         self.__pyroLock=threadutil.Lock()
         self.__pyroConnLock=threadutil.Lock()
 
@@ -281,7 +279,8 @@ class Proxy(object):
         if self._pyroConnection is None:
             # rebind here, don't do it from inside the invoke because deadlock will occur
             self.__pyroCreateConnection()
-        data, compressed=self._pyroSerializer.serializeCall(
+        serializer = util.get_serializer()
+        data, compressed = serializer.serializeCall(
             self._pyroConnection.objectId, methodname, vargs, kwargs,
             compress=Pyro4.config.COMPRESSION)
         if compressed:
@@ -292,7 +291,7 @@ class Proxy(object):
             self._pyroSeq=(self._pyroSeq+1)&0xffff
             if Pyro4.config.LOGWIRE:
                 log.debug("proxy wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (Pyro4.message.MSG_INVOKE, flags, self._pyroSeq, data))
-            msg = Message(Pyro4.message.MSG_INVOKE, data, flags, self._pyroSeq)
+            msg = Message(Pyro4.message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq)
             try:
                 msg.send(self._pyroConnection)
                 del msg  # invite GC to collect the object, don't wait for out-of-scope
@@ -303,7 +302,7 @@ class Proxy(object):
                     if Pyro4.config.LOGWIRE:
                         log.debug("proxy wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msg.type, msg.flags, msg.seq, msg.data) )
                     self.__pyroCheckSequence(msg.seq)
-                    data = self._pyroSerializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
+                    data = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
                     if msg.flags & Pyro4.message.FLAGS_EXCEPTION:
                         if sys.platform=="cli":
                             util.fixIronPythonExceptionForPickle(data, False)
@@ -581,7 +580,6 @@ class Daemon(object):
         self.natLocationStr = "%s:%d" % (nathost, natport_for_loc) if nathost else None
         if self.natLocationStr:
             log.debug("NAT address is %s", self.natLocationStr)
-        self.serializer=util.get_serializer()
         pyroObject=DaemonObject(self)
         pyroObject._pyroId=constants.DAEMON_NAME
         #: Dictionary from Pyro object id to the actual Pyro object registered by this id
@@ -663,7 +661,10 @@ class Daemon(object):
         # We need a minimal amount of data or the socket will remain blocked
         # on some systems... (messages smaller than 40 bytes)
         # Return True for successful handshake, False if something was wrong.
-        msg = Message(Pyro4.message.MSG_CONNECTOK, b"ok", 0, 1)
+        # We default to the marshal serializer to send message payload.
+        serializer = util.get_serializer("marshal")
+        data = serializer.dumps("ok")
+        msg = Message(Pyro4.message.MSG_CONNECTOK, data, serializer.serializer_id, 0, 1)
         msg.send(conn)
         return True
 
@@ -683,12 +684,13 @@ class Daemon(object):
             request_seq = msg.seq
             if Pyro4.config.LOGWIRE:
                 log.debug("daemon wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msg.type, msg.flags, msg.seq, msg.data) )
+            serializer = util.get_serializer()
             if msg.type == Pyro4.message.MSG_PING:
                 # return same seq, but ignore any data (it's a ping, not an echo)
-                msg = Message(Pyro4.message.MSG_PING, b"", 0, request_seq)
+                msg = Message(Pyro4.message.MSG_PING, b"", serializer.serializer_id, 0, request_seq)
                 msg.send(conn)
                 return
-            objId, method, vargs, kwargs = self.serializer.deserializeCall(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
+            objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
             del msg  # invite GC to collect the object, don't wait for out-of-scope
             obj = self.objectsById.get(objId)
             if obj is not None:
@@ -730,7 +732,8 @@ class Daemon(object):
             if request_flags & Pyro4.message.FLAGS_ONEWAY:
                 return   # oneway call, don't send a response
             else:
-                data, compressed=self.serializer.serializeData(data, compress=Pyro4.config.COMPRESSION)
+                serializer = util.get_serializer()
+                data, compressed = serializer.serializeData(data, compress=Pyro4.config.COMPRESSION)
                 response_flags=0
                 if compressed:
                     response_flags |= Pyro4.message.FLAGS_COMPRESSED
@@ -738,7 +741,7 @@ class Daemon(object):
                     response_flags |= Pyro4.message.FLAGS_BATCH
                 if Pyro4.config.LOGWIRE:
                     log.debug("daemon wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (Pyro4.message.MSG_RESULT, response_flags, request_seq, data))
-                msg = Message(Pyro4.message.MSG_RESULT, data, response_flags, request_seq)
+                msg = Message(Pyro4.message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq)
                 msg.send(conn)
         except Exception:
             xt, xv = sys.exc_info()[0:2]
@@ -756,8 +759,9 @@ class Daemon(object):
         exc_value._pyroTraceback=tbinfo
         if sys.platform=="cli":
             util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
+        serializer = util.get_serializer()
         try:
-            data, compressed =self.serializer.serializeData(exc_value)
+            data, compressed = serializer.serializeData(exc_value)
         except:
             # the exception object couldn't be serialized, use a generic PyroError instead
             xt, xv, tb = sys.exc_info()
@@ -766,11 +770,11 @@ class Daemon(object):
             exc_value._pyroTraceback=tbinfo
             if sys.platform=="cli":
                 util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
-            data, compressed =self.serializer.serializeData(exc_value)
+            data, compressed = serializer.serializeData(exc_value)
         flags = Pyro4.message.FLAGS_EXCEPTION
         if compressed:
             flags |= Pyro4.message.FLAGS_COMPRESSED
-        msg = Message(Pyro4.message.MSG_RESULT, data, flags, seq)
+        msg = Message(Pyro4.message.MSG_RESULT, data, serializer.serializer_id, flags, seq)
         msg.send(connection)
 
     def register(self, obj, objectId=None):
@@ -793,7 +797,9 @@ class Daemon(object):
         obj._pyroDaemon=self
         if Pyro4.config.AUTOPROXY:
             # register a custom serializer for the type to automatically return proxies
-            self.serializer.register_type_replacement(type(obj), pyroObjectToAutoProxy)
+            # we need to do this for all known serializers
+            for ser in util._serializers.values():
+                ser.register_type_replacement(type(obj), pyroObjectToAutoProxy)
         # register the object in the mapping
         self.objectsById[obj._pyroId]=obj
         return self.uriFor(objectId)

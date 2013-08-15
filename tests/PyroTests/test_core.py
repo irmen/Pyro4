@@ -290,8 +290,6 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(p1._pyroConnection is None)
         self.assertEqual(p3._pyroUri, p1._pyroUri)
         self.assertFalse(p3._pyroUri is p1._pyroUri)
-        self.assertEqual(p3._pyroSerializer, p1._pyroSerializer)
-        self.assertTrue(p3._pyroSerializer is p1._pyroSerializer)
 
     def testProxyRepr(self):
         p=Pyro4.core.Proxy("PYRO:9999@localhost:15555")

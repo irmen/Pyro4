@@ -2,6 +2,9 @@ from __future__ import print_function
 import sys
 import Pyro4
 import Pyro4.message
+import warnings
+
+warnings.filterwarnings("ignore")
 
 if sys.version_info < (3, 0):
     input = raw_input
@@ -29,7 +32,7 @@ class AutoReconnectingProxy(Pyro4.core.Proxy):
                 print("  <proxy: ping>")
                 # send the special 'ping' message to the daemon, to see if this connection is still alive
                 # we expect a 'ping' response (no-op)
-                ping = Pyro4.message.Message(Pyro4.message.MSG_PING, b"", 0, 0)
+                ping = Pyro4.message.Message(Pyro4.message.MSG_PING, b"", 42, 0, 0)
                 ping.send(self._pyroConnection)
                 Pyro4.message.Message.recv(self._pyroConnection, [Pyro4.message.MSG_PING])
                 print("  <proxy: ping reply (still connected)>")

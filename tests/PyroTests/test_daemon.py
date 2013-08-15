@@ -277,6 +277,24 @@ class DaemonTests(unittest.TestCase):
             duration=time.time()-start
             self.assertAlmostEqual(0.0, duration, places=1)
 
+    def testHandshake(self):
+        class ConnectionMock(object):
+            def __init__(self):
+                self.received = b""
+            def send(self, data):
+                self.received += data
+            def recv(self, datasize, required_types=[]):
+                chunk = self.received[:datasize]
+                self.received = self.received[datasize:]
+                return chunk
+        conn = ConnectionMock()
+        with Pyro4.core.Daemon(port=0) as d:
+            success = d._handshake(conn)
+            self.assertTrue(success)
+            msg = Pyro4.message.Message.recv(conn)
+            self.assertEqual(Pyro4.message.MSG_CONNECTOK, msg.type)
+            self.assertEqual(1, msg.seq)
+
     def testNAT(self):
         with Pyro4.core.Daemon() as d:
             self.assertTrue(d.natLocationStr is None)
