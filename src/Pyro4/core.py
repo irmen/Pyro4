@@ -363,6 +363,7 @@ class Proxy(object):
                     if msg.type==Pyro4.message.MSG_CONNECTFAIL:
                         error="connection rejected"
                         if msg.data:
+                            data = msg.data
                             if sys.version_info>=(3, 0):
                                 data=str(msg.data, "utf-8")
                             error+=", reason: " + data
