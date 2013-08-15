@@ -8,6 +8,7 @@ from __future__ import with_statement
 import Pyro4.core
 import Pyro4.errors
 import Pyro4.util
+import Pyro4.message
 import time, os, sys, platform
 from Pyro4 import threadutil
 from testsupport import *
@@ -56,8 +57,8 @@ class DaemonLoopThread(threadutil.Thread):
 class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
     def _handshake(self, conn):
         # a bit of a hack, overriding this internal method to return a CONNECTFAIL...
-        msg=Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_CONNECTFAIL, b"rigged connection failure", 0, 1)
-        conn.send(msg)
+        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTFAIL, b"rigged connection failure", 0, 1)
+        msg.send(conn)
         return False
     
 class ServerTestsBrokenHandshake(unittest.TestCase):
@@ -112,12 +113,12 @@ class ServerTestsOnce(unittest.TestCase):
         with Pyro4.core.Proxy(self.objectUri) as p:
             p._pyroBind()
             conn = p._pyroConnection
-            data = Pyro4.core.MessageFactory.createMessage(Pyro4.core.MessageFactory.MSG_PING, b"abc", 0, 999)
-            conn.send(data)
-            msgType, flags, seq, data = Pyro4.core.MessageFactory.getMessage(conn, [Pyro4.core.MessageFactory.MSG_PING])
-            self.assertEqual(Pyro4.core.MessageFactory.MSG_PING, msgType)
-            self.assertEqual(999, seq)
-            self.assertEqual(b"", data)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"abc", 0, 999)
+            msg.send(conn)
+            msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_PING])
+            self.assertEqual(Pyro4.message.MSG_PING, msg.type)
+            self.assertEqual(999, msg.seq)
+            self.assertEqual(b"", msg.data)
 
     def testNoDottedNames(self):
         Pyro4.config.DOTTEDNAMES=False

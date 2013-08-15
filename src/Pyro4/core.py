@@ -5,13 +5,13 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import re, struct, sys, time, os
+import re, sys, time, os
 import logging, uuid
-import hashlib, hmac
 from Pyro4 import constants, threadutil, util, socketutil, errors
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
 from Pyro4 import futures
+from Pyro4.message import Message
 import Pyro4
 
 __all__ = ["URI", "Proxy", "Daemon", "callback", "batch", "async"]
@@ -285,26 +285,26 @@ class Proxy(object):
             self._pyroConnection.objectId, methodname, vargs, kwargs,
             compress=Pyro4.config.COMPRESSION)
         if compressed:
-            flags |= MessageFactory.FLAGS_COMPRESSED
+            flags |= Pyro4.message.FLAGS_COMPRESSED
         if methodname in self._pyroOneway:
-            flags |= MessageFactory.FLAGS_ONEWAY
+            flags |= Pyro4.message.FLAGS_ONEWAY
         with self.__pyroLock:
             self._pyroSeq=(self._pyroSeq+1)&0xffff
             if Pyro4.config.LOGWIRE:
-                log.debug("proxy wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (MessageFactory.MSG_INVOKE, flags, self._pyroSeq, data))
-            data=MessageFactory.createMessage(MessageFactory.MSG_INVOKE, data, flags, self._pyroSeq)
+                log.debug("proxy wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (Pyro4.message.MSG_INVOKE, flags, self._pyroSeq, data))
+            msg = Message(Pyro4.message.MSG_INVOKE, data, flags, self._pyroSeq)
             try:
-                self._pyroConnection.send(data)
-                del data  # invite GC to collect the object, don't wait for out-of-scope
-                if flags & MessageFactory.FLAGS_ONEWAY:
+                msg.send(self._pyroConnection)
+                del msg  # invite GC to collect the object, don't wait for out-of-scope
+                if flags & Pyro4.message.FLAGS_ONEWAY:
                     return None    # oneway call, no response data
                 else:
-                    msgType, flags, seq, data = MessageFactory.getMessage(self._pyroConnection, [MessageFactory.MSG_RESULT])
+                    msg = Message.recv(self._pyroConnection, [Pyro4.message.MSG_RESULT])
                     if Pyro4.config.LOGWIRE:
-                        log.debug("proxy wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msgType, flags, seq, data) )
-                    self.__pyroCheckSequence(seq)
-                    data=self._pyroSerializer.deserializeData(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
-                    if flags & MessageFactory.FLAGS_EXCEPTION:
+                        log.debug("proxy wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msg.type, msg.flags, msg.seq, msg.data) )
+                    self.__pyroCheckSequence(msg.seq)
+                    data = self._pyroSerializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
+                    if msg.flags & Pyro4.message.FLAGS_EXCEPTION:
                         if sys.platform=="cli":
                             util.fixIronPythonExceptionForPickle(data, False)
                         raise data
@@ -347,7 +347,7 @@ class Proxy(object):
                     sock=socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout)
                     conn=socketutil.SocketConnection(sock, uri.object)
                     # Do handshake. For now, no need to send anything. (message type CONNECT is not yet used)
-                    msgType, flags, seq, data = MessageFactory.getMessage(conn, None)
+                    msg = Message.recv(conn, None)
                     # any trailing data (dataLen>0) is an error message, if any
                 except Exception:
                     x=sys.exc_info()[1]
@@ -360,16 +360,16 @@ class Proxy(object):
                     else:
                         raise errors.CommunicationError(err)
                 else:
-                    if msgType==MessageFactory.MSG_CONNECTFAIL:
+                    if msg.type==Pyro4.message.MSG_CONNECTFAIL:
                         error="connection rejected"
-                        if data:
+                        if msg.data:
                             if sys.version_info>=(3, 0):
-                                data=str(data, "utf-8")
+                                data=str(msg.data, "utf-8")
                             error+=", reason: " + data
                         conn.close()
                         log.error(error)
                         raise errors.CommunicationError(error)
-                    elif msgType==MessageFactory.MSG_CONNECTOK:
+                    elif msg.type==Pyro4.message.MSG_CONNECTOK:
                         self._pyroConnection=conn
                         if replaceUri:
                             log.debug("replacing uri with bound one")
@@ -378,7 +378,7 @@ class Proxy(object):
                         return True
                     else:
                         conn.close()
-                        err="connect: invalid msg type %d received" % msgType
+                        err="connect: invalid msg type %d received" % msg.type
                         log.error(err)
                         raise errors.ProtocolError(err)
 
@@ -406,9 +406,9 @@ class Proxy(object):
         return _AsyncProxyAdapter(self)
 
     def _pyroInvokeBatch(self, calls, oneway=False):
-        flags=MessageFactory.FLAGS_BATCH
+        flags=Pyro4.message.FLAGS_BATCH
         if oneway:
-            flags|=MessageFactory.FLAGS_ONEWAY
+            flags|=Pyro4.message.FLAGS_ONEWAY
         return self._pyroInvoke("<batch>", calls, None, flags)
 
 
@@ -516,86 +516,6 @@ def batch(proxy):
 def async(proxy):
     """convenience method to get an async proxy adapter"""
     return proxy._pyroAsync()
-
-
-class MessageFactory(object):
-    """internal helper class to construct Pyro protocol messages"""
-    headerFmt = '!4sHHHHiH20s'    # header (id, version, msgtype, flags, sequencenumber, dataLen, checksum, hmac)
-    # note: the sequencenumber is used to check if response messages correspond to the
-    # actual request message. This prevents the situation where Pyro would perhaps return
-    # the response data from another remote call (which would not result in an error otherwise!)
-    # This could happen for instance if the socket data stream gets out of sync, perhaps due To
-    # some form of signal that interrupts I/O.
-    # The header checksum is a simple sum of the header fields to make reasonably sure
-    # that we are dealing with an actual correct PYRO protocol header and not some random
-    # data that happens to start with the 'PYRO' protocol identifier.
-    HEADERSIZE=struct.calcsize(headerFmt)
-    MSG_CONNECT = 1
-    MSG_CONNECTOK = 2
-    MSG_CONNECTFAIL = 3
-    MSG_INVOKE = 4
-    MSG_RESULT = 5
-    MSG_PING = 6
-    FLAGS_EXCEPTION = 1<<0
-    FLAGS_COMPRESSED = 1<<1
-    FLAGS_ONEWAY = 1<<2
-    FLAGS_HMAC = 1<<3
-    FLAGS_BATCH = 1<<4
-    MAGIC = 0x34E9
-    pyro_tag = b"PYRO"
-    empty_hmac = b"\0"*hashlib.sha1().digest_size
-
-    @classmethod
-    def createMessage(cls, msgType, databytes, flags, seq):
-        """creates a message containing a header followed by the given databytes"""
-        databytes=databytes or b""
-        if 0 < Pyro4.config.MAX_MESSAGE_SIZE < len(databytes):
-            raise errors.ProtocolError("max message size exceeded (%d where max=%d)" % (len(databytes), Pyro4.config.MAX_MESSAGE_SIZE))
-        if Pyro4.config.HMAC_KEY:
-            flags|=MessageFactory.FLAGS_HMAC
-            bodyhmac=hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest()
-        else:
-            bodyhmac=MessageFactory.empty_hmac
-        headerchecksum=(msgType+constants.PROTOCOL_VERSION+len(databytes)+flags+seq+MessageFactory.MAGIC)&0xffff
-        msg=struct.pack(cls.headerFmt, cls.pyro_tag, constants.PROTOCOL_VERSION, msgType, flags, seq, len(databytes), headerchecksum, bodyhmac)
-        return msg+databytes
-
-    @classmethod
-    def parseMessageHeader(cls, headerData):
-        """Parses a message header. Returns a tuple of messagetype, messageflags, sequencenumber, datalength, datahmac."""
-        if not headerData or len(headerData)!=cls.HEADERSIZE:
-            raise errors.ProtocolError("header data size mismatch")
-        tag, ver, msgType, flags, seq, dataLen, headerchecksum, datahmac = struct.unpack(cls.headerFmt, headerData)
-        if tag!=cls.pyro_tag or ver!=constants.PROTOCOL_VERSION:
-            raise errors.ProtocolError("invalid data or unsupported protocol version")
-        if headerchecksum!=(msgType+ver+dataLen+flags+seq+MessageFactory.MAGIC)&0xffff:
-            raise errors.ProtocolError("header checksum mismatch")
-        return msgType, flags, seq, dataLen, datahmac
-
-    @classmethod
-    def getMessage(cls, connection, requiredMsgTypes):
-        headerdata = connection.recv(cls.HEADERSIZE)
-        msgType, flags, seq, datalen, datahmac = cls.parseMessageHeader(headerdata)
-        if 0 < Pyro4.config.MAX_MESSAGE_SIZE < datalen:
-            errorMsg = "max message size exceeded (%d where max=%d)" % (datalen, Pyro4.config.MAX_MESSAGE_SIZE)
-            log.error("connection "+str(connection)+": "+errorMsg)
-            connection.close()   # close the socket because at this point we can't return the correct sequence number for returning an error message
-            raise errors.ProtocolError(errorMsg)
-        if requiredMsgTypes and msgType not in requiredMsgTypes:
-            err = "invalid msg type %d received" % msgType
-            log.error(err)
-            raise errors.ProtocolError(err)
-        databytes=connection.recv(datalen)
-        local_hmac_set=Pyro4.config.HMAC_KEY is not None and len(Pyro4.config.HMAC_KEY) > 0
-        if flags&MessageFactory.FLAGS_HMAC and local_hmac_set:
-            if datahmac != hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest():
-                raise errors.SecurityError("message hmac mismatch")
-        elif flags&MessageFactory.FLAGS_HMAC != local_hmac_set:
-            # Message contains hmac and local HMAC_KEY not set, or vice versa. This is not allowed.
-            err="hmac key config not symmetric"
-            log.warning(err)
-            raise errors.SecurityError(err)
-        return msgType, flags, seq, databytes
 
 
 def pyroObjectToAutoProxy(self):
@@ -742,8 +662,8 @@ class Daemon(object):
         # We need a minimal amount of data or the socket will remain blocked
         # on some systems... (messages smaller than 40 bytes)
         # Return True for successful handshake, False if something was wrong.
-        msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK, b"ok", 0, 1)
-        conn.send(msg)
+        msg = Message(Pyro4.message.MSG_CONNECTOK, b"ok", 0, 1)
+        msg.send(conn)
         return True
 
     def handleRequest(self, conn):
@@ -752,27 +672,29 @@ class Daemon(object):
         wraps it in a reply to the calling side, as to not make this server side loop
         terminate due to exceptions caused by remote invocations.
         """
-        flags=0
-        seq=0
+        request_flags=0
+        request_seq=0
         wasBatched=False
         isCallback=False
         try:
-            msgType, flags, seq, data = MessageFactory.getMessage(conn, [MessageFactory.MSG_INVOKE, MessageFactory.MSG_PING])
+            msg = Message.recv(conn, [Pyro4.message.MSG_INVOKE, Pyro4.message.MSG_PING])
+            request_flags = msg.flags
+            request_seq = msg.seq
             if Pyro4.config.LOGWIRE:
-                log.debug("daemon wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msgType, flags, seq, data) )
-            if msgType == MessageFactory.MSG_PING:
+                log.debug("daemon wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msg.type, msg.flags, msg.seq, msg.data) )
+            if msg.type == Pyro4.message.MSG_PING:
                 # return same seq, but ignore any data (it's a ping, not an echo)
-                msg = MessageFactory.createMessage(MessageFactory.MSG_PING, None, 0, seq)
-                conn.send(msg)
+                msg = Message(Pyro4.message.MSG_PING, b"", 0, request_seq)
+                msg.send(conn)
                 return
-            objId, method, vargs, kwargs = self.serializer.deserializeCall(data, compressed=flags & MessageFactory.FLAGS_COMPRESSED)
-            del data  # invite GC to collect the object, don't wait for out-of-scope
-            obj=self.objectsById.get(objId)
+            objId, method, vargs, kwargs = self.serializer.deserializeCall(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
+            del msg  # invite GC to collect the object, don't wait for out-of-scope
+            obj = self.objectsById.get(objId)
             if obj is not None:
                 if kwargs and sys.version_info<(2, 6, 5) and os.name!="java":
                     # Python before 2.6.5 doesn't accept unicode keyword arguments
                     kwargs = dict((str(k), kwargs[k]) for k in kwargs)
-                if flags & MessageFactory.FLAGS_BATCH:
+                if request_flags & Pyro4.message.FLAGS_BATCH:
                     # batched method calls, loop over them all and collect all results
                     data=[]
                     for method, vargs, kwargs in vargs:
@@ -793,7 +715,7 @@ class Daemon(object):
                 else:
                     # normal single method call
                     method=util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
-                    if flags & MessageFactory.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:
+                    if request_flags & Pyro4.message.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:
                         # oneway call to be run inside its own thread
                         thread=threadutil.Thread(target=method, args=vargs, kwargs=kwargs)
                         thread.setDaemon(True)
@@ -804,28 +726,27 @@ class Daemon(object):
             else:
                 log.debug("unknown object requested: %s", objId)
                 raise errors.DaemonError("unknown object")
-            if flags & MessageFactory.FLAGS_ONEWAY:
+            if request_flags & Pyro4.message.FLAGS_ONEWAY:
                 return   # oneway call, don't send a response
             else:
                 data, compressed=self.serializer.serializeData(data, compress=Pyro4.config.COMPRESSION)
-                flags=0
+                response_flags=0
                 if compressed:
-                    flags |= MessageFactory.FLAGS_COMPRESSED
+                    response_flags |= Pyro4.message.FLAGS_COMPRESSED
                 if wasBatched:
-                    flags |= MessageFactory.FLAGS_BATCH
+                    response_flags |= Pyro4.message.FLAGS_BATCH
                 if Pyro4.config.LOGWIRE:
-                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (MessageFactory.MSG_RESULT, flags, seq, data))
-                msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags, seq)
-                del data
-                conn.send(msg)
+                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (Pyro4.message.MSG_RESULT, response_flags, request_seq, data))
+                msg = Message(Pyro4.message.MSG_RESULT, data, response_flags, request_seq)
+                msg.send(conn)
         except Exception:
             xt, xv = sys.exc_info()[0:2]
             if xt is not errors.ConnectionClosedError:
                 log.debug("Exception occurred while handling request: %r", xv)
-                if not flags & MessageFactory.FLAGS_ONEWAY:
+                if not request_flags & Pyro4.message.FLAGS_ONEWAY:
                     # only return the error to the client if it wasn't a oneway call
                     tblines=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
-                    self._sendExceptionResponse(conn, seq, xv, tblines)
+                    self._sendExceptionResponse(conn, request_seq, xv, tblines)
             if isCallback or isinstance(xv, (errors.CommunicationError, errors.SecurityError)):
                 raise       # re-raise if flagged as callback, communication or security error.
 
@@ -845,12 +766,11 @@ class Daemon(object):
             if sys.platform=="cli":
                 util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
             data, compressed =self.serializer.serializeData(exc_value)
-        flags = MessageFactory.FLAGS_EXCEPTION
+        flags = Pyro4.message.FLAGS_EXCEPTION
         if compressed:
-            flags |= MessageFactory.FLAGS_COMPRESSED
-        msg=MessageFactory.createMessage(MessageFactory.MSG_RESULT, data, flags, seq)
-        del data
-        connection.send(msg)
+            flags |= Pyro4.message.FLAGS_COMPRESSED
+        msg = Message(Pyro4.message.MSG_RESULT, data, flags, seq)
+        msg.send(connection)
 
     def register(self, obj, objectId=None):
         """

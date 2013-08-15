@@ -33,3 +33,6 @@ NOTES:
    if your system needs this feature, and if it can support it
    (see points above).
 7- Read the source files for info on what is going on.
+8- Also see the 'disconnects' example for another swing at dealing
+   with client timeouts/disconnects, and how a special proxy class
+   can make it easier to deal with for the clients.

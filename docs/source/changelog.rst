@@ -4,7 +4,9 @@ Change Log
 
 **Pyro 4.22**
 
-- ...
+- refactored core.MessageFactory: new submodule Pyro4.message. If you used MessageFactory
+  in your own code you'll need to refactor it to use the new Pyro4.message.Message API instead.
+- ``disconnects`` example client code updated to reflect this API change
 
 
 **Pyro 4.21**

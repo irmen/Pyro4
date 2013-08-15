@@ -1,7 +1,7 @@
 from __future__ import print_function
 import sys
 import Pyro4
-from Pyro4.core import MessageFactory
+import Pyro4.message
 
 if sys.version_info < (3, 0):
     input = raw_input
@@ -17,16 +17,21 @@ class AutoReconnectingProxy(Pyro4.core.Proxy):
     It does this by intercepting every method call and then it first 'pings'
     the server to see if it still has a working connection. If not, it
     reconnects the proxy and retries the method call.
+    Drawback is that every method call now uses two remote messages (a ping,
+    and the actual method call).
+    This uses some advanced features of the Pyro API.
     """
 
     def _pyroInvoke(self, methodname, vargs, kwargs, flags=0):
+        # first test if we have an open connection, if not, we just reconnect
         if self._pyroConnection:
             try:
                 print("  <proxy: ping>")
-                # send the special 'ping' message to the daemon, expecting a 'ping' response (no-op)
-                data = MessageFactory.createMessage(MessageFactory.MSG_PING, None, 0, 0)
-                self._pyroConnection.send(data)
-                MessageFactory.getMessage(self._pyroConnection, [MessageFactory.MSG_PING])
+                # send the special 'ping' message to the daemon, to see if this connection is still alive
+                # we expect a 'ping' response (no-op)
+                ping = Pyro4.message.Message(Pyro4.message.MSG_PING, b"", 0, 0)
+                ping.send(self._pyroConnection)
+                Pyro4.message.Message.recv(self._pyroConnection, [Pyro4.message.MSG_PING])
                 print("  <proxy: ping reply (still connected)>")
             except Pyro4.errors.ConnectionClosedError:     # or possibly even ProtocolError
                 print("  <proxy: Connection lost. REBINDING...>")

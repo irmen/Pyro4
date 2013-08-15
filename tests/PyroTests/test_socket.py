@@ -10,7 +10,8 @@ import Pyro4.socketutil as SU
 from Pyro4 import threadutil, errors
 from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
-from Pyro4.core import MessageFactory, Daemon
+from Pyro4.core import Daemon
+import Pyro4.message
 import Pyro4
 from testsupport import *
 
@@ -303,18 +304,18 @@ class ServerCallback(object):
     def _handshake(self, connection):
         if not isinstance(connection, SU.SocketConnection):
             raise TypeError("handshake expected SocketConnection parameter")
-        msg=MessageFactory.createMessage(MessageFactory.MSG_CONNECTOK, None, 0, 1)
-        connection.send(msg)
+        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTOK, b"ok", 0, 1)
+        msg.send(connection)
         return True
     def handleRequest(self, connection):
         if not isinstance(connection, SU.SocketConnection):
             raise TypeError("handleRequest expected SocketConnection parameter")
-        msgType, flags, seq, data = MessageFactory.getMessage(connection, [MessageFactory.MSG_PING])
-        if msgType == MessageFactory.MSG_PING:
-            msg = MessageFactory.createMessage(MessageFactory.MSG_PING, None, 0, 0)
-            connection.send(msg)
+        msg = Pyro4.message.Message.recv(connection, [Pyro4.message.MSG_PING])
+        if msg.type == Pyro4.message.MSG_PING:
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"", 0, 0)
+            msg.send(connection)
         else:
-            print("unhandled message type", msgType)
+            print("unhandled message type", msg.type)
             connection.close()
 
 
@@ -413,7 +414,7 @@ class TestServerDOS_select(unittest.TestCase):
                 # first connection attempt (will fail because server daemon _handshake crashes)
                 csock = SU.createSocket(connect=(host, port))
                 conn = SU.SocketConnection(csock, "uri")
-                MessageFactory.getMessage(conn, MessageFactory.MSG_CONNECTOK)
+                Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_CONNECTOK])
             except errors.ConnectionClosedError as x:
                 pass
             conn.close()
@@ -421,7 +422,7 @@ class TestServerDOS_select(unittest.TestCase):
                 # second connection attempt, should still work (i.e. server should still be running)
                 csock = SU.createSocket(connect=(host, port))
                 conn = SU.SocketConnection(csock, "uri")
-                MessageFactory.getMessage(conn, MessageFactory.MSG_CONNECTOK)
+                Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_CONNECTOK])
             except errors.ConnectionClosedError as x:
                 pass
 
@@ -441,7 +442,7 @@ class TestServerDOS_select(unittest.TestCase):
             csock = SU.createSocket(connect=(host, port))
             conn = SU.SocketConnection(csock, "uri")
             # get the handshake/connect response
-            MessageFactory.getMessage(conn, [MessageFactory.MSG_CONNECTOK])
+            Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_CONNECTOK])
             return conn
 
         try:
@@ -451,26 +452,26 @@ class TestServerDOS_select(unittest.TestCase):
             # invoke something, but screw up the message (in this case, mess with the protocol version)
             orig_protocol_version = Pyro4.constants.PROTOCOL_VERSION
             Pyro4.constants.PROTOCOL_VERSION = 9999
-            msg = MessageFactory.createMessage(MessageFactory.MSG_PING, None, 0, 0)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"", 0, 0).to_bytes()
             Pyro4.constants.PROTOCOL_VERSION = orig_protocol_version
-            conn.send(msg)   # this should cause an error in the server because of invalid msg
+            conn.send(msg) # this should cause an error in the server because of invalid msg
             try:
-                msgType, flags, seq, data = MessageFactory.getMessage(conn, [MessageFactory.MSG_RESULT])
-                self.assertTrue(b"Traceback" in data)
-                self.assertTrue(b"ProtocolError" in data)
+                msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_RESULT])
+                self.assertTrue(b"Traceback" in msg.data)
+                self.assertTrue(b"ProtocolError" in msg.data)
+                self.assertTrue(b"version" in msg.data)
             except errors.ConnectionClosedError:
                 # invalid message can have caused the connection to be closed, this is fine
                 pass
             # invoke something again, this should still work (server must still be running)
             conn.close()
             conn = connect(host, port)
-            msg = MessageFactory.createMessage(MessageFactory.MSG_PING, b"abc", 0, 999)
-            Pyro4.constants.PROTOCOL_VERSION = orig_protocol_version
-            conn.send(msg)
-            msgType, flags, seq, data = MessageFactory.getMessage(conn, [MessageFactory.MSG_PING])
-            self.assertEqual(MessageFactory.MSG_PING, msgType)
-            self.assertEqual(999, seq)
-            self.assertEqual(b"", data)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"abc", 0, 999)
+            msg.send(conn)
+            msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_PING])
+            self.assertEqual(Pyro4.message.MSG_PING, msg.type)
+            self.assertEqual(999, msg.seq)
+            self.assertEqual(b"", msg.data)
         finally:
             conn.close()
             serv_thread.stop_loop.set()

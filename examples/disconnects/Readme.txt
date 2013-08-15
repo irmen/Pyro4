@@ -14,4 +14,9 @@ Alternatively you can do it explicitly in your own code like the 'autoreconnect'
 client example does.
 
 A drawback of the code shown is that it is not very efficient; it now requires
-two remote calls for every method invocation on the proxy.
+two remote messages for every method invocation on the proxy.
+
+Note that the custom proxy class shown in the client uses some advanced features
+of the Pyro API:
+ - overrides internal method that handles method calls
+ - creates and receives custom wire protocol messages

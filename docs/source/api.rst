@@ -12,6 +12,7 @@ such as :mod:`Pyro4.core`, but for ease of use, the most important ones are also
    api/core.rst
    api/naming.rst
    api/util.rst
+   api/message.rst
    api/constants.rst
    api/config.rst
    api/errors.rst
