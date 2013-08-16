@@ -2,6 +2,7 @@ from __future__ import print_function
 import Pyro4
 
 Pyro4.config.SERIALIZER = 'pickle'
+Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
 
 
 class Aggregator(object):

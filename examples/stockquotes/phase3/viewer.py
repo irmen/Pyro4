@@ -3,6 +3,7 @@ import sys
 import Pyro4
 
 Pyro4.config.SERIALIZER = 'pickle'
+Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
 
 if sys.version_info < (3,0):
     input = raw_input

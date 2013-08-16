@@ -183,8 +183,9 @@ class Flame(object):
     Be *very* cautious before starting this: it allows the clients full access to everything on your system.
     """
     def __init__(self):
-        if Pyro4.config.SERIALIZER != "pickle":
-            raise RuntimeError("flame requires the pickle serializer")
+        if "pickle" not in Pyro4.config.SERIALIZERS_ACCEPTED:
+            print(Pyro4.config.SERIALIZERS_ACCEPTED)
+            raise RuntimeError("flame requires the pickle serializer to be enabled")
 
     def module(self, name):
         """import a module on the server given by the module name and returns a proxy to it"""

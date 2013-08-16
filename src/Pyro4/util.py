@@ -448,16 +448,17 @@ class JsonSerializer(SerializerBase):
 """The various serializers that are supported"""
 _serializers = {}
 _serializers_by_id = {}
-def get_serializer(name=None, sid=None):
-    if sid:
-        try:
-            return _serializers_by_id[sid]
-        except KeyError:
-            raise Pyro4.errors.ProtocolError("no serializer available for id %d" % sid)
+def get_serializer(name):
     try:
-        return _serializers[name or Pyro4.config.SERIALIZER]
+        return _serializers[name]
     except KeyError:
-        raise Pyro4.errors.ProtocolError("serializer '%s' is unknown or not available" % Pyro4.config.SERIALIZER)
+        raise Pyro4.errors.ProtocolError("serializer '%s' is unknown or not available" % name)
+
+def get_serializer_by_id(sid):
+    try:
+        return _serializers_by_id[sid]
+    except KeyError:
+        raise Pyro4.errors.ProtocolError("no serializer available for id %d" % sid)
 
 # determine the serializers that are supported
 try:

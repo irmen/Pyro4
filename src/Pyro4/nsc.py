@@ -87,7 +87,6 @@ def main(args):
     if options.unixsocket:
         options.host="./u:"+options.unixsocket
     try:
-
         nameserver=naming.locateNS(options.host, options.port)
     except errors.PyroError:
         x=sys.exc_info()[1]

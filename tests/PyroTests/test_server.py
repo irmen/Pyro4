@@ -58,7 +58,7 @@ class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
     def _handshake(self, conn):
         # a bit of a hack, overriding this internal method to return a CONNECTFAIL...
         serializer = Pyro4.util.get_serializer("marshal")
-        data = serializer.dumps("rigged connection failure")
+        data, _ = serializer.serializeData("rigged connection failure", compress=False)
         msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTFAIL, data, serializer.serializer_id, 0, 1)
         msg.send(conn)
         return False
@@ -545,7 +545,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
 
     def testSerializeConnected(self):
         # online serialization tests
-        ser=Pyro4.util.get_serializer()
+        ser=Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
         proxy=Pyro4.core.Proxy(self.objectUri)
         proxy._pyroBind()
         self.assertFalse(proxy._pyroConnection is None)

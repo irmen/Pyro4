@@ -32,10 +32,11 @@ function with your daemon that you want to enable flame on::
     import Pyro4.utils.flame
     Pyro4.utils.flame.start(daemon)
 
-Additionally, you have to make two configuration changes:
+Additionally, you have to make some configuration changes:
 
-* set the ``FLAME_ENABLED`` config item to True
-* set the ``SERIALIZER`` config item to "pickle"
+* flame server: set the ``FLAME_ENABLED`` config item to True
+* flame server: set the ``SERIALIZERS_ACCEPTED`` config item to ``set(["pickle"])``
+* flame client: set the ``SERIALIZER`` config item to ``pickle``
 
 You'll have to explicitly enable Flame. When you don't, you'll
 get an error when trying to start Flame. The config item is False by default

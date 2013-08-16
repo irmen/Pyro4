@@ -21,13 +21,13 @@ class SerializeTests_pickle(unittest.TestCase):
         self.previous_serializer=Pyro4.config.SERIALIZER
         Pyro4.config.SERIALIZER=self.SERIALIZER
         Pyro4.config.HMAC_KEY=b"testsuite"
-        self.ser=Pyro4.util.get_serializer()
+        self.ser=Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
         Pyro4.config.SERIALIZER=self.previous_serializer
         
     def testSerItself(self):
-        s=Pyro4.util.get_serializer()
+        s=Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
         p,_=self.ser.serializeData(s)
         s2=self.ser.deserializeData(p)
         self.assertEqual(s,s2)
@@ -308,31 +308,23 @@ class SerializeTests_marshal(SerializeTests_pickle):
 
 class GenericTests(unittest.TestCase):
     def testSerializersAvailable(self):
-        previous_serializer=Pyro4.config.SERIALIZER
+        Pyro4.util.get_serializer("pickle")
+        Pyro4.util.get_serializer("marshal")
         try:
-            Pyro4.config.SERIALIZER="pickle"
-            Pyro4.util.get_serializer()
-            Pyro4.config.SERIALIZER="marshal"
-            Pyro4.util.get_serializer()
-            try:
-                import json
-                Pyro4.config.SERIALIZER="json"
-                Pyro4.util.get_serializer()
-            except ImportError:
-                pass
-            try:
-                import serpent
-                Pyro4.config.SERIALIZER="serpent"
-                Pyro4.util.get_serializer()
-            except ImportError:
-                pass
-        finally:
-            Pyro4.config.SERIALIZER=previous_serializer
+            import json
+            Pyro4.util.get_serializer("json")
+        except ImportError:
+            pass
+        try:
+            import serpent
+            Pyro4.util.get_serializer("serpent")
+        except ImportError:
+            pass
 
     def testSerializersAvailableById(self):
-        Pyro4.util.get_serializer(sid=Pyro4.message.SERIALIZER_PICKLE)
-        Pyro4.util.get_serializer(sid=Pyro4.message.SERIALIZER_MARSHAL)
-        self.assertRaises(Pyro4.errors.ProtocolError, lambda: Pyro4.util.get_serializer(sid=9999999))
+        Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_PICKLE)
+        Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
+        self.assertRaises(Pyro4.errors.ProtocolError, lambda: Pyro4.util.get_serializer_by_id(9999999))
 
     def testDictClassFail(self):
         o = pprint.PrettyPrinter(stream="dummy", width=42)

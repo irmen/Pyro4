@@ -88,7 +88,7 @@ class Message(object):
         return self.__header_bytes() + self.data
 
     def __header_bytes(self):
-        checksum = (self.type+constants.PROTOCOL_VERSION+self.datasize+self.flags+self.seq+self.checksum_magic)&0xffff
+        checksum = (self.type+constants.PROTOCOL_VERSION+self.datasize+self.serializer_id+self.flags+self.seq+self.checksum_magic)&0xffff
         return struct.pack(self.header_format, b"PYRO", constants.PROTOCOL_VERSION, self.type, self.flags, self.seq, len(self.data), self.serializer_id, 0, 0, checksum, self.hmac)
 
     @classmethod
@@ -99,7 +99,7 @@ class Message(object):
         tag, ver, msgType, flags, seq, dataLen, serializer_id, annotationsLen, _, headerchecksum, datahmac = struct.unpack(cls.header_format, headerData)
         if tag!=b"PYRO" or ver!=constants.PROTOCOL_VERSION:
             raise errors.ProtocolError("invalid data or unsupported protocol version")
-        if headerchecksum!=(msgType+ver+dataLen+flags+seq+cls.checksum_magic)&0xffff:
+        if headerchecksum!=(msgType+ver+dataLen+flags+serializer_id+seq+cls.checksum_magic)&0xffff:
             raise errors.ProtocolError("header checksum mismatch")
         msg = Message(msgType, b"", serializer_id, flags, seq)
         msg.datasize = dataLen

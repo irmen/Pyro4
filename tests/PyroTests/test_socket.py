@@ -305,7 +305,7 @@ class ServerCallback(object):
         if not isinstance(connection, SU.SocketConnection):
             raise TypeError("handshake expected SocketConnection parameter")
         serializer = Pyro4.util.get_serializer("marshal")
-        data = serializer.dumps("ok")
+        data, _ = serializer.serializeData("ok", compress=False)
         msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTOK, data, serializer.serializer_id, 0, 1)
         msg.send(connection)
         return True

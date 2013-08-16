@@ -158,11 +158,9 @@ class _RemoteMethod(object):
 
 
 def _check_hmac():
-    if Pyro4.config.HMAC_KEY is None or len(Pyro4.config.HMAC_KEY)==0:
-        import warnings
-        warnings.warn("HMAC_KEY not set, protocol data may not be secure")
-    elif sys.version_info>=(3, 0) and type(Pyro4.config.HMAC_KEY) is not bytes:
-        raise errors.PyroError("HMAC_KEY must be bytes type")
+    if Pyro4.config.HMAC_KEY:
+        if sys.version_info>=(3, 0) and type(Pyro4.config.HMAC_KEY) is not bytes:
+            raise errors.PyroError("HMAC_KEY must be bytes type")
 
 
 class Proxy(object):
@@ -194,6 +192,7 @@ class Proxy(object):
         self.__pyroTimeout=Pyro4.config.COMMTIMEOUT
         self.__pyroLock=threadutil.Lock()
         self.__pyroConnLock=threadutil.Lock()
+        util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
 
     def __del__(self):
         if hasattr(self, "_pyroConnection"):
@@ -279,7 +278,7 @@ class Proxy(object):
         if self._pyroConnection is None:
             # rebind here, don't do it from inside the invoke because deadlock will occur
             self.__pyroCreateConnection()
-        serializer = util.get_serializer()
+        serializer = util.get_serializer(Pyro4.config.SERIALIZER)
         data, compressed = serializer.serializeCall(
             self._pyroConnection.objectId, methodname, vargs, kwargs,
             compress=Pyro4.config.COMPRESSION)
@@ -290,7 +289,7 @@ class Proxy(object):
         with self.__pyroLock:
             self._pyroSeq=(self._pyroSeq+1)&0xffff
             if Pyro4.config.LOGWIRE:
-                log.debug("proxy wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (Pyro4.message.MSG_INVOKE, flags, self._pyroSeq, data))
+                log.debug("proxy wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (Pyro4.message.MSG_INVOKE, flags, serializer.serializer_id, self._pyroSeq, data))
             msg = Message(Pyro4.message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq)
             try:
                 msg.send(self._pyroConnection)
@@ -300,8 +299,12 @@ class Proxy(object):
                 else:
                     msg = Message.recv(self._pyroConnection, [Pyro4.message.MSG_RESULT])
                     if Pyro4.config.LOGWIRE:
-                        log.debug("proxy wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msg.type, msg.flags, msg.seq, msg.data) )
+                        log.debug("proxy wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data) )
                     self.__pyroCheckSequence(msg.seq)
+                    if msg.serializer_id != serializer.serializer_id:
+                        error = "invalid serializer in response: %d" % msg.serializer_id
+                        log.error(error)
+                        raise errors.ProtocolError(error)
                     data = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
                     if msg.flags & Pyro4.message.FLAGS_EXCEPTION:
                         if sys.platform=="cli":
@@ -587,6 +590,9 @@ class Daemon(object):
         self.__mustshutdown=threadutil.Event()
         self.__loopstopped=threadutil.Event()
         self.__loopstopped.set()
+        # assert that the configured serializers are available, and remember their ids:
+        self.__serializer_ids = set([util.get_serializer(ser_name).serializer_id for ser_name in Pyro4.config.SERIALIZERS_ACCEPTED])
+        log.debug("accepted serializers: %s" % Pyro4.config.SERIALIZERS_ACCEPTED)
 
     @property
     def sock(self):
@@ -663,7 +669,7 @@ class Daemon(object):
         # Return True for successful handshake, False if something was wrong.
         # We default to the marshal serializer to send message payload.
         serializer = util.get_serializer("marshal")
-        data = serializer.dumps("ok")
+        data, _ = serializer.serializeData("ok", compress=False)
         msg = Message(Pyro4.message.MSG_CONNECTOK, data, serializer.serializer_id, 0, 1)
         msg.send(conn)
         return True
@@ -676,20 +682,24 @@ class Daemon(object):
         """
         request_flags=0
         request_seq=0
+        request_serializer_id = util.MarshalSerializer.serializer_id
         wasBatched=False
         isCallback=False
         try:
             msg = Message.recv(conn, [Pyro4.message.MSG_INVOKE, Pyro4.message.MSG_PING])
             request_flags = msg.flags
             request_seq = msg.seq
+            request_serializer_id = msg.serializer_id
             if Pyro4.config.LOGWIRE:
-                log.debug("daemon wiredata received: msgtype=%d flags=0x%x seq=%d data=%r" % (msg.type, msg.flags, msg.seq, msg.data) )
-            serializer = util.get_serializer()
+                log.debug("daemon wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data) )
             if msg.type == Pyro4.message.MSG_PING:
-                # return same seq, but ignore any data (it's a ping, not an echo)
-                msg = Message(Pyro4.message.MSG_PING, b"", serializer.serializer_id, 0, request_seq)
+                # return same seq, but ignore any data (it's a ping, not an echo). Nothing is deserialized.
+                msg = Message(Pyro4.message.MSG_PING, b"", msg.serializer_id, 0, request_seq)
                 msg.send(conn)
                 return
+            if msg.serializer_id not in self.__serializer_ids:
+                raise errors.ProtocolError("message used serializer that is not accepted: %d" % msg.serializer_id)
+            serializer = util.get_serializer_by_id(msg.serializer_id)
             objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
             del msg  # invite GC to collect the object, don't wait for out-of-scope
             obj = self.objectsById.get(objId)
@@ -732,7 +742,6 @@ class Daemon(object):
             if request_flags & Pyro4.message.FLAGS_ONEWAY:
                 return   # oneway call, don't send a response
             else:
-                serializer = util.get_serializer()
                 data, compressed = serializer.serializeData(data, compress=Pyro4.config.COMPRESSION)
                 response_flags=0
                 if compressed:
@@ -740,7 +749,7 @@ class Daemon(object):
                 if wasBatched:
                     response_flags |= Pyro4.message.FLAGS_BATCH
                 if Pyro4.config.LOGWIRE:
-                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x seq=%d data=%r" % (Pyro4.message.MSG_RESULT, response_flags, request_seq, data))
+                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (Pyro4.message.MSG_RESULT, response_flags, serializer.serializer_id, request_seq, data))
                 msg = Message(Pyro4.message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq)
                 msg.send(conn)
         except Exception:
@@ -750,16 +759,16 @@ class Daemon(object):
                 if not request_flags & Pyro4.message.FLAGS_ONEWAY:
                     # only return the error to the client if it wasn't a oneway call
                     tblines=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
-                    self._sendExceptionResponse(conn, request_seq, xv, tblines)
+                    self._sendExceptionResponse(conn, request_seq, request_serializer_id, xv, tblines)
             if isCallback or isinstance(xv, (errors.CommunicationError, errors.SecurityError)):
                 raise       # re-raise if flagged as callback, communication or security error.
 
-    def _sendExceptionResponse(self, connection, seq, exc_value, tbinfo):
+    def _sendExceptionResponse(self, connection, seq, serializer_id, exc_value, tbinfo):
         """send an exception back including the local traceback info"""
         exc_value._pyroTraceback=tbinfo
         if sys.platform=="cli":
             util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
-        serializer = util.get_serializer()
+        serializer = util.get_serializer_by_id(serializer_id)
         try:
             data, compressed = serializer.serializeData(exc_value)
         except:
@@ -774,6 +783,8 @@ class Daemon(object):
         flags = Pyro4.message.FLAGS_EXCEPTION
         if compressed:
             flags |= Pyro4.message.FLAGS_COMPRESSED
+        if Pyro4.config.LOGWIRE:
+            log.debug("daemon wiredata sending (error response): msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (Pyro4.message.MSG_RESULT, flags, serializer.serializer_id, seq, data))
         msg = Message(Pyro4.message.MSG_RESULT, data, serializer.serializer_id, flags, seq)
         msg.send(connection)
 
@@ -868,7 +879,7 @@ class Daemon(object):
         self.close()
 
     def __getstate__(self):
-        return {}   # a little hack to make it possible to serialize Pyro objects.
+        return {}   # a little hack to make it possible to serialize Pyro objects, because they can reference a daemon
 
     def __getstate_for_dict__(self):
         return self.__getstate__()

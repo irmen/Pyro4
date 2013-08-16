@@ -16,7 +16,7 @@ import Pyro4.util
 class MessageTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.HMAC_KEY = b"testsuite"
-        self.ser = Pyro4.util.get_serializer()
+        self.ser = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
 
     def tearDown(self):
         Pyro4.config.HMAC_KEY = None

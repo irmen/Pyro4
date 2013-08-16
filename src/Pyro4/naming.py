@@ -242,7 +242,6 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
         print("external URI = %s" % nsUri)
     else:
         print("URI = %s" % nsUri)
-    log.info("using serializer: %s" % Pyro4.config.SERIALIZER)   # only clients using the same serializer can connect
     try:
         daemon.requestLoop()
     finally:
@@ -335,12 +334,9 @@ def locateNS(host=None, port=None):
     uri=core.URI(uristring)
     log.debug("locating the NS: %s", uri)
     proxy=core.Proxy(uri)
-    try:
-        proxy.ping()
-        log.debug("located NS")
-        return proxy
-    except PyroError:
-        raise Pyro4.errors.NamingError("Failed to locate the nameserver")
+    proxy.ping()
+    log.debug("located NS")
+    return proxy
 
 
 def resolve(uri):
