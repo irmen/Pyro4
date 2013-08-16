@@ -66,7 +66,7 @@ class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
 class ServerTestsBrokenHandshake(unittest.TestCase):
     def setUp(self):
         Pyro4.config.HMAC_KEY=b"testsuite"
-        Pyro4.config.SERIALIZER="pickle"
+        Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon=DaemonWithSabotagedHandshake(port=0)
         obj=MyThing()
         uri=self.daemon.register(obj, "something")
@@ -79,7 +79,7 @@ class ServerTestsBrokenHandshake(unittest.TestCase):
         self.daemon.shutdown()
         self.daemonthread.join()
         Pyro4.config.HMAC_KEY=None
-        Pyro4.config.SERIALIZER="serpent"
+        Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
     def testDaemonConnectFail(self):
         # check what happens when the daemon responds with a failed connection msg
         with Pyro4.Proxy(self.objectUri) as p:
@@ -96,7 +96,7 @@ class ServerTestsOnce(unittest.TestCase):
     """tests that are fine to run with just a single server type"""
     def setUp(self):
         Pyro4.config.HMAC_KEY=b"testsuite"
-        Pyro4.config.SERIALIZER="pickle"
+        Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon=Pyro4.core.Daemon(port=0)
         obj=MyThing()
         uri=self.daemon.register(obj, "something")
@@ -110,7 +110,7 @@ class ServerTestsOnce(unittest.TestCase):
             self.daemon.shutdown()
             self.daemonthread.join()
         Pyro4.config.HMAC_KEY=None
-        Pyro4.config.SERIALIZER="serpent"
+        Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
 
     def testPingMessage(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -190,28 +190,25 @@ class ServerTestsOnce(unittest.TestCase):
                 xt, xv, tb = sys.exc_info()
                 self.assertTrue(issubclass(xt, Pyro4.errors.PyroError))
                 tblines = "\n".join(Pyro4.util.getPyroTraceback())
-                self.assertTrue("PyroError: Error serializing exception" in tblines)
-                s1 = "Original exception: <class 'testsupport.NonserializableError'>:"
-                s2 = "Original exception: <class 'PyroTests.testsupport.NonserializableError'>:"
-                self.assertTrue(s1 in tblines or s2 in tblines)
-                self.assertTrue("raise NonserializableError((\"xantippe" in tblines)
+                self.assertTrue("unsupported serialized class" in tblines)
 
     def testNonserializableException_pickle(self):
-        if Pyro4.config.SERIALIZER!="pickle":
-            self.skipTest("only for pickle-serializer")
         with Pyro4.core.Proxy(self.objectUri) as p:
+            Pyro4.config.SERIALIZER = "pickle"
             try:
                 p.nonserializableException()
                 self.fail("should crash")
             except Exception:
                 xt, xv, tb = sys.exc_info()
-                self.assertEqual(xt, Pyro4.errors.PyroError)
+                self.assertTrue(issubclass(xt, Pyro4.errors.PyroError))
                 tblines = "\n".join(Pyro4.util.getPyroTraceback())
                 self.assertTrue("PyroError: Error serializing exception" in tblines)
                 s1 = "Original exception: <class 'testsupport.NonserializableError'>:"
                 s2 = "Original exception: <class 'PyroTests.testsupport.NonserializableError'>:"
                 self.assertTrue(s1 in tblines or s2 in tblines)
                 self.assertTrue("raise NonserializableError((\"xantippe" in tblines)
+            finally:
+                Pyro4.config.SERIALIZER="serpent"
 
     def testBatchProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -339,6 +336,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testAutoProxy(self):
         obj=MyThing2()
+        Pyro4.config.SERIALIZER="pickle"
         try:
             with Pyro4.core.Proxy(self.objectUri) as p:
                 Pyro4.config.AUTOPROXY=False   # make sure autoproxy is disabled
@@ -361,9 +359,9 @@ class ServerTestsOnce(unittest.TestCase):
                 self.assertTrue(isinstance(result,MyThing2), "unregistered pyro object must be normal class again")
                 # note: the custom serializer may still be active but it should be smart enough to see
                 # that the object is no longer a pyro object, and therefore, no proxy should be created.
-
         finally:
             Pyro4.config.AUTOPROXY=True
+            Pyro4.config.SERIALIZER="serpent"
 
     def testConnectOnce(self):
         with Pyro4.core.Proxy(self.objectUri) as proxy:
@@ -433,7 +431,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro4.config.THREADPOOL_MINTHREADS=10
         Pyro4.config.THREADPOOL_MAXTHREADS=20
         Pyro4.config.HMAC_KEY=b"testsuite"
-        Pyro4.config.SERIALIZER="pickle"
+        Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon=Pyro4.core.Daemon(port=0)
         obj=MyThing()
         uri=self.daemon.register(obj, "something")
@@ -448,7 +446,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro4.config.SERVERTYPE="thread"
         Pyro4.config.COMMTIMEOUT=None
         Pyro4.config.HMAC_KEY=None
-        Pyro4.config.SERIALIZER="serpent"
+        Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
 
     def testConnectionStuff(self):
         p1=Pyro4.core.Proxy(self.objectUri)

@@ -11,7 +11,7 @@ import threading
 import pickle
 
 
-__all__=["tobytes", "unicode", "unichr", "StringIO", "next", "AtomicCounter",
+__all__=["tobytes", "unicode", "unichr", "basestring", "StringIO", "next", "AtomicCounter",
         "NonserializableError", "MyThing2", "unittest" ]
 
 if sys.version_info<(3,0):
@@ -20,12 +20,14 @@ if sys.version_info<(3,0):
         return string
     unicode=unicode
     unichr=unichr
+    basestring=basestring
 else:
     from io import StringIO
     def tobytes(string, encoding="iso-8859-1"):
         return bytes(string,encoding)
     unicode=str
     unichr=chr
+    basestring=str
 
 
 if sys.version_info<(2,6):

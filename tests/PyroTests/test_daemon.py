@@ -9,6 +9,7 @@ import os, time, socket
 import Pyro4.core
 import Pyro4.constants
 import Pyro4.socketutil
+import Pyro4.message
 from Pyro4.errors import DaemonError,PyroError
 from testsupport import *
 
@@ -29,7 +30,37 @@ class DaemonTests(unittest.TestCase):
         Pyro4.config.HMAC_KEY = b"testsuite"
     def tearDown(self):
         Pyro4.config.HMAC_KEY = None
-        
+
+    def testSerializerConfig(self):
+        self.assertIsInstance(Pyro4.config.SERIALIZERS_ACCEPTED, set)
+        self.assertIsInstance(Pyro4.config.SERIALIZER, basestring)
+        self.assertGreater(len(Pyro4.config.SERIALIZERS_ACCEPTED), 1)
+
+    def testSerializerAccepted(self):
+        class ConnectionMock(object):
+            def __init__(self, msg):
+                self.data = msg.to_bytes()
+            def recv(self, datasize):
+                chunk = self.data[:datasize]
+                self.data = self.data[datasize:]
+                return chunk
+            def send(self, data):
+                pass
+        self.assertTrue("marshal" in Pyro4.config.SERIALIZERS_ACCEPTED)
+        self.assertFalse("pickle" in Pyro4.config.SERIALIZERS_ACCEPTED)
+        with Pyro4.core.Daemon(port=0) as d:
+            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_MARSHAL, 0, 0)
+            cm = ConnectionMock(msg)
+            d.handleRequest(cm)  # marshal serializer should be accepted
+            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_PICKLE, 0, 0)
+            cm = ConnectionMock(msg)
+            try:
+                d.handleRequest(cm)
+                self.fail("should crash")
+            except Pyro4.errors.ProtocolError as x:
+                self.assertTrue("serializer that is not accepted" in str(x))
+                pass
+
     def testDaemon(self):
         with Pyro4.core.Daemon(port=0) as d:
             hostname, port = d.locationStr.split(":")
@@ -283,7 +314,7 @@ class DaemonTests(unittest.TestCase):
                 self.received = b""
             def send(self, data):
                 self.received += data
-            def recv(self, datasize, required_types=[]):
+            def recv(self, datasize):
                 chunk = self.received[:datasize]
                 self.received = self.received[datasize:]
                 return chunk

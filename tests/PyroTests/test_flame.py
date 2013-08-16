@@ -18,11 +18,11 @@ class FlameDisabledTests(unittest.TestCase):
     def testRequirePickle(self):
         with Pyro4.core.Daemon() as d:
             Pyro4.config.FLAME_ENABLED=True
-            Pyro4.config.SERIALIZER="serpent"
+            Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
             self.assertRaises(RuntimeError, Pyro4.utils.flame.start, d)   # require pickle
-            Pyro4.config.SERIALIZER="pickle"
+            Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
             Pyro4.utils.flame.start(d)
-            Pyro4.config.SERIALIZER="serpent"
+            Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
 
 
 class FlameTests(unittest.TestCase):
@@ -30,11 +30,11 @@ class FlameTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.HMAC_KEY=b"testsuite"
         Pyro4.config.FLAME_ENABLED=True
-        Pyro4.config.SERIALIZER="pickle"
+        Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
     def tearDown(self):
         Pyro4.config.HMAC_KEY=None
         Pyro4.config.FLAME_ENABLED=False
-        Pyro4.config.SERIALIZER="serpent"
+        Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
 
     def testCreateModule(self):
         module=Pyro4.utils.flame.createModule("testmodule", "def x(y): return y*y")

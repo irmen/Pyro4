@@ -184,7 +184,6 @@ class Flame(object):
     """
     def __init__(self):
         if "pickle" not in Pyro4.config.SERIALIZERS_ACCEPTED:
-            print(Pyro4.config.SERIALIZERS_ACCEPTED)
             raise RuntimeError("flame requires the pickle serializer to be enabled")
 
     def module(self, name):
