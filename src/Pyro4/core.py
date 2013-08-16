@@ -375,7 +375,6 @@ class Proxy(object):
                     elif msg.type==Pyro4.message.MSG_CONNECTOK:
                         self._pyroConnection=conn
                         if replaceUri:
-                            log.debug("replacing uri with bound one")
                             self._pyroUri=uri
                         log.debug("connected to %s", self._pyroUri)
                         return True

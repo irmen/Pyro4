@@ -263,33 +263,32 @@ and the server code details: :ref:`publish-objects`. The use of the name server 
 
 Performance
 ===========
-Pyro4 is really fast at what it does. This is due to its low overhead and optional use of native Python serialization (pickle).
-Here are some measurements done between two processes running on a Core 2 Duo 3Ghz, Windows 7 machine.
+Pyro4 is pretty fast at what it does.
+Here are some measurements done between two processes running on a Core 2 Quad 3Ghz, Windows 7 machine,
+using the marshal serializer:
 
 :benchmark/connections.py:
-    | 2000 connections in 1.139 sec = 1756 conn/sec
-    | 2000 new proxy calls in 1.451 sec = 1378 calls/sec
-    | 10000 calls in 1.058 sec = 9452 calls/sec
-
+    | 2000 connections in 2.165 sec = 924 conn/sec
+    | 2000 new proxy calls in 2.628 sec = 761 calls/sec
+    | 10000 calls in 1.146 sec = 8726 calls/sec
 :benchmark/client.py:
-    | total time 1.761 seconds
+    | total time 1.859 seconds
     | total method calls: 15000
-    | avg. time per method call: 0.117 msec (8517/sec)
+    | avg. time per method call: 0.124 msec (8068/sec) (serializer: marshal)
 
 :hugetransfer/client.py:
-    | It took 0.48 seconds to transfer 51269 kilobyte.
-    | That is 106148 k/sec. = 103.7 mb/sec.
+    | It took 0.44 seconds to transfer 51269 kilobyte.
+    | That is 115465 kb/sec. = 112.8 mb/sec. (serializer: marshal)
 
 :batchedcalls/client.py:
-    | Batched remote calls...
-    | processing the results...
-    | total time taken 0.29 seconds (136500 calls/sec)
-    | batched calls were 14.1 times faster than normal remote calls
+    | (using pickle serializer)
+    | Batched remote calls...:
+    | total time taken 0.28 seconds (142300 calls/sec)
+    | batched calls were 14.3 times faster than normal remote calls
 
-    | Oneway batched remote calls...
-    | executing batch, there will be no result values. Check server to see printed messages...
-    | total time taken 0.19 seconds (215000 calls/sec)
-    | oneway batched calls were 22.2 times faster than normal remote calls
+    | Oneway batched remote calls...:
+    | total time taken 0.17 seconds (235200 calls/sec)
+    | oneway batched calls were 23.6 times faster than normal remote calls
 
 
 Other serialization protocols (serpent, json, marshal) will usually be slower than pickle.
