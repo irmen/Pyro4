@@ -14,8 +14,8 @@ the results and prints them to the screen once everything is complete.
 
 *** Starting up ***
 - We're using a Name Server:
-    * configure it to use the pickle serializer, for instance by setting
-      the environment variable: PYRO_SERIALIZER=pickle
+    * configure it to allow the pickle serializer, for instance by setting
+      the environment variable: PYRO_SERIALIZERS_ACCEPTED=pickle
     * start the name server.
 - start the dispatcher (dispatcher.py)
 - start one or more workers (worker.py). For best results, start one of

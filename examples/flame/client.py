@@ -9,7 +9,7 @@ Pyro4.config.SERIALIZER = "pickle"  # flame requires pickle serializer
 
 print("Start a Pyro Flame server somewhere.")
 location = input("what is the location of the flame server, hostname:portnumber? ")
-print
+print()
 
 # connect!
 flame = Pyro4.utils.flame.connect(location)

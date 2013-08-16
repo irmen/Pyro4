@@ -7,7 +7,8 @@ import random
 import Pyro4
 from workitem import Workitem
 
-Pyro4.config.SERIALIZER='pickle'   # we're using custom classes
+# we're using custom classes, so need to use pickle
+Pyro4.config.SERIALIZER='pickle'
 
 NUMBER_OF_ITEMS = 40
 

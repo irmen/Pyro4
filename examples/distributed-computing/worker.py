@@ -11,7 +11,9 @@ from workitem import Workitem
 if sys.version_info<(3,0):
     range=xrange
 
-Pyro4.config.SERIALIZER='pickle'   # we're using custom classes
+# we're using custom classes, so need to use pickle
+Pyro4.config.SERIALIZER='pickle'
+
 
 WORKERNAME = "Worker_%d@%s" % (os.getpid(), socket.gethostname())
 

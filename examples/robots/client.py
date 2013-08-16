@@ -5,7 +5,9 @@ import remote
 import Pyro4
 
 
-Pyro4.config.SERIALIZER = "pickle"   # because we're using some custom classes over the wire
+# because we're using some custom classes over the wire, we need to use pickle
+Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
+Pyro4.config.SERIALIZER='pickle'
 
 
 class DrunkenGameObserver(remote.GameObserver):

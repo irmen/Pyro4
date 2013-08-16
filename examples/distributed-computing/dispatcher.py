@@ -6,7 +6,8 @@ except ImportError:
     import Queue as queue
 import Pyro4
 
-Pyro4.config.SERIALIZER='pickle'   # we're using custom classes
+# we're using custom classes, so need to use pickle
+Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
 
 
 class DispatcherQueue(object):
@@ -28,10 +29,6 @@ class DispatcherQueue(object):
 
 ######## main program
 
-ns=Pyro4.naming.locateNS()
-daemon=Pyro4.core.Daemon()
-dispatcher=DispatcherQueue()
-uri=daemon.register(dispatcher)
-ns.register("example.distributed.dispatcher", uri)
-print("Dispatcher is ready.")
-daemon.requestLoop()
+Pyro4.Daemon.serveSimple({
+        DispatcherQueue(): "example.distributed.dispatcher"
+    })
