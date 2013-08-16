@@ -9,6 +9,8 @@ Change Log
 - ``disconnects`` example client code updated to reflect this API change
 - wire protocol now contains serializer used for the data payload
 - wire protocol version bumped because of this (46)
+- support for multiple serializers added in the daemon
+- new config item added for that: SERIALIZERS_ACCEPTED
 
 
 **Pyro 4.21**

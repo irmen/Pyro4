@@ -100,10 +100,16 @@ on what objects you can use.
 * serpent: serializes into Python literal expressions. Accepts quite a lot of different types.
   Many will be serialized as dicts. You might need to explicitly translate literals back to specific types
   on the receiving end if so desired, because most custom classes aren't dealt with automatically.
-  Requires third party library module.
-* json: more restricted as serpent, less types supported. Part of Python's standard library.
-* marshal: a very limited but fast serializer. Can deal with a small range of builtin types only, no custom classes can be serialized. Part of the standard library.
-* pickle: the legacy serializer. Fast and supports almost all types. Has security problems though.
+  Requires third party library module, but it will be installed automatically as a dependency of Pyro.
+  This serializer is the default choice.
+* json: more restricted as serpent, less types supported. Part of the standard library.
+* marshal: a very limited but fast serializer. Can deal with a small range of builtin types only,
+  no custom classes can be serialized. Part of the standard library.
+* pickle: the legacy serializer. Fast and supports almost all types. Has security problems though. Part
+  of the standard library. No longer used by default.
+
+You select the serializer to be used by setting the ``SERIALIZER`` config item. (See the :doc:`/config` chapter).
+The valid choices are the names of the serializer from the list mentioned above.
 
 .. note::
     Since Pyro 4.20 the default serializer is "``serpent``".
@@ -111,11 +117,14 @@ on what objects you can use.
     Serpent is less expressive (not all types can be serialized, some types are serialized
     in a different form such as strings) but doesn't have pickle's security issues.
 
-    You select the serializer to be used by setting the ``SERIALIZER`` config item. (See the :doc:`/config` chapter).
-    The range of valid choices is the name of the serializer from the list mentioned above.
-    The introduction of different serializers is a change that is *not* backwards compatible,
-    even if you change the setting back to "``pickle``".
-
+.. note::
+    The serializer(s) that a Pyro server/daemon accepts, is controlled by a different
+    config item (``SERIALIZERS_ACCEPTED``). This can be a set of one or more serializers.
+    By default it accepts the set of 'safe' serializers, so not "``pickle``".
+    If the server doesn't accept the serializer that you configured
+    for your client, it will refuse the requests and respond with an exception that tells
+    you about the unsupported serializer choice. If it *does* accept your requests,
+    the server will respond using the same serializer as was used for the request.
 
 
 Proxies, connections, threads and cleaning up

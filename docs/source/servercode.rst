@@ -323,11 +323,22 @@ a network connection. Depending on the serializer that is being used for your Py
 there will be some limitations on what objects you can use, and what serialization format is
 required of the clients that connect to your server.
 
-You select the serializer to be used by setting the ``SERIALIZER`` config item. (See the :doc:`/config` chapter).
-See :ref:`object-serialization` for more details.
+You specify one or more serializers that are accepted in the daemon/server by setting the
+``SERIALIZERS_ACCEPTED`` config item. This is a set of serializer names
+that are allowed to be used with your server.  It defaults to the set of 'safe' serializers.
+A client that successfully talks to your server will get responses using the same
+serializer as the one used to send requests to the server.
+
+If your server also uses Pyro client code/proxies, you might also need to
+select the serializer for these by setting the ``SERIALIZER`` config item.
+
+See the :doc:`/config` chapter for details about the config items.
+See :ref:`object-serialization` for more details about serialization.
 
 .. note::
     Since Pyro 4.20 the default serializer is "``serpent``". It used to be "``pickle``" in older versions.
+    The default set of accepted serializers in the server is the set of 'safe' serializers,
+    so "``pickle``" is not among the default.
 
 
 Other features
