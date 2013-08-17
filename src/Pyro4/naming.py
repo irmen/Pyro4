@@ -334,9 +334,14 @@ def locateNS(host=None, port=None):
     uri=core.URI(uristring)
     log.debug("locating the NS: %s", uri)
     proxy=core.Proxy(uri)
-    proxy.ping()
-    log.debug("located NS")
-    return proxy
+    try:
+        proxy.ping()
+        log.debug("located NS")
+        return proxy
+    except PyroError as x:
+        e = NamingError("Failed to locate the nameserver")
+        e.__cause__=x
+        raise e
 
 
 def resolve(uri):

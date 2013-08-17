@@ -76,6 +76,9 @@ Proxy
     This is what Pyro uses to identify every object.
     (similar to what a web page URL is to point to the different documents on the web).
     Its string form is like this: "PYRO:" + object name + "@" + server name + port number.
+    There are a few other forms it can take as well.
+    You can write the protocol in lowercase too if you want ("pyro:") but it will
+    automatically be converted to uppercase internally.
     The class implementing Pyro uris is :class:`Pyro4.core.URI`
 
 Pyro object

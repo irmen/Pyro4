@@ -32,8 +32,11 @@ class URI(object):
 
     There is also a 'Magic format' for simple name resolution using Name server:
       ``PYRONAME:objectname[@location]``  (optional name server location, can also omit location port)
+
+    You can write the protocol in lowercase if you like (``pyro:...``) but it will
+    automatically be converted to uppercase internally.
     """
-    uriRegEx = re.compile(r"(?P<protocol>PYRO[A-Z]*):(?P<object>\S+?)(@(?P<location>\S+))?$")
+    uriRegEx = re.compile(r"(?P<protocol>[Pp][Yy][Rr][Oo][a-zA-Z]*):(?P<object>\S+?)(@(?P<location>\S+))?$")
     __slots__ = ("protocol", "object", "sockname", "host", "port", "object")
 
     def __init__(self, uri):
@@ -47,7 +50,7 @@ class URI(object):
         match=self.uriRegEx.match(uri)
         if not match:
             raise errors.PyroError("invalid uri")
-        self.protocol=match.group("protocol")
+        self.protocol=match.group("protocol").upper()
         self.object=match.group("object")
         location=match.group("location")
         if self.protocol=="PYRONAME":
@@ -360,7 +363,9 @@ class Proxy(object):
                     if isinstance(x, errors.CommunicationError):
                         raise
                     else:
-                        raise errors.CommunicationError(err)
+                        ce = errors.CommunicationError(err)
+                        ce.__cause__ = x
+                        raise ce
                 else:
                     if msg.type==Pyro4.message.MSG_CONNECTFAIL:
                         error="connection rejected"

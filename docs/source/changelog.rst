@@ -11,6 +11,7 @@ Change Log
 - wire protocol version bumped because of this (46)
 - support for multiple serializers added in the daemon
 - new config item added for that: SERIALIZERS_ACCEPTED
+- you can now write the protocol in URIs in lowercase if you want ("pyro:...") (will still be converted to uppercase)
 
 
 **Pyro 4.21**

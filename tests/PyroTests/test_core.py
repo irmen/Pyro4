@@ -149,6 +149,12 @@ class CoreTests(unittest.TestCase):
         p=Pyro4.core.URI("PYRO:12345@./u:../sockname")
         self.assertEqual("12345",p.object)
         self.assertEqual("../sockname",p.sockname)
+        p=Pyro4.core.URI("pyro:12345@host.com:4444")
+        self.assertEqual("PYRO",p.protocol)
+        self.assertEqual("12345",p.object)
+        self.assertEqual("host.com",p.host)
+        self.assertEqual(None,p.sockname)
+        self.assertEqual(4444,p.port)
 
     def testUriParsingPyroname(self):
         p=Pyro4.core.URI("PYRONAME:objectname")
@@ -166,12 +172,17 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("objectname",p.object)
         self.assertEqual("nameserverhost",p.host)
         self.assertEqual(4444,p.port)
+        p=Pyro4.core.URI("PyroName:some_obj_name@host.com:9999")
+        self.assertEqual("PYRONAME",p.protocol)
+        p=Pyro4.core.URI("pyroname:some_obj_name@host.com:9999")
+        self.assertEqual("PYRONAME",p.protocol)
 
     def testInvalidUris(self):
         self.assertRaises(TypeError, Pyro4.core.URI, None)
         self.assertRaises(TypeError, Pyro4.core.URI, 99999)
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "")
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "a")
+        self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYR")
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYRO")
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYRO:")
         self.assertRaises(Pyro4.errors.PyroError, Pyro4.core.URI, "PYRO::")
