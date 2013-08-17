@@ -109,13 +109,15 @@ class Message(object):
         return struct.pack(self.header_format, b"PYRO", constants.PROTOCOL_VERSION, self.type, self.flags, self.seq, self.data_size, self.serializer_id, self.annotations_size, 0, checksum)
 
     def __annotations_bytes(self):
-        a = []
-        for k, v in self.annotations.items():
-            a.append(struct.pack("!4sH", k, len(v)))
-            a.append(v)
-        if sys.platform=="cli":
-            return "".join(a)
-        return b"".join(a)
+        if self.annotations:
+            a = []
+            for k, v in self.annotations.items():
+                a.append(struct.pack("!4sH", k, len(v)))
+                a.append(v)
+            if sys.platform=="cli":
+                return "".join(a)
+            return b"".join(a)
+        return b""
 
     def send(self, connection):
         """send the message as bytes over the connection"""

@@ -666,10 +666,10 @@ class Daemon(object):
         # We need a minimal amount of data or the socket will remain blocked
         # on some systems... (messages smaller than 40 bytes)
         # Return True for successful handshake, False if something was wrong.
-        # We default to the marshal serializer to send message payload.
-        serializer = util.get_serializer("marshal")
-        data, _ = serializer.serializeData("ok", compress=False)
-        msg = Message(Pyro4.message.MSG_CONNECTOK, data, serializer.serializer_id, 0, 1)
+        # We default to the marshal serializer to send message payload of "ok"
+        ser = util.get_serializer("marshal")
+        data = ser.dumps("ok")
+        msg = Message(Pyro4.message.MSG_CONNECTOK, data, ser.serializer_id, 0, 1)
         msg.send(conn)
         return True
 

@@ -201,15 +201,14 @@ def sendData(sock, data):
     """
     if sock.gettimeout() is None:
         # socket is in blocking mode, we can use sendall normally.
-        while True:
-            try:
-                sock.sendall(data)
-                return
-            except socket.timeout:
-                raise TimeoutError("sending: timeout")
-            except socket.error:
-                x=sys.exc_info()[1]
-                raise ConnectionClosedError("sending: connection lost: "+str(x))
+        try:
+            sock.sendall(data)
+            return
+        except socket.timeout:
+            raise TimeoutError("sending: timeout")
+        except socket.error:
+            x=sys.exc_info()[1]
+            raise ConnectionClosedError("sending: connection lost: "+str(x))
     else:
         # Socket is in non-blocking mode, use regular send loop.
         retrydelay=0.0
