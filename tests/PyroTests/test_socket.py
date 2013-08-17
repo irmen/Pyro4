@@ -326,6 +326,11 @@ class ServerCallback_BrokenHandshake(ServerCallback):
         raise ZeroDivisionError("handshake crashed (on purpose)")
 
 
+class TestDaemon(Daemon):
+    def __init__(self):
+        pass   # avoid all regular daemon initialization
+
+
 class TestSocketServer(unittest.TestCase):
     def testServer_thread(self):
         daemon=ServerCallback()
@@ -377,8 +382,6 @@ class TestSocketServer(unittest.TestCase):
         self.assertTrue(serv.sock is None)
 
 
-
-
 @unittest.skipUnless(SU.hasSelect, "requires select()")
 class TestServerDOS_select(unittest.TestCase):
 
@@ -417,7 +420,7 @@ class TestServerDOS_select(unittest.TestCase):
                 csock = SU.createSocket(connect=(host, port))
                 conn = SU.SocketConnection(csock, "uri")
                 Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_CONNECTOK])
-            except errors.ConnectionClosedError as x:
+            except errors.ConnectionClosedError:
                 pass
             conn.close()
             try:
@@ -425,16 +428,15 @@ class TestServerDOS_select(unittest.TestCase):
                 csock = SU.createSocket(connect=(host, port))
                 conn = SU.SocketConnection(csock, "uri")
                 Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_CONNECTOK])
-            except errors.ConnectionClosedError as x:
+            except errors.ConnectionClosedError:
                 pass
-
         finally:
             conn.close()
             serv_thread.stop_loop.set()
             serv_thread.join()
 
     def testInvalidMessageCrash(self):
-        serv_thread = TestServerDOS_select.ServerThread(self.socket_server, Daemon)
+        serv_thread = TestServerDOS_select.ServerThread(self.socket_server, TestDaemon)
         serv_thread.start()
         time.sleep(0.2)
         self.assertTrue(serv_thread.is_alive(), "server thread failed to start")
@@ -495,8 +497,6 @@ class TestServerDOS_threading(TestServerDOS_select):
 
     def tearDown(self):
         Pyro4.config.THREADPOOL_MAXTHREADS = self.orig_maxthreads
-
-
 
 
 if __name__ == "__main__":

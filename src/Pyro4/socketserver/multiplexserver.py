@@ -18,7 +18,7 @@ class MultiplexedSocketServerBase(object):
         self.sock=None
         bind_location=unixsocket if unixsocket else (host, port)
         self.sock=socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
-        self.clients=[]
+        self.clients=set()
         self.daemon=daemon
         sockaddr=self.sock.getsockname()
         if sockaddr[0].startswith("127."):
@@ -49,16 +49,13 @@ class MultiplexedSocketServerBase(object):
                 # server socket, means new connection
                 conn=self._handleConnection(self.sock)
                 if conn:
-                    self.clients.append(conn)
+                    self.clients.add(conn)
             else:
                 # must be client socket, means remote call
-                try:
-                    self.daemon.handleRequest(s)
-                except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
-                    # client went away or caused a security error
+                active = self.handleRequest(s)
+                if not active:
                     s.close()
-                    if s in self.clients:
-                        self.clients.remove(s)
+                    self.clients.discard(s)
 
     def _handleConnection(self, sock):
         try:
@@ -112,7 +109,7 @@ class MultiplexedSocketServerBase(object):
                 c.close()
             except Exception:
                 pass
-        self.clients=[]
+        self.clients=set()
 
     @property
     def sockets(self):
@@ -123,6 +120,22 @@ class MultiplexedSocketServerBase(object):
     def wakeup(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
         socketutil.triggerSocket(self.sock)
+
+    def handleRequest(self, conn):
+        """Handles a single connection request event and returns if the connection is still active"""
+        try:
+            self.daemon.handleRequest(conn)
+            return True
+        except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
+            # client went away or caused a security error.
+            # close the connection silently.
+            return False
+        except:
+            # other error occurred, close the connection, but also log a warning
+            ex_t, ex_v, ex_tb = sys.exc_info()
+            tb = util.formatTraceback(ex_t, ex_v, ex_tb)
+            log.warning("error during handleRequest: %s; %s", ex_v, "\n".join(tb))
+            return False
 
 
 class SocketServer_Poll(MultiplexedSocketServerBase):
@@ -145,19 +158,17 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
                             poll.register(conn.fileno(), select.POLLIN | select.POLLPRI)
                             fileno2connection[conn.fileno()]=conn
                     else:
-                        try:
-                            self.daemon.handleRequest(conn)
-                        except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
-                            # client went away or caused a security error
+                        active = self.handleRequest(conn)
+                        if not active:
                             try:
                                 fn=conn.fileno()
                             except socket.error:
                                 pass
                             else:
+                                conn.close()
                                 if fn in fileno2connection:
                                     poll.unregister(fn)
                                     del fileno2connection[fn]
-                                conn.close()
         except KeyboardInterrupt:
             log.debug("stopping on break signal")
             pass
@@ -174,7 +185,7 @@ class SocketServer_Select(MultiplexedSocketServerBase):
         log.debug("entering select-based requestloop")
         while loopCondition():
             try:
-                rlist=self.clients[:]
+                rlist=list(self.clients)
                 rlist.append(self.sock)
                 try:
                     rlist, _, _=select.select(rlist, [], [], Pyro4.config.POLLTIMEOUT)
@@ -192,29 +203,14 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                         pass  # this can occur when closing down, even when we just tested for presence in the list
                     conn=self._handleConnection(self.sock)
                     if conn:
-                        self.clients.append(conn)
-                for conn in rlist[:]:
+                        self.clients.add(conn)
+                for conn in rlist:
+                    # no need to remove conn from rlist, because no more processing is done after this
                     if conn in self.clients:
-                        rlist.remove(conn)
-                        try:
-                            must_close = False
-                            self.daemon.handleRequest(conn)
-                        except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
-                            # client went away or caused a security error.
-                            # close the connection silently.
-                            must_close = True
-                        except:
-                            # other error occurred, close the connection, but also log a warning
-                            ex_t, ex_v, ex_tb = sys.exc_info()
-                            tb = util.formatTraceback(ex_t, ex_v, ex_tb)
-                            log.warning("error during handleRequest: %s; %s", ex_v, "\n".join(tb))
-                            must_close = True
-                        finally:
-                            if must_close:
-                                conn.close()
-                                if conn in self.clients:
-                                    self.clients.remove(conn)
-
+                        active = self.handleRequest(conn)
+                        if not active:
+                            conn.close()
+                            self.clients.discard(conn)
             except socket.timeout:
                 pass   # just continue the loop on a timeout
             except KeyboardInterrupt:

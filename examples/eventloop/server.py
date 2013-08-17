@@ -4,6 +4,7 @@ import select
 import sys
 import Pyro4.core
 import Pyro4.naming
+import Pyro4.socketutil
 
 if sys.version_info<(3,0):
     input=raw_input
@@ -16,6 +17,7 @@ else:
     Pyro4.config.SERVERTYPE="multiplex"
 
 hostname=socket.gethostname()
+my_ip = Pyro4.socketutil.getIpAddress(None, workaround127=True)
 
 class EmbeddedServer(object):
     def multiply(self, x, y):
@@ -24,7 +26,7 @@ class EmbeddedServer(object):
 
 print("initializing services... servertype=%s" % Pyro4.config.SERVERTYPE)
 # start a name server with broadcast server as well
-nameserverUri, nameserverDaemon, broadcastServer = Pyro4.naming.startNS(host=hostname)
+nameserverUri, nameserverDaemon, broadcastServer = Pyro4.naming.startNS(host=my_ip)
 assert broadcastServer is not None, "expect a broadcast server to be created"
 
 print("got a Nameserver, uri=%s" % nameserverUri)
