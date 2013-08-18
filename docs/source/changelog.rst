@@ -12,6 +12,7 @@ Change Log
 - support for multiple serializers added in the daemon
 - new config item added for that: SERIALIZERS_ACCEPTED
 - you can now write the protocol in URIs in lowercase if you want ("pyro:...") (will still be converted to uppercase)
+- fixed poll server loop() not handling self.clients which caused crashes with a custom loopCondition
 
 
 **Pyro 4.21**
