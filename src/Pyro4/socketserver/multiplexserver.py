@@ -146,8 +146,10 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
         poll=select.poll()
         try:
             fileno2connection={}  # map fd to original connection object
-            poll.register(self.sock.fileno(), select.POLLIN | select.POLLPRI)
-            fileno2connection[self.sock.fileno()]=self.sock
+            rlist=list(self.clients)+[self.sock]
+            for r in rlist:
+                poll.register(r.fileno(), select.POLLIN | select.POLLPRI)
+                fileno2connection[r.fileno()]=r
             while loopCondition():
                 polls=poll.poll(1000*Pyro4.config.POLLTIMEOUT)
                 for (fd, mask) in polls:
@@ -157,6 +159,7 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
                         if conn:
                             poll.register(conn.fileno(), select.POLLIN | select.POLLPRI)
                             fileno2connection[conn.fileno()]=conn
+                            self.clients.add(conn)
                     else:
                         active = self.handleRequest(conn)
                         if not active:
@@ -166,6 +169,7 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
                                 pass
                             else:
                                 conn.close()
+                                self.clients.discard(conn)
                                 if fn in fileno2connection:
                                     poll.unregister(fn)
                                     del fileno2connection[fn]
