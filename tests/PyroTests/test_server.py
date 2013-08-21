@@ -60,7 +60,7 @@ class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
         serializer = Pyro4.util.get_serializer("marshal")
         data, _ = serializer.serializeData("rigged connection failure", compress=False)
         msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTFAIL, data, serializer.serializer_id, 0, 1)
-        msg.send(conn)
+        conn.send(msg.to_bytes())
         return False
     
 class ServerTestsBrokenHandshake(unittest.TestCase):
@@ -117,7 +117,7 @@ class ServerTestsOnce(unittest.TestCase):
             p._pyroBind()
             conn = p._pyroConnection
             msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"abc", 42, 0, 999)
-            msg.send(conn)
+            conn.send(msg.to_bytes())
             msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_PING])
             self.assertEqual(Pyro4.message.MSG_PING, msg.type)
             self.assertEqual(999, msg.seq)

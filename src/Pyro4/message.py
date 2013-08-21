@@ -119,12 +119,16 @@ class Message(object):
             return b"".join(a)
         return b""
 
-    def send(self, connection):
-        """send the message as bytes over the connection"""
-        connection.send(self.__header_bytes())
-        if self.annotations:
-            connection.send(self.__annotations_bytes())
-        connection.send(self.data)
+    # Note: this 'chunked' way of sending is not used because it triggers Nagle's algorithm
+    # on some systems (linux). This causes massive delays, unless you change the socket option
+    # TCP_NODELAY to disable the algorithm. What also works, is sending all the message bytes
+    # in one go: connection.send(message.to_bytes())
+    # def send(self, connection):
+    #    """send the message as bytes over the connection"""
+    #    connection.send(self.__header_bytes())
+    #    if self.annotations:
+    #        connection.send(self.__annotations_bytes())
+    #    connection.send(self.data)
 
     @classmethod
     def from_header(cls, headerData):

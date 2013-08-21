@@ -295,7 +295,7 @@ class Proxy(object):
                 log.debug("proxy wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (Pyro4.message.MSG_INVOKE, flags, serializer.serializer_id, self._pyroSeq, data))
             msg = Message(Pyro4.message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq)
             try:
-                msg.send(self._pyroConnection)
+                self._pyroConnection.send(msg.to_bytes())
                 del msg  # invite GC to collect the object, don't wait for out-of-scope
                 if flags & Pyro4.message.FLAGS_ONEWAY:
                     return None    # oneway call, no response data
@@ -675,7 +675,7 @@ class Daemon(object):
         ser = util.get_serializer("marshal")
         data = ser.dumps("ok")
         msg = Message(Pyro4.message.MSG_CONNECTOK, data, ser.serializer_id, 0, 1)
-        msg.send(conn)
+        conn.send(msg.to_bytes())
         return True
 
     def handleRequest(self, conn):
@@ -699,7 +699,7 @@ class Daemon(object):
             if msg.type == Pyro4.message.MSG_PING:
                 # return same seq, but ignore any data (it's a ping, not an echo). Nothing is deserialized.
                 msg = Message(Pyro4.message.MSG_PING, b"", msg.serializer_id, 0, request_seq)
-                msg.send(conn)
+                conn.send(msg.to_bytes())
                 return
             if msg.serializer_id not in self.__serializer_ids:
                 raise errors.ProtocolError("message used serializer that is not accepted: %d" % msg.serializer_id)
@@ -755,7 +755,7 @@ class Daemon(object):
                 if Pyro4.config.LOGWIRE:
                     log.debug("daemon wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (Pyro4.message.MSG_RESULT, response_flags, serializer.serializer_id, request_seq, data))
                 msg = Message(Pyro4.message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq)
-                msg.send(conn)
+                conn.send(msg.to_bytes())
         except Exception:
             xt, xv = sys.exc_info()[0:2]
             if xt is not errors.ConnectionClosedError:
@@ -790,7 +790,7 @@ class Daemon(object):
         if Pyro4.config.LOGWIRE:
             log.debug("daemon wiredata sending (error response): msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (Pyro4.message.MSG_RESULT, flags, serializer.serializer_id, seq, data))
         msg = Message(Pyro4.message.MSG_RESULT, data, serializer.serializer_id, flags, seq)
-        msg.send(connection)
+        connection.send(msg.to_bytes())
 
     def register(self, obj, objectId=None):
         """

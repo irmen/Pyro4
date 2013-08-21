@@ -86,9 +86,9 @@ def getIpAddress(hostname, workaround127=False, ipVersion=None):
             ip=getInterfaceAddress("4.2.2.2")
         return ip
     try:
-        return getaddr(Pyro4.config.PREFER_IP_VERSION) if ipVersion == None else getaddr(ipVersion)
+        return getaddr(Pyro4.config.PREFER_IP_VERSION) if ipVersion is None else getaddr(ipVersion)
     except socket.gaierror:
-        if ipVersion == 6 or (ipVersion == None and Pyro4.config.PREFER_IP_VERSION == 6):
+        if ipVersion == 6 or (ipVersion is None and Pyro4.config.PREFER_IP_VERSION == 6):
             # try a (inefficient, but hey) workaround to obtain the ipv6 address:
             # attempt to connect to one of a few ipv6-servers (google's public dns servers),
             # and obtain the connected socket's address. (This will only work with an active internet connection)
@@ -229,7 +229,7 @@ def sendData(sock, data):
 
 _GLOBAL_DEFAULT_TIMEOUT=object()
 
-def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False, ipv6=False):
+def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False, ipv6=False, nodelay=False):
     """
     Create a socket. Default socket options are keepalive and IPv4 family.
     If 'bind' or 'connect' is a string, it is assumed a Unix domain socket is requested.
@@ -239,7 +239,7 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
     """
     if bind and connect:
         raise ValueError("bind and connect cannot both be specified at the same time")
-    forceIPv6=ipv6 or (ipv6 == None and Pyro4.config.PREFER_IP_VERSION == 6)
+    forceIPv6=ipv6 or (ipv6 is None and Pyro4.config.PREFER_IP_VERSION == 6)
     if type(bind) is str or type(connect) is str:
         family=socket.AF_UNIX
     elif not bind and not connect:
@@ -275,6 +275,8 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
     else:
         raise ValueError("unknown bind or connect format.")
     sock=socket.socket(family, socket.SOCK_STREAM)
+    if nodelay:
+        setNoDelay(sock)
     if reuseaddr:
         setReuseAddr(sock)
     if noinherit:
@@ -325,7 +327,7 @@ def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TI
     Set ipv6=True to create an IPv6 socket rather than IPv4.
     Set ipv6=None to use the PREFER_IP_VERSION config setting.
     """
-    forceIPv6=ipv6 or (ipv6 == None and Pyro4.config.PREFER_IP_VERSION == 6)
+    forceIPv6=ipv6 or (ipv6 is None and Pyro4.config.PREFER_IP_VERSION == 6)
     if not bind:
         family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
     elif type(bind) is tuple:
@@ -374,6 +376,14 @@ def setReuseAddr(sock):
     """sets the SO_REUSEADDR option on the socket, if possible."""
     try:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    except Exception:
+        pass
+
+
+def setNoDelay(sock):
+    """sets the TCP_NODELAY option on the socket (to disable Nagle's algorithm), if possible."""
+    try:
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
     except Exception:
         pass
 

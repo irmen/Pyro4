@@ -100,7 +100,7 @@ class MessageTestsHmac(unittest.TestCase):
         annotations = { b"TEST": b"abcde" }
         msg = Message(Pyro4.message.MSG_CONNECT, b"hello", self.ser.serializer_id, 0, 0, annotations)
         c = ConnectionMock()
-        msg.send(c)
+        c.send(msg.to_bytes())
         msg = Message.recv(c)
         self.assertEquals(0, len(c.received))
         self.assertEquals(5, msg.data_size)
@@ -153,7 +153,7 @@ class MessageTestsHmac(unittest.TestCase):
     def testChecksum(self):
         msg = Message(Pyro4.message.MSG_RESULT, b"test", 42, 0, 1)
         c = ConnectionMock()
-        msg.send(c)
+        c.send(msg.to_bytes())
         # corrupt the checksum bytes
         data = c.received
         data = data[:msg.header_size-2] + b'\x00\x00' + data[msg.header_size:]
@@ -169,7 +169,7 @@ class MessageTestsNoHmac(unittest.TestCase):
     def testRecvNoAnnotations(self):
         msg = Message(Pyro4.message.MSG_CONNECT, b"hello", 42, 0, 0)
         c = ConnectionMock()
-        msg.send(c)
+        c.send(msg.to_bytes())
         msg = Message.recv(c)
         self.assertEquals(0, len(c.received))
         self.assertEquals(5, msg.data_size)
