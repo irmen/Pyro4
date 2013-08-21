@@ -698,7 +698,9 @@ class Daemon(object):
                 log.debug("daemon wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data) )
             if msg.type == Pyro4.message.MSG_PING:
                 # return same seq, but ignore any data (it's a ping, not an echo). Nothing is deserialized.
-                msg = Message(Pyro4.message.MSG_PING, b"", msg.serializer_id, 0, request_seq)
+                msg = Message(Pyro4.message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq)
+                if Pyro4.config.LOGWIRE:
+                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
                 conn.send(msg.to_bytes())
                 return
             if msg.serializer_id not in self.__serializer_ids:

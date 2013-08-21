@@ -55,6 +55,7 @@ class NameServerTests(unittest.TestCase):
         self.daemonthread=NSLoopThread(self.nameserver)
         self.daemonthread.start()
         self.daemonthread.running.wait()
+        time.sleep(0.05)
         self.old_bcPort=Pyro4.config.NS_BCPORT
         self.old_nsPort=Pyro4.config.NS_PORT
         self.old_nsHost=Pyro4.config.NS_HOST

@@ -74,6 +74,7 @@ class ServerTestsBrokenHandshake(unittest.TestCase):
         self.daemonthread=DaemonLoopThread(self.daemon)
         self.daemonthread.start()
         self.daemonthread.running.wait()
+        time.sleep(0.05)
     def tearDown(self):
         time.sleep(0.05)
         self.daemon.shutdown()
@@ -104,6 +105,7 @@ class ServerTestsOnce(unittest.TestCase):
         self.daemonthread=DaemonLoopThread(self.daemon)
         self.daemonthread.start()
         self.daemonthread.running.wait()
+        time.sleep(0.05)
     def tearDown(self):
         time.sleep(0.05)
         if self.daemon is not None:
@@ -116,12 +118,12 @@ class ServerTestsOnce(unittest.TestCase):
         with Pyro4.core.Proxy(self.objectUri) as p:
             p._pyroBind()
             conn = p._pyroConnection
-            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"abc", 42, 0, 999)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"something", 42, 0, 999)
             conn.send(msg.to_bytes())
             msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_PING])
             self.assertEqual(Pyro4.message.MSG_PING, msg.type)
             self.assertEqual(999, msg.seq)
-            self.assertEqual(b"", msg.data)
+            self.assertEqual(b"pong", msg.data)
 
     def testNoDottedNames(self):
         Pyro4.config.DOTTEDNAMES=False
@@ -439,6 +441,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         self.daemonthread=DaemonLoopThread(self.daemon)
         self.daemonthread.start()
         self.daemonthread.running.wait()
+        time.sleep(0.05)
     def tearDown(self):
         time.sleep(0.05)
         self.daemon.shutdown()
