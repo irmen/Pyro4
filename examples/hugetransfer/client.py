@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore")
 
 #Pyro4.config.COMMTIMEOUT=2
 
-print("Enter the echo uri of the server:")
+print("Enter the server's uri that was printed:")
 if sys.version_info<(3,0):
     uri=raw_input()
 else:

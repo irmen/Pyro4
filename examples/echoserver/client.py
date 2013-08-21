@@ -5,7 +5,7 @@ import Pyro4.util
 
 print("First start the built-in test echo server with something like:")
 print("$ python -m Pyro4.test.echoserver")
-print("Enter the echo uri that was printed:")
+print("Enter the server's uri that was printed:")
 if sys.version_info<(3,0):
     uri=raw_input()
 else:
