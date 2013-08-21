@@ -456,7 +456,7 @@ class TestServerDOS_select(unittest.TestCase):
             # invoke something, but screw up the message (in this case, mess with the protocol version)
             orig_protocol_version = Pyro4.constants.PROTOCOL_VERSION
             Pyro4.constants.PROTOCOL_VERSION = 9999
-            msgbytes = Pyro4.message.Message(Pyro4.message.MSG_PING, b"", 42, 0, 0).to_bytes()
+            msgbytes = Pyro4.message.Message(Pyro4.message.MSG_PING, b"something", 42, 0, 0).to_bytes()
             Pyro4.constants.PROTOCOL_VERSION = orig_protocol_version
             conn.send(msgbytes) # this should cause an error in the server because of invalid msg
             try:
@@ -470,12 +470,12 @@ class TestServerDOS_select(unittest.TestCase):
             # invoke something again, this should still work (server must still be running)
             conn.close()
             conn = connect(host, port)
-            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"abc", 42, 0, 999)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"something", 42, 0, 999)
             conn.send(msg.to_bytes())
             msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_PING])
             self.assertEqual(Pyro4.message.MSG_PING, msg.type)
             self.assertEqual(999, msg.seq)
-            self.assertEqual(b"", msg.data)
+            self.assertEqual(b"pong", msg.data)
         finally:
             conn.close()
             serv_thread.stop_loop.set()
