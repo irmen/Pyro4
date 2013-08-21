@@ -275,11 +275,9 @@ using the marshal serializer:
     | total time 1.859 seconds
     | total method calls: 15000
     | avg. time per method call: 0.124 msec (8068/sec) (serializer: marshal)
-
 :hugetransfer/client.py:
-    | It took 0.44 seconds to transfer 51269 kilobyte.
-    | That is 115465 kb/sec. = 112.8 mb/sec. (serializer: marshal)
-
+    | It took 0.49 seconds to transfer 50 mb.
+    | That is 104690 kb/sec. = 102.2 mb/sec. (serializer: marshal)
 :batchedcalls/client.py:
     | (using pickle serializer)
     | Batched remote calls...:
