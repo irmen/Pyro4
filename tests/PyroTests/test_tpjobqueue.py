@@ -4,7 +4,7 @@ Tests for the thread pooled job queue.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 import time
 import random
 from Pyro4.tpjobqueue import ThreadPooledJobQueue, JobQueueError
@@ -20,8 +20,9 @@ class Job(object):
     def __init__(self, name="unnamed"):
         self.name=name
     def __call__(self):
-        # print "Job() '%s'" % self.name
+        # print("Job() '%s'" % self.name)
         time.sleep(JOB_TIME - random.random()/10.0)
+        # print("Job() '%s' done" % self.name)
 
 
 class TPJobQueueTests(unittest.TestCase):
@@ -58,6 +59,19 @@ class TPJobQueueTests(unittest.TestCase):
             jq.process(Job(str(i+1)))
             self.assertTrue(jq.workercountSafe >= MIN_POOL_SIZE)
             self.assertTrue(jq.workercountSafe <= MAX_POOL_SIZE)
+        jq.drain()
+
+    def testJQmanyjobs(self):
+        class Job2(object):
+            def __init__(self, name="unnamed"):
+                self.name=name
+            def __call__(self):
+                time.sleep(0.01)
+        with ThreadPooledJobQueue() as jq:
+            for i in range(1+MAX_POOL_SIZE*100):
+                jq.process(Job2(str(i)))
+            time.sleep(1)
+            self.assertEqual(0, jq.jobcount, "queue must be finished in under one second")
         jq.drain()
 
     def testJQshrink(self):
