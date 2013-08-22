@@ -26,6 +26,7 @@ class ClientConnectionJob(object):
         self.daemon = daemon
 
     def __call__(self):
+        log.debug("job call() %s", self.caddr)  # XXX remove this after issue #19 is fixed
         if self.handleConnection():
             try:
                 while True:
