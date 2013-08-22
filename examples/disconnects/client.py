@@ -33,7 +33,7 @@ class AutoReconnectingProxy(Pyro4.core.Proxy):
                 # send the special 'ping' message to the daemon, to see if this connection is still alive
                 # we expect a 'ping' response (no-op)
                 ping = Pyro4.message.Message(Pyro4.message.MSG_PING, b"", 42, 0, 0)
-                ping.send(self._pyroConnection)
+                self._pyroConnection.send(ping.to_bytes())
                 Pyro4.message.Message.recv(self._pyroConnection, [Pyro4.message.MSG_PING])
                 print("  <proxy: ping reply (still connected)>")
             except Pyro4.errors.ConnectionClosedError:     # or possibly even ProtocolError
