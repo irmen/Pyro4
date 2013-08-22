@@ -4,15 +4,18 @@ Change Log
 
 **Pyro 4.22**
 
+- support added in daemon to accept multiple serializers in incoming messages
+- new config item added for that: SERIALIZERS_ACCEPTED (defaults to 'safe' serializers)
+- wire protocol header changed. Not backwards compatible! New protocol version: 46.
+- wire protocol: header now contains serializer used for the data payload
+- wire protocol: header is extensible with optional 'annotations'. One is used for the HMAC digest
+  that used to be in all messages even when the hmac option wasn't enabled.
 - refactored core.MessageFactory: new submodule Pyro4.message. If you used MessageFactory
   in your own code you'll need to refactor it to use the new Pyro4.message.Message API instead.
 - ``disconnects`` example client code updated to reflect this API change
-- wire protocol now contains serializer used for the data payload
-- wire protocol version bumped because of this (46)
-- support for multiple serializers added in the daemon
-- new config item added for that: SERIALIZERS_ACCEPTED
 - you can now write the protocol in URIs in lowercase if you want ("pyro:...") (will still be converted to uppercase)
 - fixed poll server loop() not handling self.clients which caused crashes with a custom loopCondition
+- fixed some unit test hang/timeout/crash issues
 
 
 **Pyro 4.21**
