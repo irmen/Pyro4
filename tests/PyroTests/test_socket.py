@@ -64,24 +64,32 @@ class TestSocketutil(unittest.TestCase):
         self.assertTrue(":" in SU.getIpAddress("localhost",ipVersion=6))
 
     def testGetIpVersion4(self):
-        Pyro4.config.PREFER_IP_VERSION=4
-        self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
-        self.assertEqual(4, SU.getIpVersion("localhost"))
-        Pyro4.config.PREFER_IP_VERSION=0
-        self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
+        version = Pyro4.config.PREFER_IP_VERSION
+        try:
+            Pyro4.config.PREFER_IP_VERSION=4
+            self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
+            self.assertEqual(4, SU.getIpVersion("localhost"))
+            Pyro4.config.PREFER_IP_VERSION=0
+            self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
+        finally:
+            Pyro4.config.PREFER_IP_VERSION = version
 
     @unittest.skipUnless(has_ipv6, "ipv6 testcase")
     def testGetIpVersion6(self):
-        Pyro4.config.PREFER_IP_VERSION=6
-        self.assertEqual(6, SU.getIpVersion("127.0.0.1"))
-        self.assertEqual(6, SU.getIpVersion("::1"))
-        self.assertEqual(6, SU.getIpVersion("localhost"))
-        Pyro4.config.PREFER_IP_VERSION=4
-        self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
-        self.assertEqual(6, SU.getIpVersion("::1"))
-        Pyro4.config.PREFER_IP_VERSION=0
-        self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
-        self.assertEqual(6, SU.getIpVersion("::1"))
+        version = Pyro4.config.PREFER_IP_VERSION
+        try:
+            Pyro4.config.PREFER_IP_VERSION=6
+            self.assertEqual(6, SU.getIpVersion("127.0.0.1"))
+            self.assertEqual(6, SU.getIpVersion("::1"))
+            self.assertEqual(6, SU.getIpVersion("localhost"))
+            Pyro4.config.PREFER_IP_VERSION=4
+            self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
+            self.assertEqual(6, SU.getIpVersion("::1"))
+            Pyro4.config.PREFER_IP_VERSION=0
+            self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
+            self.assertEqual(6, SU.getIpVersion("::1"))
+        finally:
+            Pyro4.config.PREFER_IP_VERSION = version
 
     def testGetInterfaceAddress(self):
         self.assertTrue(SU.getInterfaceAddress("localhost").startswith("127."))
@@ -197,16 +205,16 @@ class TestSocketutil(unittest.TestCase):
         bs.close()
         self.assertRaises(ValueError, SU.createSocket, bind=('::1',12345), connect=('::1',1234))
 
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "unix domain sockets required")
     def testCreateBoundUnixSockets(self):
-        if hasattr(socket,"AF_UNIX"):
-            SOCKNAME="test_unixsocket"
-            if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
-            s=SU.createSocket(bind=SOCKNAME)
-            self.assertEqual(socket.AF_UNIX, s.family)
-            self.assertEqual(SOCKNAME,s.getsockname())
-            s.close()
-            if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
-            self.assertRaises(ValueError, SU.createSocket, bind=SOCKNAME, connect=SOCKNAME)
+        SOCKNAME="test_unixsocket"
+        if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
+        s=SU.createSocket(bind=SOCKNAME)
+        self.assertEqual(socket.AF_UNIX, s.family)
+        self.assertEqual(SOCKNAME,s.getsockname())
+        s.close()
+        if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
+        self.assertRaises(ValueError, SU.createSocket, bind=SOCKNAME, connect=SOCKNAME)
 
     def testSend(self):
         ss=SU.createSocket(bind=("localhost",0))
@@ -223,22 +231,22 @@ class TestSocketutil(unittest.TestCase):
         ss.close()
         cs.close()
 
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "unix domain sockets required")
     def testSendUnix(self):
-        if hasattr(socket,"AF_UNIX"):
-            SOCKNAME="test_unixsocket"
-            ss=SU.createSocket(bind=SOCKNAME)
-            cs=SU.createSocket(connect=SOCKNAME)
-            SU.sendData(cs,tobytes("foobar!")*10)
-            cs.shutdown(socket.SHUT_WR)
-            a=ss.accept()
-            data=SU.receiveData(a[0], 5)
-            self.assertEqual(tobytes("fooba"),data)
-            data=SU.receiveData(a[0], 5)
-            self.assertEqual(tobytes("r!foo"),data)
-            a[0].close()
-            ss.close()
-            cs.close()
-            if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
+        SOCKNAME="test_unixsocket"
+        ss=SU.createSocket(bind=SOCKNAME)
+        cs=SU.createSocket(connect=SOCKNAME)
+        SU.sendData(cs,tobytes("foobar!")*10)
+        cs.shutdown(socket.SHUT_WR)
+        a=ss.accept()
+        data=SU.receiveData(a[0], 5)
+        self.assertEqual(tobytes("fooba"),data)
+        data=SU.receiveData(a[0], 5)
+        self.assertEqual(tobytes("r!foo"),data)
+        a[0].close()
+        ss.close()
+        cs.close()
+        if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
 
     def testBroadcast(self):
         ss=SU.createBroadcastSocket((None, 0))
@@ -464,9 +472,10 @@ class TestServerDOS_select(unittest.TestCase):
             conn.send(msgbytes) # this should cause an error in the server because of invalid msg
             try:
                 msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_RESULT])
-                self.assertTrue(b"Traceback" in msg.data)
-                self.assertTrue(b"ProtocolError" in msg.data)
-                self.assertTrue(b"version" in msg.data)
+                data = msg.data.decode("ascii", errors="ignore")  # convert raw message to string to check some stuff
+                self.assertTrue("Traceback" in data)
+                self.assertTrue("ProtocolError" in data)
+                self.assertTrue("version" in data)
             except errors.ConnectionClosedError:
                 # invalid message can have caused the connection to be closed, this is fine
                 pass

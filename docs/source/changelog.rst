@@ -17,6 +17,7 @@ Change Log
 - fixed poll server loop() not handling self.clients which caused crashes with a custom loopCondition
 - fixed some unit test hang/timeout/crash issues
 - improved unit tests for jython, disabled ipv6 tests for jython because of too many issues.
+- improved unit tests for ironpython.
 
 
 **Pyro 4.21**

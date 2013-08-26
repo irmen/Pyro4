@@ -70,8 +70,8 @@ class TPJobQueueTests(unittest.TestCase):
         with ThreadPooledJobQueue() as jq:
             for i in range(1+MAX_POOL_SIZE*100):
                 jq.process(Job2(str(i)))
-            time.sleep(1)
-            self.assertEqual(0, jq.jobcount, "queue must be finished in under one second")
+            time.sleep(2)
+            self.assertEqual(0, jq.jobcount, "queue must be finished in under two seconds")
         jq.drain()
 
     def testJQshrink(self):

@@ -86,6 +86,8 @@ def getIpAddress(hostname, workaround127=False, ipVersion=None):
             ip=getInterfaceAddress("4.2.2.2")
         return ip
     try:
+        if hostname and ':' in hostname and ipVersion is None:
+            ipVersion = 0
         return getaddr(Pyro4.config.PREFER_IP_VERSION) if ipVersion is None else getaddr(ipVersion)
     except socket.gaierror:
         if ipVersion == 6 or (ipVersion is None and Pyro4.config.PREFER_IP_VERSION == 6):
@@ -107,10 +109,11 @@ def getInterfaceAddress(ip_address):
     """tries to find the ip address of the interface that connects to the given host's address"""
     family = socket.AF_INET if getIpVersion(ip_address)==4 else socket.AF_INET6
     sock = socket.socket(family, socket.SOCK_DGRAM)
-    sock.connect((ip_address, 53))   # 53=dns
-    ip = sock.getsockname()[0]
-    sock.close()
-    return ip
+    try:
+        sock.connect((ip_address, 53))   # 53=dns
+        return sock.getsockname()[0]
+    finally:
+        sock.close()
 
 
 def __nextRetrydelay(delay):

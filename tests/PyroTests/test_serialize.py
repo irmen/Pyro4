@@ -7,6 +7,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 from __future__ import with_statement
 import sys
 import os
+import copy
 import pprint
 import Pyro4.util
 import Pyro4.errors
@@ -38,9 +39,10 @@ class SerializeTests_pickle(unittest.TestCase):
     def testSerUnicode(self):
         data = unicode("x")
         ser,_ = self.ser.serializeData(data)
-        self.assertTrue(type(ser) is bytes)
+        expected_type = str if sys.platform=="cli" else bytes   # ironpython serializes into str, not bytes... :(
+        self.assertTrue(type(ser) is expected_type)
         ser,_ = self.ser.serializeCall(data, unicode("method"), [], {})
-        self.assertTrue(type(ser) is bytes)
+        self.assertTrue(type(ser) is expected_type)
 
     def testSerCompression(self):
         d1,c1=self.ser.serializeData("small data", compress=True)
@@ -59,12 +61,17 @@ class SerializeTests_pickle(unittest.TestCase):
     def testSerErrors(self):
         e1=Pyro4.errors.NamingError(unicode("x"))
         e1._pyroTraceback = ["this is the remote traceback"]
+        orig_e = copy.copy(e1)
         e2=Pyro4.errors.PyroError(unicode("x"))
         e3=Pyro4.errors.ProtocolError(unicode("x"))
+        if sys.platform=="cli":
+            Pyro4.util.fixIronPythonExceptionForPickle(e1, True)
         p,_=self.ser.serializeData(e1)
         e=self.ser.deserializeData(p)
+        if sys.platform=="cli":
+            Pyro4.util.fixIronPythonExceptionForPickle(e, False)
         self.assertTrue(isinstance(e, Pyro4.errors.NamingError))
-        self.assertEqual(repr(e1), repr(e))
+        self.assertEqual(repr(orig_e), repr(e))
         self.assertEqual(["this is the remote traceback"], e._pyroTraceback, "remote traceback info should be present")
         p,_=self.ser.serializeData(e2)
         e=self.ser.deserializeData(p)
@@ -209,7 +216,8 @@ class SerializeTests_pickle(unittest.TestCase):
     def testData(self):
         data = [42, "hello"]
         ser, compressed = self.ser.serializeData(data)
-        self.assertTrue(type(ser) is bytes)
+        expected_type = str if sys.platform=="cli" else bytes   # ironpython serializes into str, not bytes... :(
+        self.assertTrue(type(ser) is expected_type)
         self.assertFalse(compressed)
         data2 = self.ser.deserializeData(ser, compressed=False)
         self.assertEqual(data, data2)
@@ -267,8 +275,12 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertTrue(isinstance(e2, ZeroDivisionError))
         self.assertTrue(str(e2) in ("('hello', 42)", "(u'hello', 42)"))
         e.custom_attribute = 999
+        if sys.platform=="cli":
+            Pyro4.util.fixIronPythonExceptionForPickle(e, True)
         ser, compressed = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(ser, compressed)
+        if sys.platform=="cli":
+            Pyro4.util.fixIronPythonExceptionForPickle(e2, False)
         self.assertTrue(isinstance(e2, ZeroDivisionError))
         self.assertTrue(str(e2) in ("('hello', 42)", "(u'hello', 42)"))
         self.assertEqual(999, e2.custom_attribute)
