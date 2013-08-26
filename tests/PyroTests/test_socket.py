@@ -472,7 +472,9 @@ class TestServerDOS_select(unittest.TestCase):
             conn.send(msgbytes) # this should cause an error in the server because of invalid msg
             try:
                 msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_RESULT])
-                data = msg.data.decode("ascii", errors="ignore")  # convert raw message to string to check some stuff
+                data = msg.data
+                if sys.version_info >= (2, 7):
+                    data = msg.data.decode("ascii", errors="ignore")  # convert raw message to string to check some stuff
                 self.assertTrue("Traceback" in data)
                 self.assertTrue("ProtocolError" in data)
                 self.assertTrue("version" in data)
