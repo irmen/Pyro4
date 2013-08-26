@@ -16,6 +16,7 @@ Change Log
 - you can now write the protocol in URIs in lowercase if you want ("pyro:...") (will still be converted to uppercase)
 - fixed poll server loop() not handling self.clients which caused crashes with a custom loopCondition
 - fixed some unit test hang/timeout/crash issues
+- improved unit tests for jython, disabled ipv6 tests for jython because of too many issues.
 
 
 **Pyro 4.21**

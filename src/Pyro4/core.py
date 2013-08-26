@@ -196,6 +196,9 @@ class Proxy(object):
         self.__pyroLock=threadutil.Lock()
         self.__pyroConnLock=threadutil.Lock()
         util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
+        if os.name=="java" and Pyro4.config.SERIALIZER=="marshal":
+            import warnings
+            warnings.warn("marshal doesn't work correctly with Jython (issue 2077); please choose another serializer", RuntimeWarning)
 
     def __del__(self):
         if hasattr(self, "_pyroConnection"):

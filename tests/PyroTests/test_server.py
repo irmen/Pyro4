@@ -34,6 +34,8 @@ class MyThing(object):
         time.sleep(delay)
         return "slept for "+str(id)
     def testargs(self,x,*args,**kwargs):
+        if kwargs:
+            key=list(kwargs.keys())[0]
         return [x, list(args), kwargs]    # don't return tuples, this enables us to test json serialization as well.
     def nonserializableException(self):
         raise NonserializableError(("xantippe", lambda x: 0))
@@ -144,14 +146,16 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual([1,[],{}], p.testargs(1))
             self.assertEqual([1,[2,3],{'a':4}], p.testargs(1,2,3,a=4))
             self.assertEqual([1,[],{'a':2}], p.testargs(1, **{'a':2}))
-            if sys.version_info>=(2,6,5):
-                # python 2.6.5 and later support unicode keyword args
-                self.assertEqual([1,[],{unichr(65):2}], p.testargs(1, **{unichr(65):2}))
-                if platform.python_implementation()!="PyPy":
-                    # PyPy doesn't accept unicode kwargs that cannot be encoded to ascii, see https://bugs.pypy.org/issue751
-                    result=p.testargs(1, **{unichr(0x20ac):2})
-                    key=list(result[2].keys())[0]
-                    self.assertTrue(key==unichr(0x20ac))
+
+    @unittest.skipUnless(sys.version_info>=(2,6,5), "unicode kwargs needs 2.6.5 or newer")
+    def testUnicodeKwargs(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            self.assertEqual([1,[],{unichr(65):2}], p.testargs(1, **{unichr(65):2}))
+            result=p.testargs(unichr(0x20ac), **{unichr(0x20ac):2})
+            self.assertEqual(result[0], unichr(0x20ac))
+            key=list(result[2].keys())[0]
+            self.assertTrue(type(key) is unicode)
+            self.assertEqual(key, unichr(0x20ac))
 
     def testDottedNames(self):
         try:

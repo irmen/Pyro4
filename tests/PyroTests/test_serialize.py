@@ -6,6 +6,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement
 import sys
+import os
 import pprint
 import Pyro4.util
 import Pyro4.errors
@@ -301,9 +302,12 @@ class SerializeTests_serpent(SerializeTests_pickle):
 class SerializeTests_json(SerializeTests_pickle):
     SERIALIZER="json"
 
-class SerializeTests_marshal(SerializeTests_pickle):
-    SERIALIZER="marshal"
-
+if os.name!="java":
+    # The marshal serializer is not working correctly under jython,
+    # see http://bugs.jython.org/issue2077
+    # So we only include this when not running jython
+    class SerializeTests_marshal(SerializeTests_pickle):
+        SERIALIZER="marshal"
 
 
 class GenericTests(unittest.TestCase):

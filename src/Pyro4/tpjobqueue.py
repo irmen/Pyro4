@@ -104,6 +104,7 @@ class ThreadPooledJobQueue(object):
             # note: this loop may never end if a worker's job remains busy or blocked,
             # we simply assume all workers eventually terminate their jobs...
             time.sleep(0.1)
+        time.sleep(0.05)
         if self.workercountSafe > 0:
             raise JobQueueError("there are still active workers")
 

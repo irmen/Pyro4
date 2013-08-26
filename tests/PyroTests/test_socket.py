@@ -17,7 +17,7 @@ from testsupport import *
 
 
 # determine ipv6 capability
-has_ipv6 = socket.has_ipv6
+has_ipv6 = socket.has_ipv6 and not os.name=="java"    #  jython's ipv6 support isn't really working in Pyro
 if has_ipv6:
     s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
     try:
@@ -35,7 +35,11 @@ class TestSocketStuff(unittest.TestCase):
         s.listen(5)
         host, port = s.getsockname()
         self.assertNotEqual(0, port)
-        self.assertEqual("0.0.0.0", host)     # ipv4 support only at this time
+        if os.name!="java":
+            self.assertEqual("0.0.0.0", host)     # ipv4 support only at this time
+        else:
+            # jython somehow seems to return ipv6 sockname on ipv4 sockets
+            self.assertTrue(host in ("0.0.0.0", "0:0:0:0:0:0:0:0"))
         s.close()
 
 
@@ -53,23 +57,28 @@ class TestSocketutil(unittest.TestCase):
         self.assertEqual("127.0.0.1", SU.getIpAddress("127.0.0.1",workaround127=False))
         self.assertNotEqual("127.0.0.1", SU.getIpAddress("127.0.0.1",workaround127=True))
         
+    @unittest.skipUnless(has_ipv6, "ipv6 testcase")
     def testGetIP6(self):
-        if not has_ipv6:
-            return
         self.assertTrue(":" in SU.getIpAddress("::1",ipVersion=6))
         self.assertTrue(":" in SU.getIpAddress("",ipVersion=6))
         self.assertTrue(":" in SU.getIpAddress("localhost",ipVersion=6))
 
-    def testGetIpVersion(self):
-        if has_ipv6:
-            Pyro4.config.PREFER_IP_VERSION=6
-            self.assertEqual(6, SU.getIpVersion("127.0.0.1"))
-            self.assertEqual(6, SU.getIpVersion("::1"))
-            self.assertEqual(6, SU.getIpVersion("localhost"))
+    def testGetIpVersion4(self):
+        Pyro4.config.PREFER_IP_VERSION=4
+        self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
+        self.assertEqual(4, SU.getIpVersion("localhost"))
+        Pyro4.config.PREFER_IP_VERSION=0
+        self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
+
+    @unittest.skipUnless(has_ipv6, "ipv6 testcase")
+    def testGetIpVersion6(self):
+        Pyro4.config.PREFER_IP_VERSION=6
+        self.assertEqual(6, SU.getIpVersion("127.0.0.1"))
+        self.assertEqual(6, SU.getIpVersion("::1"))
+        self.assertEqual(6, SU.getIpVersion("localhost"))
         Pyro4.config.PREFER_IP_VERSION=4
         self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
         self.assertEqual(6, SU.getIpVersion("::1"))
-        self.assertEqual(4, SU.getIpVersion("localhost"))
         Pyro4.config.PREFER_IP_VERSION=0
         self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
         self.assertEqual(6, SU.getIpVersion("::1"))
@@ -89,9 +98,8 @@ class TestSocketutil(unittest.TestCase):
         self.assertTrue(port1>0)
         self.assertNotEqual(port1,port2)
 
+    @unittest.skipUnless(has_ipv6, "ipv6 testcase")
     def testUnusedPort6(self):
-        if not has_ipv6:
-            return
         port1=SU.findProbablyUnusedPort(family=socket.AF_INET6)
         port2=SU.findProbablyUnusedPort(family=socket.AF_INET6)
         self.assertTrue(port1>0)
@@ -113,12 +121,8 @@ class TestSocketutil(unittest.TestCase):
         sock1.close()
         sock2.close()
 
+    @unittest.skipUnless(has_ipv6, "ipv6 testcase")
     def testBindUnusedPort6(self):
-        if not has_ipv6:
-            return
-        if os.name=="java":
-            print("Jython/java ipv6 support isn't quite there yet")
-            return
         sock1=socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         sock2=socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         port1=SU.bindOnUnusedPort(sock1)
@@ -151,9 +155,8 @@ class TestSocketutil(unittest.TestCase):
         s.close()
         bs.close()
 
+    @unittest.skipUnless(has_ipv6, "ipv6 testcase")
     def testCreateUnboundSockets6(self):
-        if not has_ipv6:
-            return
         s=SU.createSocket(ipv6=True)
         self.assertEqual(socket.AF_INET6, s.family)
         bs=SU.createBroadcastSocket(ipv6=True)
@@ -183,9 +186,8 @@ class TestSocketutil(unittest.TestCase):
         bs.close()
         self.assertRaises(ValueError, SU.createSocket, bind=('localhost',12345), connect=('localhost',1234))
             
+    @unittest.skipUnless(has_ipv6, "ipv6 testcase")
     def testCreateBoundSockets6(self):
-        if not has_ipv6:
-            return
         s=SU.createSocket(bind=('::1',0))
         self.assertEqual(socket.AF_INET6, s.family)
         bs=SU.createBroadcastSocket(bind=('::1',0))
@@ -383,6 +385,7 @@ class TestSocketServer(unittest.TestCase):
 
 
 @unittest.skipUnless(SU.hasSelect, "requires select()")
+@unittest.skipUnless(os.name!="java", "select-server not yet supported in jython")
 class TestServerDOS_select(unittest.TestCase):
 
     def setUp(self):
@@ -483,6 +486,7 @@ class TestServerDOS_select(unittest.TestCase):
 
 
 @unittest.skipUnless(SU.hasPoll, "requires poll()")
+@unittest.skipUnless(os.name!="java", "poll-server not yet supported in jython")
 class TestServerDOS_poll(TestServerDOS_select):
     def setUp(self):
         super(TestServerDOS_poll, self).setUp()

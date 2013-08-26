@@ -353,9 +353,7 @@ def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TI
     if timeout is None:
         sock.settimeout(None)
     else:
-        if timeout is not _GLOBAL_DEFAULT_TIMEOUT and (not bind or os.name!="java"):
-            # only set timeout on the udp socket in this case, because Jython
-            # has a problem with timeouts on udp sockets, see http://bugs.jython.org/issue1018
+        if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
             sock.settimeout(timeout)
     if bind:
         host = bind[0] or ""
