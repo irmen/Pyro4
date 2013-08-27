@@ -86,20 +86,20 @@ by reading the first 6 bytes from the server socket connection.
 The Pyro daemon will respond with a 4-byte string "``PYRO``" followed by a 2-byte number
 that is the protocol version used::
 
-    $ nc pyroservername pyroserverport | od -N 6 -t x1c
+    $ nc <pyroservername> <pyroserverport> | od -N 6 -t x1c
     0000000  50  59  52  4f  00  05
               P   Y   R   O  \0 005
 
 This one is talking protocol version ``00 05`` (5).
 This low number means it is a Pyro 3.x server. When you try it on a Pyro 4 server::
 
-    $ nc pyroservername pyroserverport | od -N 6 -t x1c
+    $ nc <pyroservername> <pyroserverport> | od -N 6 -t x1c
     0000000  50  59  52  4f  00  2c
               P   Y   R   O  \0   ,
 
 This one is talking protocol version ``00 2c`` (44).
 For Pyro4 the protocol version started at 40 for the first release
-and is now at 44 for the current release at the time of writing.
+and is now at 46 for the current release at the time of writing.
 
 
 **Client**
@@ -107,10 +107,6 @@ and is now at 44 for the current release at the time of writing.
 To find out the protocol version that your client code is using, you can use this::
 
     $ python -c "import Pyro4.constants as c; print(c.PROTOCOL_VERSION)"
-
-or for Pyro3::
-
-    $ python -c "import Pyro.protocol as p; print(p.PYROAdapter.version)"
 
 
 .. _future-functions:
