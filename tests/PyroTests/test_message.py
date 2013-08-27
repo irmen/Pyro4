@@ -64,12 +64,13 @@ class MessageTestsHmac(unittest.TestCase):
         self.assertEqual(4+2+20, msg.annotations_size)
         self.assertEqual(0, msg.data_size)
 
-        hdr = Message(Pyro4.message.MSG_RESULT, b"hello", 99, 42, 0).to_bytes()[:24]
+        hdr = Message(Pyro4.message.MSG_RESULT, b"hello", 12345, 60006, 30003).to_bytes()[:24]
         msg = Message.from_header(hdr)
         self.assertEqual(Pyro4.message.MSG_RESULT, msg.type)
-        self.assertEqual(42, msg.flags)
+        self.assertEqual(60006, msg.flags)
         self.assertEqual(5, msg.data_size)
-        self.assertEqual(99, msg.serializer_id)
+        self.assertEqual(12345, msg.serializer_id)
+        self.assertEqual(30003, msg.seq)
 
         msg = Message(255, b"", self.ser.serializer_id, 0, 255).to_bytes()
         self.assertEqual(50, len(msg))
@@ -96,16 +97,31 @@ class MessageTestsHmac(unittest.TestCase):
         mac = pyrohmac(b"hello", annotations)
         self.assertEqual(mac, msg.annotations[b"HMAC"])
 
+    def testAnnotationsIdLength4(self):
+        try:
+            msg = Message(Pyro4.message.MSG_CONNECT, b"hello", self.ser.serializer_id, 0, 0, { b"TOOLONG": b"abcde" })
+            data = msg.to_bytes()
+            self.fail("should fail, too long")
+        except Pyro4.errors.ProtocolError:
+            pass
+        try:
+            msg = Message(Pyro4.message.MSG_CONNECT, b"hello", self.ser.serializer_id, 0, 0, { b"QQ": b"abcde" })
+            data = msg.to_bytes()
+            self.fail("should fail, too short")
+        except Pyro4.errors.ProtocolError:
+            pass
+
+
     def testRecvAnnotations(self):
         annotations = { b"TEST": b"abcde" }
         msg = Message(Pyro4.message.MSG_CONNECT, b"hello", self.ser.serializer_id, 0, 0, annotations)
         c = ConnectionMock()
         c.send(msg.to_bytes())
         msg = Message.recv(c)
-        self.assertEquals(0, len(c.received))
-        self.assertEquals(5, msg.data_size)
-        self.assertEquals(b"hello", msg.data)
-        self.assertEquals(b"abcde", msg.annotations[b"TEST"])
+        self.assertEqual(0, len(c.received))
+        self.assertEqual(5, msg.data_size)
+        self.assertEqual(b"hello", msg.data)
+        self.assertEqual(b"abcde", msg.annotations[b"TEST"])
         self.assertTrue(b"HMAC" in msg.annotations)
 
     def testProtocolVersion(self):
@@ -171,11 +187,11 @@ class MessageTestsNoHmac(unittest.TestCase):
         c = ConnectionMock()
         c.send(msg.to_bytes())
         msg = Message.recv(c)
-        self.assertEquals(0, len(c.received))
-        self.assertEquals(5, msg.data_size)
-        self.assertEquals(b"hello", msg.data)
-        self.assertEquals(0, msg.annotations_size)
-        self.assertEquals(0, len(msg.annotations))
+        self.assertEqual(0, len(c.received))
+        self.assertEqual(5, msg.data_size)
+        self.assertEqual(b"hello", msg.data)
+        self.assertEqual(0, msg.annotations_size)
+        self.assertEqual(0, len(msg.annotations))
 
 
 if __name__ == "__main__":

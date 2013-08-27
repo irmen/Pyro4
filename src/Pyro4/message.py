@@ -112,6 +112,8 @@ class Message(object):
         if self.annotations:
             a = []
             for k, v in self.annotations.items():
+                if len(k)!=4:
+                    raise errors.ProtocolError("annotation key must be of length 4")
                 a.append(struct.pack("!4sH", k, len(v)))
                 a.append(v)
             if sys.platform=="cli":
