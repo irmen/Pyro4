@@ -55,6 +55,8 @@ class NameServer(threadutil.Thread):
     def run(self):
         self.uri, self.ns_daemon, self.bc_server = naming.startNS(self.hostname)
         self.started.set()
+        if self.bc_server:
+            self.bc_server.runInThread()
         self.ns_daemon.requestLoop()
 
 
@@ -108,6 +110,11 @@ def main(args, returnWithoutLooping=False):
         ns.register(objectName, uri)
         if options.verbose:
             print("using name server at %s" % ns._pyroUri)
+            if nameserver is not None:
+                if nameserver.bc_server:
+                    print("broadcast server running at %s" % nameserver.bc_server.locationStr) # XXX
+                else:
+                    print("not using a broadcast server")
     else:
         if options.verbose:
             print("not using a name server.")

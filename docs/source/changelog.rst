@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.23**
+
+- Pyro4.test.echoserver now correctly runs the NS's broadcast server as well
+
+
 **Pyro 4.22**
 
 - support added in daemon to accept multiple serializers in incoming messages
