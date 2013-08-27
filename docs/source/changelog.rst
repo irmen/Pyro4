@@ -5,6 +5,7 @@ Change Log
 **Pyro 4.23**
 
 - Pyro4.test.echoserver now correctly runs the NS's broadcast server as well
+- docs: added more info on dealing with new serialization configuration in existing code
 
 
 **Pyro 4.22**

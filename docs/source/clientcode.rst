@@ -128,6 +128,32 @@ The valid choices are the names of the serializer from the list mentioned above.
     the server will respond using the same serializer as was used for the request.
 
 
+Upgrading older code that relies on pickle
+------------------------------------------
+
+What do you have to do with code that relies on pickle, and worked fine in older Pyro versions, but now crashes?
+
+You can redesign the remote interface to only include types that can be serialized (python's built-in types and
+exception classes, and a few Pyro specific classes such as URIs). That way you benefit from the new security that
+the alternative serializers provide. If you can't do this, you have to tell Pyro to enable pickle again.
+This has been made an explicit step because of the security implications of using pickle. Here's how to do this:
+
+Client code configuration
+    Tell Pyro to use pickle as serializer for outgoing communication, by setting the ``SERIALIZER``
+    config item to ``pickle``. For instance, in your code: :code:`Pyro4.config.SERIALIZER = 'pickle'`
+    or set the appropriate environment variable.
+
+Server code configuration
+    Tell Pyro to accept pickle as incoming serialization format, by including ``pickle`` in
+    the ``SERIALIZERS_ACCEPTED`` config item list. For instance, in your code:
+    :code:`Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')`. Or set the appropriate
+    environment variable, for instance: :code:`export PYRO_SERIALIZERS_ACCEPTED=serpent,json,marshal,pickle`.
+    If your server also uses Pyro to call other servers, you may also need to configure
+    it as mentioned above at 'client code'. This is because the incoming and outgoing serializer formats
+    are configured independently.
+    To see how this works in practice you can look at the :file:`stockquotes` example.
+
+
 Proxies, connections, threads and cleaning up
 =============================================
 Here are some rules:

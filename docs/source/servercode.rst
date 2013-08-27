@@ -333,7 +333,8 @@ If your server also uses Pyro client code/proxies, you might also need to
 select the serializer for these by setting the ``SERIALIZER`` config item.
 
 See the :doc:`/config` chapter for details about the config items.
-See :ref:`object-serialization` for more details about serialization.
+See :ref:`object-serialization` for more details about serialization, the new config items,
+and how to deal with existing code that relies on pickle.
 
 .. note::
     Since Pyro 4.20 the default serializer is "``serpent``". It used to be "``pickle``" in older versions.
