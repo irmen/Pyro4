@@ -17,7 +17,7 @@ import Pyro4.errors
 def pyrohmac(data, annotations={}):
     mac = hmac.new(Pyro4.config.HMAC_KEY, data, digestmod=hashlib.sha1)
     for k, v in annotations.items():
-        if k != b'HMAC':
+        if k != "HMAC":
             mac.update(v)
     return mac.digest()
 
@@ -50,7 +50,7 @@ class MessageTestsHmac(unittest.TestCase):
         self.assertEqual(b"hello", msg.data)
         self.assertEqual(4+2+20, msg.annotations_size)
         mac = pyrohmac(b"hello", msg.annotations)
-        self.assertDictEqual({b"HMAC": mac}, msg.annotations)
+        self.assertDictEqual({"HMAC": mac}, msg.annotations)
 
         hdr = msg.to_bytes()[:24]
         msg = Message.from_header(hdr)
@@ -97,26 +97,26 @@ class MessageTestsHmac(unittest.TestCase):
         self.assertEqual(30003, msg.seq)
 
     def testAnnotations(self):
-        annotations = { b"TEST": b"abcde" }
+        annotations = { "TEST": b"abcde" }
         msg = Message(Pyro4.message.MSG_CONNECT, b"hello", self.ser.serializer_id, 0, 0, annotations)
         data = msg.to_bytes()
         annotations_size = 4+2+20 + 4+2+5
         self.assertEqual(msg.header_size + 5 + annotations_size, len(data))
         self.assertEqual(annotations_size, msg.annotations_size)
         self.assertEqual(2, len(msg.annotations))
-        self.assertEqual(b"abcde", msg.annotations[b"TEST"])
+        self.assertEqual(b"abcde", msg.annotations["TEST"])
         mac = pyrohmac(b"hello", annotations)
-        self.assertEqual(mac, msg.annotations[b"HMAC"])
+        self.assertEqual(mac, msg.annotations["HMAC"])
 
     def testAnnotationsIdLength4(self):
         try:
-            msg = Message(Pyro4.message.MSG_CONNECT, b"hello", self.ser.serializer_id, 0, 0, { b"TOOLONG": b"abcde" })
+            msg = Message(Pyro4.message.MSG_CONNECT, b"hello", self.ser.serializer_id, 0, 0, { "TOOLONG": b"abcde" })
             data = msg.to_bytes()
             self.fail("should fail, too long")
         except Pyro4.errors.ProtocolError:
             pass
         try:
-            msg = Message(Pyro4.message.MSG_CONNECT, b"hello", self.ser.serializer_id, 0, 0, { b"QQ": b"abcde" })
+            msg = Message(Pyro4.message.MSG_CONNECT, b"hello", self.ser.serializer_id, 0, 0, { "QQ": b"abcde" })
             data = msg.to_bytes()
             self.fail("should fail, too short")
         except Pyro4.errors.ProtocolError:
@@ -124,7 +124,7 @@ class MessageTestsHmac(unittest.TestCase):
 
 
     def testRecvAnnotations(self):
-        annotations = { b"TEST": b"abcde" }
+        annotations = { "TEST": b"abcde" }
         msg = Message(Pyro4.message.MSG_CONNECT, b"hello", self.ser.serializer_id, 0, 0, annotations)
         c = ConnectionMock()
         c.send(msg.to_bytes())
@@ -132,8 +132,8 @@ class MessageTestsHmac(unittest.TestCase):
         self.assertEqual(0, len(c.received))
         self.assertEqual(5, msg.data_size)
         self.assertEqual(b"hello", msg.data)
-        self.assertEqual(b"abcde", msg.annotations[b"TEST"])
-        self.assertTrue(b"HMAC" in msg.annotations)
+        self.assertEqual(b"abcde", msg.annotations["TEST"])
+        self.assertTrue("HMAC" in msg.annotations)
 
     def testProtocolVersion(self):
         version = Pyro4.constants.PROTOCOL_VERSION

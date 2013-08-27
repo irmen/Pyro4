@@ -59,7 +59,7 @@ class Message(object):
 
     After the header, zero or more annotation chunks may follow, of the format::
 
-       4   id
+       4   id (ASCII)
        2   chunk length
        x   annotation chunk databytes
 
@@ -92,7 +92,7 @@ class Message(object):
         self.serializer_id = serializer_id
         self.annotations = annotations or {}
         if Pyro4.config.HMAC_KEY:
-            self.annotations[b"HMAC"] = self.hmac()
+            self.annotations["HMAC"] = self.hmac()
         self.annotations_size = sum([6+len(v) for v in self.annotations.values()])
         if 0 < Pyro4.config.MAX_MESSAGE_SIZE < (self.data_size + self.annotations_size):
             raise errors.ProtocolError("max message size exceeded (%d where max=%d)" % (self.data_size+self.annotations_size, Pyro4.config.MAX_MESSAGE_SIZE))
@@ -114,6 +114,8 @@ class Message(object):
             for k, v in self.annotations.items():
                 if len(k)!=4:
                     raise errors.ProtocolError("annotation key must be of length 4")
+                if sys.version_info>=(3,0):
+                    k = k.encode("ASCII")
                 a.append(struct.pack("!4sH", k, len(v)))
                 a.append(v)
             if sys.platform=="cli":
@@ -172,14 +174,16 @@ class Message(object):
             i = 0
             while i < msg.annotations_size:
                 anno, length = struct.unpack("!4sH", annotations_data[i:i+6])
+                if sys.version_info>=(3,0):
+                    anno = anno.decode("ASCII")
                 msg.annotations[anno] = annotations_data[i+6:i+6+length]
                 i += 6+length
         # read data
         msg.data = connection.recv(msg.data_size)
-        if b"HMAC" in msg.annotations and Pyro4.config.HMAC_KEY:
-            if msg.annotations[b"HMAC"] != msg.hmac():
+        if "HMAC" in msg.annotations and Pyro4.config.HMAC_KEY:
+            if msg.annotations["HMAC"] != msg.hmac():
                 raise errors.SecurityError("message hmac mismatch")
-        elif (b"HMAC" in msg.annotations) != bool(Pyro4.config.HMAC_KEY):
+        elif ("HMAC" in msg.annotations) != bool(Pyro4.config.HMAC_KEY):
             # Message contains hmac and local HMAC_KEY not set, or vice versa. This is not allowed.
             err = "hmac key config not symmetric"
             log.warning(err)
@@ -190,6 +194,6 @@ class Message(object):
         """returns the hmac of the data and the annotation chunk values (except HMAC chunk itself)"""
         mac = hmac.new(Pyro4.config.HMAC_KEY, self.data, digestmod=hashlib.sha1)
         for k, v in self.annotations.items():
-            if k != b"HMAC":
+            if k != "HMAC":
                 mac.update(v)
         return mac.digest()
