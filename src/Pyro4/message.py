@@ -105,7 +105,7 @@ class Message(object):
         return self.__header_bytes() + self.__annotations_bytes() + self.data
 
     def __header_bytes(self):
-        checksum = (self.type+constants.PROTOCOL_VERSION+len(self.data)+self.annotations_size+self.serializer_id+self.flags+self.seq+self.checksum_magic)&0xffff
+        checksum = (self.type+constants.PROTOCOL_VERSION+self.data_size+self.annotations_size+self.serializer_id+self.flags+self.seq+self.checksum_magic)&0xffff
         return struct.pack(self.header_format, b"PYRO", constants.PROTOCOL_VERSION, self.type, self.flags, self.seq, self.data_size, self.serializer_id, self.annotations_size, 0, checksum)
 
     def __annotations_bytes(self):

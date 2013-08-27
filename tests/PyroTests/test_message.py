@@ -85,6 +85,17 @@ class MessageTestsHmac(unittest.TestCase):
         msg2 = Message(Pyro4.message.MSG_INVOKE, data, self.ser.serializer_id, Pyro4.message.FLAGS_COMPRESSED, 0).to_bytes()
         self.assertEqual(len(msg), len(msg2))
 
+    def testMessageHeaderDatasize(self):
+        msg = Message(Pyro4.message.MSG_RESULT, b"hello", 12345, 60006, 30003)
+        msg.data_size = 0x12345678   # hack it to a large value to see if it comes back ok
+        hdr = msg.to_bytes()[:24]
+        msg = Message.from_header(hdr)
+        self.assertEqual(Pyro4.message.MSG_RESULT, msg.type)
+        self.assertEqual(60006, msg.flags)
+        self.assertEqual(0x12345678, msg.data_size)
+        self.assertEqual(12345, msg.serializer_id)
+        self.assertEqual(30003, msg.seq)
+
     def testAnnotations(self):
         annotations = { b"TEST": b"abcde" }
         msg = Message(Pyro4.message.MSG_CONNECT, b"hello", self.ser.serializer_id, 0, 0, annotations)

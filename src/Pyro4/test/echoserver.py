@@ -112,7 +112,7 @@ def main(args, returnWithoutLooping=False):
             print("using name server at %s" % ns._pyroUri)
             if nameserver is not None:
                 if nameserver.bc_server:
-                    print("broadcast server running at %s" % nameserver.bc_server.locationStr) # XXX
+                    print("broadcast server running at %s" % nameserver.bc_server.locationStr)
                 else:
                     print("not using a broadcast server")
     else:
