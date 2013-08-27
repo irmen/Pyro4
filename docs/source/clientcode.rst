@@ -133,6 +133,12 @@ Upgrading older code that relies on pickle
 
 What do you have to do with code that relies on pickle, and worked fine in older Pyro versions, but now crashes?
 
+You have three options:
+
+#. Redesign remote interfaces
+#. Configure Pyro to eable the use of pickle again
+#. Stick to Pyro 4.18 (less preferable)
+
 You can redesign the remote interface to only include types that can be serialized (python's built-in types and
 exception classes, and a few Pyro specific classes such as URIs). That way you benefit from the new security that
 the alternative serializers provide. If you can't do this, you have to tell Pyro to enable pickle again.
