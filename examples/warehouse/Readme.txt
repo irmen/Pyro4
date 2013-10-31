@@ -1,5 +1,5 @@
 This example is the code from the Pyro tutorial where we build a simple
-ware house that stores items.
+warehouse that stores items.
 
 The idea is that there is one big warehouse that everyone can store items
 in, and retrieve other items from (if they're in the warehouse).
