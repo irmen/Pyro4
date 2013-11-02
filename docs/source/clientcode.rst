@@ -168,6 +168,8 @@ Here are some rules:
 * You can share Proxy objects among threads, it will re-use the same socket connection.
 * Usually every connection in the daemon has its own processing thread there, but for more details see the :doc:`servercode` chapter.
 * The connection will remain active for the lifetime of the proxy object.
+* At proxy creation, no actual connection is made. The proxy is only actually connected at first use, or when you manually
+  connect it using the ``_pyroReconnect()`` method.
 * You can free resources by manually closing the proxy connection if you don't need it anymore.
   This can be done in two ways:
 
@@ -418,6 +420,9 @@ up again, it needs to publish its Pyro objects with the exact same URI as before
 port number).
 
 See the :file:`autoreconnect` example for more details and some suggestions on how to do this.
+
+The ``_pyroReconnect()`` method can also be used to force a newly created proxy to connect immediately,
+rather than on first use.
 
 Proxy sharing
 -------------
