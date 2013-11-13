@@ -86,6 +86,8 @@ set it.
 
 Pyro will cause a Python-level warning message if you run it without a HMAC key, but it will run just fine.
 
+The hashing algorithm that is used in the HMAC is SHA-1 (not MD5).
+
 .. warning::
     It is hard to keep a shared secret key actually secret!
     People might read the source code of your clients and extract the key from it.
