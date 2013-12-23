@@ -214,6 +214,13 @@ class TestSocketutil(unittest.TestCase):
         self.assertEqual(SOCKNAME,s.getsockname())
         s.close()
         if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
+        # unicode arg
+        SOCKNAME = unicode(SOCKNAME)
+        s=SU.createSocket(bind=SOCKNAME)
+        self.assertEqual(socket.AF_UNIX, s.family)
+        self.assertEqual(SOCKNAME,s.getsockname())
+        s.close()
+        if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
         self.assertRaises(ValueError, SU.createSocket, bind=SOCKNAME, connect=SOCKNAME)
 
     def testSend(self):
