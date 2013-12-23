@@ -125,7 +125,13 @@ The point is, your client programs need it to be able to access your object (the
 
 Maybe the easiest thing is to store it in the Pyro name server.
 That way it is almost trivial for clients to obtain the proper uri and connect to your object.
-See :doc:`nameserver` for more information.
+See :doc:`nameserver` for more information (:ref:`nameserver-registering`), but it boils down to
+getting a name server proxy and using its ``register`` method::
+
+    uri = daemon.register(some_object)
+    ns = Pyro4.locateNS()
+    ns.register("example.objectname", uri)
+
 
 .. note::
     If you ever need to create a new uri for an object, you can use :py:meth:`Pyro4.core.Daemon.uriFor`.

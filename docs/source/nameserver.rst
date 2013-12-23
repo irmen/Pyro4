@@ -102,7 +102,10 @@ There are several command line options:
 
 .. option:: -x, --nobc
 
-   Don't start a broadcast responder.
+   Don't start a broadcast responder. Clients will not be able to use the UDP-broadcast lookup
+   to discover this name server.
+   (The broadcast responder listens to UDP broadcast packets on the local network subnet,
+   to signal its location to clients that want to talk to the name server)
 
 
 Another way is doing it from within your own code.
@@ -208,7 +211,9 @@ Getting a proxy for the name server is done using the following function:
 By far the easiest way to locate the Pyro name server is by using the broadcast lookup mechanism.
 This goes like this: you simply ask Pyro to look up the name server and return a proxy for it.
 It automatically figures out where in your subnet it is running by doing a broadcast and returning
-the first Pyro name server that responds.
+the first Pyro name server that responds. The broadcast is a simple UDP-network broadcast, so this
+means it usually won't travel outside your network subnet (or through routers) and your firewall
+needs to allow UDP network traffic.
 
 There is a config item ``BROADCAST_ADDRS`` that contains a comma separated list of the broadcast
 addresses Pyro should use when doing a broadcast lookup. Depending on your network configuration,
@@ -286,8 +291,13 @@ the actual URI that belongs to it (with the actual object name or id and the loc
 the daemon in which it is running). This is not normally needed in user code (Pyro takes
 care of it automatically for you), but it can still be useful in certain situations.
 
-Resolving a logical name is usually done by getting a name server proxy and using the ``lookup`` method.
-This returns the URI object. You can also resolve a ``PYRONAME`` URI using the following utility function:
+So, resolving a logical name can be done in several ways:
+
+- let Pyro do it for you, for instance simply pass a ``PYRONAME`` URI to the proxy constructor
+- use a ``PYRONAME`` URI and resolve it using the ``resolve`` utility function (see below)
+- obtain a name server proxy and use its ``lookup`` method;  ``uri = ns.lookup("objectname")``
+
+You can resolve a ``PYRONAME`` URI explicitly using the following utility function:
 :func:`Pyro4.naming.resolve` (also available as :func:`Pyro4.resolve`), which goes like this:
 
 .. function:: resolve(uri)
@@ -300,3 +310,34 @@ This returns the URI object. You can also resolve a ``PYRONAME`` URI using the f
     :param uri: PYRONAME uri that you want to resolve
     :type uri: string or :class:`Pyro4.core.URI`
 
+
+.. _nameserver-registering:
+
+Registering object names
+========================
+'Registering an object' means that you associate the URI with a logical name, so that
+clients can refer to your Pyro object by using that name.
+Your server has to register its Pyro objects with the name server. It first registers an
+object with the Daemon, gets an URI back, and then registers that URI in the name server using
+the following method on the name server proxy:
+
+.. py:method:: register(name, uri, safe=False)
+
+    Registers an object (uri) under a logical name in the name server.
+
+    :param name: logical name that the object will be known as
+    :type name: string
+    :param uri: the URI of the object (you get it from the daemon)
+    :type uri: string or :class:`Pyro4.core.URI`
+    :param safe: normally registering the same name twice silently overwrites the old registration. If you set safe=True, the same name cannot be registered twice.
+    :type safe: bool
+
+
+
+Other methods
+=============
+The name server has a few other methods that might be useful at times.
+For instance, you can ask it for a list of all registered objects.
+Because the name server itself is a regular Pyro object, you can access its methods
+through a regular Pyro proxy, and refer to the description of the exposed class to
+see what methods are available: :class:`Pyro4.naming.NameServer`.

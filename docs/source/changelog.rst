@@ -5,7 +5,9 @@ Change Log
 **Pyro 4.23**
 
 - Pyro4.test.echoserver now correctly runs the NS's broadcast server as well
+- unix domain socket creation no longer fails when bind or connect address is unicode instead of str
 - docs: added more info on dealing with new serialization configuration in existing code
+- docs: improved name server documentation on registering objects
 
 
 **Pyro 4.22**
