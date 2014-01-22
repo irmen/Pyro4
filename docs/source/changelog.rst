@@ -8,6 +8,7 @@ Change Log
 - unix domain socket creation no longer fails when bind or connect address is unicode instead of str
 - docs: added more info on dealing with new serialization configuration in existing code
 - docs: improved name server documentation on registering objects
+- docs: various small updates
 
 
 **Pyro 4.22**
