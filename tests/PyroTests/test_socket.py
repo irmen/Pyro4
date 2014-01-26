@@ -331,7 +331,7 @@ class ServerCallback(object):
             raise TypeError("handleRequest expected SocketConnection parameter")
         msg = Pyro4.message.Message.recv(connection, [Pyro4.message.MSG_PING])
         if msg.type == Pyro4.message.MSG_PING:
-            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"", msg.serializer_id, 0, msg.seq)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"ping", msg.serializer_id, 0, msg.seq)
             connection.send(msg.to_bytes())
         else:
             print("unhandled message type", msg.type)
