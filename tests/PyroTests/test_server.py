@@ -52,8 +52,8 @@ class DaemonLoopThread(threadutil.Thread):
         self.running.set()
         try:
             self.pyrodaemon.requestLoop()
-        except:
-            print("Swallow exception from terminated daemon")
+        except Pyro4.errors.CommunicationError:
+            pass    # ignore pyro communication errors
 
 
 class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):

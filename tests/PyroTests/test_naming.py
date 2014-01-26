@@ -10,7 +10,7 @@ import Pyro4.core
 import Pyro4.naming
 import Pyro4.socketutil
 import Pyro4.constants
-from Pyro4.errors import NamingError
+from Pyro4.errors import CommunicationError, NamingError
 from Pyro4 import threadutil
 from testsupport import *
 
@@ -24,7 +24,10 @@ class NSLoopThread(threadutil.Thread):
         self.running.clear()
     def run(self):
         self.running.set()
-        self.nameserver.requestLoop()
+        try:
+            self.nameserver.requestLoop()
+        except CommunicationError:
+            pass   # ignore pyro communication errors
 
 class BCSetupTests(unittest.TestCase):
     def setUp(self):

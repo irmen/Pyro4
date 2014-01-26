@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.24**
+
+- daemon no longer sends an exception response when a communication error occurred (such as a timeout). This fixes the MSG_PING/disconnect example on linux
+
+
 **Pyro 4.23**
 
 - Pyro4.test.echoserver now correctly runs the NS's broadcast server as well
