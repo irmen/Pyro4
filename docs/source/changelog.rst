@@ -5,6 +5,8 @@ Change Log
 **Pyro 4.24**
 
 - daemon no longer sends an exception response when a communication error occurred (such as a timeout). This fixes the MSG_PING/disconnect example on linux
+- threadpool is now again a fixed size determined by the new THREADPOOL_SIZE config item (defaults to 16)
+- config items removed: THREADPOOL_MINTHREADS, THREADPOOL_MAXTHREADS, THREADPOOL_IDLETIMEOUT
 
 
 **Pyro 4.23**

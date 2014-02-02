@@ -9,7 +9,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 # PYRO_LOGFILE    (the name of the logfile if you don't like the default)
 
 import os
-import sys
 import platform
 
 
@@ -18,8 +17,7 @@ class Configuration(object):
                "COMPRESSION", "SERVERTYPE", "DOTTEDNAMES", "COMMTIMEOUT",
                "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
                "DETAILED_TRACEBACK", "SOCK_REUSE", "PREFER_IP_VERSION",
-               "THREADPOOL_MINTHREADS", "THREADPOOL_MAXTHREADS",
-               "THREADPOOL_IDLETIMEOUT", "HMAC_KEY", "AUTOPROXY",
+               "THREADPOOL_SIZE", "HMAC_KEY", "AUTOPROXY",
                "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
                "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE" )
 
@@ -47,9 +45,7 @@ class Configuration(object):
         self.THREADING2 = False    # use threading2 if available?
         self.ONEWAY_THREADED = True     # oneway calls run in their own thread
         self.DETAILED_TRACEBACK = False
-        self.THREADPOOL_MINTHREADS = 4
-        self.THREADPOOL_MAXTHREADS = 50
-        self.THREADPOOL_IDLETIMEOUT = 2.0
+        self.THREADPOOL_SIZE = 16
         self.HMAC_KEY = None   # must be bytes type
         self.AUTOPROXY = True
         self.MAX_MESSAGE_SIZE = 0   # 0 = unlimited

@@ -87,9 +87,7 @@ SERVERTYPE              str     thread         Select the Pyro server type. thre
 SOCK_REUSE              bool    False          Should SO_REUSEADDR be used on sockets that Pyro creates.
 PREFER_IP_VERSION       int     4              The IP address type that is preferred (4=ipv4, 6=ipv6, 0=let OS decide).
 THREADING2              bool    False          Use the threading2 module if available instead of Python's standard threading module
-THREADPOOL_MINTHREADS   int     4              For the thread pool server: minimum amount of worker threads to be spawned
-THREADPOOL_MAXTHREADS   int     50             For the thread pool server: maximum amount of worker threads to be spawned
-THREADPOOL_IDLETIMEOUT  float   2.0            For the thread pool server: number of seconds to pass for an idle worker thread to be terminated
+THREADPOOL_SIZE         int     16             For the thread pool server: amount of worker threads to be spawned.
 FLAME_ENABLED           bool    False          Should Pyro Flame be enabled on the server
 SERIALIZER              str     serpent        The wire protocol serializer to use for clients/proxies (one of: serpent, json, marshal, pickle)
 SERIALIZERS_ACCEPTED    set     json,marshal,  The wire protocol serializers accepted in the server/daemon.

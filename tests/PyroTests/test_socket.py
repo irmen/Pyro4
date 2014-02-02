@@ -514,11 +514,11 @@ class TestServerDOS_threading(TestServerDOS_select):
     def setUp(self):
         super(TestServerDOS_threading, self).setUp()
         self.socket_server = SocketServer_Threadpool
-        self.orig_maxthreads = Pyro4.config.THREADPOOL_MAXTHREADS
-        Pyro4.config.THREADPOOL_MAXTHREADS = 1
+        self.orig_numthreads = Pyro4.config.THREADPOOL_SIZE
+        Pyro4.config.THREADPOOL_SIZE = 1
 
     def tearDown(self):
-        Pyro4.config.THREADPOOL_MAXTHREADS = self.orig_maxthreads
+        Pyro4.config.THREADPOOL_SIZE = self.orig_numthreads
 
 
 if __name__ == "__main__":

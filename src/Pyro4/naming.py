@@ -302,10 +302,6 @@ def locateNS(host=None, port=None):
                             if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:     # and jython likes to throw thses...
                                 raise
                 data, _=sock.recvfrom(100)
-                try:
-                    sock.shutdown(socket.SHUT_RDWR)
-                except (OSError, socket.error):
-                    pass
                 sock.close()
                 if sys.version_info>=(3, 0):
                     data=data.decode("iso-8859-1")

@@ -9,10 +9,11 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 from __future__ import with_statement
 import socket, logging, sys, os
 import struct
+import Pyro4.util
 from Pyro4 import socketutil, errors
-import Pyro4.tpjobqueue
+from .threadpool import Pool
 
-log=logging.getLogger("Pyro4.socketserver.threadpool")
+log=logging.getLogger("Pyro4.threadpoolserver")
 
 
 class ClientConnectionJob(object):
@@ -26,7 +27,6 @@ class ClientConnectionJob(object):
         self.daemon = daemon
 
     def __call__(self):
-        log.debug("job call() %s", self.caddr)  # XXX remove this after issue #19 is fixed
         if self.handleConnection():
             try:
                 while True:
@@ -39,7 +39,7 @@ class ClientConnectionJob(object):
                     except errors.SecurityError:
                         log.debug("security error on client %s", self.caddr)
                         break
-                    # other errors simply crash the client worker thread (and close its connection)
+                    # other errors simply crash this loop and abort the job (and close the client connection)
             finally:
                 self.csock.close()
 
@@ -93,18 +93,17 @@ class SocketServer_Threadpool(object):
                 self.locationStr="[%s]:%d" % (host, port)
             else:
                 self.locationStr="%s:%d" % (host, port)
-        self.jobqueue = Pyro4.tpjobqueue.ThreadPooledJobQueue()
-        log.info("%d workers started", self.jobqueue.workercount)
+        self.pool = Pool()
 
     def __del__(self):
         if self.sock is not None:
             self.sock.close()
-        if self.jobqueue is not None:
-            self.jobqueue.close()
+        if self.pool is not None:
+            self.pool.close()
 
     def __repr__(self):
         return "<%s on %s, %d workers, %d jobs>" % (self.__class__.__name__, self.locationStr,
-            self.jobqueue.workercount, self.jobqueue.jobcount)
+            self.pool.num_workers(), self.pool.num_jobs())
 
     def loop(self, loopCondition=lambda: True):
         log.debug("threadpool server requestloop")
@@ -137,11 +136,11 @@ class SocketServer_Threadpool(object):
             log.debug("connected %s", caddr)
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
-            self.jobqueue.process(ClientConnectionJob(csock, caddr, self.daemon))
+            self.pool.process(ClientConnectionJob(csock, caddr, self.daemon))
         except socket.timeout:
             pass  # just continue the loop on a timeout on accept
 
-    def close(self, joinWorkers=True):
+    def close(self):
         log.debug("closing threadpool server")
         if self.sock:
             sockname=None
@@ -158,12 +157,7 @@ class SocketServer_Threadpool(object):
             except Exception:
                 pass
             self.sock=None
-        self.jobqueue.close()
-        for worker in self.jobqueue.busy.copy():
-            if worker.job is not None:
-                worker.job.interrupt()   # try to break all busy workers
-        if joinWorkers:
-            self.jobqueue.drain()
+        self.pool.close()
 
     @property
     def sockets(self):
