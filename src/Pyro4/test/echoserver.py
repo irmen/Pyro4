@@ -84,8 +84,7 @@ def main(args, returnWithoutLooping=False):
         options.quiet=False
     if not options.quiet:
         print("Starting Pyro's built-in test echo server.")
-    if os.name!="java":
-        Pyro4.config.SERVERTYPE="multiplex"
+    Pyro4.config.SERVERTYPE="multiplex"
 
     hmac = (options.key or "").encode("utf-8")
     Pyro4.config.HMAC_KEY=hmac or Pyro4.config.HMAC_KEY

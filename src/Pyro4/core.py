@@ -574,8 +574,9 @@ class Daemon(object):
         elif Pyro4.config.SERVERTYPE=="multiplex":
             # choose the 'best' multiplexing implementation
             if os.name=="java":
-                raise NotImplementedError("select or poll-based server is not supported for jython, use thread server instead")
-            self.transportServer = SocketServer_Poll() if socketutil.hasPoll else SocketServer_Select()
+                self.transportServer = SocketServer_Select()    # poll doesn't work as given in jython ('socket must be in nonblocking mode')
+            else:
+                self.transportServer = SocketServer_Poll() if socketutil.hasPoll else SocketServer_Select()
         else:
             raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
         self.transportServer.init(self, host, port, unixsocket)

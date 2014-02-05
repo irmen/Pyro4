@@ -179,7 +179,7 @@ class OfflineNameServerTests(unittest.TestCase):
         else:
             rs=[bc1]
             rs.extend(ns1.sockets)
-            _,_,_=select.select(rs,[],[],0.1)
+            _,_,_ = Pyro4.socketutil.selectfunction(rs,[],[],0.1)
         ns1.close()
         bc1.close()
 

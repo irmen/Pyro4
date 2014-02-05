@@ -710,14 +710,15 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             # so 6 threads taking 0.5 seconds =~ 0.5 seconds passed
             self.assertTrue(0.4<duration<0.9)  # loose upper bound for slow jython
 
-if os.name!="java":
-    class ServerTestsMultiplexNoTimeout(ServerTestsThreadNoTimeout):
-        SERVERTYPE="multiplex"
-        COMMTIMEOUT=None
-        def testProxySharing(self):
-            pass
-        def testException(self):
-            pass
+
+class ServerTestsMultiplexNoTimeout(ServerTestsThreadNoTimeout):
+    SERVERTYPE = "multiplex"
+    COMMTIMEOUT = None
+    def testProxySharing(self):
+        pass
+    def testException(self):
+        pass
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

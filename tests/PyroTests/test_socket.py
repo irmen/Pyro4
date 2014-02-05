@@ -400,7 +400,6 @@ class TestSocketServer(unittest.TestCase):
 
 
 @unittest.skipUnless(SU.hasSelect, "requires select()")
-@unittest.skipUnless(os.name!="java", "select-server not yet supported in jython")
 class TestServerDOS_select(unittest.TestCase):
 
     def setUp(self):

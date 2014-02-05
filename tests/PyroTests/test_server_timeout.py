@@ -20,17 +20,17 @@ class ServerTestsThreadTimeout(test_server.ServerTestsThreadNoTimeout):
     def testException(self):
         pass
     
-if os.name!="java":
-    class ServerTestsMultiplexTimeout(test_server.ServerTestsMultiplexNoTimeout):
-        SERVERTYPE="multiplex"
-        COMMTIMEOUT=2.0
-        def testServerParallelism(self):
-            # this test is not suitable on a server with timeout set
-            pass
-        def testProxySharing(self):
-            pass
-        def testException(self):
-            pass
+
+class ServerTestsMultiplexTimeout(test_server.ServerTestsMultiplexNoTimeout):
+    SERVERTYPE = "multiplex"
+    COMMTIMEOUT = 2.0
+    def testServerParallelism(self):
+        # this test is not suitable on a server with timeout set
+        pass
+    def testProxySharing(self):
+        pass
+    def testException(self):
+        pass
 
 
 if __name__ == "__main__":

@@ -9,12 +9,19 @@ from Pyro4.errors import ConnectionClosedError, TimeoutError, CommunicationError
 import Pyro4
 
 import select
-if os.name=="java":
-    selectfunction = select.cpython_compatible_select
+
+if os.name == "java":
+    # jython workaround for 'socket must be in nonblocking mode' error
+    from java.nio.channels import ClosedChannelException
+    def selectfunction(rlist, wlist, xlist, timeout=None):
+        try:
+            return select.cpython_compatible_select(rlist, wlist, xlist, timeout)
+        except ClosedChannelException:
+            return [], [], []
 else:
     selectfunction = select.select
 
-if sys.platform=="win32":
+if sys.platform == "win32":
     USE_MSG_WAITALL = False   # it doesn't work reliably on Windows even though it's defined
 else:
     USE_MSG_WAITALL = hasattr(socket, "MSG_WAITALL")
@@ -453,7 +460,10 @@ class SocketConnection(object):
             self.sock.shutdown(socket.SHUT_RDWR)
         except (OSError, socket.error):
             pass
-        self.sock.close()
+        try:
+            self.sock.close()
+        except AttributeError:
+            pass
 
     def fileno(self):
         return self.sock.fileno()
@@ -519,5 +529,5 @@ def triggerSocket(sock):
         if sys.platform=="cli":
             data = "!"*16
         sock.send(data)
-    except socket.error:
+    except (socket.error, AttributeError):    # attributeerror can occur here in jython
         pass

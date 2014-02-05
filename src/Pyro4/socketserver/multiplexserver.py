@@ -192,7 +192,7 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                 rlist=list(self.clients)
                 rlist.append(self.sock)
                 try:
-                    rlist, _, _=select.select(rlist, [], [], Pyro4.config.POLLTIMEOUT)
+                    rlist, _, _ = socketutil.selectfunction(rlist, [], [], Pyro4.config.POLLTIMEOUT)
                 except select.error:
                     if loopCondition():
                         raise

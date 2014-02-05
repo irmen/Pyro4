@@ -108,14 +108,10 @@ class DaemonTests(unittest.TestCase):
     def testServertypeMultiplex(self):
         old_servertype=Pyro4.config.SERVERTYPE
         Pyro4.config.SERVERTYPE="multiplex"
-        # this type is not supported in Jython
-        if os.name=="java":
-            self.assertRaises(NotImplementedError, Pyro4.core.Daemon, port=0)
-        else:
-            with Pyro4.core.Daemon(port=0) as d:
-                sock=d.sock
-                self.assertTrue(sock in d.sockets, "daemon's socketlist should contain the server socket")
-                self.assertTrue(len(d.sockets)==1, "daemon without connections should have just 1 socket")
+        with Pyro4.core.Daemon(port=0) as d:
+            sock=d.sock
+            self.assertTrue(sock in d.sockets, "daemon's socketlist should contain the server socket")
+            self.assertTrue(len(d.sockets)==1, "daemon without connections should have just 1 socket")
         Pyro4.config.SERVERTYPE=old_servertype
                 
     def testServertypeFoobar(self):

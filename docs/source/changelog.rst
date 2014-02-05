@@ -7,6 +7,7 @@ Change Log
 - daemon no longer sends an exception response when a communication error occurred (such as a timeout). This fixes the MSG_PING/disconnect example on linux
 - threadpool is now again a fixed size determined by the new THREADPOOL_SIZE config item (defaults to 16)
 - config items removed: THREADPOOL_MINTHREADS, THREADPOOL_MAXTHREADS, THREADPOOL_IDLETIMEOUT
+- jython: multiplex server type now available (uses select based multiplexing). Be wary, this has not been tested much. When in doubt, use the thread server type.
 
 
 **Pyro 4.23**
