@@ -67,7 +67,7 @@ class FlameModule(object):
         self.module = module
 
     def __getattr__(self, item):
-        if item in ("__getnewargs__", "__getinitargs__"):
+        if item in ("__getnewargs__", "__getnewargs_ex__", "__getinitargs__"):
             raise AttributeError(item)
         return Pyro4.core._RemoteMethod(self.__invoke, "%s.%s" % (self.module, item))
 

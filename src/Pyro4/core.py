@@ -176,7 +176,7 @@ class Proxy(object):
     .. automethod:: _pyroBatch
     .. automethod:: _pyroAsync
     """
-    __pyroAttributes=frozenset(["__getnewargs__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway", "_pyroTimeout", "_pyroSeq"])
+    __pyroAttributes = frozenset(["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway", "_pyroTimeout", "_pyroSeq"])
 
     def __init__(self, uri):
         """
@@ -373,10 +373,9 @@ class Proxy(object):
                     if msg.type==Pyro4.message.MSG_CONNECTFAIL:
                         error="connection rejected"
                         if msg.data:
-                            data = msg.data
-                            if sys.version_info>=(3, 0):
-                                data=str(msg.data, "utf-8")
-                            error+=", reason: " + data
+                            serializer = util.get_serializer_by_id(msg.serializer_id)
+                            data = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
+                            error += ", reason: " + data
                         conn.close()
                         log.error(error)
                         raise errors.CommunicationError(error)

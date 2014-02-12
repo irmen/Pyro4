@@ -4,6 +4,7 @@ Change Log
 
 **Pyro 4.24**
 
+- Python 3.4 compatibility added (fixed pickle/marshal issues)
 - a backwards incompatible change has been implemented regarding the threadpool implementation and configuration, see next two items.
 - threadpool is now again a fixed size determined by the new THREADPOOL_SIZE config item (defaults to 16)
 - config items removed: THREADPOOL_MINTHREADS, THREADPOOL_MAXTHREADS, THREADPOOL_IDLETIMEOUT
