@@ -51,6 +51,10 @@ fi
 # Create the PID File
 touch $PID
 
+# Detect if Python 2.x or Python 3.y is installed
+PYTHON=python3
+[ -x /usr/bin/$PYTHON ] || PYTHON=python
+
 case "$1" in
   start)
     # create the log directory if not exist
@@ -59,7 +63,7 @@ case "$1" in
     echo "Starting Pyro4 Name Server"
     # test if not already running
     if [ ! -f "/proc/$(cat $PID)/exe" ]; then
-      python -m Pyro4.naming -n "$LISTEN_ADDRESS" -p "$LISTEN_PORT" >/dev/null 2>&1 &
+      $PYTHON -m Pyro4.naming -n "$LISTEN_ADDRESS" -p "$LISTEN_PORT" >/dev/null 2>&1 &
       echo $!>"$PID"
     else
       echo "Pyro4 Name Server already running"
