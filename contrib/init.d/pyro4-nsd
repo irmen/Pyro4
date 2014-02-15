@@ -19,6 +19,8 @@ export PYRO_HMAC_KEY=12345
 export PYRO_LOGFILE="$MESSAGELOG"
 export PYRO_LOGLEVEL=DEBUG
 
+. /lib/lsb/init-functions
+
 # Check the script is being run by root user
 if [ "$(id -u)" != "0" ]; then
   echo 1>&2 "ERROR: The $0 script must be run as root"
