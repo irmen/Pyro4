@@ -22,6 +22,18 @@ MESSAGEDIR=/var/log/Pyro4
 MESSAGELOG=/var/log/Pyro4/NameServer.log
 PID=/var/run/Pyro4-NameServer.pid
 
+# Defaults - don't touch, edit /etc/default/pyro-nsd
+ENABLED=0
+
+if [ -f /etc/default/pyro4-nsd ] ; then
+        . /etc/default/pyro4-nsd
+fi
+
+if [ "$ENABLED" = "0" ]; then
+    echo "pyro4-nsd: disabled, see /etc/default/pyro4-nsd"
+    exit 0
+fi
+
 # Add Pyro Config
 # here you can add others ...
 export PYRO_HMAC_KEY=12345
