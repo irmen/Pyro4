@@ -1,4 +1,4 @@
-.PHONY: all sdist wheel docs install upload upload_docs clean
+.PHONY: all sdist wheel docs install upload upload_docs clean test
 
 all:
 	@echo "targets include sdist, wheel, docs, upload, upload_docs, install, clean"
@@ -23,7 +23,10 @@ upload_docs:
 
 install:
 	python setup.py install
-    
+
+test:
+	python tests/run_suite_simple.py
+
 clean:
 	@echo "Removing tox dirs, logfiles, Pyro URI dumps, .pyo/.pyc files..."
 	rm -rf .tox

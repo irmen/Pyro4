@@ -13,6 +13,7 @@
 #    <Pyro4 NameServer Daemon Script>
 #    Copyright (C) <2011>  <Pierre PACORY> - ppacory@gmail.com
 # Licensed under the "MIT Software License" for inclusion in Pyro4.
+# Improvements for Debian by Laszlo Boszormenyi
 # -------------------------------------------------------------------------
 
 

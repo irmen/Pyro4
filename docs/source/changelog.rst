@@ -10,7 +10,8 @@ Change Log
 - config items removed: THREADPOOL_MINTHREADS, THREADPOOL_MAXTHREADS, THREADPOOL_IDLETIMEOUT
 - daemon no longer sends an exception response when a communication error occurred (such as a timeout). This fixes the MSG_PING/disconnect example on linux
 - jython: multiplex server type now available (uses select based multiplexing). Be wary, this has not been tested much. When in doubt, use the thread server type.
-- python wheel distribution format support added (universal, setup.cfg) 
+- python wheel distribution format support added (universal, setup.cfg)
+- merged name server initd script improvements that were made for the Debian package (easy enable/disable, use sh instead of bash, etc)
 
 
 **Pyro 4.23**
