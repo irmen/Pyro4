@@ -30,16 +30,16 @@ test:
 clean:
 	@echo "Removing tox dirs, logfiles, Pyro URI dumps, .pyo/.pyc files..."
 	rm -rf .tox
-	find . -name __pycache__  | xargs  rm -r
-	find . -name \*_log  | xargs  rm 
-	find . -name \*.log  | xargs  rm
-	find . -name \*_URI  | xargs  rm
-	find . -name \*.pyo  | xargs  rm
-	find . -name \*.pyc  | xargs  rm
-	find . -name \*.class  | xargs  rm
-	find . -name \*.DS_Store  | xargs  rm
+	find . -name __pycache__ -print0 | xargs -0 rm -rf
+	find . -name \*_log -print0 | xargs -0  rm -f
+	find . -name \*.log -print0 | xargs -0  rm -f
+	find . -name \*_URI -print0 | xargs -0  rm -f
+	find . -name \*.pyo -print0 | xargs -0  rm -f
+	find . -name \*.pyc -print0 | xargs -0  rm -f
+	find . -name \*.class -print0 | xargs -0  rm -f
+	find . -name \*.DS_Store -print0 | xargs -0  rm -f
 	rm -f MANIFEST 
 	rm -rf build
-	find . -name  '.#*'  | xargs  rm 
-	find . -name  '#*#'  | xargs  rm 
+	find . -name  '.#*' -print0 | xargs -0  rm -f
+	find . -name  '#*#' -print0 | xargs -0  rm -f
 	@echo "clean!"
