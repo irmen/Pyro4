@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.25**
+
+- docs: mention that you may have to install serpent manually (most notably with alternative Python implementations)
+
+
 **Pyro 4.24**
 
 - Python 3.4 compatibility added (fixed pickle/marshal issues)

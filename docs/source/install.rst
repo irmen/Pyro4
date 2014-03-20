@@ -29,8 +29,12 @@ Pyro can be found on the Python package index: http://pypi.python.org/pypi/Pyro4
 
 You can install it using :command:`pip` or :command:`easy_install`, or download the distribution archive (.tar.gz)
 from Pypi and run the ``setup.py`` script from that manually.
-Pyro installs as the ``Pyro4`` package with a couple of sub modules that you usually don't have to access directly.
-The `serpent <https://pypi.python.org/pypi/serpent>`_ serialization library is installed as a dependency.
+It will installs as the ``Pyro4`` package with a couple of sub modules that you usually don't have to access directly.
+
+.. note::
+    The `serpent <https://pypi.python.org/pypi/serpent>`_ serialization library is installed as a dependency.
+    If it is not automatically installed for you, you have to download and install it manually.
+    (check if you can ``import serpent`` to make sure it is installed)
 
 .. note::
     Windows users: use one of the suggested tools to install Pyro.
@@ -38,6 +42,7 @@ The `serpent <https://pypi.python.org/pypi/serpent>`_ serialization library is i
     one way to extract it is to use the (free) `7-zip <http://www.7-zip.org>`_ archive utility.
 
 If you want you can also obtain the source directly from Github: https://github.com/irmen/Pyro4
+The source for Serpent is also available there: https://github.com/irmen/Serpent
 
 
 Stuff you get in the distribution archive
