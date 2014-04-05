@@ -305,7 +305,7 @@ class Proxy(object):
                 else:
                     msg = Message.recv(self._pyroConnection, [Pyro4.message.MSG_RESULT])
                     if Pyro4.config.LOGWIRE:
-                        log.debug("proxy wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data) )
+                        log.debug("proxy wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
                     self.__pyroCheckSequence(msg.seq)
                     if msg.serializer_id != serializer.serializer_id:
                         error = "invalid serializer in response: %d" % msg.serializer_id
@@ -698,7 +698,7 @@ class Daemon(object):
             request_seq = msg.seq
             request_serializer_id = msg.serializer_id
             if Pyro4.config.LOGWIRE:
-                log.debug("daemon wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data) )
+                log.debug("daemon wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
             if msg.type == Pyro4.message.MSG_PING:
                 # return same seq, but ignore any data (it's a ping, not an echo). Nothing is deserialized.
                 msg = Message(Pyro4.message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq)
@@ -909,12 +909,14 @@ def callback(object):
 
 try:
     import serpent
+
     def pyro_class_serpent_serializer(obj, serializer, stream, level):
         # Override the default way that a Pyro URI/proxy/daemon is serialized.
         # Because it defines a __getstate__ it would otherwise just become a tuple,
         # and not be deserialized as a class.
         d = Pyro4.util.SerializerBase.class_to_dict(obj)
         serializer.ser_builtins_dict(d, stream, level)
+
     serpent.register_class(URI, pyro_class_serpent_serializer)
     serpent.register_class(Proxy, pyro_class_serpent_serializer)
     serpent.register_class(Daemon, pyro_class_serpent_serializer)

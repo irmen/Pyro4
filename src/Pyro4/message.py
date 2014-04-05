@@ -114,7 +114,7 @@ class Message(object):
             for k, v in self.annotations.items():
                 if len(k)!=4:
                     raise errors.ProtocolError("annotation key must be of length 4")
-                if sys.version_info>=(3,0):
+                if sys.version_info>=(3, 0):
                     k = k.encode("ASCII")
                 a.append(struct.pack("!4sH", k, len(v)))
                 a.append(v)
@@ -174,7 +174,7 @@ class Message(object):
             i = 0
             while i < msg.annotations_size:
                 anno, length = struct.unpack("!4sH", annotations_data[i:i+6])
-                if sys.version_info>=(3,0):
+                if sys.version_info>=(3, 0):
                     anno = anno.decode("ASCII")
                 msg.annotations[anno] = annotations_data[i+6:i+6+length]
                 i += 6+length

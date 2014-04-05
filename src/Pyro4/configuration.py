@@ -61,7 +61,7 @@ class Configuration(object):
             PREFIX="PYRO_"
             for symbol in self.__slots__:
                 if PREFIX+symbol in os.environ:
-                    value=getattr(self,symbol)
+                    value=getattr(self, symbol)
                     envvalue=os.environ[PREFIX+symbol]
                     if value is not None:
                         valuetype=type(value)
@@ -85,7 +85,7 @@ class Configuration(object):
         """returns the current config as a regular dictionary"""
         result={}
         for item in self.__slots__:
-            result[item]=getattr(self,item)
+            result[item]=getattr(self, item)
         return result
 
     def parseAddressesString(self, addresses):

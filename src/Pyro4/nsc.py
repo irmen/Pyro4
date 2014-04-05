@@ -65,8 +65,8 @@ def handleCommand(nameserver, options, args):
     try:
         commands[args[0]]()
     except Exception:
-        xt,xv,tb=sys.exc_info()
-        print("Error: %s - %s" % (xt.__name__,xv))
+        xt, xv, tb = sys.exc_info()
+        print("Error: %s - %s" % (xt.__name__, xv))
 
 
 def main(args):
@@ -77,7 +77,7 @@ def main(args):
     parser.add_option("-n", "--host", dest="host", help="hostname of the NS")
     parser.add_option("-p", "--port", dest="port", type="int",
                       help="port of the NS (or bc-port if host isn't specified)")
-    parser.add_option("-u","--unixsocket", help="Unix domain socket name of the NS")
+    parser.add_option("-u", "--unixsocket", help="Unix domain socket name of the NS")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose output")
     options, args = parser.parse_args(args)
     if not args or args[0] not in ("register", "remove", "removematching", "list", "listmatching", "ping"):
@@ -89,7 +89,7 @@ def main(args):
     try:
         nameserver=naming.locateNS(options.host, options.port)
     except errors.PyroError:
-        x=sys.exc_info()[1]
+        x = sys.exc_info()[1]
         print("Failed to locate the name server: %s" % x)
         return
     if options.verbose:
@@ -98,5 +98,5 @@ def main(args):
     if options.verbose:
         print("Done.")
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main(sys.argv[1:])

@@ -65,11 +65,10 @@ class ClientConnectionJob(object):
         if hasattr(socket, "SO_RCVTIMEO"):
             # setting a recv timeout seems to break the blocking call to recv() on some systems
             try:
-                self.csock.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, struct.pack("ii", 1,1))
+                self.csock.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, struct.pack("ii", 1, 1))
             except socket.error:
                 pass
         self.csock.close()
-
 
 
 class SocketServer_Threadpool(object):
@@ -78,7 +77,7 @@ class SocketServer_Threadpool(object):
         log.info("starting thread pool socketserver")
         self.daemon = daemon
         self.sock=None
-        bind_location=unixsocket if unixsocket else (host,port)
+        bind_location=unixsocket if unixsocket else (host, port)
         self.sock=socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
         self._socketaddr=self.sock.getsockname()
         if self._socketaddr[0].startswith("127."):

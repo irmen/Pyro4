@@ -10,12 +10,13 @@ but that is not terribly useful.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-import sys, os, time
+import sys
+import time
 from Pyro4 import threadutil
 from Pyro4 import naming
 import Pyro4
 
-__all__=["EchoServer"]
+__all__ = ["EchoServer"]
 
 
 class EchoServer(object):
@@ -47,7 +48,7 @@ class EchoServer(object):
 
 class NameServer(threadutil.Thread):
     def __init__(self, hostname):
-        super(NameServer,self).__init__()
+        super(NameServer, self).__init__()
         self.setDaemon(1)
         self.hostname=hostname
         self.started=threadutil.Event()
@@ -70,15 +71,15 @@ def startNameServer(host):
 def main(args, returnWithoutLooping=False):
     from optparse import OptionParser
     parser=OptionParser()
-    parser.add_option("-H","--host", default="localhost", help="hostname to bind server on (default=localhost)")
-    parser.add_option("-p","--port", type="int", default=0, help="port to bind server on")
-    parser.add_option("-u","--unixsocket", help="Unix domain socket name to bind server on")
-    parser.add_option("-n","--naming", action="store_true", default=False, help="register with nameserver")
-    parser.add_option("-N","--nameserver", action="store_true", default=False, help="also start a nameserver")
-    parser.add_option("-v","--verbose", action="store_true", default=False, help="verbose output")
-    parser.add_option("-q","--quiet", action="store_true", default=False, help="don't output anything")
-    parser.add_option("-k","--key", help="the HMAC key to use")
-    options,args = parser.parse_args(args)
+    parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=localhost)")
+    parser.add_option("-p", "--port", type="int", default=0, help="port to bind server on")
+    parser.add_option("-u", "--unixsocket", help="Unix domain socket name to bind server on")
+    parser.add_option("-n", "--naming", action="store_true", default=False, help="register with nameserver")
+    parser.add_option("-N", "--nameserver", action="store_true", default=False, help="also start a nameserver")
+    parser.add_option("-v", "--verbose", action="store_true", default=False, help="verbose output")
+    parser.add_option("-q", "--quiet", action="store_true", default=False, help="don't output anything")
+    parser.add_option("-k", "--key", help="the HMAC key to use")
+    options, args = parser.parse_args(args)
 
     if options.verbose:
         options.quiet=False
@@ -102,10 +103,10 @@ def main(args, returnWithoutLooping=False):
     objectName="test.echoserver"
     uri=d.register(echo, objectName)
     if options.naming:
-        host,port=None,None
+        host, port = None, None
         if nameserver is not None:
-            host,port=nameserver.uri.host, nameserver.uri.port
-        ns=naming.locateNS(host,port)
+            host, port=nameserver.uri.host, nameserver.uri.port
+        ns=naming.locateNS(host, port)
         ns.register(objectName, uri)
         if options.verbose:
             print("using name server at %s" % ns._pyroUri)
@@ -123,9 +124,9 @@ def main(args, returnWithoutLooping=False):
         print("echoserver running.")
 
     if returnWithoutLooping:
-        return d,echo,uri        # for unit testing
+        return d, echo, uri        # for unit testing
     else:
-        d.requestLoop(loopCondition=lambda:not echo.must_shutdown)
+        d.requestLoop(loopCondition=lambda: not echo.must_shutdown)
     d.close()
 
 if __name__=="__main__":

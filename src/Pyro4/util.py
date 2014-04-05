@@ -487,13 +487,13 @@ try:
     else:
         ver = serpent.__version__
     ver = tuple(map(int, ver.split(".")))
-    if ver<(1,3):
+    if ver<(1, 3):
         raise RuntimeError("requires serpent 1.3 or better")
     _ser = SerpentSerializer()
     _serializers["serpent"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser
 except ImportError:
-    #warnings.warn("serpent serializer not available", RuntimeWarning)
+    # warnings.warn("serpent serializer not available", RuntimeWarning)
     pass
 del _ser
 

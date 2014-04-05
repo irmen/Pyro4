@@ -240,7 +240,8 @@ def sendData(sock, data):
                 retrydelay=__nextRetrydelay(retrydelay)
 
 
-_GLOBAL_DEFAULT_TIMEOUT=object()
+_GLOBAL_DEFAULT_TIMEOUT = object()
+
 
 def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False, ipv6=False, nodelay=False):
     """
@@ -375,9 +376,9 @@ def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TI
             bindOnUnusedPort(sock, host)
         else:
             if len(bind) == 2:
-                sock.bind((host,port))  # ipv4
+                sock.bind((host, port))  # ipv4
             elif len(bind) == 4:
-                sock.bind((host,port,0,0))  # ipv6
+                sock.bind((host, port, 0, 0))  # ipv6
             else:
                 raise ValueError("bind must be None, 2-tuple or 4-tuple")
     return sock
@@ -506,7 +507,7 @@ def bindOnUnusedPort(sock, host='localhost'):
         else:
             sock.bind((host, 0, 0, 0))
     else:
-        raise CommunicationError( "unsupported socket family: " + sock.family )
+        raise CommunicationError("unsupported socket family: " + sock.family)
     if os.name=="java":
         try:
             sock.listen(100)  # otherwise jython always just returns 0 for the port
@@ -521,6 +522,7 @@ hasSelect = select and hasattr(select, "select")
 
 """is poll() available?"""
 hasPoll = select and hasattr(select, "poll")
+
 
 def triggerSocket(sock):
     """send a small data packet over the socket, to trigger it"""
