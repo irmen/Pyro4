@@ -223,6 +223,14 @@ class TestSocketutil(unittest.TestCase):
         if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
         self.assertRaises(ValueError, SU.createSocket, bind=SOCKNAME, connect=SOCKNAME)
 
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "unix domain sockets required")
+    def testAbstractNamespace(self):
+        SOCKNAME="\0test_unixsocket_abstract_ns"   # mind the \0 at the start
+        s = SU.createSocket(bind=SOCKNAME)
+        sn_bytes = tobytes(SOCKNAME)
+        self.assertEqual(sn_bytes, s.getsockname())
+        s.close()
+
     def testSend(self):
         ss=SU.createSocket(bind=("localhost",0))
         port=ss.getsockname()[1]

@@ -83,18 +83,32 @@ class DaemonTests(unittest.TestCase):
             except AttributeError:
                 pass
 
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "unix domain sockets required")
     def testDaemonUnixSocket(self):
-        if hasattr(socket,"AF_UNIX"):
-            SOCKNAME="test_unixsocket"
-            with Pyro4.core.Daemon(unixsocket=SOCKNAME) as d:
-                locationstr="./u:"+SOCKNAME
-                self.assertEqual(locationstr, d.locationStr)
-                self.assertEqual("PYRO:"+Pyro4.constants.DAEMON_NAME+"@"+locationstr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
-                # check the string representations
-                expected=("<Pyro4.core.Daemon at 0x%x, %s, 1 objects>") % (id(d), locationstr)
-                self.assertEqual(expected,str(d))
-                self.assertEqual(SOCKNAME,d.sock.getsockname())
-                self.assertEqual(socket.AF_UNIX,d.sock.family)
+        SOCKNAME="test_unixsocket"
+        with Pyro4.core.Daemon(unixsocket=SOCKNAME) as d:
+            locationstr="./u:"+SOCKNAME
+            self.assertEqual(locationstr, d.locationStr)
+            self.assertEqual("PYRO:"+Pyro4.constants.DAEMON_NAME+"@"+locationstr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
+            # check the string representations
+            expected=("<Pyro4.core.Daemon at 0x%x, %s, 1 objects>") % (id(d), locationstr)
+            self.assertEqual(expected,str(d))
+            self.assertEqual(SOCKNAME,d.sock.getsockname())
+            self.assertEqual(socket.AF_UNIX,d.sock.family)
+
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "unix domain sockets required")
+    def testDaemonUnixSocketAbstractNS(self):
+        SOCKNAME="\0test_unixsocket"  # mind the \0 at the start
+        with Pyro4.core.Daemon(unixsocket=SOCKNAME) as d:
+            locationstr="./u:"+SOCKNAME
+            self.assertEqual(locationstr, d.locationStr)
+            self.assertEqual("PYRO:"+Pyro4.constants.DAEMON_NAME+"@"+locationstr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
+            # check the string representations
+            expected=("<Pyro4.core.Daemon at 0x%x, %s, 1 objects>") % (id(d), locationstr)
+            self.assertEqual(expected,str(d))
+            sn_bytes = tobytes(SOCKNAME)
+            self.assertEqual(sn_bytes,d.sock.getsockname())
+            self.assertEqual(socket.AF_UNIX,d.sock.family)
 
     def testServertypeThread(self):
         old_servertype=Pyro4.config.SERVERTYPE

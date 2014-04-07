@@ -80,7 +80,7 @@ class SocketServer_Threadpool(object):
         bind_location=unixsocket if unixsocket else (host, port)
         self.sock=socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
         self._socketaddr=self.sock.getsockname()
-        if self._socketaddr[0].startswith("127."):
+        if not unixsocket and self._socketaddr[0].startswith("127."):
             if host is None or host.lower()!="localhost" and not host.startswith("127."):
                 log.warning("weird DNS setup: %s resolves to localhost (127.x.x.x)", host)
         if unixsocket:

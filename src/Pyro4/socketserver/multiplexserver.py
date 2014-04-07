@@ -21,7 +21,7 @@ class MultiplexedSocketServerBase(object):
         self.clients=set()
         self.daemon=daemon
         sockaddr=self.sock.getsockname()
-        if sockaddr[0].startswith("127."):
+        if not unixsocket and sockaddr[0].startswith("127."):
             if host is None or host.lower()!="localhost" and not host.startswith("127."):
                 log.warning("weird DNS setup: %s resolves to localhost (127.x.x.x)", host)
         if unixsocket:
