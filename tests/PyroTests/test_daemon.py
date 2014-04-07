@@ -5,7 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import os, time, socket
+import sys, time, socket
 import Pyro4.core
 import Pyro4.constants
 import Pyro4.socketutil
@@ -96,7 +96,7 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(SOCKNAME,d.sock.getsockname())
             self.assertEqual(socket.AF_UNIX,d.sock.family)
 
-    @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "unix domain sockets required")
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX") and sys.platform.startswith("linux"), "linux and unix domain sockets required")
     def testDaemonUnixSocketAbstractNS(self):
         SOCKNAME="\0test_unixsocket"  # mind the \0 at the start
         with Pyro4.core.Daemon(unixsocket=SOCKNAME) as d:

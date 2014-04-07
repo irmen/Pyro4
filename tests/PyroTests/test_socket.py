@@ -223,7 +223,7 @@ class TestSocketutil(unittest.TestCase):
         if os.path.exists(SOCKNAME): os.remove(SOCKNAME)
         self.assertRaises(ValueError, SU.createSocket, bind=SOCKNAME, connect=SOCKNAME)
 
-    @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "unix domain sockets required")
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX") and sys.platform.startswith("linux"), "linux and unix domain sockets required")
     def testAbstractNamespace(self):
         SOCKNAME="\0test_unixsocket_abstract_ns"   # mind the \0 at the start
         s = SU.createSocket(bind=SOCKNAME)
