@@ -245,7 +245,8 @@ class SerializeTests_pickle(unittest.TestCase):
             if self.SERIALIZER == "serpent":
                 self.assertEqual("unsupported serialized class: MyThing2", msg)
             else:
-                self.assertEqual("unsupported serialized class: testsupport.MyThing2", msg)
+                self.assertTrue(msg in ["unsupported serialized class: testsupport.MyThing2",
+                                        "unsupported serialized class: PyroTests.testsupport.MyThing2"])
 
     def testData(self):
         data = [42, "hello"]
@@ -437,7 +438,8 @@ class GenericTests(unittest.TestCase):
         Pyro4.util.SerializerBase.unregister_class_to_dict(MyThing2)
         Pyro4.util.SerializerBase.unregister_dict_to_class("CUSTOM-Mythingymabob")
         d_orig = Pyro4.util.SerializerBase.class_to_dict(o)
-        self.assertEqual("testsupport.MyThing2", d_orig["__class__"])
+        clsname = d_orig["__class__"]
+        self.assertTrue(clsname.endswith("testsupport.MyThing2"))
         try:
             _ = Pyro4.util.SerializerBase.dict_to_class(d)
             self.fail("should crash")
