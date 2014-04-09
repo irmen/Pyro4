@@ -128,6 +128,30 @@ The valid choices are the names of the serializer from the list mentioned above.
     the server will respond using the same serializer as was used for the request.
 
 
+Changing the way your custom classes are (de)serialized
+-------------------------------------------------------
+By default (when not using the pickle serialization protocol), custom classes are serialized into a dict.
+They are not deserialized back into instances of your custom class. This avoids possible security issues.
+An exception to this however are certain classes in the Pyro4 package itself (such as the URI and Proxy classes).
+They *are* deserialized back into objects of that certain class, because they are critical for Pyro to function correctly.
+
+There are a few hooks however that allow you to extend this default behaviour and register certain custom
+converter functions. These allow you to change the way your custom classes are treated, and allow you
+to actually get instances of your custom class back from the deserialization if you so desire.
+
+The hooks are provided via several classmethods:
+    :py:meth:`Pyro4.util.SerializerBase.register_class_to_dict` and :py:meth:`Pyro4.util.SerializerBase.register_dict_to_class`
+
+and their unregister-counterparts:
+    :py:meth:`Pyro4.util.SerializerBase.unregister_class_to_dict` and :py:meth:`Pyro4.util.SerializerBase.unregister_dict_to_class`
+
+Click on the method link to see its apidoc, or have a look at the :file:`ser_custom` example and the :file:`test_serialize` unit tests for more information.
+It is recommended to avoid using these hooks if possible, there's a security risk
+to create arbitrary objects from serialized data that is received from untrusted sources.
+When you configure Pyro to use the pickle protocol these hooks are useless because pickle
+already supports serialization of custom classes. Be aware once more that using pickle is a security risk.
+
+
 Upgrading older code that relies on pickle
 ------------------------------------------
 

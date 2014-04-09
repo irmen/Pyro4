@@ -5,7 +5,10 @@ Change Log
 **Pyro 4.25**
 
 - support for (Linux) abstract namespace AF_UNIX sockets (with a 0-byte at the start of the name)
+- register_dict_to_class method added on SerializerBase, to be able to deserialize to particular user defined classes
 - docs: mention that you may have to install serpent manually (most notably with alternative Python implementations)
+- docs: mention the serialization hooks on SerializerBase
+- added ser_custom example that shows how to use the serialization hooks
 
 
 **Pyro 4.24**

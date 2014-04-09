@@ -162,19 +162,23 @@ class SerializeTests_pickle(unittest.TestCase):
         uri = Pyro4.core.URI("PYRO:object@host:4444")
         s, c = self.ser.serializeData(uri)
         x = self.ser.deserializeData(s, c)
+        self.assertIsInstance(x, Pyro4.core.URI)
         self.assertEqual(uri, x)
         uri=Pyro4.core.URI("PYRO:12345@./u:/tmp/socketname")
         s, c = self.ser.serializeData(uri)
         x = self.ser.deserializeData(s, c)
+        self.assertIsInstance(x, Pyro4.core.URI)
         self.assertEqual(uri, x)
         proxy=Pyro4.core.Proxy(uri)
         s, c = self.ser.serializeData(proxy)
         x = self.ser.deserializeData(s, c)
+        self.assertIsInstance(x, Pyro4.core.Proxy)
         self.assertEqual(proxy._pyroUri, x._pyroUri)
         self.assertTrue(x._)
         daemon=Pyro4.core.Daemon()
         s, c = self.ser.serializeData(daemon)
         x = self.ser.deserializeData(s, c)
+        self.assertIsInstance(x, Pyro4.core.Daemon)
         self.assertTrue(isinstance(x, Pyro4.core.Daemon))
         wrapper = Pyro4.futures._ExceptionWrapper(ZeroDivisionError("divided by zero"))
         s, c = self.ser.serializeData(wrapper)
@@ -212,6 +216,36 @@ class SerializeTests_pickle(unittest.TestCase):
             self.fail("error expected, shouldn't deserialize unknown class")
         except Pyro4.errors.ProtocolError:
             pass
+
+    def testCustomClassOk(self):
+        if self.SERIALIZER=="pickle":
+            self.skipTest("pickle simply serializes custom classes just fine")
+        o = MyThing2("test")
+        Pyro4.util.SerializerBase.register_class_to_dict(MyThing2, mything_dict)
+        Pyro4.util.SerializerBase.register_dict_to_class("CUSTOM-Mythingymabob", mything_creator)
+        s, c = self.ser.serializeData(o)
+        o2 = self.ser.deserializeData(s, c)
+        self.assertIsInstance(o2, MyThing2)
+        self.assertEqual("test", o2.name)
+        # unregister the deserializer
+        Pyro4.util.SerializerBase.unregister_dict_to_class("CUSTOM-Mythingymabob")
+        try:
+            self.ser.deserializeData(s, c)
+            self.fail("must fail")
+        except Pyro4.errors.ProtocolError:
+            pass  # ok
+        # unregister the serializer
+        Pyro4.util.SerializerBase.unregister_class_to_dict(MyThing2)
+        s, c = self.ser.serializeData(o)
+        try:
+            self.ser.deserializeData(s, c)
+            self.fail("must fail")
+        except Pyro4.errors.ProtocolError as x:
+            msg = str(x)
+            if self.SERIALIZER == "serpent":
+                self.assertEqual("unsupported serialized class: MyThing2", msg)
+            else:
+                self.assertEqual("unsupported serialized class: testsupport.MyThing2", msg)
 
     def testData(self):
         data = [42, "hello"]
@@ -348,7 +382,7 @@ class GenericTests(unittest.TestCase):
         self.assertEqual(42, d["_width"])
         self.assertEqual("pprint.PrettyPrinter", d["__class__"])
         try:
-            x = Pyro4.util.SerializerBase.dict_to_class(d)
+            _ = Pyro4.util.SerializerBase.dict_to_class(d)
             self.fail("error expected")
         except Pyro4.errors.ProtocolError:
             pass
@@ -377,6 +411,7 @@ class GenericTests(unittest.TestCase):
         self.assertEqual("Pyro4.core.URI", d["__class__"])
         self.assertTrue("state" in d)
         x = Pyro4.util.SerializerBase.dict_to_class(d)
+        self.assertIsInstance(x, Pyro4.core.URI)
         self.assertEqual(uri, x)
         self.assertEqual(4444, x.port)
         uri = Pyro4.core.URI("PYRO:12345@./u:/tmp/socketname")
@@ -384,8 +419,43 @@ class GenericTests(unittest.TestCase):
         self.assertEqual("Pyro4.core.URI", d["__class__"])
         self.assertTrue("state" in d)
         x = Pyro4.util.SerializerBase.dict_to_class(d)
+        self.assertIsInstance(x, Pyro4.core.URI)
         self.assertEqual(uri, x)
         self.assertEqual("/tmp/socketname", x.sockname)
+
+    def testCustomDictClass(self):
+        o = MyThing2("test")
+        Pyro4.util.SerializerBase.register_class_to_dict(MyThing2, mything_dict)
+        Pyro4.util.SerializerBase.register_dict_to_class("CUSTOM-Mythingymabob", mything_creator)
+        d = Pyro4.util.SerializerBase.class_to_dict(o)
+        self.assertEqual("CUSTOM-Mythingymabob", d["__class__"])
+        self.assertEqual("test", d["name"])
+        x = Pyro4.util.SerializerBase.dict_to_class(d)
+        self.assertIsInstance(x, MyThing2)
+        self.assertEqual("test", x.name)
+        # unregister the conversion functions and try again
+        Pyro4.util.SerializerBase.unregister_class_to_dict(MyThing2)
+        Pyro4.util.SerializerBase.unregister_dict_to_class("CUSTOM-Mythingymabob")
+        d_orig = Pyro4.util.SerializerBase.class_to_dict(o)
+        self.assertEqual("testsupport.MyThing2", d_orig["__class__"])
+        try:
+            _ = Pyro4.util.SerializerBase.dict_to_class(d)
+            self.fail("should crash")
+        except Pyro4.errors.ProtocolError:
+            pass  # ok
+
+
+def mything_dict(obj):
+    return {
+        "__class__": "CUSTOM-Mythingymabob",
+        "name": obj.name
+    }
+
+
+def mything_creator(classname, d):
+    assert classname == "CUSTOM-Mythingymabob"
+    assert d["__class__"] == "CUSTOM-Mythingymabob"
+    return MyThing2(d["name"])
 
 
 if __name__ == "__main__":

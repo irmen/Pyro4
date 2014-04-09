@@ -917,6 +917,7 @@ try:
         d = Pyro4.util.SerializerBase.class_to_dict(obj)
         serializer.ser_builtins_dict(d, stream, level)
 
+    # register the special serializers for the pyro objects with Serpent
     serpent.register_class(URI, pyro_class_serpent_serializer)
     serpent.register_class(Proxy, pyro_class_serpent_serializer)
     serpent.register_class(Daemon, pyro_class_serpent_serializer)
@@ -931,7 +932,7 @@ def serialize_core_object_to_dict(obj):
         "state": obj.__getstate_for_dict__()
     }
 
-Pyro4.util.SerializerBase.register_class_to_dict(URI, serialize_core_object_to_dict)
-Pyro4.util.SerializerBase.register_class_to_dict(Proxy, serialize_core_object_to_dict)
-Pyro4.util.SerializerBase.register_class_to_dict(Daemon, serialize_core_object_to_dict)
-Pyro4.util.SerializerBase.register_class_to_dict(futures._ExceptionWrapper, futures._ExceptionWrapper.__serialized_dict__)
+Pyro4.util.SerializerBase.register_class_to_dict(URI, serialize_core_object_to_dict, serpent_too=False)
+Pyro4.util.SerializerBase.register_class_to_dict(Proxy, serialize_core_object_to_dict, serpent_too=False)
+Pyro4.util.SerializerBase.register_class_to_dict(Daemon, serialize_core_object_to_dict, serpent_too=False)
+Pyro4.util.SerializerBase.register_class_to_dict(futures._ExceptionWrapper, futures._ExceptionWrapper.__serialized_dict__, serpent_too=False)

@@ -140,6 +140,7 @@ for name, t in vars(Pyro4.errors).items():
 class SerializerBase(object):
     """Base class for (de)serializer implementations (which must be thread safe)"""
     __custom_class_to_dict_registry = {}
+    __custom_dict_to_class_registry = {}
 
     def serializeData(self, data, compress=False):
         """Serialize the given data object, try to compress if told so.
@@ -191,13 +192,46 @@ class SerializerBase(object):
         raise NotImplementedError("implement in subclass")
 
     @classmethod
-    def register_class_to_dict(cls, clazz, converter):
+    def register_class_to_dict(cls, clazz, converter, serpent_too=True):
+        """Registers a custom function that returns a dict representation of objects of the given class.
+        The function is called with a single parameter; the object to be converted to a dict."""
         cls.__custom_class_to_dict_registry[clazz] = converter
+        if serpent_too:
+            try:
+                get_serializer_by_id(SerpentSerializer.serializer_id)
+                import serpent
+                def serpent_converter(obj, serializer, stream, level):
+                    d = converter(obj)
+                    serializer.ser_builtins_dict(d, stream, level)
+                serpent.register_class(clazz, serpent_converter)
+            except Pyro4.errors.ProtocolError:
+                pass
 
     @classmethod
     def unregister_class_to_dict(cls, clazz):
+        """Removes the to-dict conversion function registered for the given class. Objects of the class
+        will be serialized by the default mechanism again."""
         if clazz in cls.__custom_class_to_dict_registry:
             del cls.__custom_class_to_dict_registry[clazz]
+        try:
+            get_serializer_by_id(SerpentSerializer.serializer_id)
+            import serpent
+            serpent.unregister_class(clazz)
+        except Pyro4.errors.ProtocolError:
+            pass
+
+    @classmethod
+    def register_dict_to_class(cls, classname, converter):
+        """Registers a custom converter function that creates objects from a dict with the given classname tag in it.
+        The function is called with two parameters: the classname and the dictionary to convert to an instance of the class."""
+        cls.__custom_dict_to_class_registry[classname] = converter
+
+    @classmethod
+    def unregister_dict_to_class(cls, classname):
+        """Removes the converter registered for the given classname. Dicts with that classname tag
+        will be deserialized by the default mechanism again."""
+        if classname in cls.__custom_dict_to_class_registry:
+            del cls.__custom_dict_to_class_registry[classname]
 
     @classmethod
     def class_to_dict(cls, obj):
@@ -237,15 +271,19 @@ class SerializerBase(object):
             else:
                 raise Pyro4.errors.ProtocolError("don't know how to serialize class " + str(obj.__class__) + ". Give it vars() or an appropriate __getstate__")
 
-    @staticmethod
-    def dict_to_class(data):
+    @classmethod
+    def dict_to_class(cls, data):
         """
         Recreate an object out of a dict containing the class name and the attributes.
         Only a fixed set of classes are recognized.
         """
         classname = data.get("__class__", "<unknown>")
+        if classname in cls.__custom_dict_to_class_registry:
+            converter = cls.__custom_dict_to_class_registry[classname]
+            return converter(classname, data)
         if "__" in classname:
             raise Pyro4.errors.SecurityError("refused to deserialize types with double underscores in their name: "+classname)
+        # because of efficiency reasons the constructors below are hardcoded here instead of added on a per-class basis to the dict-to-class registry
         if classname.startswith("Pyro4.core."):
             if classname=="Pyro4.core.URI":
                 uri = Pyro4.core.URI.__new__(Pyro4.core.URI)
