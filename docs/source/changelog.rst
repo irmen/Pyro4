@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.26**
+
+...
+
+
 **Pyro 4.25**
 
 - now also puts package name in serpent serialization data for custom class instances (previously only the class name was used)
