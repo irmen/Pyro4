@@ -242,11 +242,8 @@ class SerializeTests_pickle(unittest.TestCase):
             self.fail("must fail")
         except Pyro4.errors.ProtocolError as x:
             msg = str(x)
-            if self.SERIALIZER == "serpent":
-                self.assertEqual("unsupported serialized class: MyThing2", msg)
-            else:
-                self.assertTrue(msg in ["unsupported serialized class: testsupport.MyThing2",
-                                        "unsupported serialized class: PyroTests.testsupport.MyThing2"])
+            self.assertTrue(msg in ["unsupported serialized class: testsupport.MyThing2",
+                                    "unsupported serialized class: PyroTests.testsupport.MyThing2"])
 
     def testData(self):
         data = [42, "hello"]

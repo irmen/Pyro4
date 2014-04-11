@@ -4,6 +4,8 @@ Change Log
 
 **Pyro 4.25**
 
+- now also puts package name in serpent serialization data for custom class instances (previously only the class name was used)
+- requires serpent 1.5 or newer (because of the feature above)
 - support for (Linux) abstract namespace AF_UNIX sockets (with a 0-byte at the start of the name)
 - register_dict_to_class method added on SerializerBase, to be able to deserialize to particular user defined classes
 - docs: mention that you may have to install serpent manually (most notably with alternative Python implementations)

@@ -285,28 +285,26 @@ class SerializerBase(object):
             raise Pyro4.errors.SecurityError("refused to deserialize types with double underscores in their name: "+classname)
         # because of efficiency reasons the constructors below are hardcoded here instead of added on a per-class basis to the dict-to-class registry
         if classname.startswith("Pyro4.core."):
-            if classname=="Pyro4.core.URI":
+            if classname == "Pyro4.core.URI":
                 uri = Pyro4.core.URI.__new__(Pyro4.core.URI)
-                uri.__setstate__(data["state"])
+                uri.__setstate_from_dict__(data["state"])
                 return uri
-            elif classname=="Pyro4.core.Proxy":
+            elif classname == "Pyro4.core.Proxy":
                 proxy = Pyro4.core.Proxy.__new__(Pyro4.core.Proxy)
-                state = data["state"]
-                uri = Pyro4.core.URI(state[0])
-                oneway = set(state[1])
-                timeout = state[2]
-                proxy.__setstate__((uri, oneway, timeout))
+                proxy.__setstate_from_dict__(data["state"])
                 return proxy
-            elif classname=="Pyro4.core.Daemon":
-                return Pyro4.core.Daemon.__new__(Pyro4.core.Daemon)
+            elif classname == "Pyro4.core.Daemon":
+                daemon = Pyro4.core.Daemon.__new__(Pyro4.core.Daemon)
+                daemon.__setstate_from_dict__(data["state"])
+                return daemon
         elif classname.startswith("Pyro4.util."):
-            if classname=="Pyro4.util.PickleSerializer":
+            if classname == "Pyro4.util.PickleSerializer":
                 return PickleSerializer()
-            elif classname=="Pyro4.util.MarshalSerializer":
+            elif classname == "Pyro4.util.MarshalSerializer":
                 return MarshalSerializer()
-            elif classname=="Pyro4.util.JsonSerializer":
+            elif classname == "Pyro4.util.JsonSerializer":
                 return JsonSerializer()
-            elif classname=="Pyro4.util.SerpentSerializer":
+            elif classname == "Pyro4.util.SerpentSerializer":
                 return SerpentSerializer()
         elif classname.startswith("Pyro4.errors."):
             errortype = getattr(Pyro4.errors, classname.split('.', 2)[2])
@@ -427,10 +425,10 @@ class SerpentSerializer(SerializerBase):
     serializer_id = Pyro4.message.SERIALIZER_SERPENT
 
     def dumpsCall(self, obj, method, vargs, kwargs):
-        return serpent.dumps((obj, method, vargs, kwargs))
+        return serpent.dumps((obj, method, vargs, kwargs), module_in_classname=True)
 
     def dumps(self, data):
-        return serpent.dumps(data)
+        return serpent.dumps(data, module_in_classname=True)
 
     def loadsCall(self, data):
         obj, method, vargs, kwargs = serpent.loads(data)
@@ -525,8 +523,8 @@ try:
     else:
         ver = serpent.__version__
     ver = tuple(map(int, ver.split(".")))
-    if ver<(1, 3):
-        raise RuntimeError("requires serpent 1.3 or better")
+    if ver<(1, 5):
+        raise RuntimeError("requires serpent 1.5 or better")
     _ser = SerpentSerializer()
     _serializers["serpent"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser

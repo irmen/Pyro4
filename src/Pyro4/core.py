@@ -140,11 +140,14 @@ class URI(object):
     def __getstate__(self):
         return self.protocol, self.object, self.sockname, self.host, self.port
 
+    def __setstate__(self, state):
+        self.protocol, self.object, self.sockname, self.host, self.port = state
+
     def __getstate_for_dict__(self):
         return self.__getstate__()
 
-    def __setstate__(self, state):
-        self.protocol, self.object, self.sockname, self.host, self.port = state
+    def __setstate_from_dict__(self, state):
+        self.__setstate__(state)
 
 
 class _RemoteMethod(object):
@@ -218,18 +221,24 @@ class Proxy(object):
     def __unicode__(self):
         return str(self)
 
-    def __getstate__(self):
-        return self._pyroUri, self._pyroOneway, self.__pyroTimeout    # skip the connection
-
     def __getstate_for_dict__(self):
         return self._pyroUri.asString(), tuple(self._pyroOneway), self.__pyroTimeout
 
+    def __setstate_from_dict__(self, state):
+        uri = Pyro4.core.URI(state[0])
+        oneway = set(state[1])
+        timeout = state[2]
+        self.__setstate__((uri, oneway, timeout))
+
+    def __getstate__(self):
+        return self._pyroUri, self._pyroOneway, self.__pyroTimeout    # skip the connection
+
     def __setstate__(self, state):
         self._pyroUri, self._pyroOneway, self.__pyroTimeout = state
-        self._pyroConnection=None
-        self._pyroSeq=0
-        self.__pyroLock=threadutil.Lock()
-        self.__pyroConnLock=threadutil.Lock()
+        self._pyroConnection = None
+        self._pyroSeq = 0
+        self.__pyroLock = threadutil.Lock()
+        self.__pyroConnLock = threadutil.Lock()
 
     def __copy__(self):
         uriCopy=URI(self._pyroUri)
@@ -893,6 +902,9 @@ class Daemon(object):
 
     def __getstate_for_dict__(self):
         return self.__getstate__()
+
+    def __setstate_from_dict__(self, state):
+        pass
 
 
 # decorators
