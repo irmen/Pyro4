@@ -9,6 +9,7 @@ import sys
 import os
 import copy
 import pprint
+import pickle
 import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
@@ -339,12 +340,23 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(1, number)
         self.assertEqual(Pyro4.core.URI("PYRO:555@localhost:80"), uri["uri"])
 
+    def testProtocolVersion(self):
+        self.assertGreaterEqual(Pyro4.config.PICKLE_PROTOCOL_VERSION, 2)
+        self.assertEqual(pickle.HIGHEST_PROTOCOL, Pyro4.config.PICKLE_PROTOCOL_VERSION)
+
 
 class SerializeTests_serpent(SerializeTests_pickle):
-    SERIALIZER="serpent"
+    SERIALIZER = "serpent"
+    @unittest.skip("pickle specific")
+    def testProtocolVersion(self):
+        pass
 
 class SerializeTests_json(SerializeTests_pickle):
-    SERIALIZER="json"
+    SERIALIZER = "json"
+    @unittest.skip("pickle specific")
+    def testProtocolVersion(self):
+        pass
+
 
 if os.name!="java":
     # The marshal serializer is not working correctly under jython,

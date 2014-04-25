@@ -372,10 +372,10 @@ class PickleSerializer(SerializerBase):
     serializer_id = Pyro4.message.SERIALIZER_PICKLE
 
     def dumpsCall(self, obj, method, vargs, kwargs):
-        return pickle.dumps((obj, method, vargs, kwargs), pickle.HIGHEST_PROTOCOL)
+        return pickle.dumps((obj, method, vargs, kwargs), Pyro4.config.PICKLE_PROTOCOL_VERSION)
 
     def dumps(self, data):
-        return pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
+        return pickle.dumps(data, Pyro4.config.PICKLE_PROTOCOL_VERSION)
 
     def loadsCall(self, data):
         return pickle.loads(data)
@@ -501,7 +501,7 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-assert pickle.HIGHEST_PROTOCOL>=2, "pickle needs to support protocol 2 or higher"
+assert Pyro4.config.PICKLE_PROTOCOL_VERSION>=2, "pickle protocol needs to be 2 or higher"
 _ser = PickleSerializer()
 _serializers["pickle"] = _ser
 _serializers_by_id[_ser.serializer_id] = _ser

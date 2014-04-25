@@ -111,6 +111,8 @@ on what objects you can use.
 
 You select the serializer to be used by setting the ``SERIALIZER`` config item. (See the :doc:`/config` chapter).
 The valid choices are the names of the serializer from the list mentioned above.
+If you're using pickle, and need to control the pickle protocol version that is used, you can do so with the
+``PICKLE_PROTOCOL_VERSION`` config item. By default Pyro will use the highest one available.
 
 .. note::
     Since Pyro 4.20 the default serializer is "``serpent``".

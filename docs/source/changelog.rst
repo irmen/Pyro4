@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.26**
 
-...
+- introduced PICKLE_PROTOCOL_VERSION config item
 
 
 **Pyro 4.25**

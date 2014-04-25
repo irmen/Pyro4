@@ -92,6 +92,7 @@ FLAME_ENABLED           bool    False          Should Pyro Flame be enabled on t
 SERIALIZER              str     serpent        The wire protocol serializer to use for clients/proxies (one of: serpent, json, marshal, pickle)
 SERIALIZERS_ACCEPTED    set     json,marshal,  The wire protocol serializers accepted in the server/daemon.
                                 serpent        Use comma separated string for initial config, will be a set after initialization.
+PICKLE_PROTOCOL_VERSION int     highest poss   The pickle protocol version to use, if pickle is selected as serializer. Defaults to pickle.HIGHEST_PROTOCOL
 LOGWIRE                 bool    False          If wire-level message data should be written to the logfile (you may want to disable COMPRESSION)
 ======================= ======= ============== =======
 

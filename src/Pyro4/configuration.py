@@ -10,6 +10,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import os
 import platform
+import pickle
 
 
 class Configuration(object):
@@ -17,7 +18,7 @@ class Configuration(object):
                "COMPRESSION", "SERVERTYPE", "DOTTEDNAMES", "COMMTIMEOUT",
                "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
                "DETAILED_TRACEBACK", "SOCK_REUSE", "PREFER_IP_VERSION",
-               "THREADPOOL_SIZE", "HMAC_KEY", "AUTOPROXY",
+               "THREADPOOL_SIZE", "HMAC_KEY", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
                "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
                "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE" )
 
@@ -55,6 +56,7 @@ class Configuration(object):
         self.SERIALIZER = "serpent"
         self.SERIALIZERS_ACCEPTED = "serpent,marshal,json"
         self.LOGWIRE = False   # log wire-level messages
+        self.PICKLE_PROTOCOL_VERSION = pickle.HIGHEST_PROTOCOL
 
         if useenvironment:
             # process enviroment variables

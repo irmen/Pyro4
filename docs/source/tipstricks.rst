@@ -62,14 +62,20 @@ from all possible interfaces), sometimes it is possible to run only the name ser
 The success ratio of all this depends heavily on your network setup.
 
 
-Same major Python version required
-==================================
+Same major Python version required when using pickle or marshal
+===============================================================
 
-When Pyro is configured to use pickle as its serialization format, it is required to have the same *major* Python versions
+When Pyro is configured to use pickle or marshal as its serialization format, it is required to have the same *major* Python versions
 on your clients and your servers. Otherwise the different parties cannot decipher each others serialized data.
-This means you cannot let Python 2.x talk to Python 3.x with Pyro. However
+This means you cannot let Python 2.x talk to Python 3.x with Pyro when using pickle or marshal as serialization protocols. However
 it should be fine to have Python 2.6.2 talk to Python 2.7.3 for instance.
-Using one of the implementation independent protocols (serpent or json) will avoid this limitation.
+It may still be required to specify the pickle protocol version though, because that needs to be the same on both ends as well.
+For instance, Python 3.4 introduced version 4 of the pickle protocol and as such won't be able to talk to Python 3.3 which is stuck
+on version 3 pickle protocol. You'll have to tell the Python 3.4 side to step down to protocol 3. There is a config item for that.
+
+
+The implementation independent serialization protocols (serpent or json) don't have any of these issues.
+
 
 
 Wire protocol version
