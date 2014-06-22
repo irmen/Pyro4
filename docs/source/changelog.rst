@@ -5,6 +5,8 @@ Change Log
 **Pyro 4.26**
 
 - introduced PICKLE_PROTOCOL_VERSION config item
+- fixed exception handling when dealing with different major Python versions. Using serpent or json now also properly translates exception objects even if the major Python version differ
+- because of the new way Pyro deals with serialized exceptions, the wire protocol version was updated to 47. You'll have to update all Pyro4 libraries to 4.26
 
 
 **Pyro 4.25**

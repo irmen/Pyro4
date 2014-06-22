@@ -30,7 +30,8 @@ class EchoServer(object):
     def echo(self, args):
         """return the args"""
         if self.verbose:
-            print("%s - echo: %s" % (time.asctime(), args))
+            args_str = repr(args).encode(sys.stdout.encoding, errors="replace").decode(sys.stdout.encoding)
+            print("%s - echo: %s" % (time.asctime(), args_str))
         return args
 
     def error(self):

@@ -19,7 +19,8 @@ def _configLogging():
     Set the env var PYRO_LOGFILE to change the name of the autoconfigured
     log file (default is pyro.log in the current dir). Use '{stderr}' to
     make the log go to the standard error output."""
-    import os, logging
+    import os
+    import logging
     level = os.environ.get("PYRO_LOGLEVEL")
     logfilename = os.environ.get("PYRO_LOGFILE", "pyro.log")
     if logfilename == "{stderr}":
@@ -55,7 +56,7 @@ del _configLogging
 
 # initialize Pyro's configuration
 from Pyro4.configuration import Configuration
-config=Configuration()
+config = Configuration()
 del Configuration
 
 # import the required Pyro symbols into this package

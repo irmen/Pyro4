@@ -401,6 +401,7 @@ class GenericTests(unittest.TestCase):
         x = ZeroDivisionError("hello", 42)
         expected = {
             "__class__": None,
+            "__exception__": True,
             "args": ("hello", 42),
             "attributes": {}
         }
@@ -454,6 +455,34 @@ class GenericTests(unittest.TestCase):
             self.fail("should crash")
         except Pyro4.errors.ProtocolError:
             pass  # ok
+
+    def testExceptionNamespacePy2(self):
+        data = {'__class__': 'exceptions.ZeroDivisionError',
+                '__exception__': True,
+                'args': ('hello', 42),
+                'attributes': {"test_attribute": 99}}
+        exc = Pyro4.util.SerializerBase.dict_to_class(data)
+        self.assertIsInstance(exc, ZeroDivisionError)
+        self.assertEqual("ZeroDivisionError('hello', 42)", repr(exc))
+        self.assertEqual(99, exc.test_attribute)
+
+    def testExceptionNamespacePy3(self):
+        data = {'__class__': 'builtins.ZeroDivisionError',
+                '__exception__': True,
+                'args': ('hello', 42),
+                'attributes': {"test_attribute": 99}}
+        exc = Pyro4.util.SerializerBase.dict_to_class(data)
+        self.assertIsInstance(exc, ZeroDivisionError)
+        self.assertEqual("ZeroDivisionError('hello', 42)", repr(exc))
+        self.assertEqual(99, exc.test_attribute)
+
+    def testExceptionNotTagged(self):
+        data = {'__class__': 'builtins.ZeroDivisionError',
+                'args': ('hello', 42),
+                'attributes': {}}
+        with self.assertRaises(Pyro4.errors.ProtocolError) as cm:
+            _ = Pyro4.util.SerializerBase.dict_to_class(data)
+        self.assertEqual("unsupported serialized class: builtins.ZeroDivisionError", str(cm.exception))
 
 
 def mything_dict(obj):

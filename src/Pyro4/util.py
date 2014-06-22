@@ -245,10 +245,12 @@ class SerializerBase(object):
             obj._pyroDaemon = None
         if isinstance(obj, BaseException):
             # special case for exceptions
-            value={"args": obj.args}
-            value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
-            value["attributes"] = vars(obj)  # add custom exception attributes
-            return value
+            return {
+                "__class__": obj.__class__.__module__ + "." + obj.__class__.__name__,
+                "__exception__": True,
+                "args": obj.args,
+                "attributes": vars(obj)  # add custom exception attributes
+            }
         try:
             value = obj.__getstate__()
         except AttributeError:
@@ -278,6 +280,9 @@ class SerializerBase(object):
         Only a fixed set of classes are recognized.
         """
         classname = data.get("__class__", "<unknown>")
+        if isinstance(classname, bytes):
+            classname = classname.decode("utf-8")
+
         if classname in cls.__custom_dict_to_class_registry:
             converter = cls.__custom_dict_to_class_registry[classname]
             return converter(classname, data)
@@ -313,16 +318,22 @@ class SerializerBase(object):
         elif classname == "Pyro4.futures._ExceptionWrapper":
             ex = SerializerBase.dict_to_class(data["exception"])
             return Pyro4.futures._ExceptionWrapper(ex)
-        elif classname.startswith("builtins."):
-            exceptiontype = getattr(builtins, classname.split('.', 1)[1])
-            if issubclass(exceptiontype, BaseException):
-                return SerializerBase.make_exception(exceptiontype, data)
-        elif classname.startswith("exceptions."):
-            exceptiontype = getattr(exceptions, classname.split('.', 1)[1])
-            if issubclass(exceptiontype, BaseException):
-                return SerializerBase.make_exception(exceptiontype, data)
-        elif classname in all_exceptions:
-            return SerializerBase.make_exception(all_exceptions[classname], data)
+        elif data.get("__exception__", False):
+            if classname in all_exceptions:
+                return SerializerBase.make_exception(all_exceptions[classname], data)
+            # python 2.x: exceptions.ValueError
+            # python 3.x: builtins.ValueError
+            # translate to the appropriate namespace...
+            namespace, short_classname = classname.split('.', 1)
+            if namespace in ("builtins", "exceptions"):
+                if sys.version_info < (3, 0):
+                    exceptiontype = getattr(exceptions, short_classname)
+                    if issubclass(exceptiontype, BaseException):
+                        return SerializerBase.make_exception(exceptiontype, data)
+                else:
+                    exceptiontype = getattr(builtins, short_classname)
+                    if issubclass(exceptiontype, BaseException):
+                        return SerializerBase.make_exception(exceptiontype, data)
         # try one of the serializer classes
         for serializer in _serializers.values():
             if classname == serializer.__class__.__name__:
@@ -463,13 +474,13 @@ class JsonSerializer(SerializerBase):
         data = json.dumps(data, ensure_ascii=False, default=self.default)
         return data.encode("utf-8")
     def loadsCall(self, data):
-        data=data.decode("utf-8")
+        data = data.decode("utf-8")
         data = json.loads(data)
         vargs = self.recreate_classes(data["params"])
         kwargs = self.recreate_classes(data["kwargs"])
         return data["object"], data["method"], vargs, kwargs
     def loads(self, data):
-        data=data.decode("utf-8")
+        data = data.decode("utf-8")
         return self.recreate_classes(json.loads(data))
     def default(self, obj):
         replacer = self.__type_replacements.get(type(obj), None)
