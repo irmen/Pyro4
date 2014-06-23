@@ -333,6 +333,32 @@ the following method on the name server proxy:
     :type safe: bool
 
 
+.. _nameserver-pickle:
+
+Using the name server with pickle serializer
+============================================
+If you find yourself in the situation where you have to use the pickle serializer, you have to
+pay attention when also using the name server.
+Because pickle is disabled by default, the name server will not reply to messages from clients
+that are using the pickle serializer, unless you enable pickle in the name server as well.
+
+The symptoms are usually that your client code seems unable to contact the name server::
+
+    Pyro4.errors.NamingError: Failed to locate the nameserver
+
+If you enable logging for the name server you will likely see in its logfile::
+
+    accepted serializers: {'json', 'marshal', 'serpent'}
+    ...
+    ...
+    Pyro4.errors.ProtocolError: message used serializer that is not accepted: 4
+
+So, restart the nameserver but this time with the ``SERIALIZERS_ACCEPTED`` config item set to
+a set of serializers that includes pickle, for instance::
+
+    $ export PYRO_SERIALIZERS_ACCEPTED=serpent,json,marshal,pickle
+    $ python -m Pyro4.naming
+
 
 Other methods
 =============

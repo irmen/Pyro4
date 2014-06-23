@@ -129,6 +129,10 @@ If you're using pickle, and need to control the pickle protocol version that is 
     you about the unsupported serializer choice. If it *does* accept your requests,
     the server will respond using the same serializer as was used for the request.
 
+.. note::
+    Because the name server is just a regular Pyro server as well, you will have to tell
+    it to allow the pickle serializer if your client code uses this. See :ref:`nameserver-pickle`.
+
 
 Changing the way your custom classes are (de)serialized
 -------------------------------------------------------

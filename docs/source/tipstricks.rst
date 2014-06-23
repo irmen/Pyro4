@@ -282,3 +282,29 @@ This means that unless you change it to 6 (or 0), Pyro will be using IPv4 addres
 There is a new method to see what IP addressing is used: :py:meth:`Pyro4.socketutil.getIpVersion`,
 and a few other methods in :py:mod:`Pyro4.socketutil`  gained a new optional argument to tell it if
 it needs to deal with an ipv6 address rather than ipv4, but these are rarely used in client code.
+
+
+Pyro and Numpy
+==============
+More than once questions have been asked about Pyro and Numpy. More specifically, why certain errors occur when
+people try to use numpy arrays with Pyro. Errors such as::
+
+    TypeError: array([1, 2, 3]) is not JSON serializable
+      or
+    TypeError: don't know how to serialize class <type 'numpy.ndarray'>
+
+These errors are caused by Numpy datatypes not being serializable by serpent or json serializers.
+So if you want to use them with Pyro, and pass them over the wire, you'll have to chose one of the following options:
+
+#.  Don't use Numpy datatypes. Convert them to standard Python datatypes before using them in Pyro. So instead of just
+    ``na = numpy.array(...); return na;``, use this instead:  ``return na.tolist()``.
+    Or perhaps even ``return array.array('i', na)`` (serpent understands ``array.array``, but json doesn't)
+    Note that the elements of a numpy array usually are of a special numpy datatype as well (such as ``numpy.int32``).
+    If you don't convert these individually as well, you will still get serialization errors. That is why something like
+    ``list(na)`` doesn't work: it seems to return a regular python list but the elements are still numpy datatypes.
+    You have to use the full conversions as mentioned earlier.
+#.  Don't return arrays at all. Redesign your API so that you might perhaps only return a single element from it.
+#.  Tell Pyro to use :py:mod:`pickle` as serializer. Pickle can deal with numpy datatypes. However it has security implications.
+    See :doc:`security`. If you choose to use pickle anyway, also be aware that you may need to tell your name server
+    about it as well, see :ref:`nameserver-pickle`.
+

@@ -20,9 +20,9 @@ It is well known that using pickle for this purpose is a security risk.
 The main problem is that allowing a program to unpickle arbitrary data can cause arbitrary code execution
 and this may wreck or compromise your system.
 
-Although this may sound like a showstopper for using Pyro for anything serious, Pyro provides a few facilities
-to deal with this security risk. The most important one is that by default, a different serializer is used that
-doesn't have pickle's security problem. Other means to enhance security are discussed below.
+Because of this, by default, a different serializer is used (serpent) that doesn't have pickle's security problem.
+Some other means to enhance security are discussed below.
+
 
 Network interface binding
 =========================
