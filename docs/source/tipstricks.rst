@@ -4,17 +4,26 @@
 Tips & Tricks
 *************
 
+.. index:: Tips & trics
+.. index:: Best practices
+
 Best practices
 ==============
 
+.. index:: circular topology
+
 Avoid circular communication topologies.
 ----------------------------------------
+
 When you can have a circular communication pattern in your system (A-->B-->C-->A) this can cause some problems:
 
 * when reusing a proxy it causes a deadlock because the proxy is already being used for an active remote call. See the :file:`deadlock` example.
 * with the multiplex servertype, the server itself may also block for all other remote calls because the handling of the first is not yet completed.
 
 Avoid circularity, or use *oneway* method calls on at least one of the links in the chain.
+
+
+.. index:: releasing a proxy
 
 Release your proxies if you can.
 --------------------------------
@@ -27,11 +36,18 @@ You can use explicit ``_pyroRelease`` calls or use the proxy from within a conte
 It's not a good idea to release it after every single remote method call though, because then the cost
 of reconnecting the socket will cause a serious drop in performance (unless every call is at least a few seconds after the previous one).
 
+
+.. index:: binary blob
+    seealso: binary blob; binary data transfer
+
 Avoid large binary blobs over the wire.
 ---------------------------------------
 Pyro is not designed to efficiently transfer large amounts of binary data over the network.
 Try to find another protocol that better suits this requirement.
 Read :ref:`binarytransfer` for some more details about this.
+
+
+.. index:: object graphs
 
 Minimize object graphs that travel over the wire.
 -------------------------------------------------
@@ -40,12 +56,17 @@ of it is used on the receiving end. Be aware of this: it may be necessary to def
 for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
 
 
+.. index:: Logging
+
 Logging
 =======
 If you configure it (see :ref:`config-items`) Pyro will write a bit of debug information, errors, and notifications to a log file.
 It uses Python's standard :py:mod:`logging` module for this.
 Once enabled, your own program code could use Pyro's logging setup as well.
 But if you want to configure your own logging, make sure you do that before any Pyro imports. Then Pyro will skip its own autoconfig.
+
+
+.. index:: multiple NICs, network interfaces
 
 Multiple network interfaces
 ===========================
@@ -62,6 +83,8 @@ from all possible interfaces), sometimes it is possible to run only the name ser
 The success ratio of all this depends heavily on your network setup.
 
 
+.. index:: same Python version
+
 Same major Python version required when using pickle or marshal
 ===============================================================
 
@@ -77,6 +100,7 @@ on version 3 pickle protocol. You'll have to tell the Python 3.4 side to step do
 The implementation independent serialization protocols (serpent or json) don't have any of these issues.
 
 
+.. index:: wire protocol version
 
 Wire protocol version
 =====================
@@ -114,6 +138,9 @@ To find out the protocol version that your client code is using, you can use thi
 
     $ python -c "import Pyro4.constants as c; print(c.PROTOCOL_VERSION)"
 
+
+
+.. index:: async, futures
 
 .. _future-functions:
 
@@ -156,6 +183,8 @@ the ``FutureResult`` class::
 See the :file:`futures` example for more details and example code.
 
 
+.. index:: DNS
+
 DNS setup
 =========
 Pyro depends on a working DNS configuration, at least for your local hostname (i.e. 'pinging' your local hostname should work).
@@ -166,6 +195,8 @@ This can usually be done by adding an entry to the hosts file. For OpenSUSE, you
 If Pyro detects a problem with the dns setup it will log a WARNING in the logfile (if logging is enabled),
 something like: ``weird DNS setup: your-computer-hostname resolves to localhost (127.x.x.x)``
 
+
+.. index:: NAT, router, firewall
 
 .. _nat-router:
 
@@ -207,6 +238,8 @@ allow you to specify a nathost and natport for it. See :ref:`nameserver-nameserv
     host behind the NAT router/firewall. Pyro facilitates this by allowing you to set the natport
     to 0, in which case Pyro will replace it by the internal port number.
 
+
+.. index:: binary data transfer
 
 .. _binarytransfer:
 
@@ -254,6 +287,8 @@ wire protocol overhead for the possible binary types:
     *Python 3.x:* efficient; uses machine type encoding on the wire (a byte sequence).
 
 
+.. index:: MSG_WAITALL
+
 MSG_WAITALL socket option
 =========================
 Pyro will use the ``MSG_WAITALL`` socket option to receive large messages, if it decides that
@@ -262,6 +297,8 @@ symbol, it does, except on Windows: even though the option is there, it doesn't 
 If you want to check in your code what Pyro's behavior is, see the ``socketutil.USE_MSG_WAITALL`` attribute
 (it's a boolean that will be set to False if Pyro decides it can't or should not use MSG_WAITALL).
 
+
+.. index:: IPv6
 
 IPV6 support
 ============
@@ -283,6 +320,8 @@ There is a new method to see what IP addressing is used: :py:meth:`Pyro4.socketu
 and a few other methods in :py:mod:`Pyro4.socketutil`  gained a new optional argument to tell it if
 it needs to deal with an ipv6 address rather than ipv4, but these are rarely used in client code.
 
+
+.. index:: Numpy, numpy.ndarray
 
 Pyro and Numpy
 ==============

@@ -2,6 +2,8 @@
 Running on alternative Python implementations
 *********************************************
 
+.. index:: alternative Python implementations
+
 Pyro is written in 100% pure Python which -theoretically- enables it to be used with
 any compatible Python implementation. There are a few gotchas however.
 If possible please use the most recent version available of your Python implementation.
@@ -10,6 +12,8 @@ If possible please use the most recent version available of your Python implemen
     You may have to install the `serpent <https://pypi.python.org/pypi/serpent>`_ serialization library manually (this is a dependency).
     Check that you can ``import serpent`` to make sure it is installed.
 
+
+.. index:: Jython
 
 Jython
 ------
@@ -23,6 +27,9 @@ Jython
   The workaround is to spawn a separate thread for each socket that you need to listen to.
   (The name server does this for the broadcast server, if it detects that it is running on Jython)
 
+
+.. index:: IronPython
+
 IronPython
 ----------
 .. sidebar:: IronPython
@@ -35,6 +42,8 @@ IronPython
 - IronPython cannot properly serialize exception objects, which could lead to problems when dealing with
   Pyro's enhanced tracebacks. For now, Pyro contains a workaround for this IronPython `bug <http://ironpython.codeplex.com/workitem/30805>`_.
 
+
+.. index:: Pypy
 
 Pypy
 ----
