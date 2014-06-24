@@ -9,6 +9,7 @@ Change Log
 - because of the new way Pyro deals with serialized exceptions, the wire protocol version was updated to 47. You'll have to update all Pyro4 libraries to 4.26
 - more info in documentation about pickle and numpy
 - improved documentation index
+- name server prints a warning if a protocol error occurs (this helps to spot issues such as serializer protocol mismatches)
 
 
 **Pyro 4.25**

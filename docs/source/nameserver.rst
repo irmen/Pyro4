@@ -346,22 +346,30 @@ The symptoms are usually that your client code seems unable to contact the name 
 
     Pyro4.errors.NamingError: Failed to locate the nameserver
 
-If you enable logging for the name server you will likely see in its logfile::
+The name server will show a user warning message on the console::
+
+    Pyro protocol error occurred: message used serializer that is not accepted
+
+And if you enable logging for the name server you will likely see in its logfile::
 
     accepted serializers: {'json', 'marshal', 'serpent'}
     ...
     ...
     Pyro4.errors.ProtocolError: message used serializer that is not accepted: 4
 
-So, restart the nameserver but this time with the ``SERIALIZERS_ACCEPTED`` config item set to
-a set of serializers that includes pickle, for instance::
+The way to solve this is to stop using the pickle serializer, or if you must use it,
+tell the name server that it is okay to accept it. You do that by
+setting the ``SERIALIZERS_ACCEPTED`` config item to a set of serializers that includes pickle,
+and then restart the name server. For instance::
 
     $ export PYRO_SERIALIZERS_ACCEPTED=serpent,json,marshal,pickle
     $ python -m Pyro4.naming
 
+If you enable logging you will then see that the name server says that pickle is among the accepted serializers.
 
-Other methods
-=============
+
+Other methods in the Name Server API
+====================================
 The name server has a few other methods that might be useful at times.
 For instance, you can ask it for a list of all registered objects.
 Because the name server itself is a regular Pyro object, you can access its methods

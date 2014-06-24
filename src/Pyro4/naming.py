@@ -6,25 +6,26 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement
 import re, logging, socket, sys
+import warnings
 from Pyro4 import constants, core, socketutil
 from Pyro4.threadutil import RLock, Thread
-from Pyro4.errors import PyroError, NamingError
+from Pyro4.errors import PyroError, NamingError, ProtocolError
 import Pyro4
 
-__all__=["locateNS", "resolve", "startNS"]
+__all__ = ["locateNS", "resolve", "startNS"]
 
-if sys.version_info>=(3, 0):
-    basestring=str
+if sys.version_info >= (3, 0):
+    basestring = str
 
-log=logging.getLogger("Pyro4.naming")
+log = logging.getLogger("Pyro4.naming")
 
 
 class NameServer(object):
     """Pyro name server. Provides a simple flat name space to map logical object names to Pyro URIs."""
 
     def __init__(self):
-        self.namespace={}
-        self.lock=RLock()
+        self.namespace = {}
+        self.lock = RLock()
 
     def lookup(self, name):
         """Lookup the given name, returns an URI if found"""
@@ -37,7 +38,7 @@ class NameServer(object):
         """Register a name with an URI. If safe is true, name cannot be registered twice.
         The uri can be a string or an URI object."""
         if isinstance(uri, core.URI):
-            uri=uri.asString()
+            uri = uri.asString()
         elif not isinstance(uri, basestring):
             raise TypeError("only URIs or strings can be registered")
         else:
@@ -47,17 +48,17 @@ class NameServer(object):
         if safe and name in self.namespace:
             raise NamingError("name already registered: "+name)
         with self.lock:
-            self.namespace[name]=uri
+            self.namespace[name] = uri
 
     def remove(self, name=None, prefix=None, regex=None):
         """Remove a registration. returns the number of items removed."""
-        if name and name in self.namespace and name!=constants.NAMESERVER_NAME:
+        if name and name in self.namespace and name != constants.NAMESERVER_NAME:
             with self.lock:
                 del self.namespace[name]
             return 1
         if prefix:
             with self.lock:
-                items=list(self.list(prefix=prefix).keys())
+                items = list(self.list(prefix=prefix).keys())
                 if constants.NAMESERVER_NAME in items:
                     items.remove(constants.NAMESERVER_NAME)
                 for item in items:
@@ -65,7 +66,7 @@ class NameServer(object):
                 return len(items)
         if regex:
             with self.lock:
-                items=list(self.list(regex=regex).keys())
+                items = list(self.list(regex=regex).keys())
                 if constants.NAMESERVER_NAME in items:
                     items.remove(constants.NAMESERVER_NAME)
                 for item in items:
@@ -79,22 +80,22 @@ class NameServer(object):
         You can filter by prefix or by regex."""
         with self.lock:
             if prefix:
-                result={}
+                result = {}
                 for name in self.namespace:
                     if name.startswith(prefix):
-                        result[name]=self.namespace[name]
+                        result[name] = self.namespace[name]
                 return result
             elif regex:
-                result={}
+                result = {}
                 try:
-                    regex=re.compile(regex+"$")  # add end of string marker
+                    regex = re.compile(regex+"$")  # add end of string marker
                 except re.error:
-                    x=sys.exc_info()[1]
+                    x = sys.exc_info()[1]
                     raise NamingError("invalid regex: "+str(x))
                 else:
                     for name in self.namespace:
                         if regex.match(name):
-                            result[name]=self.namespace[name]
+                            result[name] = self.namespace[name]
                     return result
             else:
                 # just return (a copy of) everything
@@ -111,22 +112,22 @@ class NameServerDaemon(core.Daemon):
         if Pyro4.config.DOTTEDNAMES:
             raise PyroError("Name server won't start with DOTTEDNAMES enabled because of security reasons")
         if host is None:
-            host=Pyro4.config.HOST
+            host = Pyro4.config.HOST
         if port is None:
-            port=Pyro4.config.NS_PORT
+            port = Pyro4.config.NS_PORT
         if nathost is None:
-            nathost=Pyro4.config.NATHOST
+            nathost = Pyro4.config.NATHOST
         if natport is None:
-            natport=Pyro4.config.NATPORT or None
+            natport = Pyro4.config.NATPORT or None
         super(NameServerDaemon, self).__init__(host, port, unixsocket, nathost=nathost, natport=natport)
-        self.nameserver=NameServer()
+        self.nameserver = NameServer()
         self.register(self.nameserver, constants.NAMESERVER_NAME)
         self.nameserver.register(constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
         log.info("nameserver daemon created")
 
     def close(self):
         super(NameServerDaemon, self).close()
-        self.nameserver=None
+        self.nameserver = None
 
     def __enter__(self):
         if not self.nameserver:
@@ -134,37 +135,47 @@ class NameServerDaemon(core.Daemon):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.nameserver=None
+        self.nameserver = None
         return super(NameServerDaemon, self).__exit__(exc_type, exc_value, traceback)
+
+    def handleRequest(self, conn):
+        try:
+            return super(NameServerDaemon, self).handleRequest(conn)
+        except ProtocolError as x:
+            # Notify the user that a protocol error occurred.
+            # This is useful for instance when a wrong serializer is used, it helps
+            # a lot to immediately see what is going wrong.
+            warnings.warn("Pyro protocol error occurred: "+str(x))
+            raise
 
 
 class BroadcastServer(object):
-    REQUEST_NSURI = "GET_NSURI" if sys.platform=="cli" else b"GET_NSURI"
+    REQUEST_NSURI = "GET_NSURI" if sys.platform == "cli" else b"GET_NSURI"
 
     def __init__(self, nsUri, bchost=None, bcport=None):
-        self.nsUri=nsUri
+        self.nsUri = nsUri
         if bcport is None:
-            bcport=Pyro4.config.NS_BCPORT
+            bcport = Pyro4.config.NS_BCPORT
         if bchost is None:
-            bchost=Pyro4.config.NS_BCHOST
+            bchost = Pyro4.config.NS_BCHOST
         if ":" in nsUri.host:  # ipv6
             bchost = bchost or "::"
-            self.sock=Pyro4.socketutil.createBroadcastSocket((bchost, bcport, 0, 0), reuseaddr=Pyro4.config.SOCK_REUSE, timeout=2.0)
+            self.sock = Pyro4.socketutil.createBroadcastSocket((bchost, bcport, 0, 0), reuseaddr=Pyro4.config.SOCK_REUSE, timeout=2.0)
         else:
-            self.sock=Pyro4.socketutil.createBroadcastSocket((bchost, bcport), reuseaddr=Pyro4.config.SOCK_REUSE, timeout=2.0)
-        self._sockaddr=self.sock.getsockname()
-        bchost=bchost or self._sockaddr[0]
-        bcport=bcport or self._sockaddr[1]
+            self.sock = Pyro4.socketutil.createBroadcastSocket((bchost, bcport), reuseaddr=Pyro4.config.SOCK_REUSE, timeout=2.0)
+        self._sockaddr = self.sock.getsockname()
+        bchost = bchost or self._sockaddr[0]
+        bcport = bcport or self._sockaddr[1]
         if ":" in bchost:  # ipv6
-            self.locationStr="[%s]:%d" % (bchost, bcport)
+            self.locationStr = "[%s]:%d" % (bchost, bcport)
         else:
-            self.locationStr="%s:%d" % (bchost, bcport)
+            self.locationStr = "%s:%d" % (bchost, bcport)
         log.info("ns broadcast server created on %s", self.locationStr)
-        self.running=True
+        self.running = True
 
     def close(self):
         log.debug("ns broadcast server closing")
-        self.running=False
+        self.running = False
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
         except (OSError, socket.error):
@@ -180,7 +191,7 @@ class BroadcastServer(object):
     def runInThread(self):
         """Run the broadcast server loop in its own thread. This is mainly for Jython,
         which has problems with multiplexing it using select() with the Name server itself."""
-        thread=Thread(target=self.__requestLoop)
+        thread = Thread(target=self.__requestLoop)
         thread.setDaemon(True)
         thread.start()
         log.debug("broadcast server loop running in own thread")
@@ -192,14 +203,14 @@ class BroadcastServer(object):
 
     def processRequest(self):
         try:
-            data, addr=self.sock.recvfrom(100)
-            if data==self.REQUEST_NSURI:
-                responsedata=core.URI(self.nsUri)
-                if responsedata.host=="0.0.0.0":
-                    # replace INADDR_ANY address by the interface IP adress that connects to the requesting client
+            data, addr = self.sock.recvfrom(100)
+            if data == self.REQUEST_NSURI:
+                responsedata = core.URI(self.nsUri)
+                if responsedata.host == "0.0.0.0":
+                    # replace INADDR_ANY address by the interface IP address that connects to the requesting client
                     try:
-                        interface_ip=socketutil.getInterfaceAddress(addr[0])
-                        responsedata.host=interface_ip
+                        interface_ip = socketutil.getInterfaceAddress(addr[0])
+                        responsedata.host = interface_ip
                     except socket.error:
                         pass
                 log.debug("responding to broadcast request from %s: interface %s", addr[0], responsedata.host)
@@ -217,23 +228,23 @@ class BroadcastServer(object):
 
 def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None, nathost=None, natport=None):
     """utility function that starts a new Name server and enters its requestloop."""
-    daemon=NameServerDaemon(host, port, unixsocket, nathost=nathost, natport=natport)
-    nsUri=daemon.uriFor(daemon.nameserver)
-    internalUri=daemon.uriFor(daemon.nameserver, nat=False)
-    bcserver=None
+    daemon = NameServerDaemon(host, port, unixsocket, nathost=nathost, natport=natport)
+    nsUri = daemon.uriFor(daemon.nameserver)
+    internalUri = daemon.uriFor(daemon.nameserver, nat=False)
+    bcserver = None
     if unixsocket:
-        hostip="Unix domain socket"
+        hostip = "Unix domain socket"
     else:
-        hostip=daemon.sock.getsockname()[0]
+        hostip = daemon.sock.getsockname()[0]
         if hostip.startswith("127."):
             print("Not starting broadcast server for localhost.")
             log.info("Not starting NS broadcast server because NS is bound to localhost")
-            enableBroadcast=False
+            enableBroadcast = False
         if enableBroadcast:
             # Make sure to pass the internal uri to the broadcast responder.
             # It is almost always useless to let it return the external uri,
             # because external systems won't be able to talk to this thing anyway.
-            bcserver=BroadcastServer(internalUri, bchost, bcport)
+            bcserver = BroadcastServer(internalUri, bchost, bcport)
             print("Broadcast server running on %s" % bcserver.locationStr)
             bcserver.runInThread()
     print("NS running on %s (%s)" % (daemon.locationStr, hostip))
@@ -254,17 +265,17 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
 def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None, nathost=None, natport=None):
     """utility fuction to quickly get a Name server daemon to be used in your own event loops.
     Returns (nameserverUri, nameserverDaemon, broadcastServer)."""
-    daemon=NameServerDaemon(host, port, unixsocket, nathost=nathost, natport=natport)
-    bcserver=None
-    nsUri=daemon.uriFor(daemon.nameserver)
+    daemon = NameServerDaemon(host, port, unixsocket, nathost=nathost, natport=natport)
+    bcserver = None
+    nsUri = daemon.uriFor(daemon.nameserver)
     if not unixsocket:
-        hostip=daemon.sock.getsockname()[0]
+        hostip = daemon.sock.getsockname()[0]
         if hostip.startswith("127."):
             # not starting broadcast server for localhost.
-            enableBroadcast=False
+            enableBroadcast = False
         if enableBroadcast:
-            internalUri=daemon.uriFor(daemon.nameserver, nat=False)
-            bcserver=BroadcastServer(internalUri, bchost, bcport)
+            internalUri = daemon.uriFor(daemon.nameserver, nat=False)
+            bcserver = BroadcastServer(internalUri, bchost, bcport)
     return nsUri, daemon, bcserver
 
 
@@ -275,10 +286,10 @@ def locateNS(host=None, port=None):
         if Pyro4.config.NS_HOST in ("localhost", "::1") or Pyro4.config.NS_HOST.startswith("127."):
             host = Pyro4.config.NS_HOST
             if ":" in host:   # ipv6
-                host="[%s]" % host
-            uristring="PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, host, port or Pyro4.config.NS_PORT)
+                host = "[%s]" % host
+            uristring = "PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, host, port or Pyro4.config.NS_PORT)
             log.debug("locating the NS: %s", uristring)
-            proxy=core.Proxy(uristring)
+            proxy = core.Proxy(uristring)
             try:
                 proxy.ping()
                 log.debug("located NS")
@@ -287,24 +298,24 @@ def locateNS(host=None, port=None):
                 pass
         # broadcast lookup
         if not port:
-            port=Pyro4.config.NS_BCPORT
+            port = Pyro4.config.NS_BCPORT
         log.debug("broadcast locate")
-        sock=Pyro4.socketutil.createBroadcastSocket(reuseaddr=Pyro4.config.SOCK_REUSE, timeout=0.7)
+        sock = Pyro4.socketutil.createBroadcastSocket(reuseaddr=Pyro4.config.SOCK_REUSE, timeout=0.7)
         for _ in range(3):
             try:
                 for bcaddr in Pyro4.config.parseAddressesString(Pyro4.config.BROADCAST_ADDRS):
                     try:
                         sock.sendto(BroadcastServer.REQUEST_NSURI, 0, (bcaddr, port))
                     except socket.error:
-                        x=sys.exc_info()[1]
-                        err=getattr(x, "errno", x.args[0])
+                        x = sys.exc_info()[1]
+                        err = getattr(x, "errno", x.args[0])
                         if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:    # yeah, windows likes to throw these...
                             if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:     # and jython likes to throw thses...
                                 raise
-                data, _=sock.recvfrom(100)
+                data, _ = sock.recvfrom(100)
                 sock.close()
-                if sys.version_info>=(3, 0):
-                    data=data.decode("iso-8859-1")
+                if sys.version_info >= (3, 0):
+                    data = data.decode("iso-8859-1")
                 log.debug("located NS: %s", data)
                 return core.Proxy(data)
             except socket.timeout:
@@ -316,42 +327,42 @@ def locateNS(host=None, port=None):
         sock.close()
         log.debug("broadcast locate failed, try direct connection on NS_HOST")
         # broadcast failed, try PYRO directly on specific host
-        host=Pyro4.config.NS_HOST
-        port=Pyro4.config.NS_PORT
+        host = Pyro4.config.NS_HOST
+        port = Pyro4.config.NS_PORT
     # pyro direct lookup
     if not port:
-        port=Pyro4.config.NS_PORT
+        port = Pyro4.config.NS_PORT
     if ":" in host:
         host = "[%s]" % host
     if core.URI.isUnixsockLocation(host):
-        uristring="PYRO:%s@%s" % (constants.NAMESERVER_NAME, host)
+        uristring = "PYRO:%s@%s" % (constants.NAMESERVER_NAME, host)
     else:
-        uristring="PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, host, port)
-    uri=core.URI(uristring)
+        uristring = "PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, host, port)
+    uri = core.URI(uristring)
     log.debug("locating the NS: %s", uri)
-    proxy=core.Proxy(uri)
+    proxy = core.Proxy(uri)
     try:
         proxy.ping()
         log.debug("located NS")
         return proxy
     except PyroError as x:
         e = NamingError("Failed to locate the nameserver")
-        e.__cause__=x
+        e.__cause__ = x
         raise e
 
 
 def resolve(uri):
     """Resolve a 'magic' uri (PYRONAME) into the direct PYRO uri."""
     if isinstance(uri, basestring):
-        uri=core.URI(uri)
+        uri = core.URI(uri)
     elif not isinstance(uri, core.URI):
         raise TypeError("can only resolve Pyro URIs")
-    if uri.protocol=="PYRO":
+    if uri.protocol == "PYRO":
         return uri
     log.debug("resolving %s", uri)
-    if uri.protocol=="PYRONAME":
-        nameserver=locateNS(uri.host, uri.port)
-        uri=nameserver.lookup(uri.object)
+    if uri.protocol == "PYRONAME":
+        nameserver = locateNS(uri.host, uri.port)
+        uri = nameserver.lookup(uri.object)
         nameserver._pyroRelease()
         return uri
     else:
@@ -360,7 +371,7 @@ def resolve(uri):
 
 def main(args):
     from optparse import OptionParser
-    parser=OptionParser()
+    parser = OptionParser()
     parser.add_option("-n", "--host", dest="host", help="hostname to bind server on")
     parser.add_option("-p", "--port", dest="port", type="int", help="port to bind server on (0=random)")
     parser.add_option("-u", "--unixsocket", help="Unix domain socket name to bind server on")
@@ -373,8 +384,9 @@ def main(args):
                       help="don't start a broadcast server")
     options, args = parser.parse_args(args)
     startNSloop(options.host, options.port, enableBroadcast=options.enablebc,
-            bchost=options.bchost, bcport=options.bcport, unixsocket=options.unixsocket,
-            nathost=options.nathost, natport=options.natport)
+                bchost=options.bchost, bcport=options.bcport, unixsocket=options.unixsocket,
+                nathost=options.nathost, natport=options.natport)
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     main(sys.argv[1:])
