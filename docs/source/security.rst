@@ -1,3 +1,5 @@
+.. index:: security
+
 .. _security:
 
 ********
@@ -12,6 +14,8 @@ Security
     Understanding the risks, the countermeasures, and their limits, is very important to avoid
     creating systems that are very easy to compromise by malicious entities.
 
+.. index::
+    double: security; pickle
 
 Pickle as serialization format (optional)
 =========================================
@@ -23,6 +27,8 @@ and this may wreck or compromise your system.
 Because of this, by default, a different serializer is used (serpent) that doesn't have pickle's security problem.
 Some other means to enhance security are discussed below.
 
+.. index::
+    double: security; network interfaces
 
 Network interface binding
 =========================
@@ -35,6 +41,9 @@ In some situations, or if you're paranoid, it is advisable to override this sett
 by setting the config item from within your own code instead of depending on an externally configured setting.
 
 
+.. index::
+    double: security; different user id
+
 Running Pyro servers with different credentials/user id
 =======================================================
 The following is not a Pyro specific problem, but is important nonetheless:
@@ -45,6 +54,8 @@ Treat this situation as if you're exposing your server on the internet (even whe
 Keep in mind that it is still possible that a random user on the same machine connects to the local server.
 You may need additional security measures to prevent random users from calling your Pyro objects.
 
+.. index::
+    double: security; encryption
 
 Protocol encryption
 ===================
@@ -53,6 +64,11 @@ sensitive data on untrusted networks (especially user data, passwords, and such)
 possible to eavesdrop. Either encrypt the data yourself before passing it to Pyro, or run Pyro
 over a secure network (VPN, ssl/ssh tunnel).
 
+
+.. index:: DOTTEDNAMES, PSF-2005-001
+.. index::
+    double: security; object traversal
+    double: security; dotted names
 
 Dotted names (object traversal)
 ===============================
@@ -64,6 +80,9 @@ You can enable it with the ``DOTTEDNAMES`` config item, but be aware of the impl
 The :file:`attributes` example shows one of the exploits you can perform if it is enabled.
 
 
+.. index::
+    double: security; environment variables
+
 Environment variables overriding config items
 =============================================
 Almost all config items can be overwritten by an environment variable.
@@ -71,6 +90,9 @@ If you can't trust the environment in which your script is running, it may be a 
 to reset the config items to their default builtin values, without using any environment variables.
 See :doc:`config` for the proper way to do this.
 
+
+.. index::
+    double: security; HMAC signature
 
 Preventing arbitrary connections: HMAC signature
 ================================================

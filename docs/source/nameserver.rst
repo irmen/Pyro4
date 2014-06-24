@@ -1,3 +1,5 @@
+.. index:: Name Server
+
 .. _name-server:
 
 ***********
@@ -36,6 +38,8 @@ They don't need to know the exact Pyro id and don't even need to know the locati
 This means you can move the archive server to another machine and as long as it updates its record in the
 name server, all clients won't notice anything and can keep on running without modification.
 
+
+.. index:: starting the name server
 
 .. _nameserver-nameserver:
 
@@ -114,6 +118,9 @@ into the rest of your program (perhaps you need to merge event loops).
 A helper function is available to create it in your program: :py:func:`Pyro4.naming.startNS`.
 Look at the :file:`eventloop` example to see how you can use this.
 
+.. index::
+    double: name server; configuration items
+
 Configuration items
 ===================
 There are a couple of config items related to the nameserver.
@@ -132,6 +139,9 @@ NATHOST            the external hostname in case of NAT
 NATPORT            the external port in case of NAT
 ================== ===========
 
+
+.. index::
+    double: name server; name server control
 
 .. _nameserver-nsc:
 
@@ -201,12 +211,18 @@ Example::
   --------END LIST - prefix 'Pyro'
 
 
+.. index::
+    double: name server; locating the name server
+
 Locating the Name Server and using it in your code
 ==================================================
 The name server is a Pyro object itself, and you access it through a normal Pyro proxy.
 The object exposed is :class:`Pyro4.naming.NameServer`.
 Getting a proxy for the name server is done using the following function:
 :func:`Pyro4.naming.locateNS` (also available as :func:`Pyro4.locateNS`).
+
+.. index::
+    double: name server; broadcast lookup
 
 By far the easiest way to locate the Pyro name server is by using the broadcast lookup mechanism.
 This goes like this: you simply ask Pyro to look up the name server and return a proxy for it.
@@ -249,6 +265,7 @@ server already, somehow) you can specify the hostname.
         * host parameter not given: the port now means the broadcast port.
 
 
+.. index:: PYRONAME protocol type
 
 The 'magical' PYRONAME protocol type
 ====================================
@@ -284,6 +301,8 @@ See the :file:`autoreconnect` example for more details about this.
     bind it to a fixed PYRO uri instead.
 
 
+.. index:: resolving object names, PYRONAME protocol type
+
 Resolving object names
 ======================
 'Resolving an object name' means to look it up in the name server's registry and getting
@@ -311,6 +330,10 @@ You can resolve a ``PYRONAME`` URI explicitly using the following utility functi
     :type uri: string or :class:`Pyro4.core.URI`
 
 
+.. index::
+    double: name server; registering objects
+    double: name server; unregistering objects
+
 .. _nameserver-registering:
 
 Registering object names
@@ -332,6 +355,10 @@ the following method on the name server proxy:
     :param safe: normally registering the same name twice silently overwrites the old registration. If you set safe=True, the same name cannot be registered twice.
     :type safe: bool
 
+You can unregister objects as well using the :py:meth:`unregister` method.
+
+.. index::
+    double: name server; pickle
 
 .. _nameserver-pickle:
 
@@ -367,6 +394,7 @@ and then restart the name server. For instance::
 
 If you enable logging you will then see that the name server says that pickle is among the accepted serializers.
 
+.. index:: Name Server API
 
 Other methods in the Name Server API
 ====================================

@@ -1,10 +1,11 @@
+.. index:: Tips & trics
+
 .. _tipstricks:
 
 *************
 Tips & Tricks
 *************
 
-.. index:: Tips & trics
 .. index:: Best practices
 
 Best practices

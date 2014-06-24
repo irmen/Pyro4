@@ -1,3 +1,5 @@
+.. index:: server code
+
 ***************************
 Servers: publishing objects
 ***************************
@@ -15,6 +17,8 @@ Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
 
     :doc:`config` for several config items that you can use to tweak various server side aspects.
 
+
+.. index:: publishing objects
 
 .. _publish-objects:
 
@@ -51,6 +55,8 @@ It can be used in a *client* program to create a proxy and access your Pyro obje
     * types with ``__slots__`` (a possible way around this is to add Pyro's custom attributes to your ``__slots__``, but that isn't very nice)
 
 
+.. index:: publishing objects oneliner
+
 Oneliner Pyro object publishing
 -------------------------------
 Ok not really a one-liner, but one statement: use ``serveSimple`` to publish a dict of objects and start Pyro's request loop.
@@ -80,6 +86,9 @@ Because they are so frequently used, ``serveSimple`` has a ``host`` and ``port``
 that you can use to control the host and port of the daemon that it creates (useful if you
 want to make it run on something else as localhost).
 
+.. index::
+    double: Pyro daemon; creating a daemon
+
 Creating a Daemon
 -----------------
 Pyro's daemon is :class:`Pyro4.core.Daemon` and you can also access it by its shortcut ``Pyro4.Daemon``.
@@ -103,6 +112,9 @@ It has a few optional arguments when you create it:
                     Pyro will replace the NAT-port by the internal port number to facilitate one-to-one NAT port mappings.
     :type port: int
 
+
+.. index::
+    double: Pyro daemon; registering objects
 
 Registering objects
 -------------------
@@ -205,6 +217,10 @@ Client code example to connect to this object::
     thing = Pyro4.Proxy("PYRONAME:mythingy")
     print thing.method(42)   # prints 84
 
+
+.. index::
+    double: Pyro daemon; unregistering objects
+
 Unregistering objects
 ---------------------
 When you no longer want to publish an object, you need to unregister it from the daemon:
@@ -214,6 +230,8 @@ When you no longer want to publish an object, you need to unregister it from the
     :param objectOrId: the object to unregister
     :type objectOrId: object itself or its id string
 
+
+.. index:: request loop
 
 Running the request loop
 ------------------------
@@ -226,6 +244,9 @@ Pyro wait for incoming requests.
 
 This is Pyro's event loop and it will take over your program until it returns (it might never.)
 If this is not what you want, you can control it a tiny bit with the ``loopCondition``, or read the next paragraph.
+
+.. index::
+    double: event loop; integrate Pyro's requestLoop
 
 Integrating Pyro in your own event loop
 ---------------------------------------
@@ -241,11 +262,16 @@ They show how to use Pyro including a name server, in your own event loop, and a
 to use Pyro from within a GUI program with its own event loop.
 
 
+.. index::
+    double: Pyro daemon; cleaning up
+
 Cleaning up
 -----------
 To clean up the daemon itself (release its resources) either use the daemon object
 as a context manager in a ``with`` statement, or manually call :py:meth:`Pyro4.core.Daemon.close`.
 
+
+.. index:: automatic proxying
 
 Autoproxying
 ============
@@ -269,6 +295,8 @@ Note that when using the marshal serializer, this feature doesn't work. You have
 one of the other serializers to use autoproxying.
 
 
+.. index:: object concurrency model, server types, SERVERTYPE
+
 Server types and Object concurrency model
 =========================================
 Pyro supports multiple server types (the way the Daemon listens for requests). Select the
@@ -277,6 +305,9 @@ are doing in your Pyro objects what server type is most suitable. For instance, 
 object does a lot of I/O, it may benefit from the parallelism provided by the thread pool server.
 However if it is doing a lot of CPU intensive calculations, the multiplexed server may be more
 appropriate. If in doubt, go with the default setting.
+
+.. index::
+    double: server type; threaded
 
 #. threaded server (servertype ``"threaded"``, this is the default)
     This server uses a thread pool to handle incoming proxy connections.
@@ -287,6 +318,9 @@ appropriate. If in doubt, go with the default setting.
     your Pyro object you may need to take thread locking measures such as using Queues.
     If the thread pool is too small for the number of proxy connections, new proxy connections will
     be put to wait until another proxy disconnects from the server.
+
+.. index::
+    double: server type; multiplex
 
 #. multiplexed server (servertype ``"multiplex"``)
     This server uses a select (or poll, if available) based connection multiplexer to process
@@ -303,6 +337,9 @@ appropriate. If in doubt, go with the default setting.
     once more to be 100% clear:
     Currently, you register *objects* with Pyro, not *classes*. This means remote method calls
     to a certain Pyro object always run on the single instance that you registered with Pyro.
+
+.. index::
+    double: server type; what to choose?
 
 *When to choose which server type?*
 With the threadpool server at least you have a chance to achieve concurrency, and
@@ -321,6 +358,8 @@ This means your requests are processed sequentially, but it's easier to make the
 unresponsive. Any operation that uses blocking I/O or a long-running computation will block
 all remote calls until it has completed.
 
+.. index::
+    double: server; serialization
 
 Serialization
 =============
@@ -351,6 +390,8 @@ and how to deal with existing code that relies on pickle.
 Other features
 ==============
 
+.. index:: attributes added to Pyro objects
+
 Attributes added to Pyro objects
 --------------------------------
 The following attributes will be added your object if you register it as a Pyro object:
@@ -365,6 +406,8 @@ to avoid the need of storing a global daemon object somewhere.
 
 
 These attributes will be removed again once you unregister the object.
+
+.. index:: network adapter binding, IP address
 
 Network adapter binding
 -----------------------
@@ -388,6 +431,8 @@ to bind your servers on if you want to make them publicly accessible:
 * :py:func:`Pyro4.socketutil.getIpAddress`
 * :py:func:`Pyro4.socketutil.getInterfaceAddress`
 
+
+.. index:: Daemon API
 
 Daemon Pyro interface
 ---------------------

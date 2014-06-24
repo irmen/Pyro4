@@ -1,3 +1,5 @@
+.. index:: client code, calling remote objects
+
 *******************************
 Clients: Calling remote objects
 *******************************
@@ -8,6 +10,9 @@ Often, a program that calls methods on a Pyro object is called a *client* progra
 Both roles can be mixed in a single program.)
 
 Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
+
+
+.. index:: object discovery, location, object name
 
 .. _object-discovery:
 
@@ -66,6 +71,9 @@ You can create it in a number of ways.
    chapter for some hints about this.
 
 
+.. index::
+    double: Proxy; calling methods
+
 Calling methods
 ===============
 Once you have the location of the Pyro object you want to talk to, you create a Proxy for it.
@@ -88,6 +96,13 @@ to call the remote methods and deal with the return values, or even exceptions::
 For normal usage, there's not a single line of Pyro specific code once you have a proxy!
 
 
+.. index::
+    single: object serialization
+    double: serialization; pickle
+    double: serialization; serpent
+    double: serialization; marshal
+    double: serialization; json
+
 .. _object-serialization:
 
 Serialization
@@ -108,6 +123,8 @@ on what objects you can use.
   *note: marshal doesn't work correctly in Jython, so you can't use it there* (see `issue 2077 <http://bugs.jython.org/issue2077>`_)
 * pickle: the legacy serializer. Fast and supports almost all types. Has security problems though. Part
   of the standard library. No longer used by default.
+
+.. index:: SERIALIZER, PICKLE_PROTOCOL_VERSION, SERIALIZERS_ACCEPTED
 
 You select the serializer to be used by setting the ``SERIALIZER`` config item. (See the :doc:`/config` chapter).
 The valid choices are the names of the serializer from the list mentioned above.
@@ -133,6 +150,8 @@ If you're using pickle, and need to control the pickle protocol version that is 
     Because the name server is just a regular Pyro server as well, you will have to tell
     it to allow the pickle serializer if your client code uses this. See :ref:`nameserver-pickle`.
 
+
+.. index:: deserialization, serializing custom classes, deserializing custom classes
 
 Changing the way your custom classes are (de)serialized
 -------------------------------------------------------
@@ -190,6 +209,10 @@ Server code configuration
     To see how this works in practice you can look at the :file:`stockquotes` example.
 
 
+.. index:: release proxy connection
+.. index::
+    double: Proxy; cleaning up
+
 Proxies, connections, threads and cleaning up
 =============================================
 Here are some rules:
@@ -215,6 +238,8 @@ Here are some rules:
     You can still use the proxy object when it is disconnected: Pyro will reconnect it as soon as it's needed again.
 
 
+.. index:: oneway call, _pyroOneway
+
 Oneway calls
 ============
 Normal method calls always block until the response is returned. This can be a normal return value, ``None``,
@@ -234,6 +259,9 @@ The return value of these calls is always ``None``. You can't tell if the method
 was successful, or if the method even exists on the remote object, because errors won't be returned either!
 
 See the :file:`oneway` example for more details.
+
+
+.. index:: batch calls
 
 .. _batched-calls:
 
@@ -289,6 +317,9 @@ This is some simple code doing an asynchronous batch::
 
 
 See the :file:`batchedcalls` example for more details.
+
+
+.. index:: async call, future, call chaining
 
 .. _async-calls:
 
@@ -354,6 +385,8 @@ For normal Python code it is sometimes useful to have a similar mechanism as wel
 Pyro provides this too, see :ref:`future-functions` for more information.
 
 
+.. index:: callback
+
 Pyro Callbacks
 ==============
 Usually there is a nice separation between a server and a client.
@@ -372,6 +405,8 @@ Keep in mind though that you probably have to run the daemon's request loop in i
 background thread. Or make heavy use of oneway method calls.
 If you don't, your client program won't be able to process the callback requests because
 it is by itself still waiting for results from the server.
+
+.. index:: exception in callback
 
 **Exceptions in callback objects:**
 If your callback object raises an exception, Pyro will return that to the server doing the
@@ -392,10 +427,15 @@ stack trace::
 
 See the :file:`callback` example for more details and code.
 
+
+.. index:: misc features
+
 Miscellaneous features
 ======================
 Pyro provides a few miscellaneous features when dealing with remote method calls.
 They are described in this section.
+
+.. index:: error handling
 
 Error handling
 --------------
@@ -404,6 +444,8 @@ However, Pyro provides a few extra features when dealing with errors that occurr
 remote objects. This subject is explained in detail its own chapter: :doc:`errors`.
 
 See the :file:`exceptions` example for more details.
+
+.. index:: timeouts
 
 Timeouts
 --------
@@ -430,6 +472,9 @@ they will execute in
 
 See the :file:`timeout` example for more details.
 
+.. index::
+    double: reconnecting; automatic
+
 Automatic reconnecting
 ----------------------
 If your client program becomes disconnected to the server (because the server crashed for instance),
@@ -453,6 +498,9 @@ See the :file:`autoreconnect` example for more details and some suggestions on h
 
 The ``_pyroReconnect()`` method can also be used to force a newly created proxy to connect immediately,
 rather than on first use.
+
+
+.. index:: proxy sharing
 
 Proxy sharing
 -------------

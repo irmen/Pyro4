@@ -1,3 +1,5 @@
+.. index:: software license, license, disclaimer
+
 *******************************
 Software License and Disclaimer
 *******************************

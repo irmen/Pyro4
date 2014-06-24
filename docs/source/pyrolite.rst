@@ -1,3 +1,5 @@
+.. index:: Pyrolite, Java, .NET, C#
+
 *******************************************
 Pyrolite - client library for Java and .NET
 *******************************************

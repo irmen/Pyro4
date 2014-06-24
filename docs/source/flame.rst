@@ -1,3 +1,5 @@
+.. index:: FLAME
+
 ************************************************
 Flame: Foreign Location Automatic Module Exposer
 ************************************************
@@ -23,6 +25,8 @@ Flame can be found in the :py:mod:`Pyro4.utils.flame` module.
     (Flame is also symbolic for burning server machines that got totally owned by malicious clients.)
 
 
+.. index:: enabling Flame
+
 Enabling Flame
 ==============
 Flame is actually a special Pyro object that is exposed via a normal Pyro daemon.
@@ -45,6 +49,9 @@ Also, Flame requires the pickle serializer. It doesn't work when using one of
 the secure serializers, because it needs to be able to transfer custom python objects.
 
 
+.. index::
+    double: command line; Flame server
+
 Command line server
 ===================
 There's a little command line server program that will launch a flame enabled Pyro daemon,
@@ -58,6 +65,9 @@ Use ``-h`` to make it print a short help text. For the command line server you'l
 to set the ``FLAME_ENABLED`` config item to True, otherwise you'll get an error when trying to start it.
 Because we're talking about command line clients, the most convenient way to do so is probably by
 setting the environment variable in your shell: ``PYRO_FLAME_ENABLED=true``.
+
+
+.. index:: Flame object
 
 Flame object and examples
 =========================
@@ -89,6 +99,7 @@ A little example follows. You have to have running flame server, and then you ca
     flame.builtin("print")("Hello there, remote server stdout!")
 
 
+.. index:: Flame remote console
 
 A remote interactive console can be started like this::
 
@@ -108,6 +119,8 @@ A remote interactive console can be started like this::
     >>> ^D
     (Remote session ended)
 
+
+.. index:: getfile, sendfile
 
 .. note::
     The ``getfile`` and ``sendfile`` functions can be used for *very* basic file transfer.

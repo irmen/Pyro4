@@ -1,3 +1,5 @@
+.. index:: errors, remote traceback
+
 ****************************
 Errors and remote tracebacks
 ****************************
@@ -10,6 +12,8 @@ Pyro errors
 
 Pyro's exception classes can be found in :mod:`Pyro4.errors`.
 They are used by Pyro if something went wrong inside Pyro itself or related to something Pyro was doing.
+
+.. index:: remote errors
 
 Remote errors
 -------------
@@ -51,6 +55,9 @@ You use it like this::
         print "Pyro traceback:"
         print "".join(Pyro4.util.getPyroTraceback())
 
+
+.. index:: exception hook
+
 Also, there is another function that you can install in ``sys.excepthook``, if you want Python
 to automatically print the complete Pyro traceback including the remote traceback, if any:
 :func:`Pyro4.util.excepthook`
@@ -82,6 +89,9 @@ A full Pyro exception traceback, including the remote traceback on the server, l
 As you can see, the first part is only the exception as it occurs locally on the client (raised
 by Pyro). The indented part marked with 'Remote traceback' is the exception as it occurred
 in the remote Pyro object.
+
+
+.. index:: traceback information
 
 Detailed traceback information
 ------------------------------

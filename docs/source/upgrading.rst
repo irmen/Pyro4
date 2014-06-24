@@ -4,6 +4,8 @@
 Upgrading from Pyro 3
 *********************
 
+.. index:: choosing Pyro4
+
 .. _should-i-choose-pyro4:
 
 Should I choose Pyro4?
@@ -54,6 +56,9 @@ It only gets bug fixes and much effort is taken to keep it backward compatible w
 Pyro 4 on the other hand is still under active development.
 The important API parts are more or less stabilized but as features are being added or changed, stuff might break.
 So depending on your requirements of maturity and API stability you might choose one or the other.
+
+
+.. index:: differences between Pyro3 and Pyro4
 
 Differences
 ===========

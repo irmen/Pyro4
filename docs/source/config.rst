@@ -1,3 +1,5 @@
+.. index:: configuration
+
 ****************
 Configuring Pyro
 ****************
@@ -11,6 +13,9 @@ For instance, to enable message compression and change the server type, you add 
   Pyro4.config.COMPRESSION = True
   Pyro4.config.SERVERTYPE = "multiplex"
 
+.. index::
+    double: configuration; environment variables
+
 You can also set them outside of your program, using environment variables from the shell.
 To avoid conflicts, the environment variables have a ``PYRO_`` prefix. This means that if you want
 to change the same two settings as above, but by using environment variables, you would do something like::
@@ -22,6 +27,8 @@ to change the same two settings as above, but by using environment variables, yo
     C:\> set PYRO_COMPRESSION=true
     C:\> set PYRO_SERVERTYPE=multiplex
 
+
+.. index:: reset config to default
 
 Resetting the config to default values
 --------------------------------------
@@ -35,6 +42,8 @@ Resetting the config to default values
     by calling this method with `useenvironment` set to False.
     Do this before using any other part of the Pyro library.
 
+
+.. index:: current config
 
 Inspecting current config
 -------------------------
@@ -55,6 +64,9 @@ To inspect the current configuration you have several options:
 
 3. Access the config as a dictionary: ``Pyro4.config.asDict()``
 4. Access the config string dump (used in #2): ``Pyro4.config.dump()``
+
+
+.. index:: configuration items
 
 .. _config-items:
 
@@ -96,6 +108,8 @@ PICKLE_PROTOCOL_VERSION int     highest poss   The pickle protocol version to us
 LOGWIRE                 bool    False          If wire-level message data should be written to the logfile (you may want to disable COMPRESSION)
 ======================= ======= ============== =======
 
+.. index::
+    double: configuration items; logging
 
 There are two special config items that are only available as environment variable settings.
 This is because they are used at module import time (when the Pyro4 package is being imported).

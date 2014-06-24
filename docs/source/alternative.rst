@@ -1,8 +1,8 @@
+.. index:: alternative Python implementations
+
 *********************************************
 Running on alternative Python implementations
 *********************************************
-
-.. index:: alternative Python implementations
 
 Pyro is written in 100% pure Python which -theoretically- enables it to be used with
 any compatible Python implementation. There are a few gotchas however.

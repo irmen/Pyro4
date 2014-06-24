@@ -1,4 +1,5 @@
 .. include:: <isonum.txt>
+.. index:: tutorial
 
 ********
 Tutorial
@@ -36,6 +37,9 @@ This avoids initial networking complexity.
     (There is more in there as well: the :file:`tests` directory contains the test suite
     with all the unittests for Pyro's code base.)
 
+
+.. index::
+    double: tutorial; concepts and tools
 
 Pyro concepts and tools
 =======================
@@ -175,6 +179,9 @@ However if it found the name server, it is then possible to talk to it and get t
 and that the code is capable of dynamically discovering everything at runtime.
 
 *But enough of that.* We need to start looking at how to actually write some code ourselves that uses Pyro!
+
+.. index::
+    double: tutorial; warehouse example
 
 Building a Warehouse
 ====================
@@ -495,6 +502,10 @@ that occurred in the remote warehouse object on the server* (the "remote traceba
 help locating problems! As you can see it contains the source code lines from the warehouse code that
 is running in the server, as opposed to the normal local traceback that only shows the remote method
 call taking place inside Pyro...
+
+
+.. index::
+    double: tutorial; stock market example
 
 Building a Stock market simulator
 =================================
@@ -961,6 +972,9 @@ If you're interested to see what the name server now contains, type :command:`py
     example.stockquote.aggregator --> PYRO:obj_2c7a4f5341b1464c8cc6091f3997230f@localhost:50512
     --------END LIST
 
+
+.. index::
+    double: tutorial; running on different machines
 
 .. _not-localhost:
 

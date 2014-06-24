@@ -6,6 +6,8 @@ Pyro - Python Remote Objects - |version|
     :align: center
     :alt: PYRO logo
 
+.. index:: what is Pyro
+
 What is Pyro?
 -------------
 It is a library that enables you to build applications in which

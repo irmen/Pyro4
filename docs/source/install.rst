@@ -1,8 +1,13 @@
+.. index:: installing Pyro
+
 ***************
 Installing Pyro
 ***************
 
 This chapter will show how to obtain and install Pyro.
+
+.. index::
+    double: installing Pyro; requirements for Pyro
 
 Requirements
 ------------
@@ -22,6 +27,9 @@ will need to install Serpent as well, unless you configure Pyro to use one of th
     Using one of the implementation independent protocols (serpent or json) will avoid this limitation.
 
 
+.. index::
+    double: installing Pyro; obtaining Pyro
+
 Obtaining and installing Pyro
 -----------------------------
 
@@ -30,6 +38,8 @@ Pyro can be found on the Python package index: http://pypi.python.org/pypi/Pyro4
 You can install it using :command:`pip` or :command:`easy_install`, or download the distribution archive (.tar.gz)
 from Pypi and run the ``setup.py`` script from that manually.
 It will installs as the ``Pyro4`` package with a couple of sub modules that you usually don't have to access directly.
+
+.. index:: serpent
 
 .. note::
     The `serpent <https://pypi.python.org/pypi/serpent>`_ serialization library is installed as a dependency.

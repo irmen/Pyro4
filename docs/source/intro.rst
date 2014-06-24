@@ -7,6 +7,8 @@ Intro and Example
 
 This chapter contains a little overview of Pyro's features and a simple example to show how it looks like.
 
+.. index:: features
+
 About Pyro: feature overview
 ============================
 
@@ -59,6 +61,8 @@ Here's a quick overview of Pyro's features:
     for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
 
 
+.. index:: history
+
 Pyro's history
 ^^^^^^^^^^^^^^
 Pyro was started in 1998, more than ten years ago, when remote method invocation technology such as Java's RMI
@@ -75,6 +79,9 @@ backwards compatible. So to avoid conflicts, this new version has a different pa
 
 If you're interested in the old version, here is `its homepage <http://irmen.home.xs4all.nl/pyro3/>`_
 and it is also `available on PyPi <http://pypi.python.org/pypi/Pyro/>`_.
+
+
+.. index:: usage
 
 What can you use it for?
 ========================
@@ -111,6 +118,9 @@ Pyro instead.
 
 Have a look at the :file:`examples` directory in the source archive, perhaps one of the many example
 programs in there gives even more inspiration of possibilities.
+
+
+.. index:: example
 
 Simple Example
 ==============
@@ -260,6 +270,8 @@ There are various other options, have a look at the client code details: :ref:`o
 and the server code details: :ref:`publish-objects`. The use of the name server is optional, see
 :ref:`name-server` for details.
 
+
+.. index:: performance, benchmark
 
 Performance
 ===========

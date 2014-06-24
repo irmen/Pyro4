@@ -1,3 +1,5 @@
+.. index:: command line tools
+
 .. _command-line:
 
 ******************
@@ -13,6 +15,8 @@ command line argument.
 An idea is to define shell aliases for them, for instance:
 :kbd:`alias pyrons='python -m Pyro4.naming'`
 
+.. index::
+    double: name server; command line
 
 Name server
 ===========
@@ -29,6 +33,9 @@ A short explanation of the available options can be printed with the help option
    Print a short help message and exit.
 
 .. seealso:: :ref:`nameserver-nameserver` for detailed information
+
+.. index::
+    double: name server control; command line
 
 Name server control
 ===================
@@ -47,6 +54,9 @@ A short explanation of the available options can be printed with the help option
 
 .. seealso:: :ref:`nameserver-nsc` for detailed information
 
+
+.. index::
+    double: echo server; command line
 
 .. _command-line-echoserver:
 
@@ -81,6 +91,8 @@ The echo server object is available by the name ``test.echoserver``. It exposes 
 
   Terminates the echo server.
 
+.. index::
+    double: configuration check; command line
 
 Configuration check
 ===================
