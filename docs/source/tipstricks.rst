@@ -345,6 +345,6 @@ So if you want to use them with Pyro, and pass them over the wire, you'll have t
     You have to use the full conversions as mentioned earlier.
 #.  Don't return arrays at all. Redesign your API so that you might perhaps only return a single element from it.
 #.  Tell Pyro to use :py:mod:`pickle` as serializer. Pickle can deal with numpy datatypes. However it has security implications.
-    See :doc:`security`. If you choose to use pickle anyway, also be aware that you may need to tell your name server
+    See :doc:`security`. If you choose to use pickle anyway, also be aware that you must tell your name server
     about it as well, see :ref:`nameserver-pickle`.
 

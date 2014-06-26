@@ -9,7 +9,7 @@ the Python world. It uses the Pyro protocol to call methods on remote
 objects. It also supports convenient access to a Pyro Flame server including the remote
 interactive console.
 
-Pyrolite is a tiny library (~60Kb) that implements a part of the client side Pyro library,
+Pyrolite is a tiny library that implements a part of the client side Pyro library,
 hence its name 'lite'.  Because Pyrolite has no dependencies,
 it is a much lighter way to use Pyro from Java/.NET than a solution with
 jython+pyro or IronPython+pyro would provide.
@@ -17,10 +17,10 @@ So if you don't need Pyro's full feature set, and don't require your
 Java/.NET code to host Pyro objects itself, Pyrolite may be
 a good choice to connect java or .NET and python.
 
-Pyrolite contains a feature complete implementation of Python's :mod:`pickle` protocol
+Pyrolite also contains a feature complete implementation of Python's :mod:`pickle` protocol
 (with fairly intelligent mapping of datatypes between Python and Java/.NET),
-and a small part of Pyro's client network protocol and proxy logic. It can also use
-the Serpent serialization format.
+and a small part of Pyro's client network protocol and proxy logic. It can  use
+the Serpent serialization format as well.
 
 
 Get it from here: http://irmen.home.xs4all.nl/pyrolite/
