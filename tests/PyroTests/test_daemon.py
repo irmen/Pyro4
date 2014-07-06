@@ -10,7 +10,7 @@ import Pyro4.core
 import Pyro4.constants
 import Pyro4.socketutil
 import Pyro4.message
-from Pyro4.errors import DaemonError,PyroError
+from Pyro4.errors import DaemonError, PyroError
 from testsupport import *
 
 
@@ -20,6 +20,7 @@ class MyObj(object):
     def __eq__(self,other):
         return self.arg==other.arg
     __hash__=object.__hash__
+
 
 class DaemonTests(unittest.TestCase):
     # We create a daemon, but notice that we are not actually running the requestloop.
@@ -399,6 +400,15 @@ class DaemonTests(unittest.TestCase):
         finally:
             Pyro4.config.NATHOST=None
             Pyro4.config.NATPORT=0
+
+
+class MetaInfoTests(unittest.TestCase):
+    def testMeta(self):
+        with Pyro4.core.Daemon() as d:
+            daemon_obj = d.objectsById[Pyro4.constants.DAEMON_NAME]
+            self.assertTrue(len(daemon_obj.info()) > 10)
+            meta = daemon_obj.get_metadata(Pyro4.constants.DAEMON_NAME)
+            self.assertEqual(set(["get_metadata", "info", "ping", "registered"]), meta["methods"])
 
 
 if __name__ == "__main__":

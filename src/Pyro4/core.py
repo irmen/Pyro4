@@ -193,7 +193,9 @@ class Proxy(object):
             raise TypeError("expected Pyro URI")
         self._pyroUri=uri
         self._pyroConnection=None
-        self._pyroOneway=set()
+        self._pyroMethods = None   # all methods of the remote object, gotten from meta-info (or set manually)
+        self._pyroOneway = set()   # oneway-methods of the remote object, gotten from meta-info (or set manually)
+        self._pyroAttrs = None     # attributes of the remote object, gotten from meta-info (or set manually)
         self._pyroSeq=0    # message sequence number
         self.__pyroTimeout=Pyro4.config.COMMTIMEOUT
         self.__pyroLock=threadutil.Lock()
@@ -288,14 +290,14 @@ class Proxy(object):
             self._pyroConnection.timeout=timeout
     _pyroTimeout=property(__pyroGetTimeout, __pyroSetTimeout)
 
-    def _pyroInvoke(self, methodname, vargs, kwargs, flags=0):
+    def _pyroInvoke(self, methodname, vargs, kwargs, flags=0, objectId=None):
         """perform the remote method call communication"""
         if self._pyroConnection is None:
             # rebind here, don't do it from inside the invoke because deadlock will occur
             self.__pyroCreateConnection()
         serializer = util.get_serializer(Pyro4.config.SERIALIZER)
         data, compressed = serializer.serializeCall(
-            self._pyroConnection.objectId, methodname, vargs, kwargs,
+            objectId or self._pyroConnection.objectId, methodname, vargs, kwargs,
             compress=Pyro4.config.COMPRESSION)
         if compressed:
             flags |= Pyro4.message.FLAGS_COMPRESSED
@@ -388,17 +390,35 @@ class Proxy(object):
                         conn.close()
                         log.error(error)
                         raise errors.CommunicationError(error)
-                    elif msg.type==Pyro4.message.MSG_CONNECTOK:
-                        self._pyroConnection=conn
-                        if replaceUri:
-                            self._pyroUri=uri
-                        log.debug("connected to %s", self._pyroUri)
-                        return True
-                    else:
+                    if msg.type!=Pyro4.message.MSG_CONNECTOK:
                         conn.close()
                         err="connect: invalid msg type %d received" % msg.type
                         log.error(err)
                         raise errors.ProtocolError(err)
+                    self._pyroConnection=conn
+                    if replaceUri:
+                        self._pyroUri=uri
+                    log.debug("connected to %s", self._pyroUri)
+            self.__handleMetadata(uri.object)
+            return True
+
+    def __handleMetadata(self, objectId):
+        """obtain metadata if this feature is enabled"""
+        if Pyro4.config.METADATA:
+            log.debug("getting metadata for object %s", objectId)
+            try:
+                # invoke the get_metadata method on the daemon
+                result = self._pyroInvoke("get_metadata", [objectId], {}, objectId=Pyro4.constants.DAEMON_NAME)
+                self._pyroOneway = set(result["oneway"])
+                self._pyroMethods = set(result["methods"])
+                self._pyroAttrs = set(result["attrs"])
+                if log.isEnabledFor(logging.DEBUG):
+                    log.debug("from meta: oneway methods=%s", sorted(self._pyroOneway))
+                    log.debug("from meta: methods=%s", sorted(self._pyroMethods))
+                    log.debug("from meta: attributes=%s", sorted(self._pyroAttrs))
+            except errors.PyroError as x:
+                log.error("problem getting metadata: %r", x)
+                raise
 
     def _pyroReconnect(self, tries=100000000):
         """(re)connect the proxy to the daemon containing the pyro object which the proxy is for"""
@@ -558,6 +578,21 @@ class DaemonObject(object):
     def ping(self):
         """a simple do-nothing method for testing purposes"""
         pass
+
+    def info(self):
+        """return some descriptive information about the daemon"""
+        return "%s bound on %s, NAT %s, %d objects registered. Servertype: %s" % (
+            Pyro4.constants.DAEMON_NAME, self.daemon.locationStr, self.daemon.natLocationStr,
+            len(self.daemon.objectsById), self.daemon.transportServer)
+
+    def get_metadata(self, objectId):
+        """get metadata for the given object (exposed methods, oneways, attributes)"""
+        obj = self.daemon.objectsById.get(objectId)
+        if obj is not None:
+            return util.get_public_metadata(obj)
+        else:
+            log.debug("unknown object requested: %s", objectId)
+            raise errors.DaemonError("unknown object")
 
 
 class Daemon(object):
@@ -909,15 +944,25 @@ class Daemon(object):
 
 # decorators
 
-def callback(object):
+def callback(method):
     """
     decorator to mark a method to be a 'callback'. This will make Pyro
     raise any errors also on the callback side, and not only on the side
     that does the callback call.
     """
-    object._pyroCallback=True
-    return object
+    method._pyroCallback = True
+    return method
 
+
+def oneway(method):
+    """
+    decorator to mark a method to be oneway (client won't wait for a response)
+    """
+    method._pyroOneway = True
+    return method
+
+
+# serpent serializer initialization
 
 try:
     import serpent

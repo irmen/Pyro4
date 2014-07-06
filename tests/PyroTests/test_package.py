@@ -15,16 +15,19 @@ import Pyro4.threadutil
 import Pyro4.util
 from testsupport import unittest
 
+
 class TestPackage(unittest.TestCase):
     def testPyro4(self):
-        self.assertEqual(Pyro4.core.Daemon, Pyro4.Daemon)
-        self.assertEqual(Pyro4.core.Proxy, Pyro4.Proxy)
-        self.assertEqual(Pyro4.core.URI, Pyro4.URI)
-        self.assertEqual(Pyro4.core.callback, Pyro4.callback)
-        self.assertEqual(Pyro4.core.async, Pyro4.async)
-        self.assertEqual(Pyro4.core.batch, Pyro4.batch)
-        self.assertEqual(Pyro4.naming.locateNS, Pyro4.locateNS)
-        self.assertEqual(Pyro4.naming.resolve, Pyro4.resolve)
+        self.assertIs(Pyro4.core.Daemon, Pyro4.Daemon)
+        self.assertIs(Pyro4.core.Proxy, Pyro4.Proxy)
+        self.assertIs(Pyro4.core.URI, Pyro4.URI)
+        self.assertIs(Pyro4.core.callback, Pyro4.callback)
+        self.assertIs(Pyro4.core.oneway, Pyro4.oneway)
+        self.assertIs(Pyro4.core.async, Pyro4.async)
+        self.assertIs(Pyro4.core.batch, Pyro4.batch)
+        self.assertIs(Pyro4.naming.locateNS, Pyro4.locateNS)
+        self.assertIs(Pyro4.naming.resolve, Pyro4.resolve)
+
 
 if __name__ == "__main__":
     unittest.main()

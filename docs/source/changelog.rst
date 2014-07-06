@@ -2,6 +2,12 @@
 Change Log
 **********
 
+**Pyro 4.27**
+
+- ...@todo: @oneway, metadata,...
+- requires serpent 1.6 or newer (because of some changes regarding to set literals)
+
+
 **Pyro 4.26**
 
 - introduced PICKLE_PROTOCOL_VERSION config item

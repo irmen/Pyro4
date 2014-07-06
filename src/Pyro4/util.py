@@ -6,6 +6,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import sys, zlib, logging
 import traceback, linecache
+import inspect
 try:
     import copyreg
 except ImportError:
@@ -534,8 +535,8 @@ try:
     else:
         ver = serpent.__version__
     ver = tuple(map(int, ver.split(".")))
-    if ver<(1, 5):
-        raise RuntimeError("requires serpent 1.5 or better")
+    if ver < (1, 6):
+        raise RuntimeError("requires serpent 1.6 or better")
     _ser = SerpentSerializer()
     _serializers["serpent"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser
@@ -591,3 +592,26 @@ def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
                     del piggyback["__ironpythonargs__"]
                     exceptionObject.args = exceptionObject.args[:-1]
                     exceptionObject.__dict__.update(piggyback)
+
+
+def get_public_metadata(obj):
+    if not inspect.isclass(obj):
+        obj = obj.__class__
+    methods = set()  # all methods
+    oneway = set()  # oneway methods
+    attrs = set()  # attributes
+    for m, v in inspect.getmembers(obj):
+        if m.startswith("_"):
+            continue
+        elif inspect.ismethod(v) or inspect.isfunction(v):
+            methods.add(m)
+            # check if the method is marked with the @Pyro4.oneway decorator:
+            if getattr(v, "_pyroOneway", False):
+                oneway.add(m)
+        else:
+            attrs.add(m)
+    return {
+        "methods": methods,
+        "oneway": oneway,
+        "attrs": attrs
+    }

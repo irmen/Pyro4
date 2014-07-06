@@ -41,7 +41,7 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
         "packages": ['Pyro4', 'Pyro4.socketserver', 'Pyro4.test', 'Pyro4.utils'],
         "scripts": [],
         "platforms": "any",
-        "install_requires": ["serpent>=1.5"],
+        "install_requires": ["serpent>=1.6"],
         "requires": ["serpent"],
         "classifiers": [
                 "Development Status :: 5 - Production/Stable",

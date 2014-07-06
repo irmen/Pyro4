@@ -389,7 +389,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(None, p._pyroConnection.timeout)
         Pyro4.config.COMMTIMEOUT=None
 
-    def testDecorators(self):
+    def testCallbackDecorator(self):
         # just test the decorator itself, testing the callback
         # exception handling is kinda hard in unit tests. Maybe later.
         class Test(object):

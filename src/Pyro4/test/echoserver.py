@@ -27,18 +27,26 @@ class EchoServer(object):
     verbose=False
     must_shutdown=False
 
-    def echo(self, args):
-        """return the args"""
+    def echo(self, message):
+        """return the message"""
         if self.verbose:
-            args_str = repr(args).encode(sys.stdout.encoding, errors="replace").decode(sys.stdout.encoding)
-            print("%s - echo: %s" % (time.asctime(), args_str))
-        return args
+            message_str = repr(message).encode(sys.stdout.encoding, errors="replace").decode(sys.stdout.encoding)
+            print("%s - echo: %s" % (time.asctime(), message_str))
+        return message
 
     def error(self):
         """generates a simple exception (division by zero)"""
         if self.verbose:
             print("%s - error: generating exception" % time.asctime())
         return 1//0   # division by zero error
+
+    @Pyro4.oneway
+    def oneway_echo(self, message):
+        """just like echo, but oneway; the client won't wait for response"""
+        if self.verbose:
+            message_str = repr(message).encode(sys.stdout.encoding, errors="replace").decode(sys.stdout.encoding)
+            print("%s - oneway_echo: %s" % (time.asctime(), message_str))
+        return "bogus return value"
 
     def shutdown(self):
         """called to signal the echo server to shut down"""

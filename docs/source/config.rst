@@ -106,6 +106,7 @@ SERIALIZERS_ACCEPTED    set     json,marshal,  The wire protocol serializers acc
                                 serpent        Use comma separated string for initial config, will be a set after initialization.
 PICKLE_PROTOCOL_VERSION int     highest poss   The pickle protocol version to use, if pickle is selected as serializer. Defaults to pickle.HIGHEST_PROTOCOL
 LOGWIRE                 bool    False          If wire-level message data should be written to the logfile (you may want to disable COMPRESSION)
+METADATA                bool    True           Send remote object metadata on connect (methods, attributes, oneways, etc)
 ======================= ======= ============== =======
 
 .. index::

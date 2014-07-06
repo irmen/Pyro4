@@ -9,8 +9,9 @@ import Pyro4.core
 import Pyro4.errors
 import Pyro4.util
 import Pyro4.message
-import time, os, sys, platform
-from Pyro4 import threadutil
+import time
+import sys
+from Pyro4 import threadutil, oneway
 from testsupport import *
 
 
@@ -27,6 +28,9 @@ class MyThing(object):
         pass
     def echo(self, obj):
         return obj
+    @Pyro4.oneway
+    def oneway_delay(self, delay):
+        time.sleep(delay)
     def delay(self, delay):
         time.sleep(delay)
         return "slept %d seconds" % delay
@@ -39,7 +43,9 @@ class MyThing(object):
         return [x, list(args), kwargs]    # don't return tuples, this enables us to test json serialization as well.
     def nonserializableException(self):
         raise NonserializableError(("xantippe", lambda x: 0))
-
+    @Pyro4.oneway
+    def oneway_multiply(self, x, y):
+        return x*y
 
 class DaemonLoopThread(threadutil.Thread):
     def __init__(self, pyrodaemon):
@@ -496,40 +502,66 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         finally:
             Pyro4.config.COMPRESSION=False
     
+    def testOnewayMetaOn(self):
+        Pyro4.config.METADATA = True
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            self.assertEqual(set(), p._pyroOneway)   # when not bound, no meta info exchange has been done
+            p._pyroBind()
+            self.assertIn("oneway_multiply", p._pyroOneway)  # after binding, meta info has been processed
+            self.assertEqual(55, p.multiply(5, 11))      # not tagged as @Pyro4.oneway
+            self.assertEqual(None, p.oneway_multiply(5, 11))      # tagged as @Pyro4.oneway
+            p._pyroOneway = []
+            self.assertEqual(55, p.multiply(5, 11))
+            self.assertEqual(55, p.oneway_multiply(5, 11))
+
+    def testOnewayMetaOff(self):
+        Pyro4.config.METADATA = False
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            self.assertEqual(set(), p._pyroOneway)   # when not bound, no meta info exchange has been done
+            p._pyroBind()
+            self.assertEqual(set(), p._pyroOneway)   # after binding, no meta info exchange has been done because disabled
+            self.assertEqual(55, p.multiply(5, 11))
+            self.assertEqual(55, p.oneway_multiply(5, 11))
+        Pyro4.config.METADATA = True
+
     def testOneway(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            self.assertEqual(55, p.multiply(5,11))
-            p._pyroOneway.add("multiply")
-            self.assertEqual(None, p.multiply(5,11))
-            self.assertEqual(None, p.multiply(5,11))
-            self.assertEqual(None, p.multiply(5,11))
-            p._pyroOneway.remove("multiply")
-            self.assertEqual(55, p.multiply(5,11))
-            self.assertEqual(55, p.multiply(5,11))
-            self.assertEqual(55, p.multiply(5,11))
+            self.assertEqual(None, p.oneway_multiply(5, 11))
+            self.assertEqual(None, p.oneway_multiply(5, 11))
+            self.assertEqual(None, p.oneway_multiply(5, 11))
+            self.assertIn("oneway_multiply", p._pyroOneway)
+            self.assertNotIn("multiply", p._pyroOneway)
+            p._pyroOneway.remove("oneway_multiply")
+            self.assertEqual(55, p.oneway_multiply(5, 11))
+            self.assertEqual(55, p.oneway_multiply(5, 11))
+            self.assertEqual(55, p.oneway_multiply(5, 11))
             # check nonexisting method behavoir
             self.assertRaises(AttributeError, p.nonexisting)
             p._pyroOneway.add("nonexisting")
-            # now it shouldn't fail because of oneway semantics
+            # now it shouldn't fail because of oneway semantics (!)
             p.nonexisting()
-        # also test on class:
+
+    def testOnewayWithProxySubclass(self):
+        Pyro4.config.METADATA = False
         class ProxyWithOneway(Pyro4.core.Proxy):
             def __init__(self, arg):
-                super(ProxyWithOneway,self).__init__(arg)
-                self._pyroOneway=["multiply"]   # set is faster but don't care for this test
+                super(ProxyWithOneway, self).__init__(arg)
+                self._pyroOneway = set(["oneway_multiply", "multiply"])
         with ProxyWithOneway(self.objectUri) as p:
-            self.assertEqual(None, p.multiply(5,11))
-            p._pyroOneway=[]   # empty set is better but don't care in this test
-            self.assertEqual(55, p.multiply(5,11))
-            
+            self.assertEqual(None, p.oneway_multiply(5, 11))
+            self.assertEqual(None, p.multiply(5, 11))
+            p._pyroOneway = set()
+            self.assertEqual(55, p.oneway_multiply(5, 11))
+            self.assertEqual(55, p.multiply(5, 11))
+        Pyro4.config.METADATA = True
+
     def testOnewayDelayed(self):
         try:
             with Pyro4.core.Proxy(self.objectUri) as p:
                 p.ping()
                 Pyro4.config.ONEWAY_THREADED=True   # the default
-                p._pyroOneway.add("delay")
                 now=time.time()
-                p.delay(1)  # oneway so we should continue right away
+                p.oneway_delay(1)  # oneway so we should continue right away
                 self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
                 now=time.time()
                 self.assertEqual(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
@@ -538,7 +570,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 # we can change the config here and the server will pick it up on the fly
                 Pyro4.config.ONEWAY_THREADED=False   
                 now=time.time()
-                p.delay(1)  # oneway so we should continue right away
+                p.oneway_delay(1)  # oneway so we should continue right away
                 self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
                 now=time.time()
                 self.assertEqual(55,p.multiply(5,11), "expected a normal result from a non-oneway call")

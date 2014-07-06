@@ -4,7 +4,6 @@ The most pressing issues can be found in the issue tracker on Github.
 
 * daemon (nameserver) should be able to disconnect clients that haven't been active over the past X seconds
 * HMAC: Allow per-proxy HMAC key (to be able to connect to different servers with different keys) -- but perhaps remove HMAC completely once the connection validator logic has been reimplemented
-* More decorators? @synchronized, @oneway, @expose (also on attributes?)
 * let async/Future use a client-side threadpool instead of spawning endless new threads
 * automatic callback handling if you pass a callable to the server
 * Make Pyro support listening to multiple network interfaces at the same time (and returning the correct URI from the daemon. Name server is harder...)
@@ -12,7 +11,6 @@ The most pressing issues can be found in the issue tracker on Github.
 * docs: how to use the socketserver API to write your own implementation
 * add multiprocess server (forking?) based on multiprocessing?
 * simplify the shutdown/close methods so that they only signal a shutdown condition and let the eventloop thread clean up nicely. This to avoid all kinds of exceptions on shutdown (mainly socketserver on ironpython now)
-* on proxy connect: query the server about the object. Can be a method on the DaemonObject itself. Query for meta info about the object: oneway methods, security settings, exposed attributes (to create properties?), whatever.
 * object activation / object registration strategies: instance_per_call, instance_per_connection, shared_instance (let the daemon instantiate your object's class instead of user code)
 * persistent Name Server (store namespace in a database on disk) use sqlite because it needs multithreading/transactions
 * Pyro-over-SSH (not SSL) using Paramiko

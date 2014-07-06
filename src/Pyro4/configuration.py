@@ -20,7 +20,8 @@ class Configuration(object):
                "DETAILED_TRACEBACK", "SOCK_REUSE", "PREFER_IP_VERSION",
                "THREADPOOL_SIZE", "HMAC_KEY", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
                "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
-               "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE" )
+               "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
+               "METADATA")
 
     def __init__(self):
         self.reset()
@@ -57,6 +58,7 @@ class Configuration(object):
         self.SERIALIZERS_ACCEPTED = "serpent,marshal,json"
         self.LOGWIRE = False   # log wire-level messages
         self.PICKLE_PROTOCOL_VERSION = pickle.HIGHEST_PROTOCOL
+        self.METADATA = True     # send metadata on connect
 
         if useenvironment:
             # process enviroment variables

@@ -220,6 +220,69 @@ class TestUtils(unittest.TestCase):
         self.assertEqual( ((1,2,3), { unichr(0x20ac): 42}), processed_args)
 
 
+class MyThing(object):
+    c_attr = "hi"
+    propvalue = 42
+    _private_attr1 = "hi"
+    __private_attr2 = "hi"
+    def method(self, arg, default=99, **kwargs):
+        pass
+    @staticmethod
+    def staticmethod(arg):
+        pass
+    @classmethod
+    def classmethod(cls, arg):
+        pass
+    def __private__(self):
+        pass
+    def __private(self):
+        pass
+    def _private(self):
+        pass
+    def __init__(self, name):
+        self.name = name
+    @property
+    def prop1(self):
+        return self.propvalue
+    @property
+    def prop2(self):
+        return self.propvalue
+    @prop2.setter
+    def prop2(self, value):
+        self.propvalue = value
+    @Pyro4.oneway
+    def oneway(self, arg):
+        pass
+
+
+class TestMeta(unittest.TestCase):
+    def testBasic(self):
+        o = MyThing("irmen")
+        m1 = Pyro4.util.get_public_metadata(o)
+        m2 = Pyro4.util.get_public_metadata(MyThing)
+        self.assertEqual(m1, m2)
+        keys = m1.keys()
+        self.assertEqual(3, len(keys))
+        self.assertIn("methods", keys)
+        self.assertIn("attrs", keys)
+        self.assertIn("oneway", keys)
+
+    def testPrivate(self):
+        o = MyThing("irmen")
+        m = Pyro4.util.get_public_metadata(o)
+        for p in ["_private_attr1", "__private_attr2", "__private__", "__private", "_private", "__init__"]:
+            self.assertNotIn(p, m["methods"])
+            self.assertNotIn(p, m["attrs"])
+            self.assertNotIn(p, m["oneway"])
+
+    def testPublic(self):
+        o = MyThing("irmen")
+        m = Pyro4.util.get_public_metadata(o)
+        self.assertEqual(set(["c_attr", "prop1", "prop2", "propvalue"]), m["attrs"])
+        self.assertEqual(set(["oneway"]), m["oneway"])
+        self.assertEqual(set(["classmethod", "oneway", "method", "staticmethod"]), m["methods"])
+
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

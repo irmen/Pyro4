@@ -1,1 +1,1 @@
-serpent>=1.5
+serpent>=1.6
