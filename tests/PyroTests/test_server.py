@@ -11,55 +11,67 @@ import Pyro4.util
 import Pyro4.message
 import time
 import sys
-from Pyro4 import threadutil, oneway
+from Pyro4 import threadutil
+import Pyro4
 from testsupport import *
 
 
 class MyThing(object):
     def __init__(self):
-        self.dictionary={"number":42}
+        self.dictionary = {"number": 42}
+
     def getDict(self):
         return self.dictionary
-    def multiply(self,x,y):
-        return x*y
-    def divide(self,x,y):
-        return x//y
+
+    def multiply(self, x, y):
+        return x * y
+
+    def divide(self, x, y):
+        return x // y
+
     def ping(self):
         pass
+
     def echo(self, obj):
         return obj
+
     @Pyro4.oneway
     def oneway_delay(self, delay):
         time.sleep(delay)
+
     def delay(self, delay):
         time.sleep(delay)
         return "slept %d seconds" % delay
+
     def delayAndId(self, delay, id):
         time.sleep(delay)
-        return "slept for "+str(id)
-    def testargs(self,x,*args,**kwargs):
-        if kwargs:
-            key=list(kwargs.keys())[0]
-        return [x, list(args), kwargs]    # don't return tuples, this enables us to test json serialization as well.
+        return "slept for " + str(id)
+
+    def testargs(self, x, *args, **kwargs):
+        return [x, list(args), kwargs]  # don't return tuples, this enables us to test json serialization as well.
+
     def nonserializableException(self):
         raise NonserializableError(("xantippe", lambda x: 0))
+
     @Pyro4.oneway
     def oneway_multiply(self, x, y):
-        return x*y
+        return x * y
+
 
 class DaemonLoopThread(threadutil.Thread):
     def __init__(self, pyrodaemon):
-        super(DaemonLoopThread,self).__init__()
+        super(DaemonLoopThread, self).__init__()
         self.setDaemon(True)
-        self.pyrodaemon=pyrodaemon
-        self.running=threadutil.Event()
+        self.pyrodaemon = pyrodaemon
+        self.running = threadutil.Event()
         self.running.clear()
+
     def run(self):
         self.running.set()
         try:
             self.pyrodaemon.requestLoop()
         except Pyro4.errors.CommunicationError:
-            pass    # ignore pyro communication errors
+            pass  # ignore pyro communication errors
 
 
 class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
@@ -70,25 +82,28 @@ class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
         msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTFAIL, data, serializer.serializer_id, 0, 1)
         conn.send(msg.to_bytes())
         return False
-    
+
+
 class ServerTestsBrokenHandshake(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY=b"testsuite"
+        Pyro4.config.HMAC_KEY = b"testsuite"
         Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
-        self.daemon=DaemonWithSabotagedHandshake(port=0)
-        obj=MyThing()
-        uri=self.daemon.register(obj, "something")
-        self.objectUri=uri
-        self.daemonthread=DaemonLoopThread(self.daemon)
+        self.daemon = DaemonWithSabotagedHandshake(port=0)
+        obj = MyThing()
+        uri = self.daemon.register(obj, "something")
+        self.objectUri = uri
+        self.daemonthread = DaemonLoopThread(self.daemon)
         self.daemonthread.start()
         self.daemonthread.running.wait()
         time.sleep(0.05)
+
     def tearDown(self):
         time.sleep(0.05)
         self.daemon.shutdown()
         self.daemonthread.join()
-        Pyro4.config.HMAC_KEY=None
+        Pyro4.config.HMAC_KEY = None
         Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
+
     def testDaemonConnectFail(self):
         # check what happens when the daemon responds with a failed connection msg
         with Pyro4.Proxy(self.objectUri) as p:
@@ -96,30 +111,33 @@ class ServerTestsBrokenHandshake(unittest.TestCase):
                 p.ping()
                 self.fail("expected CommunicationError")
             except Pyro4.errors.CommunicationError:
-                xv=sys.exc_info()[1]
-                message=str(xv)
+                xv = sys.exc_info()[1]
+                message = str(xv)
                 self.assertTrue("reason:" in message)
                 self.assertTrue("rigged connection failure" in message)
 
+
 class ServerTestsOnce(unittest.TestCase):
     """tests that are fine to run with just a single server type"""
+
     def setUp(self):
-        Pyro4.config.HMAC_KEY=b"testsuite"
+        Pyro4.config.HMAC_KEY = b"testsuite"
         Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
-        self.daemon=Pyro4.core.Daemon(port=0)
-        obj=MyThing()
-        uri=self.daemon.register(obj, "something")
-        self.objectUri=uri
-        self.daemonthread=DaemonLoopThread(self.daemon)
+        self.daemon = Pyro4.core.Daemon(port=0)
+        obj = MyThing()
+        uri = self.daemon.register(obj, "something")
+        self.objectUri = uri
+        self.daemonthread = DaemonLoopThread(self.daemon)
         self.daemonthread.start()
         self.daemonthread.running.wait()
         time.sleep(0.05)
+
     def tearDown(self):
         time.sleep(0.05)
         if self.daemon is not None:
             self.daemon.shutdown()
             self.daemonthread.join()
-        Pyro4.config.HMAC_KEY=None
+        Pyro4.config.HMAC_KEY = None
         Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
 
     def testPingMessage(self):
@@ -134,56 +152,56 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual(b"pong", msg.data)
 
     def testNoDottedNames(self):
-        Pyro4.config.DOTTEDNAMES=False
+        Pyro4.config.DOTTEDNAMES = False
         with Pyro4.core.Proxy(self.objectUri) as p:
-            self.assertEqual(55,p.multiply(5,11))
-            x=p.getDict()
-            self.assertEqual({"number":42}, x)
+            self.assertEqual(55, p.multiply(5, 11))
+            x = p.getDict()
+            self.assertEqual({"number": 42}, x)
             try:
-                p.dictionary.update({"more":666})     # should fail with DOTTEDNAMES=False (the default)
+                p.dictionary.update({"more": 666})  # should fail with DOTTEDNAMES=False (the default)
                 self.fail("expected AttributeError")
             except AttributeError:
                 pass
-            x=p.getDict()
-            self.assertEqual({"number":42}, x)
+            x = p.getDict()
+            self.assertEqual({"number": 42}, x)
 
     def testSomeArgumentTypes(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            self.assertEqual([1,[],{}], p.testargs(1))
-            self.assertEqual([1,[2,3],{'a':4}], p.testargs(1,2,3,a=4))
-            self.assertEqual([1,[],{'a':2}], p.testargs(1, **{'a':2}))
+            self.assertEqual([1, [], {}], p.testargs(1))
+            self.assertEqual([1, [2, 3], {'a': 4}], p.testargs(1, 2, 3, a=4))
+            self.assertEqual([1, [], {'a': 2}], p.testargs(1, **{'a': 2}))
 
-    @unittest.skipUnless(sys.version_info>=(2,6,5), "unicode kwargs needs 2.6.5 or newer")
+    @unittest.skipUnless(sys.version_info >= (2, 6, 5), "unicode kwargs needs 2.6.5 or newer")
     def testUnicodeKwargs(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            self.assertEqual([1,[],{unichr(65):2}], p.testargs(1, **{unichr(65):2}))
-            result=p.testargs(unichr(0x20ac), **{unichr(0x20ac):2})
+            self.assertEqual([1, [], {unichr(65): 2}], p.testargs(1, **{unichr(65): 2}))
+            result = p.testargs(unichr(0x20ac), **{unichr(0x20ac): 2})
             self.assertEqual(result[0], unichr(0x20ac))
-            key=list(result[2].keys())[0]
+            key = list(result[2].keys())[0]
             self.assertTrue(type(key) is unicode)
             self.assertEqual(key, unichr(0x20ac))
 
     def testDottedNames(self):
         try:
-            Pyro4.config.DOTTEDNAMES=True
+            Pyro4.config.DOTTEDNAMES = True
             with Pyro4.core.Proxy(self.objectUri) as p:
-                self.assertEqual(55,p.multiply(5,11))
-                x=p.getDict()
-                self.assertEqual({"number":42}, x)
-                p.dictionary.update({"more":666})    # updating it remotely should work with DOTTEDNAMES=True
-                x=p.getDict()
-                self.assertEqual({"number":42, "more":666}, x)  # eek, it got updated!
+                self.assertEqual(55, p.multiply(5, 11))
+                x = p.getDict()
+                self.assertEqual({"number": 42}, x)
+                p.dictionary.update({"more": 666})  # updating it remotely should work with DOTTEDNAMES=True
+                x = p.getDict()
+                self.assertEqual({"number": 42, "more": 666}, x)  # eek, it got updated!
         finally:
-            Pyro4.config.DOTTEDNAMES=False
+            Pyro4.config.DOTTEDNAMES = False
 
     def testNormalProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            self.assertEqual(42,p.multiply(7,6))
+            self.assertEqual(42, p.multiply(7, 6))
 
     def testExceptions(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
             try:
-                p.divide(1,0)
+                p.divide(1, 0)
                 self.fail("should crash")
             except ZeroDivisionError:
                 pass
@@ -220,160 +238,164 @@ class ServerTestsOnce(unittest.TestCase):
                 self.assertTrue(s1 in tblines or s2 in tblines)
                 self.assertTrue("raise NonserializableError((\"xantippe" in tblines)
             finally:
-                Pyro4.config.SERIALIZER="serpent"
+                Pyro4.config.SERIALIZER = "serpent"
 
     def testBatchProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch=Pyro4.batch(p)
-            self.assertEqual(None,batch.multiply(7,6))
-            self.assertEqual(None,batch.divide(999,3))
-            self.assertEqual(None,batch.ping())
-            self.assertEqual(None,batch.divide(999,0))      # force an exception here
-            self.assertEqual(None,batch.multiply(3,4))      # this call should not be performed after the error
-            results=batch()
-            self.assertEqual(42,next(results))
-            self.assertEqual(333,next(results))
-            self.assertEqual(None,next(results))
-            self.assertRaises(ZeroDivisionError, next, results)     # 999//0 should raise this error
-            self.assertRaises(StopIteration, next, results)     # no more results should be available after the error
+            batch = Pyro4.batch(p)
+            self.assertEqual(None, batch.multiply(7, 6))
+            self.assertEqual(None, batch.divide(999, 3))
+            self.assertEqual(None, batch.ping())
+            self.assertEqual(None, batch.divide(999, 0))  # force an exception here
+            self.assertEqual(None, batch.multiply(3, 4))  # this call should not be performed after the error
+            results = batch()
+            self.assertEqual(42, next(results))
+            self.assertEqual(333, next(results))
+            self.assertEqual(None, next(results))
+            self.assertRaises(ZeroDivisionError, next, results)  # 999//0 should raise this error
+            self.assertRaises(StopIteration, next, results)  # no more results should be available after the error
 
     def testAsyncProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            async=Pyro4.async(p)
-            begin=time.time()
-            result=async.delayAndId(1,42)
-            duration=time.time()-begin
-            self.assertTrue(duration<0.1)
+            async = Pyro4.async(p)
+            begin = time.time()
+            result = async.delayAndId(1, 42)
+            duration = time.time() - begin
+            self.assertTrue(duration < 0.1)
             self.assertFalse(result.ready)
-            self.assertFalse(result.wait(0.5))    # not available within 0.5 sec
-            self.assertEqual("slept for 42",result.value)
+            self.assertFalse(result.wait(0.5))  # not available within 0.5 sec
+            self.assertEqual("slept for 42", result.value)
             self.assertTrue(result.ready)
             self.assertTrue(result.wait())
 
     def testAsyncProxyCallchain(self):
         class FuncHolder(object):
-            count=AtomicCounter()
+            count = AtomicCounter()
+
             def function(self, value, increase=1):
                 self.count.incr()
-                return value+increase
+                return value + increase
+
         with Pyro4.core.Proxy(self.objectUri) as p:
-            async=Pyro4.async(p)
-            holder=FuncHolder()
-            begin=time.time()
-            result=async.multiply(2,3)
+            async = Pyro4.async(p)
+            holder = FuncHolder()
+            begin = time.time()
+            result = async.multiply(2, 3)
             result.then(holder.function, increase=10) \
-                  .then(holder.function, increase=5) \
-                  .then(holder.function)
-            duration=time.time()-begin
-            self.assertTrue(duration<0.1)
-            value=result.value
+                .then(holder.function, increase=5) \
+                .then(holder.function)
+            duration = time.time() - begin
+            self.assertTrue(duration < 0.1)
+            value = result.value
             self.assertTrue(result.ready)
-            self.assertEqual(22,value)
-            self.assertEqual(3,holder.count.value())
+            self.assertEqual(22, value)
+            self.assertEqual(3, holder.count.value())
 
     def testBatchOneway(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch=Pyro4.batch(p)
-            self.assertEqual(None,batch.multiply(7,6))
-            self.assertEqual(None,batch.delay(1))           # a delay shouldn't matter with oneway
-            self.assertEqual(None,batch.multiply(3,4))
-            begin=time.time()
-            results=batch(oneway=True)
-            duration=time.time()-begin
-            self.assertTrue(duration<0.1,"oneway batch with delay should return almost immediately")
-            self.assertEqual(None,results)
+            batch = Pyro4.batch(p)
+            self.assertEqual(None, batch.multiply(7, 6))
+            self.assertEqual(None, batch.delay(1))  # a delay shouldn't matter with oneway
+            self.assertEqual(None, batch.multiply(3, 4))
+            begin = time.time()
+            results = batch(oneway=True)
+            duration = time.time() - begin
+            self.assertTrue(duration < 0.1, "oneway batch with delay should return almost immediately")
+            self.assertEqual(None, results)
 
     def testBatchAsync(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch=Pyro4.batch(p)
-            self.assertEqual(None,batch.multiply(7,6))
-            self.assertEqual(None,batch.delay(1))           # a delay shouldn't matter with async
-            self.assertEqual(None,batch.multiply(3,4))
-            begin=time.time()
-            asyncresult=batch(async=True)
-            duration=time.time()-begin
-            self.assertTrue(duration<0.1,"async batch with delay should return almost immediately")
-            results=asyncresult.value
-            self.assertEqual(42,next(results))
-            self.assertEqual("slept 1 seconds",next(results))
-            self.assertEqual(12,next(results))
-            self.assertRaises(StopIteration, next, results)     # no more results should be available
+            batch = Pyro4.batch(p)
+            self.assertEqual(None, batch.multiply(7, 6))
+            self.assertEqual(None, batch.delay(1))  # a delay shouldn't matter with async
+            self.assertEqual(None, batch.multiply(3, 4))
+            begin = time.time()
+            asyncresult = batch(async=True)
+            duration = time.time() - begin
+            self.assertTrue(duration < 0.1, "async batch with delay should return almost immediately")
+            results = asyncresult.value
+            self.assertEqual(42, next(results))
+            self.assertEqual("slept 1 seconds", next(results))
+            self.assertEqual(12, next(results))
+            self.assertRaises(StopIteration, next, results)  # no more results should be available
 
     def testBatchAsyncCallchain(self):
         class FuncHolder(object):
-            count=AtomicCounter()
+            count = AtomicCounter()
+
             def function(self, values):
-                result=[value+1 for value in values]
+                result = [value + 1 for value in values]
                 self.count.incr()
                 return result
+
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch=Pyro4.batch(p)
-            self.assertEqual(None,batch.multiply(7,6))
-            self.assertEqual(None,batch.multiply(3,4))
-            result=batch(async=True)
-            holder=FuncHolder()
+            batch = Pyro4.batch(p)
+            self.assertEqual(None, batch.multiply(7, 6))
+            self.assertEqual(None, batch.multiply(3, 4))
+            result = batch(async=True)
+            holder = FuncHolder()
             result.then(holder.function).then(holder.function)
-            value=result.value
+            value = result.value
             self.assertTrue(result.ready)
-            self.assertEqual([44,14],value)
-            self.assertEqual(2,holder.count.value())
+            self.assertEqual([44, 14], value)
+            self.assertEqual(2, holder.count.value())
 
     def testPyroTracebackNormal(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
             try:
-                p.divide(999,0)  # force error here
+                p.divide(999, 0)  # force error here
                 self.fail("expected error")
             except ZeroDivisionError:
                 # going to check if the magic pyro traceback attribute is available for batch methods too
-                tb="".join(Pyro4.util.getPyroTraceback())
+                tb = "".join(Pyro4.util.getPyroTraceback())
                 self.assertTrue("Remote traceback:" in tb)  # validate if remote tb is present
                 self.assertTrue("ZeroDivisionError" in tb)  # the error
-                self.assertTrue("return x//y" in tb)  # the statement
+                self.assertTrue("return x // y" in tb)  # the statement
 
     def testPyroTracebackBatch(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch=Pyro4.batch(p)
-            self.assertEqual(None,batch.divide(999,0))      # force an exception here
-            results=batch()
+            batch = Pyro4.batch(p)
+            self.assertEqual(None, batch.divide(999, 0))  # force an exception here
+            results = batch()
             try:
                 next(results)
                 self.fail("expected error")
             except ZeroDivisionError:
                 # going to check if the magic pyro traceback attribute is available for batch methods too
-                tb="".join(Pyro4.util.getPyroTraceback())
+                tb = "".join(Pyro4.util.getPyroTraceback())
                 self.assertTrue("Remote traceback:" in tb)  # validate if remote tb is present
                 self.assertTrue("ZeroDivisionError" in tb)  # the error
-                self.assertTrue("return x//y" in tb)  # the statement
-            self.assertRaises(StopIteration, next, results)     # no more results should be available after the error
+                self.assertTrue("return x // y" in tb)  # the statement
+            self.assertRaises(StopIteration, next, results)  # no more results should be available after the error
 
     def testAutoProxy(self):
-        obj=MyThing2()
-        Pyro4.config.SERIALIZER="pickle"
+        obj = MyThing2()
+        Pyro4.config.SERIALIZER = "pickle"
         try:
             with Pyro4.core.Proxy(self.objectUri) as p:
-                Pyro4.config.AUTOPROXY=False   # make sure autoproxy is disabled
-                result=p.echo(obj)
-                self.assertTrue(isinstance(result,MyThing2))
+                Pyro4.config.AUTOPROXY = False  # make sure autoproxy is disabled
+                result = p.echo(obj)
+                self.assertTrue(isinstance(result, MyThing2))
                 self.daemon.register(obj)
-                result=p.echo(obj)
-                self.assertTrue(isinstance(result,MyThing2), "with autoproxy off the object should be an instance of the class")
+                result = p.echo(obj)
+                self.assertTrue(isinstance(result, MyThing2), "with autoproxy off the object should be an instance of the class")
                 self.daemon.unregister(obj)
-                result=p.echo(obj)
-                self.assertTrue(isinstance(result,MyThing2), "serialized object must still be normal object")
-                Pyro4.config.AUTOPROXY=True   # make sure autoproxying is enabled
-                result=p.echo(obj)
-                self.assertTrue(isinstance(result,MyThing2), "non-pyro object must be returned as normal class")
+                result = p.echo(obj)
+                self.assertTrue(isinstance(result, MyThing2), "serialized object must still be normal object")
+                Pyro4.config.AUTOPROXY = True  # make sure autoproxying is enabled
+                result = p.echo(obj)
+                self.assertTrue(isinstance(result, MyThing2), "non-pyro object must be returned as normal class")
                 self.daemon.register(obj)
-                result=p.echo(obj)
-                self.assertTrue(isinstance(result, Pyro4.core.Proxy),"serialized pyro object must be a proxy")
+                result = p.echo(obj)
+                self.assertTrue(isinstance(result, Pyro4.core.Proxy), "serialized pyro object must be a proxy")
                 self.daemon.unregister(obj)
-                result=p.echo(obj)
-                self.assertTrue(isinstance(result,MyThing2), "unregistered pyro object must be normal class again")
+                result = p.echo(obj)
+                self.assertTrue(isinstance(result, MyThing2), "unregistered pyro object must be normal class again")
                 # note: the custom serializer may still be active but it should be smart enough to see
                 # that the object is no longer a pyro object, and therefore, no proxy should be created.
         finally:
-            Pyro4.config.AUTOPROXY=True
-            Pyro4.config.SERIALIZER="serpent"
+            Pyro4.config.AUTOPROXY = True
+            Pyro4.config.SERIALIZER = "serpent"
 
     def testConnectOnce(self):
         with Pyro4.core.Proxy(self.objectUri) as proxy:
@@ -382,17 +404,20 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testConnectingThreads(self):
         class ConnectingThread(threadutil.Thread):
-            new_connections=AtomicCounter()
+            new_connections = AtomicCounter()
+
             def __init__(self, proxy, event):
                 threadutil.Thread.__init__(self)
-                self.proxy=proxy
-                self.event=event
+                self.proxy = proxy
+                self.event = event
                 self.setDaemon(True)
                 self.new_connections.reset()
+
             def run(self):
                 self.event.wait()
                 if self.proxy._pyroBind():
-                    ConnectingThread.new_connections.incr()     # 1 more new connection done
+                    ConnectingThread.new_connections.incr()  # 1 more new connection done
+
         with Pyro4.core.Proxy(self.objectUri) as proxy:
             event = threadutil.Event()
             threads = [ConnectingThread(proxy, event) for _ in range(20)]
@@ -410,7 +435,7 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual(result, bigobject)
             Pyro4.config.MAX_MESSAGE_SIZE = 999
             try:
-                result = p.echo(bigobject)
+                _ = p.echo(bigobject)
                 self.fail("should fail with ProtocolError msg too large")
             except Pyro4.errors.ProtocolError:
                 pass
@@ -427,47 +452,49 @@ class ServerTestsOnce(unittest.TestCase):
         # (it should interrupt the worker's socket connections)
         time.sleep(0.1)
         self.daemon.shutdown()
-        self.daemon=None
+        self.daemon = None
         p1._pyroRelease()
         p2._pyroRelease()
         p3._pyroRelease()
 
 
 class ServerTestsThreadNoTimeout(unittest.TestCase):
-    SERVERTYPE="thread"
-    COMMTIMEOUT=None
+    SERVERTYPE = "thread"
+    COMMTIMEOUT = None
+
     def setUp(self):
-        Pyro4.config.POLLTIMEOUT=0.1
-        Pyro4.config.SERVERTYPE=self.SERVERTYPE
-        Pyro4.config.COMMTIMEOUT=self.COMMTIMEOUT
-        Pyro4.config.HMAC_KEY=b"testsuite"
+        Pyro4.config.POLLTIMEOUT = 0.1
+        Pyro4.config.SERVERTYPE = self.SERVERTYPE
+        Pyro4.config.COMMTIMEOUT = self.COMMTIMEOUT
+        Pyro4.config.HMAC_KEY = b"testsuite"
         Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
-        self.daemon=Pyro4.core.Daemon(port=0)
-        obj=MyThing()
-        uri=self.daemon.register(obj, "something")
-        self.objectUri=uri
-        self.daemonthread=DaemonLoopThread(self.daemon)
+        self.daemon = Pyro4.core.Daemon(port=0)
+        obj = MyThing()
+        uri = self.daemon.register(obj, "something")
+        self.objectUri = uri
+        self.daemonthread = DaemonLoopThread(self.daemon)
         self.daemonthread.start()
         self.daemonthread.running.wait()
         time.sleep(0.05)
+
     def tearDown(self):
         time.sleep(0.05)
         self.daemon.shutdown()
         self.daemonthread.join()
-        Pyro4.config.SERVERTYPE="thread"
-        Pyro4.config.COMMTIMEOUT=None
-        Pyro4.config.HMAC_KEY=None
+        Pyro4.config.SERVERTYPE = "thread"
+        Pyro4.config.COMMTIMEOUT = None
+        Pyro4.config.HMAC_KEY = None
         Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
 
     def testConnectionStuff(self):
-        p1=Pyro4.core.Proxy(self.objectUri)
-        p2=Pyro4.core.Proxy(self.objectUri)
+        p1 = Pyro4.core.Proxy(self.objectUri)
+        p2 = Pyro4.core.Proxy(self.objectUri)
         self.assertTrue(p1._pyroConnection is None)
         self.assertTrue(p2._pyroConnection is None)
         p1.ping()
         p2.ping()
-        _=p1.multiply(11,5)
-        _=p2.multiply(11,5)
+        _ = p1.multiply(11, 5)
+        _ = p2.multiply(11, 5)
         self.assertTrue(p1._pyroConnection is not None)
         self.assertTrue(p2._pyroConnection is not None)
         p1._pyroRelease()
@@ -477,12 +504,12 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         self.assertTrue(p1._pyroConnection is None)
         self.assertTrue(p2._pyroConnection is None)
         p1._pyroBind()
-        _=p1.multiply(11,5)
-        _=p2.multiply(11,5)
+        _ = p1.multiply(11, 5)
+        _ = p2.multiply(11, 5)
         self.assertTrue(p1._pyroConnection is not None)
         self.assertTrue(p2._pyroConnection is not None)
-        self.assertEqual("PYRO",p1._pyroUri.protocol)
-        self.assertEqual("PYRO",p2._pyroUri.protocol)
+        self.assertEqual("PYRO", p1._pyroUri.protocol)
+        self.assertEqual("PYRO", p2._pyroUri.protocol)
         p1._pyroRelease()
         p2._pyroRelease()
 
@@ -496,20 +523,20 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         # test compression:
         try:
             with Pyro4.core.Proxy(self.objectUri) as p:
-                Pyro4.config.COMPRESSION=True
-                self.assertEqual(55, p.multiply(5,11))
-                self.assertEqual("*"*1000, p.multiply("*"*500,2))
+                Pyro4.config.COMPRESSION = True
+                self.assertEqual(55, p.multiply(5, 11))
+                self.assertEqual("*" * 1000, p.multiply("*" * 500, 2))
         finally:
-            Pyro4.config.COMPRESSION=False
-    
+            Pyro4.config.COMPRESSION = False
+
     def testOnewayMetaOn(self):
         Pyro4.config.METADATA = True
         with Pyro4.core.Proxy(self.objectUri) as p:
-            self.assertEqual(set(), p._pyroOneway)   # when not bound, no meta info exchange has been done
+            self.assertEqual(set(), p._pyroOneway)  # when not bound, no meta info exchange has been done
             p._pyroBind()
             self.assertIn("oneway_multiply", p._pyroOneway)  # after binding, meta info has been processed
-            self.assertEqual(55, p.multiply(5, 11))      # not tagged as @Pyro4.oneway
-            self.assertEqual(None, p.oneway_multiply(5, 11))      # tagged as @Pyro4.oneway
+            self.assertEqual(55, p.multiply(5, 11))  # not tagged as @Pyro4.oneway
+            self.assertEqual(None, p.oneway_multiply(5, 11))  # tagged as @Pyro4.oneway
             p._pyroOneway = []
             self.assertEqual(55, p.multiply(5, 11))
             self.assertEqual(55, p.oneway_multiply(5, 11))
@@ -517,9 +544,9 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
     def testOnewayMetaOff(self):
         Pyro4.config.METADATA = False
         with Pyro4.core.Proxy(self.objectUri) as p:
-            self.assertEqual(set(), p._pyroOneway)   # when not bound, no meta info exchange has been done
+            self.assertEqual(set(), p._pyroOneway)  # when not bound, no meta info exchange has been done
             p._pyroBind()
-            self.assertEqual(set(), p._pyroOneway)   # after binding, no meta info exchange has been done because disabled
+            self.assertEqual(set(), p._pyroOneway)  # after binding, no meta info exchange has been done because disabled
             self.assertEqual(55, p.multiply(5, 11))
             self.assertEqual(55, p.oneway_multiply(5, 11))
         Pyro4.config.METADATA = True
@@ -543,10 +570,12 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
 
     def testOnewayWithProxySubclass(self):
         Pyro4.config.METADATA = False
+
         class ProxyWithOneway(Pyro4.core.Proxy):
             def __init__(self, arg):
                 super(ProxyWithOneway, self).__init__(arg)
                 self._pyroOneway = set(["oneway_multiply", "multiply"])
+
         with ProxyWithOneway(self.objectUri) as p:
             self.assertEqual(None, p.oneway_multiply(5, 11))
             self.assertEqual(None, p.multiply(5, 11))
@@ -559,33 +588,33 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         try:
             with Pyro4.core.Proxy(self.objectUri) as p:
                 p.ping()
-                Pyro4.config.ONEWAY_THREADED=True   # the default
-                now=time.time()
+                Pyro4.config.ONEWAY_THREADED = True  # the default
+                now = time.time()
                 p.oneway_delay(1)  # oneway so we should continue right away
-                self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
-                now=time.time()
-                self.assertEqual(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
-                self.assertTrue(time.time()-now < 0.2, "delay should be running in its own thread")
+                self.assertTrue(time.time() - now < 0.2, "delay should be running as oneway")
+                now = time.time()
+                self.assertEqual(55, p.multiply(5, 11), "expected a normal result from a non-oneway call")
+                self.assertTrue(time.time() - now < 0.2, "delay should be running in its own thread")
                 # make oneway calls run in the server thread
                 # we can change the config here and the server will pick it up on the fly
-                Pyro4.config.ONEWAY_THREADED=False   
-                now=time.time()
+                Pyro4.config.ONEWAY_THREADED = False
+                now = time.time()
                 p.oneway_delay(1)  # oneway so we should continue right away
-                self.assertTrue(time.time()-now < 0.2, "delay should be running as oneway")
-                now=time.time()
-                self.assertEqual(55,p.multiply(5,11), "expected a normal result from a non-oneway call")
-                self.assertFalse(time.time()-now < 0.2, "delay should be running in the server thread")
+                self.assertTrue(time.time() - now < 0.2, "delay should be running as oneway")
+                now = time.time()
+                self.assertEqual(55, p.multiply(5, 11), "expected a normal result from a non-oneway call")
+                self.assertFalse(time.time() - now < 0.2, "delay should be running in the server thread")
         finally:
-            Pyro4.config.ONEWAY_THREADED=True   # back to normal
+            Pyro4.config.ONEWAY_THREADED = True  # back to normal
 
     def testSerializeConnected(self):
         # online serialization tests
-        ser=Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
-        proxy=Pyro4.core.Proxy(self.objectUri)
+        ser = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
+        proxy = Pyro4.core.Proxy(self.objectUri)
         proxy._pyroBind()
         self.assertFalse(proxy._pyroConnection is None)
-        p,_=ser.serializeData(proxy)
-        proxy2=ser.deserializeData(p)
+        p, _ = ser.serializeData(proxy)
+        proxy2 = ser.deserializeData(p)
         self.assertTrue(proxy2._pyroConnection is None)
         self.assertFalse(proxy._pyroConnection is None)
         self.assertEqual(proxy2._pyroUri, proxy._pyroUri)
@@ -600,7 +629,8 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         proxy2.ping()
         # try copying a connected proxy
         import copy
-        proxy3=copy.copy(proxy)
+
+        proxy3 = copy.copy(proxy)
         self.assertTrue(proxy3._pyroConnection is None)
         self.assertFalse(proxy._pyroConnection is None)
         self.assertEqual(proxy3._pyroUri, proxy._pyroUri)
@@ -612,84 +642,86 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
     def testException(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
             try:
-                p.divide(1,0)
+                p.divide(1, 0)
             except:
-                et,ev,tb=sys.exc_info()
+                et, ev, tb = sys.exc_info()
                 self.assertEqual(ZeroDivisionError, et)
-                pyrotb="".join(Pyro4.util.getPyroTraceback(et,ev,tb))
+                pyrotb = "".join(Pyro4.util.getPyroTraceback(et, ev, tb))
                 self.assertTrue("Remote traceback" in pyrotb)
                 self.assertTrue("ZeroDivisionError" in pyrotb)
                 del tb
 
     def testTimeoutCall(self):
-        Pyro4.config.COMMTIMEOUT=None
+        Pyro4.config.COMMTIMEOUT = None
         with Pyro4.core.Proxy(self.objectUri) as p:
             p.ping()
-            start=time.time()
+            start = time.time()
             p.delay(0.5)
-            duration=time.time()-start
-            self.assertTrue(0.4<duration<0.6)
-            p._pyroTimeout=0.1
-            start=time.time()
+            duration = time.time() - start
+            self.assertTrue(0.4 < duration < 0.6)
+            p._pyroTimeout = 0.1
+            start = time.time()
             self.assertRaises(Pyro4.errors.TimeoutError, p.delay, 1)
-            duration=time.time()-start
-            if sys.platform!="cli":
+            duration = time.time() - start
+            if sys.platform != "cli":
                 self.assertAlmostEqual(0.1, duration, places=1)
             else:
                 # ironpython's time is weird
-                self.assertTrue(0.0<duration<0.7)
+                self.assertTrue(0.0 < duration < 0.7)
 
     def testTimeoutConnect(self):
         # set up a unresponsive daemon
         with Pyro4.core.Daemon(port=0) as d:
             time.sleep(0.5)
-            obj=MyThing()
-            uri=d.register(obj)
+            obj = MyThing()
+            uri = d.register(obj)
             # we're not going to start the daemon's event loop
-            p=Pyro4.core.Proxy(uri)
-            p._pyroTimeout=0.2
-            start=time.time()
+            p = Pyro4.core.Proxy(uri)
+            p._pyroTimeout = 0.2
+            start = time.time()
             self.assertRaises(Pyro4.errors.TimeoutError, p.ping)
-            duration=time.time()-start
-            self.assertTrue(duration<2.0)
-            
+            duration = time.time() - start
+            self.assertTrue(duration < 2.0)
+
     def testProxySharing(self):
         class SharedProxyThread(threadutil.Thread):
             def __init__(self, proxy):
-                super(SharedProxyThread,self).__init__()
-                self.proxy=proxy
-                self.terminate=False
-                self.error=True
+                super(SharedProxyThread, self).__init__()
+                self.proxy = proxy
+                self.terminate = False
+                self.error = True
                 self.setDaemon(True)
+
             def run(self):
                 try:
                     while not self.terminate:
-                        reply=self.proxy.multiply(5,11)
-                        assert reply==55
+                        reply = self.proxy.multiply(5, 11)
+                        assert reply == 55
                         time.sleep(0.001)
-                    self.error=False
+                    self.error = False
                 except:
                     print("Something went wrong in the thread (SharedProxyThread):")
                     print("".join(Pyro4.util.getPyroTraceback()))
+
         with Pyro4.core.Proxy(self.objectUri) as p:
-            threads=[]
+            threads = []
             for i in range(5):
-                t=SharedProxyThread(p)
+                t = SharedProxyThread(p)
                 threads.append(t)
                 t.start()
             time.sleep(1)
             for t in threads:
-                t.terminate=True
+                t.terminate = True
                 t.join()
             for t in threads:
-                self.assertFalse(t.error, "all threads should report no errors") 
+                self.assertFalse(t.error, "all threads should report no errors")
 
     def testServerConnections(self):
         # check if the server allows to grow the number of connections
-        proxies=[Pyro4.core.Proxy(self.objectUri) for _ in range(10)]
+        proxies = [Pyro4.core.Proxy(self.objectUri) for _ in range(10)]
         try:
             for p in proxies:
-                p._pyroTimeout=0.5
+                p._pyroTimeout = 0.5
                 p._pyroBind()
             for p in proxies:
                 p.ping()
@@ -700,25 +732,27 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
     def testServerParallelism(self):
         class ClientThread(threadutil.Thread):
             def __init__(self, uri, name):
-                super(ClientThread,self).__init__()
+                super(ClientThread, self).__init__()
                 self.setDaemon(True)
-                self.proxy=Pyro4.core.Proxy(uri)
-                self.name=name
-                self.error=True
-                self.proxy._pyroTimeout=5.0
+                self.proxy = Pyro4.core.Proxy(uri)
+                self.name = name
+                self.error = True
+                self.proxy._pyroTimeout = 5.0
                 self.proxy._pyroBind()
+
             def run(self):
                 try:
-                    reply=self.proxy.delayAndId(0.5, self.name)
-                    assert reply=="slept for "+self.name
-                    self.error=False
+                    reply = self.proxy.delayAndId(0.5, self.name)
+                    assert reply == "slept for " + self.name
+                    self.error = False
                 finally:
                     self.proxy._pyroRelease()
-        threads=[]
-        start=time.time()
+
+        threads = []
+        start = time.time()
         try:
             for i in range(6):
-                t=ClientThread(self.objectUri,"t%d" % i)
+                t = ClientThread(self.objectUri, "t%d" % i)
                 threads.append(t)
         except:
             # some exception (probably timeout) while creating clients
@@ -732,26 +766,28 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             t.join()
             self.assertFalse(t.error, "all threads should report no errors")
         del threads
-        duration=time.time()-start
-        if Pyro4.config.SERVERTYPE=="multiplex":
+        duration = time.time() - start
+        if Pyro4.config.SERVERTYPE == "multiplex":
             # multiplex based server doesn't execute calls in parallel,
             # so 6 threads times 0.5 seconds =~ 3 seconds
-            self.assertTrue(2.5<duration<3.5)
+            self.assertTrue(2.5 < duration < 3.5)
         else:
             # thread based server does execute calls in parallel,
             # so 6 threads taking 0.5 seconds =~ 0.5 seconds passed
-            self.assertTrue(0.4<duration<0.9)  # loose upper bound for slow jython
+            self.assertTrue(0.4 < duration < 0.9)  # loose upper bound for slow jython
 
 
 class ServerTestsMultiplexNoTimeout(ServerTestsThreadNoTimeout):
     SERVERTYPE = "multiplex"
     COMMTIMEOUT = None
+
     def testProxySharing(self):
         pass
+
     def testException(self):
         pass
 
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
+    # import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

@@ -6,8 +6,11 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import os
 import sys
-sys.path.insert(0,"../src")
-sys.path.insert(1,"PyroTests")
+
+
+sys.path.insert(0, "../src")
+sys.path.insert(1, "PyroTests")
+
 
 def Pyflakes(path, modules):
     try:
@@ -15,20 +18,20 @@ def Pyflakes(path, modules):
     except ImportError:
         print("PYFLAKES not installed. Skipping.")
         return
-    warnings=0
+    warnings = 0
     for m in modules:
-        warnings+=checkPath(os.path.join(path,m))
+        warnings += checkPath(os.path.join(path, m))
     print("%d warnings occurred in pyflakes check" % warnings)
 
 
 def main(args):
-    pyropath="../src/Pyro4"
-    pyromodules=[module for module in os.listdir(pyropath) if module.endswith(".py")]
-    checkers=args or ["flakes"]
+    pyropath = "../src/Pyro4"
+    pyromodules = [module for module in os.listdir(pyropath) if module.endswith(".py")]
+    checkers = args or ["flakes"]
     if "flakes" in checkers:
-        print("-"*20+"PYFLAKES")
+        print("-" * 20 + "PYFLAKES")
         Pyflakes(pyropath, pyromodules)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main(sys.argv[1:])

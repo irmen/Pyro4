@@ -7,6 +7,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 from __future__ import with_statement
 import time
 import os
+
 import Pyro4.core
 import Pyro4.naming
 import Pyro4.socketutil
@@ -18,25 +19,29 @@ from testsupport import *
 
 class NSLoopThread(threadutil.Thread):
     def __init__(self, nameserver):
-        super(NSLoopThread,self).__init__()
+        super(NSLoopThread, self).__init__()
         self.setDaemon(True)
-        self.nameserver=nameserver
-        self.running=threadutil.Event()
+        self.nameserver = nameserver
+        self.running = threadutil.Event()
         self.running.clear()
+
     def run(self):
         self.running.set()
         try:
             self.nameserver.requestLoop()
         except CommunicationError:
-            pass   # ignore pyro communication errors
+            pass  # ignore pyro communication errors
+
 
 class BCSetupTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY=b"testsuite"
+        Pyro4.config.HMAC_KEY = b"testsuite"
+
     def tearDown(self):
-        Pyro4.config.HMAC_KEY=None
+        Pyro4.config.HMAC_KEY = None
+
     def testBCstart(self):
-        myIpAddress=Pyro4.socketutil.getIpAddress("", workaround127=True)
+        myIpAddress = Pyro4.socketutil.getIpAddress("", workaround127=True)
         nsUri, nameserver, bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=False)
         self.assertTrue(bcserver is None)
         nameserver.close()
@@ -50,52 +55,53 @@ class BCSetupTests(unittest.TestCase):
 
 class NameServerTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.POLLTIMEOUT=0.1
-        Pyro4.config.HMAC_KEY=b"testsuite"
-        myIpAddress=Pyro4.socketutil.getIpAddress("", workaround127=True)
+        Pyro4.config.POLLTIMEOUT = 0.1
+        Pyro4.config.HMAC_KEY = b"testsuite"
+        myIpAddress = Pyro4.socketutil.getIpAddress("", workaround127=True)
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0)
-        self.assertTrue(self.bcserver is not None,"expected a BC server to be running")
+        self.assertTrue(self.bcserver is not None, "expected a BC server to be running")
         self.bcserver.runInThread()
-        self.daemonthread=NSLoopThread(self.nameserver)
+        self.daemonthread = NSLoopThread(self.nameserver)
         self.daemonthread.start()
         self.daemonthread.running.wait()
         time.sleep(0.05)
-        self.old_bcPort=Pyro4.config.NS_BCPORT
-        self.old_nsPort=Pyro4.config.NS_PORT
-        self.old_nsHost=Pyro4.config.NS_HOST
-        Pyro4.config.NS_PORT=self.nsUri.port
-        Pyro4.config.NS_HOST=myIpAddress
-        Pyro4.config.NS_BCPORT=self.bcserver.getPort()
+        self.old_bcPort = Pyro4.config.NS_BCPORT
+        self.old_nsPort = Pyro4.config.NS_PORT
+        self.old_nsHost = Pyro4.config.NS_HOST
+        Pyro4.config.NS_PORT = self.nsUri.port
+        Pyro4.config.NS_HOST = myIpAddress
+        Pyro4.config.NS_BCPORT = self.bcserver.getPort()
+
     def tearDown(self):
         time.sleep(0.01)
         self.nameserver.shutdown()
         self.bcserver.close()
         # self.daemonthread.join()
-        Pyro4.config.HMAC_KEY=None
-        Pyro4.config.NS_HOST=self.old_nsHost
-        Pyro4.config.NS_PORT=self.old_nsPort
-        Pyro4.config.NS_BCPORT=self.old_bcPort
-   
+        Pyro4.config.HMAC_KEY = None
+        Pyro4.config.NS_HOST = self.old_nsHost
+        Pyro4.config.NS_PORT = self.old_nsPort
+        Pyro4.config.NS_BCPORT = self.old_bcPort
+
     def testLookupAndRegister(self):
-        ns=Pyro4.naming.locateNS() # broadcast lookup
+        ns = Pyro4.naming.locateNS()  # broadcast lookup
         self.assertTrue(isinstance(ns, Pyro4.core.Proxy))
         ns._pyroRelease()
-        ns=Pyro4.naming.locateNS(self.nsUri.host) # normal lookup
+        ns = Pyro4.naming.locateNS(self.nsUri.host)  # normal lookup
         self.assertTrue(isinstance(ns, Pyro4.core.Proxy))
-        uri=ns._pyroUri
-        self.assertEqual("PYRO",uri.protocol)
-        self.assertEqual(self.nsUri.host,uri.host)
-        self.assertEqual(Pyro4.config.NS_PORT,uri.port)
+        uri = ns._pyroUri
+        self.assertEqual("PYRO", uri.protocol)
+        self.assertEqual(self.nsUri.host, uri.host)
+        self.assertEqual(Pyro4.config.NS_PORT, uri.port)
         ns._pyroRelease()
-        ns=Pyro4.naming.locateNS(self.nsUri.host,Pyro4.config.NS_PORT)
-        uri=ns._pyroUri
-        self.assertEqual("PYRO",uri.protocol)
-        self.assertEqual(self.nsUri.host,uri.host)
-        self.assertEqual(Pyro4.config.NS_PORT,uri.port)
-        
+        ns = Pyro4.naming.locateNS(self.nsUri.host, Pyro4.config.NS_PORT)
+        uri = ns._pyroUri
+        self.assertEqual("PYRO", uri.protocol)
+        self.assertEqual(self.nsUri.host, uri.host)
+        self.assertEqual(Pyro4.config.NS_PORT, uri.port)
+
         # check that we cannot register a stupid type
         self.assertRaises(TypeError, ns.register, "unittest.object1", 5555)
-        # we can register str or URI, lookup always returns URI        
+        # we can register str or URI, lookup always returns URI
         ns.register("unittest.object2", "PYRO:55555@host.com:4444")
         self.assertEqual(Pyro4.core.URI("PYRO:55555@host.com:4444"), ns.lookup("unittest.object2"))
         ns.register("unittest.object3", Pyro4.core.URI("PYRO:66666@host.com:4444"))
@@ -103,8 +109,8 @@ class NameServerTests(unittest.TestCase):
         ns._pyroRelease()
 
     def testDaemonPyroObj(self):
-        uri=self.nsUri
-        uri.object=Pyro4.constants.DAEMON_NAME
+        uri = self.nsUri
+        uri.object = Pyro4.constants.DAEMON_NAME
         with Pyro4.core.Proxy(uri) as daemonobj:
             daemonobj.ping()
             daemonobj.registered()
@@ -113,74 +119,73 @@ class NameServerTests(unittest.TestCase):
                 self.fail("should not succeed to call unexposed method on daemon")
             except AttributeError:
                 pass
-        
+
     def testMulti(self):
-        uristr=str(self.nsUri)
-        p=Pyro4.core.Proxy(uristr)
+        uristr = str(self.nsUri)
+        p = Pyro4.core.Proxy(uristr)
         p._pyroBind()
         p._pyroRelease()
-        uri=Pyro4.naming.resolve(uristr)
-        p=Pyro4.core.Proxy(uri)
+        uri = Pyro4.naming.resolve(uristr)
+        p = Pyro4.core.Proxy(uri)
         p._pyroBind()
         p._pyroRelease()
-        uri=Pyro4.naming.resolve(uristr)
-        p=Pyro4.core.Proxy(uri)
+        uri = Pyro4.naming.resolve(uristr)
+        p = Pyro4.core.Proxy(uri)
         p._pyroBind()
         p._pyroRelease()
-        uri=Pyro4.naming.resolve(uristr)
-        p=Pyro4.core.Proxy(uri)
+        uri = Pyro4.naming.resolve(uristr)
+        p = Pyro4.core.Proxy(uri)
         p._pyroBind()
         p._pyroRelease()
-        uri=Pyro4.naming.resolve(uristr)
-        p=Pyro4.core.Proxy(uri)
+        uri = Pyro4.naming.resolve(uristr)
+        p = Pyro4.core.Proxy(uri)
         p._pyroBind()
         p._pyroRelease()
-        uri=Pyro4.naming.resolve(uristr)
-        p=Pyro4.core.Proxy(uri)
+        uri = Pyro4.naming.resolve(uristr)
+        p = Pyro4.core.Proxy(uri)
         p._pyroBind()
         p._pyroRelease()
-        daemonUri="PYRO:"+Pyro4.constants.DAEMON_NAME+"@"+uri.location
-        _=Pyro4.naming.resolve(daemonUri)
-        _=Pyro4.naming.resolve(daemonUri)
-        _=Pyro4.naming.resolve(daemonUri)
-        _=Pyro4.naming.resolve(daemonUri)
-        _=Pyro4.naming.resolve(daemonUri)
-        _=Pyro4.naming.resolve(daemonUri)
-        uri=Pyro4.naming.resolve(daemonUri)
-        pyronameUri="PYRONAME:"+Pyro4.constants.NAMESERVER_NAME+"@"+uri.location
-        _=Pyro4.naming.resolve(pyronameUri)
-        _=Pyro4.naming.resolve(pyronameUri)
-        _=Pyro4.naming.resolve(pyronameUri)
-        _=Pyro4.naming.resolve(pyronameUri)
-        _=Pyro4.naming.resolve(pyronameUri)
-        _=Pyro4.naming.resolve(pyronameUri)
-    
+        daemonUri = "PYRO:" + Pyro4.constants.DAEMON_NAME + "@" + uri.location
+        _ = Pyro4.naming.resolve(daemonUri)
+        _ = Pyro4.naming.resolve(daemonUri)
+        _ = Pyro4.naming.resolve(daemonUri)
+        _ = Pyro4.naming.resolve(daemonUri)
+        _ = Pyro4.naming.resolve(daemonUri)
+        _ = Pyro4.naming.resolve(daemonUri)
+        uri = Pyro4.naming.resolve(daemonUri)
+        pyronameUri = "PYRONAME:" + Pyro4.constants.NAMESERVER_NAME + "@" + uri.location
+        _ = Pyro4.naming.resolve(pyronameUri)
+        _ = Pyro4.naming.resolve(pyronameUri)
+        _ = Pyro4.naming.resolve(pyronameUri)
+        _ = Pyro4.naming.resolve(pyronameUri)
+        _ = Pyro4.naming.resolve(pyronameUri)
+        _ = Pyro4.naming.resolve(pyronameUri)
+
     def testResolve(self):
-        resolved1=Pyro4.naming.resolve(Pyro4.core.URI("PYRO:12345@host.com:4444"))
-        resolved2=Pyro4.naming.resolve("PYRO:12345@host.com:4444")
+        resolved1 = Pyro4.naming.resolve(Pyro4.core.URI("PYRO:12345@host.com:4444"))
+        resolved2 = Pyro4.naming.resolve("PYRO:12345@host.com:4444")
         self.assertTrue(type(resolved1) is Pyro4.core.URI)
         self.assertEqual(resolved1, resolved2)
         self.assertEqual("PYRO:12345@host.com:4444", str(resolved1))
-        
-        ns=Pyro4.naming.locateNS(self.nsUri.host, self.nsUri.port)
-        host="["+self.nsUri.host+"]" if ":" in self.nsUri.host else self.nsUri.host
-        uri=Pyro4.naming.resolve("PYRONAME:"+Pyro4.constants.NAMESERVER_NAME+"@"+host+":"+str(self.nsUri.port))
-        self.assertEqual("PYRO",uri.protocol)
-        self.assertEqual(self.nsUri.host,uri.host)
-        self.assertEqual(Pyro4.constants.NAMESERVER_NAME,uri.object)
+
+        ns = Pyro4.naming.locateNS(self.nsUri.host, self.nsUri.port)
+        host = "[" + self.nsUri.host + "]" if ":" in self.nsUri.host else self.nsUri.host
+        uri = Pyro4.naming.resolve("PYRONAME:" + Pyro4.constants.NAMESERVER_NAME + "@" + host + ":" + str(self.nsUri.port))
+        self.assertEqual("PYRO", uri.protocol)
+        self.assertEqual(self.nsUri.host, uri.host)
+        self.assertEqual(Pyro4.constants.NAMESERVER_NAME, uri.object)
         self.assertEqual(uri, ns._pyroUri)
         ns._pyroRelease()
 
         # broadcast lookup
         self.assertRaises(NamingError, Pyro4.naming.resolve, "PYRONAME:unknown_object")
-        uri=Pyro4.naming.resolve("PYRONAME:"+Pyro4.constants.NAMESERVER_NAME)
-        self.assertEqual(Pyro4.core.URI,type(uri))
-        self.assertEqual("PYRO",uri.protocol)
+        uri = Pyro4.naming.resolve("PYRONAME:" + Pyro4.constants.NAMESERVER_NAME)
+        self.assertEqual(Pyro4.core.URI, type(uri))
+        self.assertEqual("PYRO", uri.protocol)
 
         # test some errors
-        self.assertRaises(NamingError, Pyro4.naming.resolve, "PYRONAME:unknown_object@"+host)
-        self.assertRaises(TypeError, Pyro4.naming.resolve, 999)  #wrong arg type
-
+        self.assertRaises(NamingError, Pyro4.naming.resolve, "PYRONAME:unknown_object@" + host)
+        self.assertRaises(TypeError, Pyro4.naming.resolve, 999)  # wrong arg type
 
     def testRefuseDottedNames(self):
         with Pyro4.naming.locateNS(self.nsUri.host, self.nsUri.port) as ns:
@@ -192,38 +197,39 @@ class NameServerTests(unittest.TestCase):
 
 class NameServerTests0000(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.POLLTIMEOUT=0.1
-        Pyro4.config.HMAC_KEY=b"testsuite"
+        Pyro4.config.POLLTIMEOUT = 0.1
+        Pyro4.config.HMAC_KEY = b"testsuite"
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host="", port=0, bcport=0)
         host_check = self.nsUri.host
-        if host_check == "0:0:0:0:0:0:0:0":   # this happens on jython
+        if host_check == "0:0:0:0:0:0:0:0":  # this happens on jython
             host_check = "0.0.0.0"
         self.assertEqual("0.0.0.0", host_check, "for hostname \"\" the resulting ip must be 0.0.0.0 (or ipv6 equivalent)")
-        self.assertTrue(self.bcserver is not None,"expected a BC server to be running")
+        self.assertTrue(self.bcserver is not None, "expected a BC server to be running")
         self.bcserver.runInThread()
-        self.old_bcPort=Pyro4.config.NS_BCPORT
-        self.old_nsPort=Pyro4.config.NS_PORT
-        self.old_nsHost=Pyro4.config.NS_HOST
-        Pyro4.config.NS_PORT=self.nsUri.port
-        Pyro4.config.NS_HOST=self.nsUri.host
-        Pyro4.config.NS_BCPORT=self.bcserver.getPort()
+        self.old_bcPort = Pyro4.config.NS_BCPORT
+        self.old_nsPort = Pyro4.config.NS_PORT
+        self.old_nsHost = Pyro4.config.NS_HOST
+        Pyro4.config.NS_PORT = self.nsUri.port
+        Pyro4.config.NS_HOST = self.nsUri.host
+        Pyro4.config.NS_BCPORT = self.bcserver.getPort()
+
     def tearDown(self):
         time.sleep(0.01)
         self.nameserver.shutdown()
         self.bcserver.close()
-        Pyro4.config.NS_HOST=self.old_nsHost
-        Pyro4.config.NS_PORT=self.old_nsPort
-        Pyro4.config.NS_BCPORT=self.old_bcPort
-        Pyro4.config.HMAC_KEY=None
+        Pyro4.config.NS_HOST = self.old_nsHost
+        Pyro4.config.NS_PORT = self.old_nsPort
+        Pyro4.config.NS_BCPORT = self.old_bcPort
+        Pyro4.config.HMAC_KEY = None
 
-    @unittest.skipUnless(os.name!="java", "jython does strange things with bc server on 0.0.0.0 (it hangs)")
+    @unittest.skipUnless(os.name != "java", "jython does strange things with bc server on 0.0.0.0 (it hangs)")
     def testBCLookup0000(self):
-        ns=Pyro4.naming.locateNS()  # broadcast lookup
+        ns = Pyro4.naming.locateNS()  # broadcast lookup
         self.assertTrue(isinstance(ns, Pyro4.core.Proxy))
         self.assertNotEqual("0.0.0.0", ns._pyroUri.host, "returned location must not be 0.0.0.0 when running on 0.0.0.0")
         ns._pyroRelease()
 
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
+    # import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

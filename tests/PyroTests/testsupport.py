@@ -11,40 +11,45 @@ import threading
 import pickle
 
 
-__all__=["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO", "next",
-         "AtomicCounter", "NonserializableError", "MyThing2", "unittest" ]
+__all__ = ["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO", "next",
+           "AtomicCounter", "NonserializableError", "MyThing2", "unittest"]
 
-if sys.version_info<(3,0):
+if sys.version_info < (3, 0):
+    # noinspection PyUnresolvedReferences
     from StringIO import StringIO
+
     def tobytes(string, encoding=None):
         return string
+
     def tostring(bytes):
         return bytes
-    unicode=unicode
-    unichr=unichr
-    basestring=basestring
+
+    unicode = unicode
+    unichr = unichr
+    basestring = basestring
 else:
     from io import StringIO
+
     def tobytes(string, encoding="iso-8859-1"):
-        return bytes(string,encoding)
+        return bytes(string, encoding)
+
     def tostring(bytes, encoding="utf-8"):
         return str(bytes, encoding)
-    unicode=str
-    unichr=chr
-    basestring=str
 
+    unicode = str
+    unichr = chr
+    basestring = str
 
-if sys.version_info<(2,6):
+if sys.version_info < (2, 6):
     def next(iterable):
         return iterable.next()
 else:
-    next=next
+    next = next
 
-
-if (sys.version_info >= (2, 7) and sys.version_info < (3, 0)) or \
-        (sys.version_info >= (3, 1)):
+if ((2, 7) <= sys.version_info < (3, 0)) or (sys.version_info >= (3, 1)):
     import unittest
 else:
+    # noinspection PyUnresolvedReferences
     import unittest2 as unittest
 
 
@@ -52,11 +57,14 @@ class AtomicCounter(object):
     def __init__(self):
         self.lock = threading.Lock()
         self.count = 0
+
     def reset(self):
         self.count = 0
+
     def incr(self):
         with self.lock:
             self.count += 1
+
     def value(self):
         with self.lock:
             return self.count
@@ -70,5 +78,3 @@ class NonserializableError(Exception):
 class MyThing2(object):
     def __init__(self, name="?"):
         self.name = name
-
-

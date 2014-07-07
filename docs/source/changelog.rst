@@ -6,6 +6,7 @@ Change Log
 
 - ...@todo: @oneway, metadata,...
 - requires serpent 1.6 or newer (because of some changes regarding to set literals)
+- pep8'ified the unit test source code
 
 
 **Pyro 4.26**

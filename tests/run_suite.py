@@ -12,10 +12,9 @@ import nose
 
 dirname = os.path.dirname(__file__)
 if dirname:
-    print("chdir to "+dirname)
+    print("chdir to " + dirname)
     os.chdir(dirname)
 
-sys.path.insert(0,"../src")    # add Pyro source directory
+sys.path.insert(0, "../src")  # add Pyro source directory
 
-nose.main(argv=["noserunner", "--cover-erase","--with-coverage","--cover-package=Pyro4", "--with-xunit"])
-
+nose.main(argv=["noserunner", "--cover-erase", "--with-coverage", "--cover-package=Pyro4", "--with-xunit"])
