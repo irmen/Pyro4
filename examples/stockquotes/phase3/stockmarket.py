@@ -2,7 +2,9 @@ from __future__ import print_function
 import random
 import threading
 import time
+
 import Pyro4
+
 
 Pyro4.config.SERIALIZER = 'pickle'
 Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
@@ -25,7 +27,7 @@ class StockMarket(object):
         for aggregator in self.aggregators:
             aggregator.quotes(self.name, quotes)
 
-    def listener(self,aggregator):
+    def listener(self, aggregator):
         print("market {0} adding new aggregator".format(self.name))
         self.aggregators.append(aggregator)
 
@@ -37,6 +39,7 @@ class StockMarket(object):
             while True:
                 time.sleep(random.random())
                 self.generate()
+
         thread = threading.Thread(target=generate_symbols)
         thread.setDaemon(True)
         thread.start()
@@ -57,6 +60,7 @@ def main():
     newyork.run()
     print("Stockmarkets running.")
     daemon.requestLoop()
+
 
 if __name__ == "__main__":
     main()

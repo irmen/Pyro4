@@ -1,16 +1,18 @@
 from __future__ import print_function
 import sys
 import time
+
 import Pyro4
+
 
 print("First make sure one of the gui servers is running.")
 print("Enter the object uri that was printed:")
-if sys.version_info<(3,0):
-    uri=raw_input()
+if sys.version_info < (3, 0):
+    uri = raw_input()
 else:
-    uri=input()
-uri=uri.strip()
-guiserver=Pyro4.Proxy(uri)
+    uri = input()
+uri = uri.strip()
+guiserver = Pyro4.Proxy(uri)
 
 guiserver.message("Hello there!")
 time.sleep(0.5)

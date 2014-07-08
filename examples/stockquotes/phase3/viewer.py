@@ -1,11 +1,13 @@
 from __future__ import print_function
 import sys
+
 import Pyro4
+
 
 Pyro4.config.SERIALIZER = 'pickle'
 Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
 
-if sys.version_info < (3,0):
+if sys.version_info < (3, 0):
     input = raw_input
 
 
@@ -25,6 +27,7 @@ def main():
     aggregator.view(viewer, symbols)
     print("Viewer listening on symbols", symbols)
     daemon.requestLoop()
+
 
 if __name__ == "__main__":
     main()

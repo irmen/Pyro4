@@ -1,8 +1,10 @@
 from __future__ import print_function
 import sys
+import warnings
+
 import Pyro4
 import Pyro4.message
-import warnings
+
 
 warnings.filterwarnings("ignore")
 
@@ -36,7 +38,7 @@ class AutoReconnectingProxy(Pyro4.core.Proxy):
                 self._pyroConnection.send(ping.to_bytes())
                 Pyro4.message.Message.recv(self._pyroConnection, [Pyro4.message.MSG_PING])
                 print("  <proxy: ping reply (still connected)>")
-            except Pyro4.errors.ConnectionClosedError:     # or possibly even ProtocolError
+            except Pyro4.errors.ConnectionClosedError:  # or possibly even ProtocolError
                 print("  <proxy: Connection lost. REBINDING...>")
                 self._pyroReconnect()
                 print("  <proxy: Connection restored, continue with actual method call...>")
@@ -46,7 +48,8 @@ class AutoReconnectingProxy(Pyro4.core.Proxy):
 with AutoReconnectingProxy(uri) as obj:
     result = obj.echo("12345")
     print("result =", result)
-    print("\nClient proxy connection is still open. Disable the network now (or wait until the connection timeout on the server expires) and see what the server does.")
+    print(
+        "\nClient proxy connection is still open. Disable the network now (or wait until the connection timeout on the server expires) and see what the server does.")
     print("Once you see on the server that it got a timeout or a disconnect, enable the network again.")
     input("Press enter to continue:")
     print("\nDoing a new call on the same proxy:")

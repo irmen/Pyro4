@@ -1,5 +1,6 @@
 from __future__ import print_function
 import time
+
 import Pyro4
 
 
@@ -10,7 +11,8 @@ class TimeoutServer(object):
         print("done.")
         return "slept %d seconds" % amount
 
-Pyro4.config.COMMTIMEOUT = 0        # the server won't be using timeouts
+
+Pyro4.config.COMMTIMEOUT = 0  # the server won't be using timeouts
 
 ns = Pyro4.naming.locateNS()
 daemon = Pyro4.core.Daemon()

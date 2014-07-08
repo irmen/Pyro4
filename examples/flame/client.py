@@ -1,9 +1,11 @@
 from __future__ import print_function
 import sys
+
 import Pyro4.utils.flame
 
-if sys.version_info<(3,0):
-    input=raw_input
+
+if sys.version_info < (3, 0):
+    input = raw_input
 
 Pyro4.config.SERIALIZER = "pickle"  # flame requires pickle serializer
 
@@ -41,6 +43,3 @@ with flame.console() as console:
     print("\nStarting a remote console. Enter some commands to execute remotely. End the console as usual.")
     console.interact()
     print("Console session ended.")
-
-
-

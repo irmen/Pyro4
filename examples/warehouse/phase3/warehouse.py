@@ -1,6 +1,5 @@
 from __future__ import print_function
 import Pyro4
-import person
 
 
 class Warehouse(object):
@@ -22,10 +21,11 @@ class Warehouse(object):
 def main():
     warehouse = Warehouse()
     Pyro4.Daemon.serveSimple(
-            {
-                warehouse: "example.warehouse"
-            },
-            ns = True)
+        {
+            warehouse: "example.warehouse"
+        },
+        ns=True)
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     main()

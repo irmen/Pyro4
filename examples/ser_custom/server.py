@@ -6,8 +6,8 @@ import mycustomclasses
 # use serpent
 Pyro4.config.SERIALIZER = "serpent"
 
-# register the special serialization hooks
 
+# register the special serialization hooks
 def thingy_class_to_dict(obj):
     print("{serializer hook, converting to dict: %s}" % obj)
     return {
@@ -15,9 +15,11 @@ def thingy_class_to_dict(obj):
         "number-attribute": obj.number
     }
 
+
 def thingy_dict_to_class(classname, d):
     print("{deserializer hook, converting to class: %s}" % d)
     return mycustomclasses.Thingy(d["number-attribute"])
+
 
 def otherthingy_dict_to_class(classname, d):
     print("{deserializer hook, converting to class: %s}" % d)
@@ -34,7 +36,6 @@ SerializerBase.register_dict_to_class("mycustomclasses.OtherThingy", otherthingy
 # regular Pyro server stuff
 
 class Server(object):
-
     def method(self, arg):
         print("\nmethod called, arg=", arg)
         response = mycustomclasses.Thingy(999)

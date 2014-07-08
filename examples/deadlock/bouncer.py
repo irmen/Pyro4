@@ -1,6 +1,7 @@
 from __future__ import print_function, with_statement
 import Pyro4.threadutil
 
+
 # a message bouncer. Passes messages back to the callback
 # object, until a certain limit is reached.
 

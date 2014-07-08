@@ -1,8 +1,10 @@
 from __future__ import print_function
 import sys
+
 import Pyro4
 from Pyro4.util import SerializerBase
 import mycustomclasses
+
 
 # use serpent
 Pyro4.config.SERIALIZER = "serpent"
@@ -17,9 +19,11 @@ def thingy_class_to_dict(obj):
         "number-attribute": obj.number
     }
 
+
 def thingy_dict_to_class(classname, d):
     print("{deserializer hook, converting to class: %s}" % d)
     return mycustomclasses.Thingy(d["number-attribute"])
+
 
 def otherthingy_dict_to_class(classname, d):
     print("{deserializer hook, converting to class: %s}" % d)
@@ -33,9 +37,7 @@ SerializerBase.register_dict_to_class("waheeee-custom-thingy", thingy_dict_to_cl
 SerializerBase.register_dict_to_class("mycustomclasses.OtherThingy", otherthingy_dict_to_class)
 
 
-
 # regular pyro stuff
-
 if sys.version_info < (3, 0):
     input = raw_input
 

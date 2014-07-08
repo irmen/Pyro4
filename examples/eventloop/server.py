@@ -2,26 +2,29 @@ from __future__ import print_function
 import socket
 import select
 import sys
+
 import Pyro4.core
 import Pyro4.naming
 import Pyro4.socketutil
 
-if sys.version_info<(3,0):
-    input=raw_input
+
+if sys.version_info < (3, 0):
+    input = raw_input
 
 print("Make sure that you don't have a name server running already.")
-servertype=input("Servertype thread/multiplex (t/m)?")
-if servertype=='t':
-    Pyro4.config.SERVERTYPE="thread"
+servertype = input("Servertype thread/multiplex (t/m)?")
+if servertype == 't':
+    Pyro4.config.SERVERTYPE = "thread"
 else:
-    Pyro4.config.SERVERTYPE="multiplex"
+    Pyro4.config.SERVERTYPE = "multiplex"
 
-hostname=socket.gethostname()
+hostname = socket.gethostname()
 my_ip = Pyro4.socketutil.getIpAddress(None, workaround127=True)
+
 
 class EmbeddedServer(object):
     def multiply(self, x, y):
-        return x*y
+        return x * y
 
 
 print("initializing services... servertype=%s" % Pyro4.config.SERVERTYPE)
@@ -35,16 +38,16 @@ print("ns daemon sockets=%s" % nameserverDaemon.sockets)
 print("bc server socket=%s (fileno %d)" % (broadcastServer.sock, broadcastServer.fileno()))
 
 # create a Pyro daemon
-pyrodaemon=Pyro4.core.Daemon(host=hostname)
+pyrodaemon = Pyro4.core.Daemon(host=hostname)
 print("daemon location string=%s" % pyrodaemon.locationStr)
 print("daemon sockets=%s" % pyrodaemon.sockets)
 
 # register a server object with the daemon
-serveruri=pyrodaemon.register(EmbeddedServer())
+serveruri = pyrodaemon.register(EmbeddedServer())
 print("server uri=%s" % serveruri)
 
 # register it with the embedded nameserver directly
-nameserverDaemon.nameserver.register("example.embedded.server",serveruri)
+nameserverDaemon.nameserver.register("example.embedded.server", serveruri)
 
 print("")
 
@@ -55,12 +58,12 @@ while True:
     # (a set provides fast lookup compared to a list)
     nameserverSockets = set(nameserverDaemon.sockets)
     pyroSockets = set(pyrodaemon.sockets)
-    rs=[broadcastServer]  # only the broadcast server is directly usable as a select() object
+    rs = [broadcastServer]  # only the broadcast server is directly usable as a select() object
     rs.extend(nameserverSockets)
     rs.extend(pyroSockets)
-    rs,_,_ = select.select(rs,[],[],3)
-    eventsForNameserver=[]
-    eventsForDaemon=[]
+    rs, _, _ = select.select(rs, [], [], 3)
+    eventsForNameserver = []
+    eventsForDaemon = []
     for s in rs:
         if s is broadcastServer:
             print("Broadcast server received a request")
@@ -75,7 +78,6 @@ while True:
     if eventsForDaemon:
         print("Daemon received a request")
         pyrodaemon.events(eventsForDaemon)
-
 
 nameserverDaemon.close()
 broadcastServer.close()

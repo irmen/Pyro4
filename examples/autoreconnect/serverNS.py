@@ -1,23 +1,27 @@
 from __future__ import print_function
 import time
+
 import Pyro4
+
 
 print("Autoreconnect using Name Server.")
 
+
 class TestClass(object):
-    def method(self,arg):
+    def method(self, arg):
         print("Method called with %s" % arg)
         print("You can now try to stop this server with ctrl-C/ctrl-Break")
         time.sleep(1)
 
-obj=TestClass()
+
+obj = TestClass()
 
 # if we reconnect the object, it has to have the same objectId as before.
 # for this example, we rely on the Name Server registration to get our old id back.
 
-ns=Pyro4.naming.locateNS()
+ns = Pyro4.naming.locateNS()
 try:
-    existing=ns.lookup("example.autoreconnect")
+    existing = ns.lookup("example.autoreconnect")
     print("Object still exists in Name Server with id: %s" % existing.object)
     print("Previous daemon socket port: %d" % existing.port)
     # start the daemon on the previous port

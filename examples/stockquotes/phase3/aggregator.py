@@ -43,5 +43,6 @@ def main():
     print("Aggregator running. Symbols:", aggregator.available_symbols())
     daemon.requestLoop()
 
+
 if __name__ == "__main__":
     main()

@@ -1,5 +1,6 @@
 import random
 
+
 class StockMarket(object):
     def __init__(self, marketname, symbols):
         self.name = marketname
@@ -16,7 +17,7 @@ class StockMarket(object):
         for aggregator in self.aggregators:
             aggregator.quotes(self.name, quotes)
 
-    def listener(self,aggregator):
+    def listener(self, aggregator):
         self.aggregators.append(aggregator)
 
     def symbols(self):

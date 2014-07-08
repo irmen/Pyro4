@@ -1,8 +1,10 @@
 from __future__ import print_function
 import time
+
 from stockmarket import StockMarket
 from aggregator import Aggregator
 from viewer import Viewer
+
 
 def main():
     nasdaq = StockMarket("NASDAQ", ["AAPL", "CSCO", "MSFT", "GOOG"])
@@ -23,6 +25,7 @@ def main():
         nasdaq.generate()
         newyork.generate()
         time.sleep(0.5)
+
 
 if __name__ == "__main__":
     main()

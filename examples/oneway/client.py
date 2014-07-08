@@ -1,6 +1,8 @@
 from __future__ import print_function
 import time
+
 import Pyro4
+
 
 serv = Pyro4.core.Proxy("PYRONAME:example.oneway")
 serv._pyroOneway.add("start")

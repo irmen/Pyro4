@@ -1,5 +1,7 @@
 from __future__ import print_function
-import time, sys
+import time
+import sys
+
 import Pyro4
 import Pyro4.errors
 
@@ -8,7 +10,7 @@ import Pyro4.errors
 # So we use wider margins for that, to check if the delays are ok.
 
 def approxEqual(x, y):
-    return abs(x-y) < 0.2
+    return abs(x - y) < 0.2
 
 # disable timeout globally
 Pyro4.config.COMMTIMEOUT = 0
@@ -19,7 +21,7 @@ print("No timeout is configured. Calling delay with 2 seconds.")
 start = time.time()
 result = obj.delay(2)
 assert result == "slept 2 seconds"
-duration = time.time()-start
+duration = time.time() - start
 if sys.platform != "cli":
     assert approxEqual(duration, 2), "expected 2 seconds duration"
 else:
@@ -34,24 +36,24 @@ try:
     print("!?should have raised TimeoutError!?")
 except Pyro4.errors.TimeoutError:
     print("TimeoutError! As expected!")
-    duration = time.time()-start
+    duration = time.time() - start
     if sys.platform != "cli":
         assert approxEqual(duration, 1), "expected 1 seconds duration"
     else:
         assert 0.9 < duration < 1.9, "expected about 1 second duration"
 
 # set timeout globally
-Pyro4.config.COMMTIMEOUT=1
+Pyro4.config.COMMTIMEOUT = 1
 
-obj=Pyro4.core.Proxy("PYRONAME:example.timeout")
+obj = Pyro4.core.Proxy("PYRONAME:example.timeout")
 print("COMMTIMEOUT is set globally. Calling delay with 2 seconds.")
-start=time.time()
+start = time.time()
 try:
-    result=obj.delay(2)
+    result = obj.delay(2)
     print("!?should have raised TimeoutError!?")
 except Pyro4.errors.TimeoutError:
     print("TimeoutError! As expected!")
-    duration = time.time()-start
+    duration = time.time() - start
     if sys.platform != "cli":
         assert approxEqual(duration, 1), "expected 1 seconds duration"
     else:
@@ -63,7 +65,7 @@ print("No timeout is configured. Calling delay with 3 seconds.")
 start = time.time()
 result = obj.delay(3)
 assert result == "slept 3 seconds"
-duration = time.time()-start
+duration = time.time() - start
 if sys.platform != "cli":
     assert approxEqual(duration, 3), "expected 3 seconds duration"
 else:
@@ -79,9 +81,9 @@ try:
     print("!?should have raised TimeoutError!?")
 except Pyro4.errors.TimeoutError:
     print("TimeoutError! As expected!")
-    duration = time.time()-start
+    duration = time.time() - start
     if sys.platform != "cli":
-        assert approxEqual(duration,1), "expected 1 seconds duration"
+        assert approxEqual(duration, 1), "expected 1 seconds duration"
     else:
         assert 0.9 < duration < 1.9, "expected about 1 second duration"
 

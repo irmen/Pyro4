@@ -1,16 +1,20 @@
 from __future__ import print_function
 import time
+
 import Pyro4
+
 
 print("Autoreconnect using PYRO uri.")
 
+
 class TestClass(object):
-    def method(self,arg):
+    def method(self, arg):
         print("Method called with %s" % arg)
         print("You can now try to stop this server with ctrl-C/ctrl-Break")
         time.sleep(1)
 
-obj=TestClass()
+
+obj = TestClass()
 
 # We are responsible to (re)connect objects with the same object Id,
 # so that the client can reuse its PYRO-uri directly to reconnect.
@@ -22,7 +26,7 @@ obj=TestClass()
 # By default Pyro will select a random port so we specify a fixed port.
 
 daemon = Pyro4.core.Daemon(port=7777)
-uri = daemon.register(obj,objectId="example.autoreconnect_fixed_objectid")
+uri = daemon.register(obj, objectId="example.autoreconnect_fixed_objectid")
 
 print("Server started, uri=%s" % uri)
 daemon.requestLoop()

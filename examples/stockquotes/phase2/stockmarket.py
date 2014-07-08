@@ -3,6 +3,7 @@ import random
 import threading
 import time
 
+
 class StockMarket(object):
     def __init__(self, marketname, symbols):
         self.name = marketname
@@ -20,7 +21,7 @@ class StockMarket(object):
         for aggregator in self.aggregators:
             aggregator.quotes(self.name, quotes)
 
-    def listener(self,aggregator):
+    def listener(self, aggregator):
         print("market {0} adding new aggregator".format(self.name))
         self.aggregators.append(aggregator)
 
@@ -32,6 +33,7 @@ class StockMarket(object):
             while True:
                 time.sleep(random.random())
                 self.generate()
+
         thread = threading.Thread(target=generate_symbols)
         thread.setDaemon(True)
         thread.start()

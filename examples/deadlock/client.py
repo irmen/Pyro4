@@ -6,8 +6,10 @@ import bouncer
 
 abort = False
 
+
 def PyroLoop(daemon):
     daemon.requestLoop()
+
 
 def main():
     global abort
@@ -15,7 +17,7 @@ def main():
     server = Pyro4.Proxy("PYRONAME:example.deadlock")
 
     bounceObj = bouncer.Bouncer("Client")
-    daemon.register(bounceObj) # callback objece
+    daemon.register(bounceObj)  # callback objece
 
     # register callback obj on theserver
     server.register(bounceObj)
@@ -38,7 +40,8 @@ def main():
 
     print("Calling server...")
     result = server.process(["hello"])
-    print("Result=", result)   # <--- you will never see this, it will deadlock in the previous call
+    print("Result=", result)  # <--- you will never see this, it will deadlock in the previous call
+
 
 if __name__ == '__main__':
     main()
