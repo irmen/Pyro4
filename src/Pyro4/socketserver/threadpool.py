@@ -8,11 +8,11 @@ from __future__ import with_statement
 import logging
 import Pyro4.threadutil
 import Pyro4.util
+
 try:
     import queue
 except ImportError:
     import Queue as queue
-
 
 __all__ = ["PoolError", "Pool"]
 
@@ -28,6 +28,7 @@ class Worker(Pyro4.threadutil.Thread):
     Worker thread that picks jobs from the job queue and executes them.
     If it encounters the sentinel None, it will stop running.
     """
+
     def __init__(self, jobs):
         super(Worker, self).__init__()
         self.daemon = True
@@ -51,6 +52,7 @@ class Pool(object):
     A job queue that is serviced by a pool of worker threads.
     The size of the pool is configurable but stays fixed.
     """
+
     def __init__(self):
         self.pool = []
         self.jobs = queue.Queue()
@@ -77,7 +79,7 @@ class Pool(object):
 
     def __repr__(self):
         return "<%s.%s at 0x%x, %d workers, %d jobs>" % \
-            (self.__class__.__module__, self.__class__.__name__, id(self), self.num_workers(), self.num_jobs())
+               (self.__class__.__module__, self.__class__.__name__, id(self), self.num_workers(), self.num_jobs())
 
     def num_jobs(self):
         return self.jobs.qsize()
@@ -96,4 +98,4 @@ class Pool(object):
     def jobs_generator(self):
         """generator that yields jobs from the queue"""
         while not self.closed:
-            yield self.jobs.get()   # this is a thread-safe operation (on queue) so we don't need our own locking
+            yield self.jobs.get()  # this is a thread-safe operation (on queue) so we don't need our own locking

@@ -7,13 +7,16 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import socket, logging, sys, os
+import socket
+import logging
+import sys
+import os
 import struct
 import Pyro4.util
 from Pyro4 import socketutil, errors
 from .threadpool import Pool
 
-log=logging.getLogger("Pyro4.threadpoolserver")
+log = logging.getLogger("Pyro4.threadpoolserver")
 
 
 class ClientConnectionJob(object):
@@ -21,6 +24,7 @@ class ClientConnectionJob(object):
     Takes care of a single client connection and all requests
     that may arrive during its life span.
     """
+
     def __init__(self, clientSocket, clientAddr, daemon):
         self.csock = socketutil.SocketConnection(clientSocket)
         self.caddr = clientAddr
@@ -39,7 +43,7 @@ class ClientConnectionJob(object):
                     except errors.SecurityError:
                         log.debug("security error on client %s", self.caddr)
                         break
-                    # other errors simply crash this loop and abort the job (and close the client connection)
+                        # other errors simply crash this loop and abort the job (and close the client connection)
             finally:
                 self.csock.close()
 
@@ -73,25 +77,29 @@ class ClientConnectionJob(object):
 
 class SocketServer_Threadpool(object):
     """transport server for socket connections, worker thread pool version."""
+
+    def __init__(self):
+        self.daemon = self.sock = self._socketaddr = self.locationStr = self.pool = None
+
     def init(self, daemon, host, port, unixsocket=None):
         log.info("starting thread pool socketserver")
         self.daemon = daemon
-        self.sock=None
-        bind_location=unixsocket if unixsocket else (host, port)
-        self.sock=socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
-        self._socketaddr=self.sock.getsockname()
+        self.sock = None
+        bind_location = unixsocket if unixsocket else (host, port)
+        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
+        self._socketaddr = self.sock.getsockname()
         if not unixsocket and self._socketaddr[0].startswith("127."):
-            if host is None or host.lower()!="localhost" and not host.startswith("127."):
+            if host is None or host.lower() != "localhost" and not host.startswith("127."):
                 log.warning("weird DNS setup: %s resolves to localhost (127.x.x.x)", host)
         if unixsocket:
-            self.locationStr="./u:"+unixsocket
+            self.locationStr = "./u:" + unixsocket
         else:
-            host=host or self._socketaddr[0]
-            port=port or self._socketaddr[1]
+            host = host or self._socketaddr[0]
+            port = port or self._socketaddr[1]
             if ":" in host:  # ipv6
-                self.locationStr="[%s]:%d" % (host, port)
+                self.locationStr = "[%s]:%d" % (host, port)
             else:
-                self.locationStr="%s:%d" % (host, port)
+                self.locationStr = "%s:%d" % (host, port)
         self.pool = Pool()
 
     def __del__(self):
@@ -102,7 +110,7 @@ class SocketServer_Threadpool(object):
 
     def __repr__(self):
         return "<%s on %s, %d workers, %d jobs>" % (self.__class__.__name__, self.locationStr,
-            self.pool.num_workers(), self.pool.num_jobs())
+                                                    self.pool.num_workers(), self.pool.num_jobs())
 
     def loop(self, loopCondition=lambda: True):
         log.debug("threadpool server requestloop")
@@ -110,8 +118,8 @@ class SocketServer_Threadpool(object):
             try:
                 self.events([self.sock])
             except socket.error:
-                x=sys.exc_info()[1]
-                err=getattr(x, "errno", x.args[0])
+                x = sys.exc_info()[1]
+                err = getattr(x, "errno", x.args[0])
                 if not loopCondition():
                     # swallow the socket error if loop terminates anyway
                     # this can occur if we are asked to shutdown, socket can be invalid then
@@ -131,7 +139,7 @@ class SocketServer_Threadpool(object):
         # all other (client) sockets are owned by their individual threads.
         assert self.sock in eventsockets
         try:
-            csock, caddr=self.sock.accept()
+            csock, caddr = self.sock.accept()
             log.debug("connected %s", caddr)
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
@@ -142,9 +150,9 @@ class SocketServer_Threadpool(object):
     def close(self):
         log.debug("closing threadpool server")
         if self.sock:
-            sockname=None
+            sockname = None
             try:
-                sockname=self.sock.getsockname()
+                sockname = self.sock.getsockname()
             except socket.error:
                 pass
             try:
@@ -155,7 +163,7 @@ class SocketServer_Threadpool(object):
                         os.remove(sockname)
             except Exception:
                 pass
-            self.sock=None
+            self.sock = None
         self.pool.close()
 
     @property
@@ -170,7 +178,7 @@ class SocketServer_Threadpool(object):
 def interruptSocket(address):
     """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
     try:
-        sock=socketutil.createSocket(connect=address, keepalive=False, timeout=None)
+        sock = socketutil.createSocket(connect=address, keepalive=False, timeout=None)
         socketutil.triggerSocket(sock)
         try:
             sock.shutdown(socket.SHUT_RDWR)

@@ -4,18 +4,21 @@ Miscellaneous utilities.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-import sys, zlib, logging
-import traceback, linecache
+import sys
+import zlib
+import logging
+import linecache
+import traceback
 import inspect
+import Pyro4.errors
+import Pyro4.message
+
 try:
     import copyreg
 except ImportError:
     import copy_reg as copyreg
-import Pyro4
-import Pyro4.errors
-import Pyro4.message
 
-log=logging.getLogger("Pyro4.util")
+log = logging.getLogger("Pyro4.util")
 
 
 def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
@@ -23,29 +26,31 @@ def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
     Pyro exception. Any remote Pyro exception information is included.
     Traceback information is automatically obtained via ``sys.exc_info()`` if
     you do not supply the objects yourself."""
+
     def formatRemoteTraceback(remote_tb_lines):
-        result=[" +--- This exception occured remotely (Pyro) - Remote traceback:"]
+        result = [" +--- This exception occured remotely (Pyro) - Remote traceback:"]
         for line in remote_tb_lines:
             if line.endswith("\n"):
                 line = line[:-1]
             lines = line.split("\n")
-            for line in lines:
+            for line2 in lines:
                 result.append("\n | ")
-                result.append(line)
+                result.append(line2)
         result.append("\n +--- End of remote traceback\n")
         return result
+
     try:
         if ex_type is not None and ex_value is None and ex_tb is None:
             # possible old (3.x) call syntax where caller is only providing exception object
             if type(ex_type) is not type:
                 raise TypeError("invalid argument: ex_type should be an exception type, or just supply no arguments at all")
         if ex_type is None and ex_tb is None:
-            ex_type, ex_value, ex_tb=sys.exc_info()
+            ex_type, ex_value, ex_tb = sys.exc_info()
 
-        remote_tb=getattr(ex_value, "_pyroTraceback", None)
-        local_tb=formatTraceback(ex_type, ex_value, ex_tb, Pyro4.config.DETAILED_TRACEBACK)
+        remote_tb = getattr(ex_value, "_pyroTraceback", None)
+        local_tb = formatTraceback(ex_type, ex_value, ex_tb, Pyro4.config.DETAILED_TRACEBACK)
         if remote_tb:
-            remote_tb=formatRemoteTraceback(remote_tb)
+            remote_tb = formatRemoteTraceback(remote_tb)
             return local_tb + remote_tb
         else:
             # hmm. no remote tb info, return just the local tb.
@@ -65,8 +70,8 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
         if type(ex_type) is not type:
             raise TypeError("invalid argument: ex_type should be an exception type, or just supply no arguments at all")
     if ex_type is None and ex_tb is None:
-        ex_type, ex_value, ex_tb=sys.exc_info()
-    if detailed and sys.platform!="cli":    # detailed tracebacks don't work in ironpython (most of the local vars are omitted)
+        ex_type, ex_value, ex_tb = sys.exc_info()
+    if detailed and sys.platform != "cli":  # detailed tracebacks don't work in ironpython (most of the local vars are omitted)
         def makeStrValue(value):
             try:
                 return repr(value)
@@ -75,46 +80,47 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
                     return str(value)
                 except:
                     return "<ERROR>"
+
         try:
-            result=["-"*52+"\n"]
+            result = ["-" * 52 + "\n"]
             result.append(" EXCEPTION %s: %s\n" % (ex_type, ex_value))
             result.append(" Extended stacktrace follows (most recent call last)\n")
-            skipLocals=True  # don't print the locals of the very first stackframe
+            skipLocals = True  # don't print the locals of the very first stack frame
             while ex_tb:
-                frame=ex_tb.tb_frame
-                sourceFileName=frame.f_code.co_filename
+                frame = ex_tb.tb_frame
+                sourceFileName = frame.f_code.co_filename
                 if "self" in frame.f_locals:
-                    location="%s.%s" % (frame.f_locals["self"].__class__.__name__, frame.f_code.co_name)
+                    location = "%s.%s" % (frame.f_locals["self"].__class__.__name__, frame.f_code.co_name)
                 else:
-                    location=frame.f_code.co_name
-                result.append("-"*52+"\n")
+                    location = frame.f_code.co_name
+                result.append("-" * 52 + "\n")
                 result.append("File \"%s\", line %d, in %s\n" % (sourceFileName, ex_tb.tb_lineno, location))
                 result.append("Source code:\n")
-                result.append("    "+linecache.getline(sourceFileName, ex_tb.tb_lineno).strip()+"\n")
+                result.append("    " + linecache.getline(sourceFileName, ex_tb.tb_lineno).strip() + "\n")
                 if not skipLocals:
-                    names=set()
+                    names = set()
                     names.update(getattr(frame.f_code, "co_varnames", ()))
                     names.update(getattr(frame.f_code, "co_names", ()))
                     names.update(getattr(frame.f_code, "co_cellvars", ()))
                     names.update(getattr(frame.f_code, "co_freevars", ()))
                     result.append("Local values:\n")
-                    for name in sorted(names):
-                        if name in frame.f_locals:
-                            value=frame.f_locals[name]
-                            result.append("    %s = %s\n" % (name, makeStrValue(value)))
-                            if name=="self":
+                    for name2 in sorted(names):
+                        if name2 in frame.f_locals:
+                            value = frame.f_locals[name2]
+                            result.append("    %s = %s\n" % (name2, makeStrValue(value)))
+                            if name2 == "self":
                                 # print the local variables of the class instance
-                                for name, value in vars(value).items():
-                                    result.append("        self.%s = %s\n" % (name, makeStrValue(value)))
-                skipLocals=False
-                ex_tb=ex_tb.tb_next
-            result.append("-"*52+"\n")
+                                for name3, value in vars(value).items():
+                                    result.append("        self.%s = %s\n" % (name3, makeStrValue(value)))
+                skipLocals = False
+                ex_tb = ex_tb.tb_next
+            result.append("-" * 52 + "\n")
             result.append(" EXCEPTION %s: %s\n" % (ex_type, ex_value))
-            result.append("-"*52+"\n")
+            result.append("-" * 52 + "\n")
             return result
         except Exception:
-            return ["-"*52+"\nError building extended traceback!!! :\n",
-                    "".join(traceback.format_exception(*sys.exc_info())) + '-'*52 + '\n',
+            return ["-" * 52 + "\nError building extended traceback!!! :\n",
+                    "".join(traceback.format_exception(*sys.exc_info())) + '-' * 52 + '\n',
                     "Original Exception follows:\n",
                     "".join(traceback.format_exception(ex_type, ex_value, ex_tb))]
     else:
@@ -125,11 +131,13 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
 all_exceptions = {}
 if sys.version_info < (3, 0):
     import exceptions
+
     for name, t in vars(exceptions).items():
         if type(t) is type and issubclass(t, BaseException):
             all_exceptions[name] = t
 else:
     import builtins
+
     for name, t in vars(builtins).items():
         if type(t) is type and issubclass(t, BaseException):
             all_exceptions[name] = t
@@ -146,26 +154,26 @@ class SerializerBase(object):
     def serializeData(self, data, compress=False):
         """Serialize the given data object, try to compress if told so.
         Returns a tuple of the serialized data (bytes) and a bool indicating if it is compressed or not."""
-        data=self.dumps(data)
+        data = self.dumps(data)
         return self.__compressdata(data, compress)
 
     def deserializeData(self, data, compressed=False):
         """Deserializes the given data (bytes). Set compressed to True to decompress the data first."""
         if compressed:
-            data=zlib.decompress(data)
+            data = zlib.decompress(data)
         return self.loads(data)
 
     def serializeCall(self, obj, method, vargs, kwargs, compress=False):
         """Serialize the given method call parameters, try to compress if told so.
         Returns a tuple of the serialized data and a bool indicating if it is compressed or not."""
-        data=self.dumpsCall(obj, method, vargs, kwargs)
+        data = self.dumpsCall(obj, method, vargs, kwargs)
         return self.__compressdata(data, compress)
 
     def deserializeCall(self, data, compressed=False):
         """Deserializes the given call data back to (object, method, vargs, kwargs) tuple.
         Set compressed to True to decompress the data first."""
         if compressed:
-            data=zlib.decompress(data)
+            data = zlib.decompress(data)
         return self.loadsCall(data)
 
     def loads(self, data):
@@ -181,10 +189,10 @@ class SerializerBase(object):
         raise NotImplementedError("implement in subclass")
 
     def __compressdata(self, data, compress):
-        if not compress or len(data)<200:
+        if not compress or len(data) < 200:
             return data, False  # don't waste time compressing small messages
-        compressed=zlib.compress(data)
-        if len(compressed)<len(data):
+        compressed = zlib.compress(data)
+        if len(compressed) < len(data):
             return compressed, True
         return data, False
 
@@ -201,9 +209,11 @@ class SerializerBase(object):
             try:
                 get_serializer_by_id(SerpentSerializer.serializer_id)
                 import serpent
+
                 def serpent_converter(obj, serializer, stream, level):
                     d = converter(obj)
                     serializer.ser_builtins_dict(d, stream, level)
+
                 serpent.register_class(clazz, serpent_converter)
             except Pyro4.errors.ProtocolError:
                 pass
@@ -217,6 +227,7 @@ class SerializerBase(object):
         try:
             get_serializer_by_id(SerpentSerializer.serializer_id)
             import serpent
+
             serpent.unregister_class(clazz)
         except Pyro4.errors.ProtocolError:
             pass
@@ -288,7 +299,7 @@ class SerializerBase(object):
             converter = cls.__custom_dict_to_class_registry[classname]
             return converter(classname, data)
         if "__" in classname:
-            raise Pyro4.errors.SecurityError("refused to deserialize types with double underscores in their name: "+classname)
+            raise Pyro4.errors.SecurityError("refused to deserialize types with double underscores in their name: " + classname)
         # because of efficiency reasons the constructors below are hardcoded here instead of added on a per-class basis to the dict-to-class registry
         if classname.startswith("Pyro4.core."):
             if classname == "Pyro4.core.URI":
@@ -339,7 +350,7 @@ class SerializerBase(object):
         for serializer in _serializers.values():
             if classname == serializer.__class__.__name__:
                 return serializer
-        raise Pyro4.errors.ProtocolError("unsupported serialized class: "+classname)
+        raise Pyro4.errors.ProtocolError("unsupported serialized class: " + classname)
 
     @staticmethod
     def make_exception(exceptiontype, data):
@@ -369,11 +380,12 @@ class SerializerBase(object):
 
     def __eq__(self, other):
         """this equality method is only to support the unit tests of this class"""
-        return isinstance(other, SerializerBase) and vars(self)==vars(other)
+        return isinstance(other, SerializerBase) and vars(self) == vars(other)
 
     def __ne__(self, other):
         return not self.__eq__(other)
-    __hash__=object.__hash__
+
+    __hash__ = object.__hash__
 
 
 class PickleSerializer(SerializerBase):
@@ -399,6 +411,7 @@ class PickleSerializer(SerializerBase):
     def register_type_replacement(cls, object_type, replacement_function):
         def copyreg_function(obj):
             return replacement_function(obj).__reduce__()
+
         try:
             copyreg.pickle(object_type, copyreg_function)
         except TypeError:
@@ -429,7 +442,7 @@ class MarshalSerializer(SerializerBase):
 
     @classmethod
     def register_type_replacement(cls, object_type, replacement_function):
-        pass    # marshal serializer doesn't support per-type hooks
+        pass  # marshal serializer doesn't support per-type hooks
 
 
 class SerpentSerializer(SerializerBase):
@@ -459,6 +472,7 @@ class SerpentSerializer(SerializerBase):
                 serpent_serializer.ser_default_class(replaced, outputstream, indentlevel)
             else:
                 serpent_serializer._serialize(replaced, outputstream, indentlevel)
+
         serpent.register_class(object_type, custom_serializer)
 
 
@@ -467,27 +481,33 @@ class JsonSerializer(SerializerBase):
     serializer_id = Pyro4.message.SERIALIZER_JSON
 
     __type_replacements = {}
+
     def dumpsCall(self, obj, method, vargs, kwargs):
         data = {"object": obj, "method": method, "params": vargs, "kwargs": kwargs}
         data = json.dumps(data, ensure_ascii=False, default=self.default)
         return data.encode("utf-8")
+
     def dumps(self, data):
         data = json.dumps(data, ensure_ascii=False, default=self.default)
         return data.encode("utf-8")
+
     def loadsCall(self, data):
         data = data.decode("utf-8")
         data = json.loads(data)
         vargs = self.recreate_classes(data["params"])
         kwargs = self.recreate_classes(data["kwargs"])
         return data["object"], data["method"], vargs, kwargs
+
     def loads(self, data):
         data = data.decode("utf-8")
         return self.recreate_classes(json.loads(data))
+
     def default(self, obj):
         replacer = self.__type_replacements.get(type(obj), None)
         if replacer:
             obj = replacer(obj)
         return self.class_to_dict(obj)
+
     @classmethod
     def register_type_replacement(cls, object_type, replacement_function):
         cls.__type_replacements[object_type] = replacement_function
@@ -496,11 +516,14 @@ class JsonSerializer(SerializerBase):
 """The various serializers that are supported"""
 _serializers = {}
 _serializers_by_id = {}
+
+
 def get_serializer(name):
     try:
         return _serializers[name]
     except KeyError:
         raise Pyro4.errors.ProtocolError("serializer '%s' is unknown or not available" % name)
+
 
 def get_serializer_by_id(sid):
     try:
@@ -513,16 +536,18 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-assert Pyro4.config.PICKLE_PROTOCOL_VERSION>=2, "pickle protocol needs to be 2 or higher"
+assert Pyro4.config.PICKLE_PROTOCOL_VERSION >= 2, "pickle protocol needs to be 2 or higher"
 _ser = PickleSerializer()
 _serializers["pickle"] = _ser
 _serializers_by_id[_ser.serializer_id] = _ser
 import marshal
+
 _ser = MarshalSerializer()
 _serializers["marshal"] = _ser
 _serializers_by_id[_ser.serializer_id] = _ser
 try:
     import json
+
     _ser = JsonSerializer()
     _serializers["json"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser
@@ -530,6 +555,7 @@ except ImportError:
     pass
 try:
     import serpent
+
     if '-' in serpent.__version__:
         ver = serpent.__version__.split('-', 1)[0]
     else:

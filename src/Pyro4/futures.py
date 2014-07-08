@@ -10,11 +10,13 @@ from __future__ import with_statement
 import sys
 import functools
 import logging
-from Pyro4 import threadutil, util
+import Pyro4.util
+from Pyro4 import threadutil
 
-__all__=["Future", "FutureResult", "_ExceptionWrapper"]
 
-log=logging.getLogger("Pyro4.futures")
+__all__ = ["Future", "FutureResult", "_ExceptionWrapper"]
+
+log = logging.getLogger("Pyro4.futures")
 
 
 class Future(object):
@@ -24,8 +26,9 @@ class Future(object):
     This is a more general implementation than the AsyncRemoteMethod, which
     only works with Pyro proxies (and provides a bit different syntax).
     """
-    def __init__(self, callable):
-        self.callable = callable
+
+    def __init__(self, somecallable):
+        self.callable = somecallable
         self.chain = []
 
     def __call__(self, *args, **kwargs):
@@ -35,8 +38,8 @@ class Future(object):
         """
         chain = self.chain
         del self.chain  # make it impossible to add new calls to the chain once we started executing it
-        result=FutureResult()  # notice that the call chain doesn't sit on the result object
-        thread=threadutil.Thread(target=self.__asynccall, args=(result, chain, args, kwargs))
+        result = FutureResult()  # notice that the call chain doesn't sit on the result object
+        thread = threadutil.Thread(target=self.__asynccall, args=(result, chain, args, kwargs))
         thread.setDaemon(True)
         thread.start()
         return result
@@ -51,7 +54,7 @@ class Future(object):
             asyncresult.value = value
         except Exception:
             # ignore any exceptions here, return them as part of the async result instead
-            asyncresult.value=_ExceptionWrapper(sys.exc_info()[1])
+            asyncresult.value = _ExceptionWrapper(sys.exc_info()[1])
 
     def then(self, call, *args, **kwargs):
         """
@@ -66,17 +69,18 @@ class FutureResult(object):
     """
     The result object for asynchronous calls.
     """
+
     def __init__(self):
-        self.__ready=threadutil.Event()
-        self.callchain=[]
-        self.valueLock=threadutil.Lock()
+        self.__ready = threadutil.Event()
+        self.callchain = []
+        self.valueLock = threadutil.Lock()
 
     def wait(self, timeout=None):
         """
         Wait for the result to become available, with optional timeout (in seconds).
         Returns True if the result is ready, or False if it still isn't ready.
         """
-        result=self.__ready.wait(timeout)
+        result = self.__ready.wait(timeout)
         if result is None:
             # older pythons return None from wait()
             return self.__ready.isSet()
@@ -96,7 +100,7 @@ class FutureResult(object):
 
     def set_value(self, value):
         with self.valueLock:
-            self.__value=value
+            self.__value = value
             # walk the call chain but only as long as the result is not an exception
             if not isinstance(value, _ExceptionWrapper):
                 for call, args, kwargs in self.callchain:
@@ -104,10 +108,10 @@ class FutureResult(object):
                     self.__value = call(*args, **kwargs)
                     if isinstance(self.__value, _ExceptionWrapper):
                         break
-            self.callchain=[]
+            self.callchain = []
             self.__ready.set()
 
-    value=property(get_value, set_value, None, "The result value of the call. Reading it will block if not available yet.")
+    value = property(get_value, set_value, None, "The result value of the call. Reading it will block if not available yet.")
 
     def then(self, call, *args, **kwargs):
         """
@@ -116,11 +120,11 @@ class FutureResult(object):
         Optional extra arguments can be provided in args and kwargs.
         """
         if self.__ready.isSet():
-            # value is already known, we need to process it immediately (can't use the callchain anymore)
+            # value is already known, we need to process it immediately (can't use the call chain anymore)
             call = functools.partial(call, self.__value)
             self.__value = call(*args, **kwargs)
         else:
-            # add the call to the callchain, it will be processed later when the result arrives
+            # add the call to the call chain, it will be processed later when the result arrives
             with self.valueLock:
                 self.callchain.append((call, args, kwargs))
         return self
@@ -131,17 +135,18 @@ class _ExceptionWrapper(object):
     re-throw the exception on the receiving side. Usually this is taken care of
     by a special response message flag, but in the case of batched calls this
     flag is useless and another mechanism was needed."""
+
     def __init__(self, exception):
-        self.exception=exception
+        self.exception = exception
 
     def raiseIt(self):
-        if sys.platform=="cli":
-            util.fixIronPythonExceptionForPickle(self.exception, False)
+        if sys.platform == "cli":
+            Pyro4.util.fixIronPythonExceptionForPickle(self.exception, False)
         raise self.exception
 
     def __serialized_dict__(self):
         """serialized form as a dictionary"""
         return {
             "__class__": "Pyro4.futures._ExceptionWrapper",
-            "exception": util.SerializerBase.class_to_dict(self.exception)
+            "exception": Pyro4.util.SerializerBase.class_to_dict(self.exception)
         }

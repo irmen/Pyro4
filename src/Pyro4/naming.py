@@ -5,12 +5,15 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import re, logging, socket, sys
 import warnings
-from Pyro4 import constants, core, socketutil
+import re
+import logging
+import socket
+import sys
 from Pyro4.threadutil import RLock, Thread
-from Pyro4.errors import PyroError, NamingError, ProtocolError
-import Pyro4
+from Pyro4.errors import NamingError, PyroError, ProtocolError
+from Pyro4 import core, socketutil
+import Pyro4.constants
 
 __all__ = ["locateNS", "resolve", "startNS"]
 
@@ -32,7 +35,7 @@ class NameServer(object):
         try:
             return core.URI(self.namespace[name])
         except KeyError:
-            raise NamingError("unknown name: "+name)
+            raise NamingError("unknown name: " + name)
 
     def register(self, name, uri, safe=False):
         """Register a name with an URI. If safe is true, name cannot be registered twice.
@@ -46,29 +49,29 @@ class NameServer(object):
         if not isinstance(name, basestring):
             raise TypeError("name must be a str")
         if safe and name in self.namespace:
-            raise NamingError("name already registered: "+name)
+            raise NamingError("name already registered: " + name)
         with self.lock:
             self.namespace[name] = uri
 
     def remove(self, name=None, prefix=None, regex=None):
         """Remove a registration. returns the number of items removed."""
-        if name and name in self.namespace and name != constants.NAMESERVER_NAME:
+        if name and name in self.namespace and name != Pyro4.constants.NAMESERVER_NAME:
             with self.lock:
                 del self.namespace[name]
             return 1
         if prefix:
             with self.lock:
                 items = list(self.list(prefix=prefix).keys())
-                if constants.NAMESERVER_NAME in items:
-                    items.remove(constants.NAMESERVER_NAME)
+                if Pyro4.constants.NAMESERVER_NAME in items:
+                    items.remove(Pyro4.constants.NAMESERVER_NAME)
                 for item in items:
                     del self.namespace[item]
                 return len(items)
         if regex:
             with self.lock:
                 items = list(self.list(regex=regex).keys())
-                if constants.NAMESERVER_NAME in items:
-                    items.remove(constants.NAMESERVER_NAME)
+                if Pyro4.constants.NAMESERVER_NAME in items:
+                    items.remove(Pyro4.constants.NAMESERVER_NAME)
                 for item in items:
                     del self.namespace[item]
                 return len(items)
@@ -88,10 +91,10 @@ class NameServer(object):
             elif regex:
                 result = {}
                 try:
-                    regex = re.compile(regex+"$")  # add end of string marker
+                    regex = re.compile(regex + "$")  # add end of string marker
                 except re.error:
                     x = sys.exc_info()[1]
-                    raise NamingError("invalid regex: "+str(x))
+                    raise NamingError("invalid regex: " + str(x))
                 else:
                     for name in self.namespace:
                         if regex.match(name):
@@ -108,6 +111,7 @@ class NameServer(object):
 
 class NameServerDaemon(core.Daemon):
     """Daemon that contains the Name Server."""
+
     def __init__(self, host=None, port=None, unixsocket=None, nathost=None, natport=None):
         if Pyro4.config.DOTTEDNAMES:
             raise PyroError("Name server won't start with DOTTEDNAMES enabled because of security reasons")
@@ -121,8 +125,8 @@ class NameServerDaemon(core.Daemon):
             natport = Pyro4.config.NATPORT or None
         super(NameServerDaemon, self).__init__(host, port, unixsocket, nathost=nathost, natport=natport)
         self.nameserver = NameServer()
-        self.register(self.nameserver, constants.NAMESERVER_NAME)
-        self.nameserver.register(constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
+        self.register(self.nameserver, Pyro4.constants.NAMESERVER_NAME)
+        self.nameserver.register(Pyro4.constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
         log.info("nameserver daemon created")
 
     def close(self):
@@ -145,7 +149,7 @@ class NameServerDaemon(core.Daemon):
             # Notify the user that a protocol error occurred.
             # This is useful for instance when a wrong serializer is used, it helps
             # a lot to immediately see what is going wrong.
-            warnings.warn("Pyro protocol error occurred: "+str(x))
+            warnings.warn("Pyro protocol error occurred: " + str(x))
             raise
 
 
@@ -285,9 +289,9 @@ def locateNS(host=None, port=None):
         # first try localhost if we have a good chance of finding it there
         if Pyro4.config.NS_HOST in ("localhost", "::1") or Pyro4.config.NS_HOST.startswith("127."):
             host = Pyro4.config.NS_HOST
-            if ":" in host:   # ipv6
+            if ":" in host:  # ipv6
                 host = "[%s]" % host
-            uristring = "PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, host, port or Pyro4.config.NS_PORT)
+            uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port or Pyro4.config.NS_PORT)
             log.debug("locating the NS: %s", uristring)
             proxy = core.Proxy(uristring)
             try:
@@ -309,8 +313,8 @@ def locateNS(host=None, port=None):
                     except socket.error:
                         x = sys.exc_info()[1]
                         err = getattr(x, "errno", x.args[0])
-                        if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:    # yeah, windows likes to throw these...
-                            if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:     # and jython likes to throw thses...
+                        if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:  # yeah, windows likes to throw these...
+                            if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:  # and jython likes to throw thses...
                                 raise
                 data, _ = sock.recvfrom(100)
                 sock.close()
@@ -335,9 +339,9 @@ def locateNS(host=None, port=None):
     if ":" in host:
         host = "[%s]" % host
     if core.URI.isUnixsockLocation(host):
-        uristring = "PYRO:%s@%s" % (constants.NAMESERVER_NAME, host)
+        uristring = "PYRO:%s@%s" % (Pyro4.constants.NAMESERVER_NAME, host)
     else:
-        uristring = "PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, host, port)
+        uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port)
     uri = core.URI(uristring)
     log.debug("locating the NS: %s", uri)
     proxy = core.Proxy(uri)
@@ -371,6 +375,7 @@ def resolve(uri):
 
 def main(args):
     from optparse import OptionParser
+
     parser = OptionParser()
     parser.add_option("-n", "--host", dest="host", help="hostname to bind server on")
     parser.add_option("-p", "--port", dest="port", type="int", help="port to bind server on (0=random)")

@@ -10,9 +10,9 @@ import hmac
 import struct
 import logging
 import sys
+from Pyro4 import errors, constants
+import Pyro4.constants
 
-import Pyro4
-from Pyro4 import constants, errors
 
 __all__ = ["Message"]
 
@@ -24,10 +24,10 @@ MSG_CONNECTFAIL = 3
 MSG_INVOKE = 4
 MSG_RESULT = 5
 MSG_PING = 6
-FLAGS_EXCEPTION = 1<<0
-FLAGS_COMPRESSED = 1<<1
-FLAGS_ONEWAY = 1<<2
-FLAGS_BATCH = 1<<3
+FLAGS_EXCEPTION = 1 << 0
+FLAGS_COMPRESSED = 1 << 1
+FLAGS_ONEWAY = 1 << 2
+FLAGS_BATCH = 1 << 3
 SERIALIZER_SERPENT = 1
 SERIALIZER_JSON = 2
 SERIALIZER_MARSHAL = 3
@@ -93,9 +93,9 @@ class Message(object):
         self.annotations = annotations or {}
         if Pyro4.config.HMAC_KEY:
             self.annotations["HMAC"] = self.hmac()
-        self.annotations_size = sum([6+len(v) for v in self.annotations.values()])
+        self.annotations_size = sum([6 + len(v) for v in self.annotations.values()])
         if 0 < Pyro4.config.MAX_MESSAGE_SIZE < (self.data_size + self.annotations_size):
-            raise errors.ProtocolError("max message size exceeded (%d where max=%d)" % (self.data_size+self.annotations_size, Pyro4.config.MAX_MESSAGE_SIZE))
+            raise errors.ProtocolError("max message size exceeded (%d where max=%d)" % (self.data_size + self.annotations_size, Pyro4.config.MAX_MESSAGE_SIZE))
 
     def __repr__(self):
         return "<%s.%s at %x, type=%d flags=%d seq=%d datasize=%d #ann=%d>" % (self.__module__, self.__class__.__name__, id(self), self.type, self.flags, self.seq, self.data_size, len(self.annotations))
@@ -105,20 +105,20 @@ class Message(object):
         return self.__header_bytes() + self.__annotations_bytes() + self.data
 
     def __header_bytes(self):
-        checksum = (self.type+constants.PROTOCOL_VERSION+self.data_size+self.annotations_size+self.serializer_id+self.flags+self.seq+self.checksum_magic)&0xffff
+        checksum = (self.type + constants.PROTOCOL_VERSION + self.data_size + self.annotations_size + self.serializer_id + self.flags + self.seq + self.checksum_magic) & 0xffff
         return struct.pack(self.header_format, b"PYRO", constants.PROTOCOL_VERSION, self.type, self.flags, self.seq, self.data_size, self.serializer_id, self.annotations_size, 0, checksum)
 
     def __annotations_bytes(self):
         if self.annotations:
             a = []
             for k, v in self.annotations.items():
-                if len(k)!=4:
+                if len(k) != 4:
                     raise errors.ProtocolError("annotation key must be of length 4")
-                if sys.version_info>=(3, 0):
+                if sys.version_info >= (3, 0):
                     k = k.encode("ASCII")
                 a.append(struct.pack("!4sH", k, len(v)))
                 a.append(v)
-            if sys.platform=="cli":
+            if sys.platform == "cli":
                 return "".join(a)
             return b"".join(a)
         return b""
@@ -137,12 +137,12 @@ class Message(object):
     @classmethod
     def from_header(cls, headerData):
         """Parses a message header. Does not yet process the annotations chunks and message data."""
-        if not headerData or len(headerData)!=cls.header_size:
+        if not headerData or len(headerData) != cls.header_size:
             raise errors.ProtocolError("header data size mismatch")
         tag, ver, msg_type, flags, seq, data_size, serializer_id, annotations_size, _, checksum = struct.unpack(cls.header_format, headerData)
-        if tag!=b"PYRO" or ver!=constants.PROTOCOL_VERSION:
+        if tag != b"PYRO" or ver != constants.PROTOCOL_VERSION:
             raise errors.ProtocolError("invalid data or unsupported protocol version")
-        if checksum!=(msg_type+ver+data_size+annotations_size+flags+serializer_id+seq+cls.checksum_magic)&0xffff:
+        if checksum != (msg_type + ver + data_size + annotations_size + flags + serializer_id + seq + cls.checksum_magic) & 0xffff:
             raise errors.ProtocolError("header checksum mismatch")
         msg = Message(msg_type, b"", serializer_id, flags, seq)
         msg.data_size = data_size
@@ -158,10 +158,10 @@ class Message(object):
         Validates a HMAC chunk if present.
         """
         msg = cls.from_header(connection.recv(cls.header_size))
-        if 0 < Pyro4.config.MAX_MESSAGE_SIZE < (msg.data_size+msg.annotations_size):
-            errorMsg = "max message size exceeded (%d where max=%d)" % (msg.data_size+msg.annotations_size, Pyro4.config.MAX_MESSAGE_SIZE)
-            log.error("connection "+str(connection)+": "+errorMsg)
-            connection.close()   # close the socket because at this point we can't return the correct sequence number for returning an error message
+        if 0 < Pyro4.config.MAX_MESSAGE_SIZE < (msg.data_size + msg.annotations_size):
+            errorMsg = "max message size exceeded (%d where max=%d)" % (msg.data_size + msg.annotations_size, Pyro4.config.MAX_MESSAGE_SIZE)
+            log.error("connection " + str(connection) + ": " + errorMsg)
+            connection.close()  # close the socket because at this point we can't return the correct sequence number for returning an error message
             raise errors.ProtocolError(errorMsg)
         if requiredMsgTypes and msg.type not in requiredMsgTypes:
             err = "invalid msg type %d received" % msg.type
@@ -173,11 +173,11 @@ class Message(object):
             msg.annotations = {}
             i = 0
             while i < msg.annotations_size:
-                anno, length = struct.unpack("!4sH", annotations_data[i:i+6])
-                if sys.version_info>=(3, 0):
+                anno, length = struct.unpack("!4sH", annotations_data[i:i + 6])
+                if sys.version_info >= (3, 0):
                     anno = anno.decode("ASCII")
-                msg.annotations[anno] = annotations_data[i+6:i+6+length]
-                i += 6+length
+                msg.annotations[anno] = annotations_data[i + 6:i + 6 + length]
+                i += 6 + length
         # read data
         msg.data = connection.recv(msg.data_size)
         if "HMAC" in msg.annotations and Pyro4.config.HMAC_KEY:

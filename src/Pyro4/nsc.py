@@ -7,8 +7,8 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import sys
 from Pyro4 import naming, errors
 
-if sys.version_info<(3, 0):
-    input=raw_input
+if sys.version_info < (3, 0):
+    input = raw_input
 
 
 def handleCommand(nameserver, options, args):
@@ -23,38 +23,38 @@ def handleCommand(nameserver, options, args):
         print("Name server ping ok.")
 
     def cmd_listprefix():
-        if len(args)==1:
+        if len(args) == 1:
             printListResult(nameserver.list())
         else:
             printListResult(nameserver.list(prefix=args[1]), "- prefix '%s'" % args[1])
 
     def cmd_listregex():
-        if len(args)!=2:
+        if len(args) != 2:
             raise SystemExit("requires one argument: pattern")
         printListResult(nameserver.list(regex=args[1]), "- regex '%s'" % args[1])
 
     def cmd_register():
-        if len(args)!=3:
+        if len(args) != 3:
             raise SystemExit("requires two arguments: name uri")
         nameserver.register(args[1], args[2], safe=True)
         print("Registered %s" % args[1])
 
     def cmd_remove():
-        count=nameserver.remove(args[1])
-        if count>0:
+        count = nameserver.remove(args[1])
+        if count > 0:
             print("Removed %s" % args[1])
         else:
             print("Nothing removed")
 
     def cmd_removeregex():
-        if len(args)!=2:
+        if len(args) != 2:
             raise SystemExit("requires one argument: pattern")
-        sure=input("Potentially removing lots of items from the Name server. Are you sure (y/n)?").strip()
+        sure = input("Potentially removing lots of items from the Name server. Are you sure (y/n)?").strip()
         if sure in ('y', 'Y'):
-            count=nameserver.remove(regex=args[1])
+            count = nameserver.remove(regex=args[1])
             print("%d items removed." % count)
 
-    commands={
+    commands = {
         "ping": cmd_ping,
         "list": cmd_listprefix,
         "listmatching": cmd_listregex,
@@ -71,6 +71,7 @@ def handleCommand(nameserver, options, args):
 
 def main(args):
     from optparse import OptionParser
+
     usage = "usage: %prog [options] command [arguments]\nCommand is one of: " \
             "register remove removematching list listmatching ping"
     parser = OptionParser(usage=usage)
@@ -85,9 +86,9 @@ def main(args):
     if options.verbose:
         print("Locating name server...")
     if options.unixsocket:
-        options.host="./u:"+options.unixsocket
+        options.host = "./u:" + options.unixsocket
     try:
-        nameserver=naming.locateNS(options.host, options.port)
+        nameserver = naming.locateNS(options.host, options.port)
     except errors.PyroError:
         x = sys.exc_info()[1]
         print("Failed to locate the name server: %s" % x)
@@ -97,6 +98,7 @@ def main(args):
     handleCommand(nameserver, options, args)
     if options.verbose:
         print("Done.")
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

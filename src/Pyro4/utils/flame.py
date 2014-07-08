@@ -10,10 +10,13 @@ from __future__ import with_statement
 import sys
 import types
 import code
+import os
+import stat
 import Pyro4.core
 import Pyro4.util
 import Pyro4.constants
 import Pyro4.errors
+
 try:
     import importlib
 except ImportError:
@@ -34,8 +37,8 @@ __all__ = ["connect", "start", "createModule", "Flame"]
 # Workaround as written by Ned Batchelder on his blog.
 if sys.version_info > (3, 0):
     def exec_function(source, filename, global_map):
-        source=fixExecSourceNewlines(source)
-        exec(compile(source, filename, "exec"), global_map)
+        source = fixExecSourceNewlines(source)
+        exec (compile(source, filename, "exec"), global_map)
 else:
     # OK, this is pretty gross.  In Py2, exec was a statement, but that will
     # be a syntax error if we try to put it in a Py3 file, even if it isn't
@@ -44,9 +47,7 @@ else:
 def exec_function(source, filename, global_map):
     source=fixExecSourceNewlines(source)
     exec compile(source, filename, "exec") in global_map
-""",
-    "<exec_function>", "exec"
-    ))
+""", "<exec_function>", "exec"))
 
 
 def fixExecSourceNewlines(source):
@@ -62,6 +63,7 @@ def fixExecSourceNewlines(source):
 
 class FlameModule(object):
     """Proxy to a remote module."""
+
     def __init__(self, flameserver, module):
         # store a proxy to the flameserver regardless of autoproxy setting
         self.flameserver = Pyro4.core.Proxy(flameserver._pyroDaemon.uriFor(flameserver))
@@ -89,11 +91,12 @@ class FlameModule(object):
 
     def __repr__(self):
         return "<%s.%s at 0x%x, module '%s' at %s>" % (self.__class__.__module__, self.__class__.__name__,
-            id(self), self.module, self.flameserver._pyroUri.location)
+                                                       id(self), self.module, self.flameserver._pyroUri.location)
 
 
 class FlameBuiltin(object):
     """Proxy to a remote builtin function."""
+
     def __init__(self, flameserver, builtin):
         # store a proxy to the flameserver regardless of autoproxy setting
         self.flameserver = Pyro4.core.Proxy(flameserver._pyroDaemon.uriFor(flameserver))
@@ -110,7 +113,7 @@ class FlameBuiltin(object):
 
     def __repr__(self):
         return "<%s.%s at 0x%x, builtin '%s' at %s>" % (self.__class__.__module__, self.__class__.__name__,
-            id(self), self.builtin, self.flameserver._pyroUri.location)
+                                                        id(self), self.builtin, self.flameserver._pyroUri.location)
 
 
 class RemoteInteractiveConsole(object):
@@ -118,6 +121,7 @@ class RemoteInteractiveConsole(object):
 
     class LineSendingConsole(code.InteractiveConsole):
         """makes sure the lines are sent to the remote console"""
+
         def __init__(self, remoteconsole):
             code.InteractiveConsole.__init__(self, filename="<remoteconsole>")
             self.remoteconsole = remoteconsole
@@ -143,7 +147,7 @@ class RemoteInteractiveConsole(object):
 
     def __repr__(self):
         return "<%s.%s at 0x%x, for %s>" % (self.__class__.__module__, self.__class__.__name__,
-            id(self), self.remoteconsole._pyroUri.location)
+                                            id(self), self.remoteconsole._pyroUri.location)
 
     def __enter__(self):
         return self
@@ -154,6 +158,7 @@ class RemoteInteractiveConsole(object):
 
 class InteractiveConsole(code.InteractiveConsole):
     """Interactive console wrapper that saves output written to stdout so it can be returned as value"""
+
     def push_and_get_output(self, line):
         output, more = "", False
         stdout_save = sys.stdout
@@ -167,10 +172,10 @@ class InteractiveConsole(code.InteractiveConsole):
         return output, more
 
     def get_banner(self):
-        return self.banner          # custom banner string, set by Pyro daemon
+        return self.banner  # custom banner string, set by Pyro daemon
 
     def write(self, data):
-        sys.stdout.write(data)      # stdout instead of stderr
+        sys.stdout.write(data)  # stdout instead of stderr
 
     def terminate(self):
         self._pyroDaemon.unregister(self)
@@ -183,6 +188,7 @@ class Flame(object):
     Usually created by using :py:meth:`Pyro4.core.Daemon.startFlame`.
     Be *very* cautious before starting this: it allows the clients full access to everything on your system.
     """
+
     def __init__(self):
         if "pickle" not in Pyro4.config.SERIALIZERS_ACCEPTED:
             raise RuntimeError("flame requires the pickle serializer to be enabled")
@@ -223,15 +229,14 @@ class Flame(object):
 
     def sendfile(self, filename, filedata):
         """store a new file on the server"""
-        import os, stat
         with open(filename, "wb") as targetfile:
-            os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR)    # readable/writable by owner only
+            os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR)  # readable/writable by owner only
             targetfile.write(filedata)
 
     def getfile(self, filename):
         """read any accessible file from the server"""
-        with open(filename, "rb") as file:
-            return file.read()
+        with open(filename, "rb") as diskfile:
+            return diskfile.read()
 
     def console(self):
         """get a proxy for a remote interactive console session"""

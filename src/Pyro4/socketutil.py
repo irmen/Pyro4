@@ -4,15 +4,20 @@ Low level socket utilities.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-import socket, os, errno, time, sys
-from Pyro4.errors import ConnectionClosedError, TimeoutError, CommunicationError
-import Pyro4
-
+import socket
+import os
+import errno
+import time
+import sys
 import select
+import Pyro4.constants
+from Pyro4.errors import CommunicationError, TimeoutError, ConnectionClosedError
+
 
 if os.name == "java":
     # jython workaround for 'socket must be in nonblocking mode' error
     from java.nio.channels import ClosedChannelException
+
     def selectfunction(rlist, wlist, xlist, timeout=None):
         try:
             return select.cpython_compatible_select(rlist, wlist, xlist, timeout)
@@ -22,14 +27,14 @@ else:
     selectfunction = select.select
 
 if sys.platform == "win32":
-    USE_MSG_WAITALL = False   # it doesn't work reliably on Windows even though it's defined
+    USE_MSG_WAITALL = False  # it doesn't work reliably on Windows even though it's defined
 else:
     USE_MSG_WAITALL = hasattr(socket, "MSG_WAITALL")
 
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.
 # So I didn't include them in de list of retryable errors.
-ERRNO_RETRIES=[errno.EINTR, errno.EAGAIN, errno.EWOULDBLOCK, errno.EINPROGRESS]
+ERRNO_RETRIES = [errno.EINTR, errno.EAGAIN, errno.EWOULDBLOCK, errno.EINPROGRESS]
 if hasattr(errno, "WSAEINTR"):
     ERRNO_RETRIES.append(errno.WSAEINTR)
 if hasattr(errno, "WSAEWOULDBLOCK"):
@@ -37,21 +42,21 @@ if hasattr(errno, "WSAEWOULDBLOCK"):
 if hasattr(errno, "WSAEINPROGRESS"):
     ERRNO_RETRIES.append(errno.WSAEINPROGRESS)
 
-ERRNO_BADF=[errno.EBADF]
+ERRNO_BADF = [errno.EBADF]
 if hasattr(errno, "WSAEBADF"):
     ERRNO_BADF.append(errno.WSAEBADF)
 
-ERRNO_ENOTSOCK=[errno.ENOTSOCK]
+ERRNO_ENOTSOCK = [errno.ENOTSOCK]
 if hasattr(errno, "WSAENOTSOCK"):
     ERRNO_ENOTSOCK.append(errno.WSAENOTSOCK)
 if not hasattr(socket, "SOL_TCP"):
-    socket.SOL_TCP=socket.IPPROTO_TCP
+    socket.SOL_TCP = socket.IPPROTO_TCP
 
-ERRNO_EADDRNOTAVAIL=[errno.EADDRNOTAVAIL]
+ERRNO_EADDRNOTAVAIL = [errno.EADDRNOTAVAIL]
 if hasattr(errno, "WSAEADDRNOTAVAIL"):
     ERRNO_EADDRNOTAVAIL.append(errno.WSAEADDRNOTAVAIL)
 
-ERRNO_EADDRINUSE=[errno.EADDRINUSE]
+ERRNO_EADDRINUSE = [errno.EADDRINUSE]
 if hasattr(errno, "WSAEADDRINUSE"):
     ERRNO_EADDRINUSE.append(errno.WSAEADDRINUSE)
 
@@ -82,19 +87,21 @@ def getIpAddress(hostname, workaround127=False, ipVersion=None):
     The hack tries to discover an externally visible ip address instead (this only works for ipv4 addresses).
     Set ipVersion=6 to return ipv6 addresses, 4 to return ipv4, 0 to let OS choose the best one or None to use Pyro4.config.PREFER_IP_VERSION.
     """
+
     def getaddr(ipVersion):
         if ipVersion == 6:
-            family=socket.AF_INET6
+            family = socket.AF_INET6
         elif ipVersion == 4:
-            family=socket.AF_INET
+            family = socket.AF_INET
         elif ipVersion == 0:
-            family=socket.AF_UNSPEC
+            family = socket.AF_UNSPEC
         else:
             raise ValueError("unknown value for argument ipVersion.")
-        ip=socket.getaddrinfo(hostname or socket.gethostname(), 80, family, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
-        if workaround127 and (ip.startswith("127.") or ip=="0.0.0.0"):
-            ip=getInterfaceAddress("4.2.2.2")
+        ip = socket.getaddrinfo(hostname or socket.gethostname(), 80, family, socket.SOCK_STREAM, socket.SOL_TCP)[0][4][0]
+        if workaround127 and (ip.startswith("127.") or ip == "0.0.0.0"):
+            ip = getInterfaceAddress("4.2.2.2")
         return ip
+
     try:
         if hostname and ':' in hostname and ipVersion is None:
             ipVersion = 0
@@ -117,10 +124,10 @@ def getIpAddress(hostname, workaround127=False, ipVersion=None):
 
 def getInterfaceAddress(ip_address):
     """tries to find the ip address of the interface that connects to the given host's address"""
-    family = socket.AF_INET if getIpVersion(ip_address)==4 else socket.AF_INET6
+    family = socket.AF_INET if getIpVersion(ip_address) == 4 else socket.AF_INET6
     sock = socket.socket(family, socket.SOCK_DGRAM)
     try:
-        sock.connect((ip_address, 53))   # 53=dns
+        sock.connect((ip_address, 53))  # 53=dns
         return sock.getsockname()[0]
     finally:
         sock.close()
@@ -129,11 +136,11 @@ def getInterfaceAddress(ip_address):
 def __nextRetrydelay(delay):
     # first try a few very short delays,
     # if that doesn't work, increase by 0.1 sec every time
-    if delay==0.0:
+    if delay == 0.0:
         return 0.001
-    if delay==0.001:
+    if delay == 0.001:
         return 0.01
-    return delay+0.1
+    return delay + 0.1
 
 
 def receiveData(sock, size):
@@ -144,11 +151,11 @@ def receiveData(sock, size):
     has been received however is stored in the 'partialData' attribute of
     the exception object."""
     try:
-        retrydelay=0.0
-        msglen=0
-        chunks=[]
+        retrydelay = 0.0
+        msglen = 0
+        chunks = []
         EMPTY_BYTES = b""
-        if sys.platform=="cli":
+        if sys.platform == "cli":
             EMPTY_BYTES = ""
         if USE_MSG_WAITALL:
             # waitall is very convenient and if a socket error occurs,
@@ -159,48 +166,48 @@ def receiveData(sock, size):
             # receive loop to finish the task.
             while True:
                 try:
-                    data=sock.recv(size, socket.MSG_WAITALL)
-                    if len(data)==size:
+                    data = sock.recv(size, socket.MSG_WAITALL)
+                    if len(data) == size:
                         return data
                     # less data than asked, drop down into normal receive loop to finish
-                    msglen=len(data)
-                    chunks=[data]
+                    msglen = len(data)
+                    chunks = [data]
                     break
                 except socket.timeout:
                     raise TimeoutError("receiving: timeout")
                 except socket.error:
-                    x=sys.exc_info()[1]
-                    err=getattr(x, "errno", x.args[0])
+                    x = sys.exc_info()[1]
+                    err = getattr(x, "errno", x.args[0])
                     if err not in ERRNO_RETRIES:
-                        raise ConnectionClosedError("receiving: connection lost: "+str(x))
-                    time.sleep(0.00001+retrydelay)  # a slight delay to wait before retrying
-                    retrydelay=__nextRetrydelay(retrydelay)
+                        raise ConnectionClosedError("receiving: connection lost: " + str(x))
+                    time.sleep(0.00001 + retrydelay)  # a slight delay to wait before retrying
+                    retrydelay = __nextRetrydelay(retrydelay)
         # old fashioned recv loop, we gather chunks until the message is complete
         while True:
             try:
-                while msglen<size:
+                while msglen < size:
                     # 60k buffer limit avoids problems on certain OSes like VMS, Windows
-                    chunk=sock.recv(min(60000, size-msglen))
+                    chunk = sock.recv(min(60000, size - msglen))
                     if not chunk:
                         break
                     chunks.append(chunk)
-                    msglen+=len(chunk)
+                    msglen += len(chunk)
                 data = EMPTY_BYTES.join(chunks)
                 del chunks
-                if len(data)!=size:
-                    err=ConnectionClosedError("receiving: not enough data")
-                    err.partialData=data  # store the message that was received until now
+                if len(data) != size:
+                    err = ConnectionClosedError("receiving: not enough data")
+                    err.partialData = data  # store the message that was received until now
                     raise err
                 return data  # yay, complete
             except socket.timeout:
                 raise TimeoutError("receiving: timeout")
             except socket.error:
-                x=sys.exc_info()[1]
-                err=getattr(x, "errno", x.args[0])
+                x = sys.exc_info()[1]
+                err = getattr(x, "errno", x.args[0])
                 if err not in ERRNO_RETRIES:
-                    raise ConnectionClosedError("receiving: connection lost: "+str(x))
-                time.sleep(0.00001+retrydelay)  # a slight delay to wait before retrying
-                retrydelay=__nextRetrydelay(retrydelay)
+                    raise ConnectionClosedError("receiving: connection lost: " + str(x))
+                time.sleep(0.00001 + retrydelay)  # a slight delay to wait before retrying
+                retrydelay = __nextRetrydelay(retrydelay)
     except socket.timeout:
         raise TimeoutError("receiving: timeout")
 
@@ -220,11 +227,11 @@ def sendData(sock, data):
         except socket.timeout:
             raise TimeoutError("sending: timeout")
         except socket.error:
-            x=sys.exc_info()[1]
-            raise ConnectionClosedError("sending: connection lost: "+str(x))
+            x = sys.exc_info()[1]
+            raise ConnectionClosedError("sending: connection lost: " + str(x))
     else:
         # Socket is in non-blocking mode, use regular send loop.
-        retrydelay=0.0
+        retrydelay = 0.0
         while data:
             try:
                 sent = sock.send(data)
@@ -232,12 +239,12 @@ def sendData(sock, data):
             except socket.timeout:
                 raise TimeoutError("sending: timeout")
             except socket.error:
-                x=sys.exc_info()[1]
-                err=getattr(x, "errno", x.args[0])
+                x = sys.exc_info()[1]
+                err = getattr(x, "errno", x.args[0])
                 if err not in ERRNO_RETRIES:
-                    raise ConnectionClosedError("sending: connection lost: "+str(x))
-                time.sleep(0.00001+retrydelay)  # a slight delay to wait before retrying
-                retrydelay=__nextRetrydelay(retrydelay)
+                    raise ConnectionClosedError("sending: connection lost: " + str(x))
+                time.sleep(0.00001 + retrydelay)  # a slight delay to wait before retrying
+                retrydelay = __nextRetrydelay(retrydelay)
 
 
 _GLOBAL_DEFAULT_TIMEOUT = object()
@@ -253,54 +260,54 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
     """
     if bind and connect:
         raise ValueError("bind and connect cannot both be specified at the same time")
-    forceIPv6=ipv6 or (ipv6 is None and Pyro4.config.PREFER_IP_VERSION == 6)
+    forceIPv6 = ipv6 or (ipv6 is None and Pyro4.config.PREFER_IP_VERSION == 6)
     if isinstance(bind, basestring) or isinstance(connect, basestring):
-        family=socket.AF_UNIX
+        family = socket.AF_UNIX
     elif not bind and not connect:
-        family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+        family = socket.AF_INET6 if forceIPv6 else socket.AF_INET
     elif type(bind) is tuple:
         if not bind[0]:
-            family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+            family = socket.AF_INET6 if forceIPv6 else socket.AF_INET
         else:
             if getIpVersion(bind[0]) == 4:
                 if forceIPv6:
                     raise ValueError("IPv4 address is used bind argument with forceIPv6 argument:" + bind[0] + ".")
-                family=socket.AF_INET
+                family = socket.AF_INET
             elif getIpVersion(bind[0]) == 6:
-                family=socket.AF_INET6
+                family = socket.AF_INET6
                 # replace bind addresses by their ipv6 counterparts (4-tuple)
-                bind=(bind[0], bind[1], 0, 0)
+                bind = (bind[0], bind[1], 0, 0)
             else:
                 raise ValueError("unknown bind format.")
     elif type(connect) is tuple:
         if not connect[0]:
-            family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+            family = socket.AF_INET6 if forceIPv6 else socket.AF_INET
         else:
             if getIpVersion(connect[0]) == 4:
                 if forceIPv6:
                     raise ValueError("IPv4 address is used in connect argument with forceIPv6 argument:" + bind[0] + ".")
-                family=socket.AF_INET
+                family = socket.AF_INET
             elif getIpVersion(connect[0]) == 6:
-                family=socket.AF_INET6
+                family = socket.AF_INET6
                 # replace connect addresses by their ipv6 counterparts (4-tuple)
-                connect=(connect[0], connect[1], 0, 0)
+                connect = (connect[0], connect[1], 0, 0)
             else:
                 raise ValueError("unknown connect format.")
     else:
         raise ValueError("unknown bind or connect format.")
-    sock=socket.socket(family, socket.SOCK_STREAM)
+    sock = socket.socket(family, socket.SOCK_STREAM)
     if nodelay:
         setNoDelay(sock)
     if reuseaddr:
         setReuseAddr(sock)
     if noinherit:
         setNoInherit(sock)
-    if timeout==0:
+    if timeout == 0:
         timeout = None
     if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
         sock.settimeout(timeout)
     if bind:
-        if type(bind) is tuple and bind[1]==0:
+        if type(bind) is tuple and bind[1] == 0:
             bindOnUnusedPort(sock, bind[0])
         else:
             sock.bind(bind)
@@ -321,11 +328,11 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
             if errno in ERRNO_RETRIES:
                 if timeout is _GLOBAL_DEFAULT_TIMEOUT:
                     timeout = None
-                timeout = max(0.1, timeout)   # avoid polling behavior with timeout=0
+                timeout = max(0.1, timeout)  # avoid polling behavior with timeout=0
                 while True:
                     sr, sw, se = selectfunction([], [sock], [sock], timeout)
                     if sock in sw:
-                        break   # yay, writable now, connect() completed
+                        break  # yay, writable now, connect() completed
                     elif sock in se:
                         raise socket.error("connect failed")
             else:
@@ -341,25 +348,25 @@ def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TI
     Set ipv6=True to create an IPv6 socket rather than IPv4.
     Set ipv6=None to use the PREFER_IP_VERSION config setting.
     """
-    forceIPv6=ipv6 or (ipv6 is None and Pyro4.config.PREFER_IP_VERSION == 6)
+    forceIPv6 = ipv6 or (ipv6 is None and Pyro4.config.PREFER_IP_VERSION == 6)
     if not bind:
-        family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+        family = socket.AF_INET6 if forceIPv6 else socket.AF_INET
     elif type(bind) is tuple:
         if not bind[0]:
-            family=socket.AF_INET6 if forceIPv6 else socket.AF_INET
+            family = socket.AF_INET6 if forceIPv6 else socket.AF_INET
         else:
             if getIpVersion(bind[0]) == 4:
                 if forceIPv6:
                     raise ValueError("IPv4 address is used with forceIPv6 option:" + bind[0] + ".")
-                family=socket.AF_INET
+                family = socket.AF_INET
             elif getIpVersion(bind[0]) == 6:
-                family=socket.AF_INET6
-                bind=(bind[0], bind[1], 0, 0)
+                family = socket.AF_INET6
+                bind = (bind[0], bind[1], 0, 0)
             else:
                 raise ValueError("unknown bind format: %r" % (bind,))
     else:
         raise ValueError("unknown bind format: %r" % (bind,))
-    sock=socket.socket(family, socket.SOCK_DGRAM)
+    sock = socket.socket(family, socket.SOCK_DGRAM)
     if family == socket.AF_INET:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     if reuseaddr:
@@ -372,7 +379,7 @@ def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TI
     if bind:
         host = bind[0] or ""
         port = bind[1]
-        if port==0:
+        if port == 0:
             bindOnUnusedPort(sock, host)
         else:
             if len(bind) == 2:
@@ -407,9 +414,9 @@ def setKeepalive(sock):
     except Exception:
         pass
 
+
 try:
     import fcntl
-
     def setNoInherit(sock):
         """Mark the given socket fd as non-inheritable to child processes"""
         fd = sock.fileno()
@@ -419,7 +426,7 @@ try:
 except ImportError:
     # no fcntl available, try the windows version
     try:
-        if sys.platform=="cli":
+        if sys.platform == "cli":
             raise NotImplementedError("IronPython can't obtain a proper HANDLE from a socket")
         from ctypes import windll, WinError, wintypes
         # help ctypes to set the proper args for this kernel32 call on 64-bit pythons
@@ -441,11 +448,11 @@ except ImportError:
 
 class SocketConnection(object):
     """A wrapper class for plain sockets, containing various methods such as :meth:`send` and :meth:`recv`"""
-    __slots__=["sock", "objectId"]
+    __slots__ = ["sock", "objectId"]
 
     def __init__(self, sock, objectId=None):
-        self.sock=sock
-        self.objectId=objectId
+        self.sock = sock
+        self.objectId = objectId
 
     def __del__(self):
         self.close()
@@ -474,7 +481,8 @@ class SocketConnection(object):
 
     def getTimeout(self):
         return self.sock.gettimeout()
-    timeout=property(getTimeout, setTimeout)
+
+    timeout = property(getTimeout, setTimeout)
 
 
 def findProbablyUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
@@ -484,15 +492,15 @@ def findProbablyUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
     port = bindOnUnusedPort(tempsock)
     tempsock.close()
     del tempsock
-    if sys.platform=="cli":
-        return port+1  # the actual port is somehow still in use by the socket when using IronPython
+    if sys.platform == "cli":
+        return port + 1  # the actual port is somehow still in use by the socket when using IronPython
     return port
 
 
 def bindOnUnusedPort(sock, host='localhost'):
     """Bind the socket to a free port and return the port number.
     This code is based on the code in the stdlib's test.test_support module."""
-    if os.name!="java" and sock.family in(socket.AF_INET, socket.AF_INET6) and sock.type == socket.SOCK_STREAM:
+    if os.name != "java" and sock.family in (socket.AF_INET, socket.AF_INET6) and sock.type == socket.SOCK_STREAM:
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
             # even though Jython has this socket option, it doesn't support it. Hence the check in the if statement above.
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
@@ -508,7 +516,7 @@ def bindOnUnusedPort(sock, host='localhost'):
             sock.bind((host, 0, 0, 0))
     else:
         raise CommunicationError("unsupported socket family: " + sock.family)
-    if os.name=="java":
+    if os.name == "java":
         try:
             sock.listen(100)  # otherwise jython always just returns 0 for the port
         except Exception:
@@ -527,9 +535,9 @@ hasPoll = select and hasattr(select, "poll")
 def triggerSocket(sock):
     """send a small data packet over the socket, to trigger it"""
     try:
-        data = b"!"*16
-        if sys.platform=="cli":
-            data = "!"*16
+        data = b"!" * 16
+        if sys.platform == "cli":
+            data = "!" * 16
         sock.send(data)
-    except (socket.error, AttributeError):    # attributeerror can occur here in jython
+    except (socket.error, AttributeError):  # attributeerror can occur here in jython
         pass

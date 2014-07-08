@@ -14,14 +14,14 @@ import pickle
 
 
 class Configuration(object):
-    __slots__=("HOST", "NS_HOST", "NS_PORT", "NS_BCPORT", "NS_BCHOST",
-               "COMPRESSION", "SERVERTYPE", "DOTTEDNAMES", "COMMTIMEOUT",
-               "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
-               "DETAILED_TRACEBACK", "SOCK_REUSE", "PREFER_IP_VERSION",
-               "THREADPOOL_SIZE", "HMAC_KEY", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
-               "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
-               "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
-               "METADATA")
+    __slots__ = ("HOST", "NS_HOST", "NS_PORT", "NS_BCPORT", "NS_BCHOST",
+                 "COMPRESSION", "SERVERTYPE", "DOTTEDNAMES", "COMMTIMEOUT",
+                 "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
+                 "DETAILED_TRACEBACK", "SOCK_REUSE", "PREFER_IP_VERSION",
+                 "THREADPOOL_SIZE", "HMAC_KEY", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
+                 "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
+                 "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
+                 "METADATA")
 
     def __init__(self):
         self.reset()
@@ -33,63 +33,63 @@ class Configuration(object):
         """
         self.HOST = "localhost"  # don't expose us to the outside world by default
         self.NS_HOST = self.HOST
-        self.NS_PORT = 9090      # tcp
-        self.NS_BCPORT = 9091    # udp
+        self.NS_PORT = 9090  # tcp
+        self.NS_BCPORT = 9091  # udp
         self.NS_BCHOST = None
         self.NATHOST = None
         self.NATPORT = 0
         self.COMPRESSION = False
         self.SERVERTYPE = "thread"
-        self.DOTTEDNAMES = False   # server-side
+        self.DOTTEDNAMES = False  # server-side
         self.COMMTIMEOUT = 0.0
-        self.POLLTIMEOUT = 2.0     # seconds
-        self.SOCK_REUSE = False    # so_reuseaddr on server sockets?
-        self.THREADING2 = False    # use threading2 if available?
-        self.ONEWAY_THREADED = True     # oneway calls run in their own thread
+        self.POLLTIMEOUT = 2.0  # seconds
+        self.SOCK_REUSE = False  # so_reuseaddr on server sockets?
+        self.THREADING2 = False  # use threading2 if available?
+        self.ONEWAY_THREADED = True  # oneway calls run in their own thread
         self.DETAILED_TRACEBACK = False
         self.THREADPOOL_SIZE = 16
-        self.HMAC_KEY = None   # must be bytes type
+        self.HMAC_KEY = None  # must be bytes type
         self.AUTOPROXY = True
-        self.MAX_MESSAGE_SIZE = 0   # 0 = unlimited
-        self.BROADCAST_ADDRS = "<broadcast>, 0.0.0.0"   # comma separated list of broadcast addresses
+        self.MAX_MESSAGE_SIZE = 0  # 0 = unlimited
+        self.BROADCAST_ADDRS = "<broadcast>, 0.0.0.0"  # comma separated list of broadcast addresses
         self.FLAME_ENABLED = False
-        self.PREFER_IP_VERSION = 4    # 4, 6 or 0 (let OS choose according to RFC 3484)
+        self.PREFER_IP_VERSION = 4  # 4, 6 or 0 (let OS choose according to RFC 3484)
         self.SERIALIZER = "serpent"
         self.SERIALIZERS_ACCEPTED = "serpent,marshal,json"
-        self.LOGWIRE = False   # log wire-level messages
+        self.LOGWIRE = False  # log wire-level messages
         self.PICKLE_PROTOCOL_VERSION = pickle.HIGHEST_PROTOCOL
-        self.METADATA = True     # send metadata on connect
+        self.METADATA = True  # send metadata on connect
 
         if useenvironment:
-            # process enviroment variables
-            PREFIX="PYRO_"
+            # process environment variables
+            PREFIX = "PYRO_"
             for symbol in self.__slots__:
-                if PREFIX+symbol in os.environ:
-                    value=getattr(self, symbol)
-                    envvalue=os.environ[PREFIX+symbol]
+                if PREFIX + symbol in os.environ:
+                    value = getattr(self, symbol)
+                    envvalue = os.environ[PREFIX + symbol]
                     if value is not None:
-                        valuetype=type(value)
+                        valuetype = type(value)
                         if valuetype is bool:
                             # booleans are special
-                            envvalue=envvalue.lower()
+                            envvalue = envvalue.lower()
                             if envvalue in ("0", "off", "no", "false"):
-                                envvalue=False
+                                envvalue = False
                             elif envvalue in ("1", "yes", "on", "true"):
-                                envvalue=True
+                                envvalue = True
                             else:
                                 raise ValueError("invalid boolean value: %s%s=%s" % (PREFIX, symbol, envvalue))
                         else:
-                            envvalue=valuetype(envvalue)  # just cast the value to the appropriate type
+                            envvalue = valuetype(envvalue)  # just cast the value to the appropriate type
                     setattr(self, symbol, envvalue)
         if self.HMAC_KEY and type(self.HMAC_KEY) is not bytes:
-            self.HMAC_KEY = self.HMAC_KEY.encode("utf-8")     # convert to bytes
+            self.HMAC_KEY = self.HMAC_KEY.encode("utf-8")  # convert to bytes
         self.SERIALIZERS_ACCEPTED = set(self.SERIALIZERS_ACCEPTED.split(','))
 
     def asDict(self):
         """returns the current config as a regular dictionary"""
-        result={}
+        result = {}
         for item in self.__slots__:
-            result[item]=getattr(self, item)
+            result[item] = getattr(self, item)
         return result
 
     def parseAddressesString(self, addresses):
@@ -97,11 +97,11 @@ class Configuration(object):
         Parses the addresses string which contains one or more ip addresses separated by a comma.
         Returns a sequence of these addresses. '' is replaced by the empty string.
         """
-        result=[]
+        result = []
         for addr in addresses.split(','):
-            addr=addr.strip()
-            if addr=="''":
-                addr=""
+            addr = addr.strip()
+            if addr == "''":
+                addr = ""
             result.append(addr)
         return result
 
@@ -109,20 +109,22 @@ class Configuration(object):
         # easy config diagnostics
         from Pyro4.constants import VERSION
         import inspect
+
         if hasattr(platform, "python_implementation"):
             implementation = platform.python_implementation()
         else:
-            implementation = "Jython" if os.name=="java" else "???"
-        config=self.asDict()
-        config["LOGFILE"]=os.environ.get("PYRO_LOGFILE")
-        config["LOGLEVEL"]=os.environ.get("PYRO_LOGLEVEL")
-        result= ["Pyro version: %s" % VERSION,
-                 "Loaded from: %s" % os.path.abspath(os.path.split(inspect.getfile(Configuration))[0]),
-                 "Python version: %s %s (%s, %s)" % (implementation, platform.python_version(), platform.system(), os.name),
-                 "Active configuration settings:"]
+            implementation = "Jython" if os.name == "java" else "???"
+        config = self.asDict()
+        config["LOGFILE"] = os.environ.get("PYRO_LOGFILE")
+        config["LOGLEVEL"] = os.environ.get("PYRO_LOGLEVEL")
+        result = ["Pyro version: %s" % VERSION,
+                  "Loaded from: %s" % os.path.abspath(os.path.split(inspect.getfile(Configuration))[0]),
+                  "Python version: %s %s (%s, %s)" % (implementation, platform.python_version(), platform.system(), os.name),
+                  "Active configuration settings:"]
         for n, v in sorted(config.items()):
             result.append("%s = %s" % (n, v))
         return "\n".join(result)
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     print(Configuration().dump())

@@ -24,8 +24,8 @@ class EchoServer(object):
     The echo server object that is provided as a Pyro object by this module.
     If its :attr:`verbose` attribute is set to ``True``, it will print messages as it receives calls.
     """
-    verbose=False
-    must_shutdown=False
+    verbose = False
+    must_shutdown = False
 
     def echo(self, message):
         """return the message"""
@@ -38,7 +38,7 @@ class EchoServer(object):
         """generates a simple exception (division by zero)"""
         if self.verbose:
             print("%s - error: generating exception" % time.asctime())
-        return 1//0   # division by zero error
+        return 1 // 0  # division by zero error
 
     @Pyro4.oneway
     def oneway_echo(self, message):
@@ -52,15 +52,15 @@ class EchoServer(object):
         """called to signal the echo server to shut down"""
         if self.verbose:
             print("%s - shutting down" % time.asctime())
-        self.must_shutdown=True
+        self.must_shutdown = True
 
 
 class NameServer(threadutil.Thread):
     def __init__(self, hostname):
         super(NameServer, self).__init__()
         self.setDaemon(1)
-        self.hostname=hostname
-        self.started=threadutil.Event()
+        self.hostname = hostname
+        self.started = threadutil.Event()
 
     def run(self):
         self.uri, self.ns_daemon, self.bc_server = naming.startNS(self.hostname)
@@ -71,7 +71,7 @@ class NameServer(threadutil.Thread):
 
 
 def startNameServer(host):
-    ns=NameServer(host)
+    ns = NameServer(host)
     ns.start()
     ns.started.wait()
     return ns
@@ -79,7 +79,8 @@ def startNameServer(host):
 
 def main(args, returnWithoutLooping=False):
     from optparse import OptionParser
-    parser=OptionParser()
+
+    parser = OptionParser()
     parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=localhost)")
     parser.add_option("-p", "--port", type="int", default=0, help="port to bind server on")
     parser.add_option("-u", "--unixsocket", help="Unix domain socket name to bind server on")
@@ -91,31 +92,31 @@ def main(args, returnWithoutLooping=False):
     options, args = parser.parse_args(args)
 
     if options.verbose:
-        options.quiet=False
+        options.quiet = False
     if not options.quiet:
         print("Starting Pyro's built-in test echo server.")
-    Pyro4.config.SERVERTYPE="multiplex"
+    Pyro4.config.SERVERTYPE = "multiplex"
 
     hmac = (options.key or "").encode("utf-8")
-    Pyro4.config.HMAC_KEY=hmac or Pyro4.config.HMAC_KEY
+    Pyro4.config.HMAC_KEY = hmac or Pyro4.config.HMAC_KEY
     if not options.quiet and Pyro4.config.HMAC_KEY:
         print("HMAC_KEY set to: %s" % Pyro4.config.HMAC_KEY)
 
-    nameserver=None
+    nameserver = None
     if options.nameserver:
-        options.naming=True
-        nameserver=startNameServer(options.host)
+        options.naming = True
+        nameserver = startNameServer(options.host)
 
-    d=Pyro4.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
-    echo=EchoServer()
-    echo.verbose=options.verbose
-    objectName="test.echoserver"
-    uri=d.register(echo, objectName)
+    d = Pyro4.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
+    echo = EchoServer()
+    echo.verbose = options.verbose
+    objectName = "test.echoserver"
+    uri = d.register(echo, objectName)
     if options.naming:
         host, port = None, None
         if nameserver is not None:
-            host, port=nameserver.uri.host, nameserver.uri.port
-        ns=naming.locateNS(host, port)
+            host, port = nameserver.uri.host, nameserver.uri.port
+        ns = naming.locateNS(host, port)
         ns.register(objectName, uri)
         if options.verbose:
             print("using name server at %s" % ns._pyroUri)
@@ -133,10 +134,11 @@ def main(args, returnWithoutLooping=False):
         print("echoserver running.")
 
     if returnWithoutLooping:
-        return d, echo, uri        # for unit testing
+        return d, echo, uri  # for unit testing
     else:
         d.requestLoop(loopCondition=lambda: not echo.must_shutdown)
     d.close()
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     main(sys.argv[1:])

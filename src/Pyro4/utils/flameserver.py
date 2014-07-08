@@ -18,6 +18,7 @@ import Pyro4.core
 
 def main(args, returnWithoutLooping=False):
     from optparse import OptionParser
+
     parser = OptionParser()
     parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=localhost)")
     parser.add_option("-p", "--port", type="int", default=0, help="port to bind server on")
@@ -36,7 +37,7 @@ def main(args, returnWithoutLooping=False):
     if not options.quiet and Pyro4.config.HMAC_KEY:
         print("HMAC_KEY set to: %s" % Pyro4.config.HMAC_KEY)
 
-    Pyro4.config.SERIALIZERS_ACCEPTED = set(["pickle"])   # flame requires pickle serializer
+    Pyro4.config.SERIALIZERS_ACCEPTED = set(["pickle"])  # flame requires pickle serializer
 
     daemon = Pyro4.core.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
     uri = Pyro4.utils.flame.start(daemon)
@@ -45,11 +46,12 @@ def main(args, returnWithoutLooping=False):
         print("server is running.")
 
     if returnWithoutLooping:
-        return daemon, uri        # for unit testing
+        return daemon, uri  # for unit testing
     else:
         daemon.requestLoop()
     daemon.close()
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

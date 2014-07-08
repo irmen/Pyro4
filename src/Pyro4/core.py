@@ -5,14 +5,17 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import re, sys, time, os
-import logging, uuid
-from Pyro4 import constants, threadutil, util, socketutil, errors
+import re
+import logging
+import sys
+import time
+import os
+import uuid
+import Pyro4.futures
+from Pyro4 import errors, threadutil, socketutil, util, constants, message
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
-from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
-from Pyro4 import futures
-from Pyro4.message import Message
-import Pyro4
+from Pyro4.socketserver.multiplexserver import SocketServer_Poll, SocketServer_Select
+
 
 __all__ = ["URI", "Proxy", "Daemon", "callback", "batch", "async"]
 
@@ -41,22 +44,22 @@ class URI(object):
 
     def __init__(self, uri):
         if isinstance(uri, URI):
-            state=uri.__getstate__()
+            state = uri.__getstate__()
             self.__setstate__(state)
             return
         if not isinstance(uri, basestring):
             raise TypeError("uri parameter object is of wrong type")
-        self.sockname=self.host=self.port=None
-        match=self.uriRegEx.match(uri)
+        self.sockname = self.host = self.port = None
+        match = self.uriRegEx.match(uri)
         if not match:
             raise errors.PyroError("invalid uri")
-        self.protocol=match.group("protocol").upper()
-        self.object=match.group("object")
-        location=match.group("location")
-        if self.protocol=="PYRONAME":
+        self.protocol = match.group("protocol").upper()
+        self.object = match.group("object")
+        location = match.group("location")
+        if self.protocol == "PYRONAME":
             self._parseLocation(location, Pyro4.config.NS_PORT)
             return
-        if self.protocol=="PYRO":
+        if self.protocol == "PYRO":
             if not location:
                 raise errors.PyroError("invalid uri")
             self._parseLocation(location, None)
@@ -67,7 +70,7 @@ class URI(object):
         if not location:
             return
         if location.startswith("./u:"):
-            self.sockname=location[4:]
+            self.sockname = location[4:]
             if (not self.sockname) or ':' in self.sockname:
                 raise errors.PyroError("invalid uri (location)")
         else:
@@ -78,11 +81,11 @@ class URI(object):
             else:
                 self.host, _, self.port = location.partition(":")
             if not self.port:
-                self.port=defaultPort
+                self.port = defaultPort
             try:
-                self.port=int(self.port)
+                self.port = int(self.port)
             except (ValueError, TypeError):
-                raise errors.PyroError("invalid port in uri, port="+str(self.port))
+                raise errors.PyroError("invalid port in uri, port=" + str(self.port))
 
     @staticmethod
     def isUnixsockLocation(location):
@@ -93,26 +96,26 @@ class URI(object):
     def location(self):
         """property containing the location string, for instance ``"servername.you.com:5555"``"""
         if self.host:
-            if ":" in self.host:    # ipv6
+            if ":" in self.host:  # ipv6
                 return "[%s]:%d" % (self.host, self.port)
             else:
                 return "%s:%d" % (self.host, self.port)
         elif self.sockname:
-            return "./u:"+self.sockname
+            return "./u:" + self.sockname
         else:
             return None
 
     def asString(self):
         """the string representation of this object"""
-        result=self.protocol+":"+self.object
-        location=self.location
+        result = self.protocol + ":" + self.object
+        location = self.location
         if location:
-            result+="@"+location
+            result += "@" + location
         return result
 
     def __str__(self):
-        string=self.asString()
-        if sys.version_info<(3, 0) and type(string) is unicode:
+        string = self.asString()
+        if sys.version_info < (3, 0) and type(string) is unicode:
             return string.encode("ascii", "replace")
         return string
 
@@ -125,8 +128,7 @@ class URI(object):
     def __eq__(self, other):
         if not isinstance(other, URI):
             return False
-        return (self.protocol, self.object, self.sockname, self.host, self.port) \
-            == (other.protocol, other.object, other.sockname, other.host, other.port)
+        return (self.protocol, self.object, self.sockname, self.host, self.port) == (other.protocol, other.object, other.sockname, other.host, other.port)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -152,6 +154,7 @@ class URI(object):
 
 class _RemoteMethod(object):
     """method call abstraction"""
+
     def __init__(self, send, name):
         self.__send = send
         self.__name = name
@@ -165,7 +168,7 @@ class _RemoteMethod(object):
 
 def _check_hmac():
     if Pyro4.config.HMAC_KEY:
-        if sys.version_info>=(3, 0) and type(Pyro4.config.HMAC_KEY) is not bytes:
+        if sys.version_info >= (3, 0) and type(Pyro4.config.HMAC_KEY) is not bytes:
             raise errors.PyroError("HMAC_KEY must be bytes type")
 
 
@@ -179,7 +182,8 @@ class Proxy(object):
     .. automethod:: _pyroBatch
     .. automethod:: _pyroAsync
     """
-    __pyroAttributes = frozenset(["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway", "_pyroTimeout", "_pyroSeq"])
+    __pyroAttributes = frozenset(
+        ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway", "_pyroTimeout", "_pyroSeq"])
 
     def __init__(self, uri):
         """
@@ -188,21 +192,22 @@ class Proxy(object):
         """
         _check_hmac()  # check if hmac secret key is set
         if isinstance(uri, basestring):
-            uri=URI(uri)
+            uri = URI(uri)
         elif not isinstance(uri, URI):
             raise TypeError("expected Pyro URI")
-        self._pyroUri=uri
-        self._pyroConnection=None
-        self._pyroMethods = None   # all methods of the remote object, gotten from meta-info (or set manually)
-        self._pyroOneway = set()   # oneway-methods of the remote object, gotten from meta-info (or set manually)
-        self._pyroAttrs = None     # attributes of the remote object, gotten from meta-info (or set manually)
-        self._pyroSeq=0    # message sequence number
-        self.__pyroTimeout=Pyro4.config.COMMTIMEOUT
-        self.__pyroLock=threadutil.Lock()
-        self.__pyroConnLock=threadutil.Lock()
+        self._pyroUri = uri
+        self._pyroConnection = None
+        self._pyroMethods = None  # all methods of the remote object, gotten from meta-info (or set manually)
+        self._pyroOneway = set()  # oneway-methods of the remote object, gotten from meta-info (or set manually)
+        self._pyroAttrs = None  # attributes of the remote object, gotten from meta-info (or set manually)
+        self._pyroSeq = 0  # message sequence number
+        self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
+        self.__pyroLock = threadutil.Lock()
+        self.__pyroConnLock = threadutil.Lock()
         util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
-        if os.name=="java" and Pyro4.config.SERIALIZER=="marshal":
+        if os.name == "java" and Pyro4.config.SERIALIZER == "marshal":
             import warnings
+
             warnings.warn("marshal doesn't work correctly with Jython (issue 2077); please choose another serializer", RuntimeWarning)
 
     def __del__(self):
@@ -216,9 +221,9 @@ class Proxy(object):
         return _RemoteMethod(self._pyroInvoke, name)
 
     def __repr__(self):
-        connected="connected" if self._pyroConnection else "not connected"
+        connected = "connected" if self._pyroConnection else "not connected"
         return "<%s.%s at 0x%x, %s, for %s>" % (self.__class__.__module__, self.__class__.__name__,
-               id(self), connected, self._pyroUri)
+                                                id(self), connected, self._pyroUri)
 
     def __unicode__(self):
         return str(self)
@@ -227,13 +232,13 @@ class Proxy(object):
         return self._pyroUri.asString(), tuple(self._pyroOneway), self.__pyroTimeout
 
     def __setstate_from_dict__(self, state):
-        uri = Pyro4.core.URI(state[0])
+        uri = URI(state[0])
         oneway = set(state[1])
         timeout = state[2]
         self.__setstate__((uri, oneway, timeout))
 
     def __getstate__(self):
-        return self._pyroUri, self._pyroOneway, self.__pyroTimeout    # skip the connection
+        return self._pyroUri, self._pyroOneway, self.__pyroTimeout  # skip the connection
 
     def __setstate__(self, state):
         self._pyroUri, self._pyroOneway, self.__pyroTimeout = state
@@ -243,7 +248,7 @@ class Proxy(object):
         self.__pyroConnLock = threadutil.Lock()
 
     def __copy__(self):
-        uriCopy=URI(self._pyroUri)
+        uriCopy = URI(self._pyroUri)
         return Proxy(uriCopy)
 
     def __enter__(self):
@@ -270,7 +275,7 @@ class Proxy(object):
         with self.__pyroConnLock:
             if self._pyroConnection is not None:
                 self._pyroConnection.close()
-                self._pyroConnection=None
+                self._pyroConnection = None
                 log.debug("connection released")
 
     def _pyroBind(self):
@@ -285,10 +290,11 @@ class Proxy(object):
         return self.__pyroTimeout
 
     def __pyroSetTimeout(self, timeout):
-        self.__pyroTimeout=timeout
+        self.__pyroTimeout = timeout
         if self._pyroConnection is not None:
-            self._pyroConnection.timeout=timeout
-    _pyroTimeout=property(__pyroGetTimeout, __pyroSetTimeout)
+            self._pyroConnection.timeout = timeout
+
+    _pyroTimeout = property(__pyroGetTimeout, __pyroSetTimeout)
 
     def _pyroInvoke(self, methodname, vargs, kwargs, flags=0, objectId=None):
         """perform the remote method call communication"""
@@ -304,34 +310,36 @@ class Proxy(object):
         if methodname in self._pyroOneway:
             flags |= Pyro4.message.FLAGS_ONEWAY
         with self.__pyroLock:
-            self._pyroSeq=(self._pyroSeq+1)&0xffff
+            self._pyroSeq = (self._pyroSeq + 1) & 0xffff
             if Pyro4.config.LOGWIRE:
-                log.debug("proxy wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (Pyro4.message.MSG_INVOKE, flags, serializer.serializer_id, self._pyroSeq, data))
-            msg = Message(Pyro4.message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq)
+                log.debug("proxy wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" %
+                          (message.MSG_INVOKE, flags, serializer.serializer_id, self._pyroSeq, data))
+            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq)
             try:
                 self._pyroConnection.send(msg.to_bytes())
                 del msg  # invite GC to collect the object, don't wait for out-of-scope
-                if flags & Pyro4.message.FLAGS_ONEWAY:
-                    return None    # oneway call, no response data
+                if flags & message.FLAGS_ONEWAY:
+                    return None  # oneway call, no response data
                 else:
-                    msg = Message.recv(self._pyroConnection, [Pyro4.message.MSG_RESULT])
+                    msg = message.Message.recv(self._pyroConnection, [message.MSG_RESULT])
                     if Pyro4.config.LOGWIRE:
-                        log.debug("proxy wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
+                        log.debug("proxy wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (
+                        msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
                     self.__pyroCheckSequence(msg.seq)
                     if msg.serializer_id != serializer.serializer_id:
                         error = "invalid serializer in response: %d" % msg.serializer_id
                         log.error(error)
                         raise errors.ProtocolError(error)
-                    data = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
-                    if msg.flags & Pyro4.message.FLAGS_EXCEPTION:
-                        if sys.platform=="cli":
+                    data = serializer.deserializeData(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
+                    if msg.flags & message.FLAGS_EXCEPTION:
+                        if sys.platform == "cli":
                             util.fixIronPythonExceptionForPickle(data, False)
                         raise data
                     else:
                         return data
             except (errors.CommunicationError, KeyboardInterrupt):
                 # Communication error during read. To avoid corrupt transfers, we close the connection.
-                # Otherwise we might receive the previous reply as a result of a new methodcall!
+                # Otherwise we might receive the previous reply as a result of a new method call!
                 # Special case for keyboardinterrupt: people pressing ^C to abort the client
                 # may be catching the keyboardinterrupt in their code. We should probably be on the
                 # safe side and release the proxy connection in this case too, because they might
@@ -340,8 +348,8 @@ class Proxy(object):
                 raise
 
     def __pyroCheckSequence(self, seq):
-        if seq!=self._pyroSeq:
-            err="invoke: reply sequence out of sync, got %d expected %d" % (seq, self._pyroSeq)
+        if seq != self._pyroSeq:
+            err = "invoke: reply sequence out of sync, got %d expected %d" % (seq, self._pyroSeq)
             log.error(err)
             raise errors.ProtocolError(err)
 
@@ -352,27 +360,28 @@ class Proxy(object):
         """
         with self.__pyroConnLock:
             if self._pyroConnection is not None:
-                return False     # already connected
-            from Pyro4.naming import resolve  # don't import this globally because of cyclic dependancy
-            uri=resolve(self._pyroUri)
+                return False  # already connected
+            from Pyro4.naming import resolve  # don't import this globally because of cyclic dependency
+
+            uri = resolve(self._pyroUri)
             # socket connection (normal or Unix domain socket)
-            conn=None
+            conn = None
             log.debug("connecting to %s", uri)
-            connect_location=uri.sockname if uri.sockname else (uri.host, uri.port)
+            connect_location = uri.sockname if uri.sockname else (uri.host, uri.port)
             with self.__pyroLock:
                 try:
                     if self._pyroConnection is not None:
-                        return False    # already connected
-                    sock=socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout)
-                    conn=socketutil.SocketConnection(sock, uri.object)
+                        return False  # already connected
+                    sock = socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout)
+                    conn = socketutil.SocketConnection(sock, uri.object)
                     # Do handshake. For now, no need to send anything. (message type CONNECT is not yet used)
-                    msg = Message.recv(conn, None)
+                    msg = message.Message.recv(conn, None)
                     # any trailing data (dataLen>0) is an error message, if any
                 except Exception:
-                    x=sys.exc_info()[1]
+                    x = sys.exc_info()[1]
                     if conn:
                         conn.close()
-                    err="cannot connect: %s" % x
+                    err = "cannot connect: %s" % x
                     log.error(err)
                     if isinstance(x, errors.CommunicationError):
                         raise
@@ -381,8 +390,8 @@ class Proxy(object):
                         ce.__cause__ = x
                         raise ce
                 else:
-                    if msg.type==Pyro4.message.MSG_CONNECTFAIL:
-                        error="connection rejected"
+                    if msg.type == message.MSG_CONNECTFAIL:
+                        error = "connection rejected"
                         if msg.data:
                             serializer = util.get_serializer_by_id(msg.serializer_id)
                             data = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
@@ -390,14 +399,14 @@ class Proxy(object):
                         conn.close()
                         log.error(error)
                         raise errors.CommunicationError(error)
-                    if msg.type!=Pyro4.message.MSG_CONNECTOK:
+                    if msg.type != message.MSG_CONNECTOK:
                         conn.close()
-                        err="connect: invalid msg type %d received" % msg.type
+                        err = "connect: invalid msg type %d received" % msg.type
                         log.error(err)
                         raise errors.ProtocolError(err)
-                    self._pyroConnection=conn
+                    self._pyroConnection = conn
                     if replaceUri:
-                        self._pyroUri=uri
+                        self._pyroUri = uri
                     log.debug("connected to %s", self._pyroUri)
             self.__handleMetadata(uri.object)
             return True
@@ -408,7 +417,7 @@ class Proxy(object):
             log.debug("getting metadata for object %s", objectId)
             try:
                 # invoke the get_metadata method on the daemon
-                result = self._pyroInvoke("get_metadata", [objectId], {}, objectId=Pyro4.constants.DAEMON_NAME)
+                result = self._pyroInvoke("get_metadata", [objectId], {}, objectId=constants.DAEMON_NAME)
                 self._pyroOneway = set(result["oneway"])
                 self._pyroMethods = set(result["methods"])
                 self._pyroAttrs = set(result["attrs"])
@@ -428,10 +437,10 @@ class Proxy(object):
                 self.__pyroCreateConnection()
                 return
             except errors.CommunicationError:
-                tries-=1
+                tries -= 1
                 if tries:
                     time.sleep(2)
-        msg="failed to reconnect"
+        msg = "failed to reconnect"
         log.error(msg)
         raise errors.ConnectionClosedError(msg)
 
@@ -444,14 +453,15 @@ class Proxy(object):
         return _AsyncProxyAdapter(self)
 
     def _pyroInvokeBatch(self, calls, oneway=False):
-        flags=Pyro4.message.FLAGS_BATCH
+        flags = Pyro4.message.FLAGS_BATCH
         if oneway:
-            flags|=Pyro4.message.FLAGS_ONEWAY
+            flags |= Pyro4.message.FLAGS_ONEWAY
         return self._pyroInvoke("<batch>", calls, None, flags)
 
 
 class _BatchedRemoteMethod(object):
     """method call abstraction that is used with batched calls"""
+
     def __init__(self, calls, name):
         self.__calls = calls
         self.__name = name
@@ -469,9 +479,10 @@ class _BatchProxyAdapter(object):
     carry out the batched calls. Call methods on this object thatyou want to batch,
     and finally call the batch proxy itself. That call will return a generator
     for the results of every method call in the batch (in sequence)."""
+
     def __init__(self, proxy):
-        self.__proxy=proxy
-        self.__calls=[]
+        self.__proxy = proxy
+        self.__calls = []
 
     def __getattr__(self, name):
         return _BatchedRemoteMethod(self.__calls, name)
@@ -487,10 +498,10 @@ class _BatchProxyAdapter(object):
 
     def __resultsgenerator(self, results):
         for result in results:
-            if isinstance(result, futures._ExceptionWrapper):
-                result.raiseIt()   # re-raise the remote exception locally.
+            if isinstance(result, Pyro4.futures._ExceptionWrapper):
+                result.raiseIt()  # re-raise the remote exception locally.
             else:
-                yield result   # it is a regular result object, yield that and continue.
+                yield result  # it is a regular result object, yield that and continue.
 
     def __call__(self, oneway=False, async=False):
         if oneway and async:
@@ -498,21 +509,21 @@ class _BatchProxyAdapter(object):
         if async:
             return _AsyncRemoteMethod(self, "<asyncbatch>")()
         else:
-            results=self.__proxy._pyroInvokeBatch(self.__calls, oneway)
-            self.__calls=[]   # clear for re-use
+            results = self.__proxy._pyroInvokeBatch(self.__calls, oneway)
+            self.__calls = []  # clear for re-use
             if not oneway:
                 return self.__resultsgenerator(results)
 
     def _pyroInvoke(self, name, args, kwargs):
         # ignore all parameters, we just need to execute the batch
-        results=self.__proxy._pyroInvokeBatch(self.__calls)
-        self.__calls=[]   # clear for re-use
+        results = self.__proxy._pyroInvokeBatch(self.__calls)
+        self.__calls = []  # clear for re-use
         return self.__resultsgenerator(results)
 
 
 class _AsyncProxyAdapter(object):
     def __init__(self, proxy):
-        self.__proxy=proxy
+        self.__proxy = proxy
 
     def __getattr__(self, name):
         return _AsyncRemoteMethod(self.__proxy, name)
@@ -520,6 +531,7 @@ class _AsyncProxyAdapter(object):
 
 class _AsyncRemoteMethod(object):
     """async method call abstraction (call will run in a background thread)"""
+
     def __init__(self, proxy, name):
         self.__proxy = proxy
         self.__name = name
@@ -528,8 +540,8 @@ class _AsyncRemoteMethod(object):
         return _AsyncRemoteMethod(self.__proxy, "%s.%s" % (self.__name, name))
 
     def __call__(self, *args, **kwargs):
-        result=futures.FutureResult()
-        thread=threadutil.Thread(target=self.__asynccall, args=(result, args, kwargs))
+        result = Pyro4.futures.FutureResult()
+        thread = threadutil.Thread(target=self.__asynccall, args=(result, args, kwargs))
         thread.setDaemon(True)
         thread.start()
         return result
@@ -540,10 +552,10 @@ class _AsyncRemoteMethod(object):
             # and use contextmanager to close the proxy after we're done
             with self.__proxy.__copy__() as proxy:
                 value = proxy._pyroInvoke(self.__name, args, kwargs)
-            asyncresult.value=value
+            asyncresult.value = value
         except Exception:
             # ignore any exceptions here, return them as part of the async result instead
-            asyncresult.value=futures._ExceptionWrapper(sys.exc_info()[1])
+            asyncresult.value = Pyro4.futures._ExceptionWrapper(sys.exc_info()[1])
 
 
 def batch(proxy):
@@ -562,14 +574,15 @@ def pyroObjectToAutoProxy(self):
         daemon = getattr(self, "_pyroDaemon", None)
         if daemon:
             # only return a proxy if the object is a registered pyro object
-            return Pyro4.core.Proxy(daemon.uriFor(self))
+            return Proxy(daemon.uriFor(self))
     return self
 
 
 class DaemonObject(object):
     """The part of the daemon that is exposed as a Pyro object."""
+
     def __init__(self, daemon):
-        self.daemon=daemon
+        self.daemon = daemon
 
     def registered(self):
         """returns a list of all object names registered in this daemon"""
@@ -582,7 +595,7 @@ class DaemonObject(object):
     def info(self):
         """return some descriptive information about the daemon"""
         return "%s bound on %s, NAT %s, %d objects registered. Servertype: %s" % (
-            Pyro4.constants.DAEMON_NAME, self.daemon.locationStr, self.daemon.natLocationStr,
+            constants.DAEMON_NAME, self.daemon.locationStr, self.daemon.natLocationStr,
             len(self.daemon.objectsById), self.daemon.transportServer)
 
     def get_metadata(self, objectId):
@@ -600,46 +613,47 @@ class Daemon(object):
     Pyro daemon. Contains server side logic and dispatches incoming remote method calls
     to the appropriate objects.
     """
+
     def __init__(self, host=None, port=0, unixsocket=None, nathost=None, natport=None):
         _check_hmac()  # check if hmac secret key is set
         if host is None:
-            host=Pyro4.config.HOST
+            host = Pyro4.config.HOST
         if nathost is None:
-            nathost=Pyro4.config.NATHOST
+            nathost = Pyro4.config.NATHOST
         if natport is None:
-            natport=Pyro4.config.NATPORT or None
+            natport = Pyro4.config.NATPORT or None
         if nathost and unixsocket:
             raise ValueError("cannot use nathost together with unixsocket")
         if (nathost is None) ^ (natport is None):
             raise ValueError("must provide natport with nathost")
-        if Pyro4.config.SERVERTYPE=="thread":
-            self.transportServer=SocketServer_Threadpool()
-        elif Pyro4.config.SERVERTYPE=="multiplex":
+        if Pyro4.config.SERVERTYPE == "thread":
+            self.transportServer = SocketServer_Threadpool()
+        elif Pyro4.config.SERVERTYPE == "multiplex":
             # choose the 'best' multiplexing implementation
-            if os.name=="java":
-                self.transportServer = SocketServer_Select()    # poll doesn't work as given in jython ('socket must be in nonblocking mode')
+            if os.name == "java":
+                self.transportServer = SocketServer_Select()  # poll doesn't work as given in jython ('socket must be in nonblocking mode')
             else:
                 self.transportServer = SocketServer_Poll() if socketutil.hasPoll else SocketServer_Select()
         else:
             raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
         self.transportServer.init(self, host, port, unixsocket)
         #: The location (str of the form ``host:portnumber``) on which the Daemon is listening
-        self.locationStr=self.transportServer.locationStr
+        self.locationStr = self.transportServer.locationStr
         log.debug("created daemon on %s", self.locationStr)
         natport_for_loc = natport
-        if natport==0:
+        if natport == 0:
             # expose internal port number as NAT port as well. (don't use port because it could be 0 and will be chosen by the OS)
             natport_for_loc = int(self.locationStr.split(":")[1])
         #: The NAT-location (str of the form ``nathost:natportnumber``) on which the Daemon is exposed for use with NAT-routing
         self.natLocationStr = "%s:%d" % (nathost, natport_for_loc) if nathost else None
         if self.natLocationStr:
             log.debug("NAT address is %s", self.natLocationStr)
-        pyroObject=DaemonObject(self)
-        pyroObject._pyroId=constants.DAEMON_NAME
+        pyroObject = DaemonObject(self)
+        pyroObject._pyroId = constants.DAEMON_NAME
         #: Dictionary from Pyro object id to the actual Pyro object registered by this id
-        self.objectsById={pyroObject._pyroId: pyroObject}
-        self.__mustshutdown=threadutil.Event()
-        self.__loopstopped=threadutil.Event()
+        self.objectsById = {pyroObject._pyroId: pyroObject}
+        self.__mustshutdown = threadutil.Event()
+        self.__loopstopped = threadutil.Event()
         self.__loopstopped.set()
         # assert that the configured serializers are available, and remember their ids:
         self.__serializer_ids = set([util.get_serializer(ser_name).serializer_id for ser_name in Pyro4.config.SERIALIZERS_ACCEPTED])
@@ -662,16 +676,16 @@ class Daemon(object):
         in the naming server as well, otherwise they just stay local.
         """
         if not daemon:
-            daemon=Daemon(host, port)
+            daemon = Daemon(host, port)
         with daemon:
             if ns:
-                ns=Pyro4.naming.locateNS()
+                ns = Pyro4.naming.locateNS()
             for obj, name in objects.items():
                 if ns:
-                    localname=None   # name is used for the name server
+                    localname = None  # name is used for the name server
                 else:
-                    localname=name   # no name server, use name in daemon
-                uri=daemon.register(obj, localname)
+                    localname = name  # no name server, use name in daemon
+                uri = daemon.register(obj, localname)
                 if verbose:
                     print("Object {0}:\n    uri = {1}".format(repr(obj), uri))
                 if name and ns:
@@ -691,7 +705,7 @@ class Daemon(object):
         log.info("daemon %s entering requestloop", self.locationStr)
         try:
             self.__loopstopped.clear()
-            condition=lambda: not self.__mustshutdown.isSet() and loopCondition()
+            condition = lambda: not self.__mustshutdown.isSet() and loopCondition()
             self.transportServer.loop(loopCondition=condition)
         finally:
             self.__loopstopped.set()
@@ -721,7 +735,7 @@ class Daemon(object):
         # We default to the marshal serializer to send message payload of "ok"
         ser = util.get_serializer("marshal")
         data = ser.dumps("ok")
-        msg = Message(Pyro4.message.MSG_CONNECTOK, data, ser.serializer_id, 0, 1)
+        msg = message.Message(message.MSG_CONNECTOK, data, ser.serializer_id, 0, 1)
         conn.send(msg.to_bytes())
         return True
 
@@ -731,23 +745,24 @@ class Daemon(object):
         wraps it in a reply to the calling side, as to not make this server side loop
         terminate due to exceptions caused by remote invocations.
         """
-        request_flags=0
-        request_seq=0
+        request_flags = 0
+        request_seq = 0
         request_serializer_id = util.MarshalSerializer.serializer_id
-        wasBatched=False
-        isCallback=False
+        wasBatched = False
+        isCallback = False
         try:
-            msg = Message.recv(conn, [Pyro4.message.MSG_INVOKE, Pyro4.message.MSG_PING])
+            msg = message.Message.recv(conn, [message.MSG_INVOKE, message.MSG_PING])
             request_flags = msg.flags
             request_seq = msg.seq
             request_serializer_id = msg.serializer_id
             if Pyro4.config.LOGWIRE:
                 log.debug("daemon wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
-            if msg.type == Pyro4.message.MSG_PING:
+            if msg.type == message.MSG_PING:
                 # return same seq, but ignore any data (it's a ping, not an echo). Nothing is deserialized.
-                msg = Message(Pyro4.message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq)
+                msg = message.Message(message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq)
                 if Pyro4.config.LOGWIRE:
-                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
+                    log.debug(
+                        "daemon wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
                 conn.send(msg.to_bytes())
                 return
             if msg.serializer_id not in self.__serializer_ids:
@@ -757,53 +772,53 @@ class Daemon(object):
             del msg  # invite GC to collect the object, don't wait for out-of-scope
             obj = self.objectsById.get(objId)
             if obj is not None:
-                if kwargs and sys.version_info<(2, 6, 5) and os.name!="java":
+                if kwargs and sys.version_info < (2, 6, 5) and os.name != "java":
                     # Python before 2.6.5 doesn't accept unicode keyword arguments
                     kwargs = dict((str(k), kwargs[k]) for k in kwargs)
                 if request_flags & Pyro4.message.FLAGS_BATCH:
                     # batched method calls, loop over them all and collect all results
-                    data=[]
+                    data = []
                     for method, vargs, kwargs in vargs:
-                        method=util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
+                        method = util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
                         try:
-                            result=method(*vargs, **kwargs)   # this is the actual method call to the Pyro object
+                            result = method(*vargs, **kwargs)  # this is the actual method call to the Pyro object
                         except Exception:
                             xt, xv = sys.exc_info()[0:2]
                             log.debug("Exception occurred while handling batched request: %s", xv)
-                            xv._pyroTraceback=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
-                            if sys.platform=="cli":
+                            xv._pyroTraceback = util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
+                            if sys.platform == "cli":
                                 util.fixIronPythonExceptionForPickle(xv, True)  # piggyback attributes
-                            data.append(futures._ExceptionWrapper(xv))
-                            break   # stop processing the rest of the batch
+                            data.append(Pyro4.futures._ExceptionWrapper(xv))
+                            break  # stop processing the rest of the batch
                         else:
                             data.append(result)
-                    wasBatched=True
+                    wasBatched = True
                 else:
                     # normal single method call
-                    method=util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
+                    method = util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
                     if request_flags & Pyro4.message.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:
                         # oneway call to be run inside its own thread
-                        thread=threadutil.Thread(target=method, args=vargs, kwargs=kwargs)
+                        thread = threadutil.Thread(target=method, args=vargs, kwargs=kwargs)
                         thread.setDaemon(True)
                         thread.start()
                     else:
-                        isCallback=getattr(method, "_pyroCallback", False)
-                        data=method(*vargs, **kwargs)   # this is the actual method call to the Pyro object
+                        isCallback = getattr(method, "_pyroCallback", False)
+                        data = method(*vargs, **kwargs)  # this is the actual method call to the Pyro object
             else:
                 log.debug("unknown object requested: %s", objId)
                 raise errors.DaemonError("unknown object")
             if request_flags & Pyro4.message.FLAGS_ONEWAY:
-                return   # oneway call, don't send a response
+                return  # oneway call, don't send a response
             else:
                 data, compressed = serializer.serializeData(data, compress=Pyro4.config.COMPRESSION)
-                response_flags=0
+                response_flags = 0
                 if compressed:
                     response_flags |= Pyro4.message.FLAGS_COMPRESSED
                 if wasBatched:
                     response_flags |= Pyro4.message.FLAGS_BATCH
                 if Pyro4.config.LOGWIRE:
-                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (Pyro4.message.MSG_RESULT, response_flags, serializer.serializer_id, request_seq, data))
-                msg = Message(Pyro4.message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq)
+                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (message.MSG_RESULT, response_flags, serializer.serializer_id, request_seq, data))
+                msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq)
                 conn.send(msg.to_bytes())
         except Exception:
             xt, xv = sys.exc_info()[0:2]
@@ -812,15 +827,15 @@ class Daemon(object):
                 if not request_flags & Pyro4.message.FLAGS_ONEWAY and not isinstance(xv, errors.CommunicationError):
                     # only return the error to the client if it wasn't a oneway call, and not a communication error
                     # (in these cases, it makes no sense to try to report the error back to the client...)
-                    tblines=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
+                    tblines = util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
                     self._sendExceptionResponse(conn, request_seq, request_serializer_id, xv, tblines)
             if isCallback or isinstance(xv, (errors.CommunicationError, errors.SecurityError)):
-                raise       # re-raise if flagged as callback, communication or security error.
+                raise  # re-raise if flagged as callback, communication or security error.
 
     def _sendExceptionResponse(self, connection, seq, serializer_id, exc_value, tbinfo):
         """send an exception back including the local traceback info"""
-        exc_value._pyroTraceback=tbinfo
-        if sys.platform=="cli":
+        exc_value._pyroTraceback = tbinfo
+        if sys.platform == "cli":
             util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
         serializer = util.get_serializer_by_id(serializer_id)
         try:
@@ -830,16 +845,16 @@ class Daemon(object):
             xt, xv, tb = sys.exc_info()
             msg = "Error serializing exception: %s. Original exception: %s: %s" % (str(xv), type(exc_value), str(exc_value))
             exc_value = errors.PyroError(msg)
-            exc_value._pyroTraceback=tbinfo
-            if sys.platform=="cli":
+            exc_value._pyroTraceback = tbinfo
+            if sys.platform == "cli":
                 util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
             data, compressed = serializer.serializeData(exc_value)
         flags = Pyro4.message.FLAGS_EXCEPTION
         if compressed:
             flags |= Pyro4.message.FLAGS_COMPRESSED
         if Pyro4.config.LOGWIRE:
-            log.debug("daemon wiredata sending (error response): msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (Pyro4.message.MSG_RESULT, flags, serializer.serializer_id, seq, data))
-        msg = Message(Pyro4.message.MSG_RESULT, data, serializer.serializer_id, flags, seq)
+            log.debug("daemon wiredata sending (error response): msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (message.MSG_RESULT, flags, serializer.serializer_id, seq, data))
+        msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq)
         connection.send(msg.to_bytes())
 
     def register(self, obj, objectId=None):
@@ -852,21 +867,21 @@ class Daemon(object):
             if not isinstance(objectId, basestring):
                 raise TypeError("objectId must be a string or None")
         else:
-            objectId="obj_"+uuid.uuid4().hex   # generate a new objectId
-        if hasattr(obj, "_pyroId") and obj._pyroId != "":     # check for empty string is needed for Cython
+            objectId = "obj_" + uuid.uuid4().hex  # generate a new objectId
+        if hasattr(obj, "_pyroId") and obj._pyroId != "":  # check for empty string is needed for Cython
             raise errors.DaemonError("object already has a Pyro id")
         if objectId in self.objectsById:
             raise errors.DaemonError("object already registered with that id")
         # set some pyro attributes
-        obj._pyroId=objectId
-        obj._pyroDaemon=self
+        obj._pyroId = objectId
+        obj._pyroDaemon = self
         if Pyro4.config.AUTOPROXY:
             # register a custom serializer for the type to automatically return proxies
             # we need to do this for all known serializers
             for ser in util._serializers.values():
                 ser.register_type_replacement(type(obj), pyroObjectToAutoProxy)
         # register the object in the mapping
-        self.objectsById[obj._pyroId]=obj
+        self.objectsById[obj._pyroId] = obj
         return self.uriFor(objectId)
 
     def unregister(self, objectOrId):
@@ -877,13 +892,13 @@ class Daemon(object):
         if objectOrId is None:
             raise ValueError("object or objectid argument expected")
         if not isinstance(objectOrId, basestring):
-            objectId=getattr(objectOrId, "_pyroId", None)
+            objectId = getattr(objectOrId, "_pyroId", None)
             if objectId is None:
                 raise errors.DaemonError("object isn't registered")
         else:
-            objectId=objectOrId
-            objectOrId=None
-        if objectId==constants.DAEMON_NAME:
+            objectId = objectOrId
+            objectOrId = None
+        if objectId == constants.DAEMON_NAME:
             return
         if objectId in self.objectsById:
             del self.objectsById[objectId]
@@ -904,13 +919,13 @@ class Daemon(object):
         return an URI for the internal address.
         """
         if not isinstance(objectOrId, basestring):
-            objectOrId=getattr(objectOrId, "_pyroId", None)
+            objectOrId = getattr(objectOrId, "_pyroId", None)
             if objectOrId is None:
                 raise errors.DaemonError("object isn't registered")
         if nat:
-            loc=self.natLocationStr or self.locationStr
+            loc = self.natLocationStr or self.locationStr
         else:
-            loc=self.locationStr
+            loc = self.locationStr
         return URI("PYRO:%s@%s" % (objectOrId, loc))
 
     def close(self):
@@ -918,11 +933,11 @@ class Daemon(object):
         log.debug("daemon closing")
         if self.transportServer:
             self.transportServer.close()
-            self.transportServer=None
+            self.transportServer = None
 
     def __repr__(self):
         return "<%s.%s at 0x%x, %s, %d objects>" % (self.__class__.__module__, self.__class__.__name__,
-               id(self), self.locationStr, len(self.objectsById))
+                                                    id(self), self.locationStr, len(self.objectsById))
 
     def __enter__(self):
         if not self.transportServer:
@@ -933,7 +948,7 @@ class Daemon(object):
         self.close()
 
     def __getstate__(self):
-        return {}   # a little hack to make it possible to serialize Pyro objects, because they can reference a daemon
+        return {}  # a little hack to make it possible to serialize Pyro objects, because they can reference a daemon
 
     def __getstate_for_dict__(self):
         return self.__getstate__()
@@ -971,14 +986,14 @@ try:
         # Override the default way that a Pyro URI/proxy/daemon is serialized.
         # Because it defines a __getstate__ it would otherwise just become a tuple,
         # and not be deserialized as a class.
-        d = Pyro4.util.SerializerBase.class_to_dict(obj)
+        d = util.SerializerBase.class_to_dict(obj)
         serializer.ser_builtins_dict(d, stream, level)
 
     # register the special serializers for the pyro objects with Serpent
     serpent.register_class(URI, pyro_class_serpent_serializer)
     serpent.register_class(Proxy, pyro_class_serpent_serializer)
     serpent.register_class(Daemon, pyro_class_serpent_serializer)
-    serpent.register_class(futures._ExceptionWrapper, pyro_class_serpent_serializer)
+    serpent.register_class(Pyro4.futures._ExceptionWrapper, pyro_class_serpent_serializer)
 except ImportError:
     pass
 
@@ -989,7 +1004,8 @@ def serialize_core_object_to_dict(obj):
         "state": obj.__getstate_for_dict__()
     }
 
-Pyro4.util.SerializerBase.register_class_to_dict(URI, serialize_core_object_to_dict, serpent_too=False)
-Pyro4.util.SerializerBase.register_class_to_dict(Proxy, serialize_core_object_to_dict, serpent_too=False)
-Pyro4.util.SerializerBase.register_class_to_dict(Daemon, serialize_core_object_to_dict, serpent_too=False)
-Pyro4.util.SerializerBase.register_class_to_dict(futures._ExceptionWrapper, futures._ExceptionWrapper.__serialized_dict__, serpent_too=False)
+
+util.SerializerBase.register_class_to_dict(URI, serialize_core_object_to_dict, serpent_too=False)
+util.SerializerBase.register_class_to_dict(Proxy, serialize_core_object_to_dict, serpent_too=False)
+util.SerializerBase.register_class_to_dict(Daemon, serialize_core_object_to_dict, serpent_too=False)
+util.SerializerBase.register_class_to_dict(Pyro4.futures._ExceptionWrapper, Pyro4.futures._ExceptionWrapper.__serialized_dict__, serpent_too=False)

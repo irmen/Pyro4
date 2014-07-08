@@ -21,6 +21,7 @@ def _configLogging():
     make the log go to the standard error output."""
     import os
     import logging
+
     level = os.environ.get("PYRO_LOGLEVEL")
     logfilename = os.environ.get("PYRO_LOGFILE", "pyro.log")
     if logfilename == "{stderr}":
@@ -31,6 +32,7 @@ def _configLogging():
             # configure the logging with some sensible defaults.
             try:
                 import tempfile
+
                 tempfile = tempfile.TemporaryFile(dir=".")
                 tempfile.close()
             except OSError:
@@ -43,7 +45,7 @@ def _configLogging():
                     filename=logfilename,
                     datefmt="%Y-%m-%d %H:%M:%S",
                     format="[%(asctime)s.%(msecs)03d,%(name)s,%(levelname)s] %(message)s"
-                    )
+                )
             log = logging.getLogger("Pyro4")
             log.info("Pyro log configured using built-in defaults, level=%s", level)
     else:
@@ -51,11 +53,13 @@ def _configLogging():
         log = logging.getLogger("Pyro4")
         log.setLevel(9999)
 
+
 _configLogging()
 del _configLogging
 
 # initialize Pyro's configuration
 from Pyro4.configuration import Configuration
+
 config = Configuration()
 del Configuration
 
