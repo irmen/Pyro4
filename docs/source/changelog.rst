@@ -4,9 +4,14 @@ Change Log
 
 **Pyro 4.27**
 
-- ...@todo: @oneway, metadata,...
 - requires serpent 1.6 or newer (because of some changes regarding to set literals)
 - pep8'ified the unit test source code
+- added @Pyro4.expose and @Pyro4.oneway decorators
+- attr lookup now actually honors 'private' attributes in all cases (name starting with underscore-- these are blocked from remote access no matter what)
+- added METADATA config item (default True, set to False to disable it and get Pyro 4.26 behavior back)
+- added REQUIRE_EXPOSE config item (default True, everything is exposed. Set to false to cherry pick with @expose)
+- echoserver gained a few more methods to test the new decorators
+- Proxy._pyroGetMetadata method added. Is used internally as well (if METADATA is enabled), to obtain info about remote object attributes and methods.
 
 
 **Pyro 4.26**

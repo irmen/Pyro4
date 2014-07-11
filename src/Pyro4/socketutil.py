@@ -417,6 +417,7 @@ def setKeepalive(sock):
 
 try:
     import fcntl
+
     def setNoInherit(sock):
         """Mark the given socket fd as non-inheritable to child processes"""
         fd = sock.fileno()

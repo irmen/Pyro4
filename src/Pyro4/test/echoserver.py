@@ -19,40 +19,57 @@ import Pyro4
 __all__ = ["EchoServer"]
 
 
+@Pyro4.expose
 class EchoServer(object):
     """
     The echo server object that is provided as a Pyro object by this module.
     If its :attr:`verbose` attribute is set to ``True``, it will print messages as it receives calls.
     """
-    verbose = False
-    must_shutdown = False
+    _verbose = False
+    _must_shutdown = False
 
     def echo(self, message):
         """return the message"""
-        if self.verbose:
+        if self._verbose:
             message_str = repr(message).encode(sys.stdout.encoding, errors="replace").decode(sys.stdout.encoding)
             print("%s - echo: %s" % (time.asctime(), message_str))
         return message
 
     def error(self):
         """generates a simple exception (division by zero)"""
-        if self.verbose:
+        if self._verbose:
             print("%s - error: generating exception" % time.asctime())
         return 1 // 0  # division by zero error
 
     @Pyro4.oneway
     def oneway_echo(self, message):
         """just like echo, but oneway; the client won't wait for response"""
-        if self.verbose:
+        if self._verbose:
             message_str = repr(message).encode(sys.stdout.encoding, errors="replace").decode(sys.stdout.encoding)
             print("%s - oneway_echo: %s" % (time.asctime(), message_str))
         return "bogus return value"
 
+    def _private(self):
+        """a 'private' method that should not be accessible"""
+        return "should not be allowed"
+
+    def __private__(self):
+        """another 'private' method that should not be accessible"""
+        return "should not be allowed"
+
     def shutdown(self):
         """called to signal the echo server to shut down"""
-        if self.verbose:
+        if self._verbose:
             print("%s - shutting down" % time.asctime())
-        self.must_shutdown = True
+        self._must_shutdown = True
+
+    @property
+    def verbose(self):
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, onoff):
+        self._verbose = bool(onoff)
 
 
 class NameServer(threadutil.Thread):
@@ -79,7 +96,6 @@ def startNameServer(host):
 
 def main(args, returnWithoutLooping=False):
     from optparse import OptionParser
-
     parser = OptionParser()
     parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=localhost)")
     parser.add_option("-p", "--port", type="int", default=0, help="port to bind server on")
@@ -109,7 +125,7 @@ def main(args, returnWithoutLooping=False):
 
     d = Pyro4.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
     echo = EchoServer()
-    echo.verbose = options.verbose
+    echo._verbose = options.verbose
     objectName = "test.echoserver"
     uri = d.register(echo, objectName)
     if options.naming:
@@ -136,7 +152,7 @@ def main(args, returnWithoutLooping=False):
     if returnWithoutLooping:
         return d, echo, uri  # for unit testing
     else:
-        d.requestLoop(loopCondition=lambda: not echo.must_shutdown)
+        d.requestLoop(loopCondition=lambda: not echo._must_shutdown)
     d.close()
 
 

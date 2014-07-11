@@ -47,6 +47,12 @@ After printing the uri, the server sits waiting for requests.
 The uri that is being printed looks a bit like this: ``PYRO:obj_dcf713ac20ce4fb2a6e72acaeba57dfd@localhost:51850``
 It can be used in a *client* program to create a proxy and access your Pyro object with.
 
+.. index:: private methods
+
+.. note:: Private methods
+    Pyro considers any method or attribute whose name starts with at least one underscore ('_'), private.
+    These cannot be accessed remotely.
+
 .. note::
     You can publish any regular Python object as a Pyro object.
     However since Pyro adds a few Pyro-specific attributes to the object, you can't use:

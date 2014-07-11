@@ -23,7 +23,7 @@ class EchoServerThread(Thread):
     def run(self):
         self.echodaemon, self.echoserver, self.uri = echoserver.main(["-q"], returnWithoutLooping=True)
         self.started.set()
-        self.echodaemon.requestLoop(loopCondition=lambda: not self.echoserver.must_shutdown)
+        self.echodaemon.requestLoop(loopCondition=lambda: not self.echoserver._must_shutdown)
         self.terminated.set()
 
 

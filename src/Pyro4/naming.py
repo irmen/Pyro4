@@ -375,7 +375,6 @@ def resolve(uri):
 
 def main(args):
     from optparse import OptionParser
-
     parser = OptionParser()
     parser.add_option("-n", "--host", dest="host", help="hostname to bind server on")
     parser.add_option("-p", "--port", dest="port", type="int", help="port to bind server on (0=random)")

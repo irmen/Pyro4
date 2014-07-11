@@ -131,13 +131,11 @@ def formatTraceback(ex_type=None, ex_value=None, ex_tb=None, detailed=False):
 all_exceptions = {}
 if sys.version_info < (3, 0):
     import exceptions
-
     for name, t in vars(exceptions).items():
         if type(t) is type and issubclass(t, BaseException):
             all_exceptions[name] = t
 else:
     import builtins
-
     for name, t in vars(builtins).items():
         if type(t) is type and issubclass(t, BaseException):
             all_exceptions[name] = t
@@ -227,7 +225,6 @@ class SerializerBase(object):
         try:
             get_serializer_by_id(SerpentSerializer.serializer_id)
             import serpent
-
             serpent.unregister_class(clazz)
         except Pyro4.errors.ProtocolError:
             pass
@@ -541,13 +538,11 @@ _ser = PickleSerializer()
 _serializers["pickle"] = _ser
 _serializers_by_id[_ser.serializer_id] = _ser
 import marshal
-
 _ser = MarshalSerializer()
 _serializers["marshal"] = _ser
 _serializers_by_id[_ser.serializer_id] = _ser
 try:
     import json
-
     _ser = JsonSerializer()
     _serializers["json"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser
@@ -555,7 +550,6 @@ except ImportError:
     pass
 try:
     import serpent
-
     if '-' in serpent.__version__:
         ver = serpent.__version__.split('-', 1)[0]
     else:
@@ -581,14 +575,18 @@ def resolveDottedAttribute(obj, attr, allowDotted):
     """
     if allowDotted:
         attrs = attr.split('.')
-        for i in attrs:
-            if i.startswith('_'):
-                raise AttributeError('attempt to access private attribute "%s"' % i)
+        for attr in attrs:
+            if attr.startswith('_'):
+                raise AttributeError("attempt to access private attribute '%s'" % attr)
             else:
-                obj = getattr(obj, i)
-        return obj
+                obj = getattr(obj, attr)
+    elif attr.startswith('_'):
+        raise AttributeError("attempt to access private attribute '%s'" % attr)
     else:
-        return getattr(obj, attr)
+        obj = getattr(obj, attr)
+    if not Pyro4.config.REQUIRE_EXPOSE or getattr(obj, "_pyroExposed", False):
+        return obj
+    raise AttributeError("attempt to access unexposed attribute '%s'" % attr)
 
 
 def excepthook(ex_type, ex_value, ex_tb):
@@ -620,22 +618,41 @@ def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
                     exceptionObject.__dict__.update(piggyback)
 
 
-def get_public_metadata(obj):
+def get_exposed_members(obj, only_exposed=True):
+    """
+    Return public and exposed members of the given object's class.
+    You can also provide a class directly.
+    Private members are ignored no matter what (names starting with underscore).
+    If only_exposed is True, only members tagged with the @expose decorator are
+    returned. If it is False, all public members are returned.
+    The return value consists of the exposed methods, exposed attributes, and methods
+    tagged as @oneway.
+    (All this is used as meta data that Pyro sends to the proxy if it asks for it)
+    """
     if not inspect.isclass(obj):
         obj = obj.__class__
     methods = set()  # all methods
     oneway = set()  # oneway methods
     attrs = set()  # attributes
-    for m, v in inspect.getmembers(obj):
+    for m in obj.__dict__:
         if m.startswith("_"):
             continue
-        elif inspect.ismethod(v) or inspect.isfunction(v):
-            methods.add(m)
-            # check if the method is marked with the @Pyro4.oneway decorator:
-            if getattr(v, "_pyroOneway", False):
-                oneway.add(m)
-        else:
-            attrs.add(m)
+        v = getattr(obj, m)
+        if inspect.ismethod(v) or inspect.isfunction(v):
+            if getattr(v, "_pyroExposed", not only_exposed):
+                methods.add(m)
+                # check if the method is marked with the @Pyro4.oneway decorator:
+                if getattr(v, "_pyroOneway", False):
+                    oneway.add(m)
+        elif inspect.isdatadescriptor(v):
+            func = v.fget or v.fset or v.fdel
+            assert func is not None
+            if getattr(func, "_pyroExposed", not only_exposed):
+                attrs.add(m)
+        # Note that we don't expose class attributes no matter what.
+        # it is a syntax error to add a decorator on them, and it is not possible
+        # to give them a _pyroExposed tag either.
+        # The way to expose attributes is by using properties for them.
     return {
         "methods": methods,
         "oneway": oneway,

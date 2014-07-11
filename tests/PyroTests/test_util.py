@@ -10,12 +10,14 @@ import Pyro4.util
 from testsupport import *
 
 
+# noinspection PyUnusedLocal
 def crash(arg=100):
     pre1 = "black"
     pre2 = 999
 
+    # noinspection PyUnusedLocal
     def nest(p1, p2):
-        s = "white" + pre1
+        q = "white" + pre1
         x = pre2
         y = arg // 2
         p3 = p1 // p2
@@ -52,7 +54,7 @@ class TestUtils(unittest.TestCase):
             self.assertTrue("ZeroDivisionError" in tb)
             if sys.platform != "cli":
                 self.assertTrue(" a = 10" in tb)
-                self.assertTrue(" s = 'whiteblack'" in tb)
+                self.assertTrue(" q = 'whiteblack'" in tb)
                 self.assertTrue(" pre2 = 999" in tb)
                 self.assertTrue(" x = 999" in tb)
 
@@ -183,6 +185,12 @@ class TestUtils(unittest.TestCase):
             def __str__(self):
                 return "<%s>" % self.value
 
+            def _p(self):
+                return "should not be allowed"
+
+            def __p__(self):
+                return "should not be allowed"
+
         obj = Test("obj")
         obj.a = Test("a")
         obj.a.b = Test("b")
@@ -193,6 +201,8 @@ class TestUtils(unittest.TestCase):
         obj.a.__p.q = Test("q2")
         # check the method with dotted disabled
         self.assertEqual("<a>", str(Pyro4.util.resolveDottedAttribute(obj, "a", False)))
+        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "_p", False)  # private
+        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "__p__", False)  # private
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b", False)
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b.c", False)
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b.c.d", False)
@@ -204,6 +214,8 @@ class TestUtils(unittest.TestCase):
         self.assertEqual("<b>", str(Pyro4.util.resolveDottedAttribute(obj, "a.b", True)))
         self.assertEqual("<c>", str(Pyro4.util.resolveDottedAttribute(obj, "a.b.c", True)))
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b.c.d", True)  # doesn't exist
+        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "_p", True)  # private
+        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "__p__", True)  # private
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a._p", True)  # private
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a._p.q", True)  # private
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.__p.q", True)  # private
@@ -269,12 +281,53 @@ class MyThing(object):
     def oneway(self, arg):
         pass
 
+    @Pyro4.expose
+    def exposed(self):
+        pass
+
+
+@Pyro4.expose
+class MyThingExposed(object):
+    blurp = 99   # won't be exposed, because it is a class attribute and not a property
+
+    def __init__(self, name):
+        self.name = name
+
+    def foo(self, arg):
+        return arg
+
+    @classmethod
+    def classmethod(cls, arg):
+        return arg
+
+    @staticmethod
+    def staticmethod(arg):
+        return arg
+
+    @property
+    def name(self):
+        return "thing"
+
+    @name.setter
+    def name(self, value):
+        pass
+
+    @Pyro4.oneway
+    def remotemethod(self, arg):
+        return arg
+
+    def _p(self):
+        pass
+
+    def __private__(self):
+        pass
+
 
 class TestMeta(unittest.TestCase):
     def testBasic(self):
         o = MyThing("irmen")
-        m1 = Pyro4.util.get_public_metadata(o)
-        m2 = Pyro4.util.get_public_metadata(MyThing)
+        m1 = Pyro4.util.get_exposed_members(o)
+        m2 = Pyro4.util.get_exposed_members(MyThing)
         self.assertEqual(m1, m2)
         keys = m1.keys()
         self.assertEqual(3, len(keys))
@@ -284,18 +337,48 @@ class TestMeta(unittest.TestCase):
 
     def testPrivate(self):
         o = MyThing("irmen")
-        m = Pyro4.util.get_public_metadata(o)
+        m = Pyro4.util.get_exposed_members(o)
         for p in ["_private_attr1", "__private_attr2", "__private__", "__private", "_private", "__init__"]:
             self.assertNotIn(p, m["methods"])
             self.assertNotIn(p, m["attrs"])
             self.assertNotIn(p, m["oneway"])
 
-    def testPublic(self):
+    def testNotOnlyExposed(self):
         o = MyThing("irmen")
-        m = Pyro4.util.get_public_metadata(o)
-        self.assertEqual(set(["c_attr", "prop1", "prop2", "propvalue"]), m["attrs"])
+        m = Pyro4.util.get_exposed_members(o, only_exposed=False)
+        self.assertEqual(set(["prop1", "prop2"]), m["attrs"])
         self.assertEqual(set(["oneway"]), m["oneway"])
-        self.assertEqual(set(["classmethod", "oneway", "method", "staticmethod"]), m["methods"])
+        self.assertEqual(set(["classmethod", "oneway", "method", "staticmethod", "exposed"]), m["methods"])
+
+    def testOnlyExposed(self):
+        o = MyThing("irmen")
+        m = Pyro4.util.get_exposed_members(o)
+        self.assertEqual(set(), m["attrs"])
+        self.assertEqual(set(), m["oneway"])
+        self.assertEqual(set(["exposed"]), m["methods"])
+
+    def testExposedClass(self):
+        o = MyThingExposed("irmen")
+        m = Pyro4.util.get_exposed_members(o)
+        self.assertEqual(set(["name"]), m["attrs"])
+        self.assertEqual(set(["remotemethod"]), m["oneway"])
+        self.assertEqual(set(["classmethod", "foo", "staticmethod", "remotemethod"]), m["methods"])
+
+    def testExposePrivateFails(self):
+        with self.assertRaises(AttributeError):
+            class Test1(object):
+                @Pyro4.expose
+                def _private(self):
+                    pass
+        with self.assertRaises(AttributeError):
+            class Test2(object):
+                @Pyro4.expose
+                def __private__(self):
+                    pass
+        with self.assertRaises(AttributeError):
+            @Pyro4.expose
+            class _Test3(object):
+                pass
 
 
 if __name__ == "__main__":

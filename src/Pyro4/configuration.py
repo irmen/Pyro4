@@ -21,7 +21,7 @@ class Configuration(object):
                  "THREADPOOL_SIZE", "HMAC_KEY", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
                  "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
                  "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
-                 "METADATA")
+                 "METADATA", "REQUIRE_EXPOSE")
 
     def __init__(self):
         self.reset()
@@ -59,6 +59,7 @@ class Configuration(object):
         self.LOGWIRE = False  # log wire-level messages
         self.PICKLE_PROTOCOL_VERSION = pickle.HIGHEST_PROTOCOL
         self.METADATA = True  # send metadata on connect
+        self.REQUIRE_EXPOSE = False  # require @expose to make members remotely accessible (if False, everything is accessible)
 
         if useenvironment:
             # process environment variables
@@ -109,7 +110,6 @@ class Configuration(object):
         # easy config diagnostics
         from Pyro4.constants import VERSION
         import inspect
-
         if hasattr(platform, "python_implementation"):
             implementation = platform.python_implementation()
         else:

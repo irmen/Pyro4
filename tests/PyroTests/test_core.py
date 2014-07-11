@@ -426,9 +426,6 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(p1 != p3)
         self.assertTrue(hash(p1) == hash(p2))
         self.assertFalse(hash(p1) == hash(p3))
-        p1._pyroOneway.add("onewaymethod")
-        self.assertFalse(p1 == p2)
-        self.assertFalse(hash(p1) == hash(p2))
         self.assertFalse(p1 == 42)
         self.assertTrue(p1 != 42)
 

@@ -1,21 +1,26 @@
 import sys
 import os
+
 try:
     # try setuptools first, to get access to build_sphinx and test commands
     from setuptools import setup
-    using_setuptools=True
+
+    using_setuptools = True
 except ImportError:
     from distutils.core import setup
-    using_setuptools=False
 
-if __name__ == '__main__' :
+    using_setuptools = False
+
+if __name__ == '__main__':
     sys.path.insert(0, "src")
     import warnings
-    warnings.simplefilter("default", ImportWarning)   # enable ImportWarning
+
+    warnings.simplefilter("default", ImportWarning)  # enable ImportWarning
     import Pyro4.constants
+
     print('Pyro version = %s' % Pyro4.constants.VERSION)
 
-    setupargs={
+    setupargs = {
         "name": "Pyro4",
         "version": Pyro4.constants.VERSION,
         "license": "MIT",
@@ -37,42 +42,42 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
         "author_email": "irmen@razorvine.net",
         "keywords": "distributed objects, middleware, network communication, remote method call, IPC",
         "url": "http://pythonhosted.org/Pyro4/",
-        "package_dir": {'':'src'},
+        "package_dir": {'': 'src'},
         "packages": ['Pyro4', 'Pyro4.socketserver', 'Pyro4.test', 'Pyro4.utils'],
         "scripts": [],
         "platforms": "any",
         "install_requires": ["serpent>=1.6"],
         "requires": ["serpent"],
         "classifiers": [
-                "Development Status :: 5 - Production/Stable",
-                "Intended Audience :: Developers",
-                "License :: OSI Approved :: MIT License",
-                "Natural Language :: English",
-                "Natural Language :: Dutch",
-                "Operating System :: OS Independent",
-                "Programming Language :: Python",
-                "Programming Language :: Python :: 2.6",
-                "Programming Language :: Python :: 2.7",
-                "Programming Language :: Python :: 3",
-                "Programming Language :: Python :: 3.2",
-                "Programming Language :: Python :: 3.3",
-                "Programming Language :: Python :: 3.4",
-                "Topic :: Software Development :: Object Brokering",
-                "Topic :: System :: Distributed Computing",
-                "Topic :: System :: Networking"
-            ]
-        }
+            "Development Status :: 5 - Production/Stable",
+            "Intended Audience :: Developers",
+            "License :: OSI Approved :: MIT License",
+            "Natural Language :: English",
+            "Natural Language :: Dutch",
+            "Operating System :: OS Independent",
+            "Programming Language :: Python",
+            "Programming Language :: Python :: 2.6",
+            "Programming Language :: Python :: 2.7",
+            "Programming Language :: Python :: 3",
+            "Programming Language :: Python :: 3.2",
+            "Programming Language :: Python :: 3.3",
+            "Programming Language :: Python :: 3.4",
+            "Topic :: Software Development :: Object Brokering",
+            "Topic :: System :: Distributed Computing",
+            "Topic :: System :: Networking"
+        ]
+    }
 
     if os.name != "java":
         # only add '-O' optimized bytecode compile if not using jython
         setupargs["options"] = {"install": {"optimize": 1}}
-        
+
     if using_setuptools:
-        setupargs["test_suite"]="nose.collector"    # use Nose to run unittests
-    
+        setupargs["test_suite"] = "nose.collector"  # use Nose to run unittests
+
     setup(**setupargs)
-    
-    if len(sys.argv)>=2 and sys.argv[1].startswith("install"):
+
+    if len(sys.argv) >= 2 and sys.argv[1].startswith("install"):
         print("\nOnly the Pyro library has been installed (version %s)." % Pyro4.constants.VERSION)
         print("If you want to install the tests, the examples, and/or the manual,")
         print("you have to copy them manually to the desired location.")
