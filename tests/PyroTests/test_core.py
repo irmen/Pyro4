@@ -41,6 +41,13 @@ class CoreTestsWithoutHmac(unittest.TestCase):
         d = Pyro4.Daemon()
         d.shutdown()
 
+    @unittest.skipIf(sys.version_info < (3, 0), "hmac bytes only checked on python 3.0+")
+    def testHmacBytes(self):
+        Pyro4.config.HMAC_KEY = "stringnotallowed"
+        with self.assertRaises(Pyro4.errors.PyroError):
+            Pyro4.core._check_hmac()
+        Pyro4.config.HMAC_KEY = None
+
 
 class CoreTests(unittest.TestCase):
     def setUp(self):
@@ -90,9 +97,13 @@ class CoreTests(unittest.TestCase):
         os.environ["PYRO_LOGFILE"] = "{stderr}"
         reload(Pyro4)
         _ = logging.getLogger("Pyro4")
+        os.environ["PYRO_LOGFILE"] = "Pyro.log"
+        reload(Pyro4)
+        _ = logging.getLogger("Pyro4")
         del os.environ["PYRO_LOGLEVEL"]
         del os.environ["PYRO_LOGFILE"]
         reload(Pyro4)
+        _ = logging.getLogger("Pyro4")
 
     def testUriStrAndRepr(self):
         uri = "PYRONAME:some_obj_name"
@@ -139,6 +150,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("host.com", p.host)
         self.assertEqual(None, p.sockname)
         self.assertEqual(4444, p.port)
+        self.assertEqual("host.com:4444", p.location)
         p = Pyro4.core.URI("PYRO:12345@./u:sockname")
         self.assertEqual("12345", p.object)
         self.assertEqual("sockname", p.sockname)
@@ -154,6 +166,12 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("host.com", p.host)
         self.assertEqual(None, p.sockname)
         self.assertEqual(4444, p.port)
+        p = Pyro4.core.URI("pyro:12345@[::1]:4444")
+        self.assertEqual("::1", p.host)
+        self.assertEqual("[::1]:4444", p.location)
+        with self.assertRaises(Pyro4.errors.PyroError) as e:
+            Pyro4.core.URI("pyro:12345@[[::1]]:4444")
+        self.assertEqual("invalid ipv6 address: enclosed in too many brackets", str(e.exception))
 
     def testUriParsingPyroname(self):
         p = Pyro4.core.URI("PYRONAME:objectname")

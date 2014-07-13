@@ -72,9 +72,6 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
         # only add '-O' optimized bytecode compile if not using jython
         setupargs["options"] = {"install": {"optimize": 1}}
 
-    if using_setuptools:
-        setupargs["test_suite"] = "nose.collector"  # use Nose to run unittests
-
     setup(**setupargs)
 
     if len(sys.argv) >= 2 and sys.argv[1].startswith("install"):

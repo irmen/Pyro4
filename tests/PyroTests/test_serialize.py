@@ -402,7 +402,7 @@ class SerializeTests_serpent(SerializeTests_pickle):
         pass
 
     def testCircular(self):
-        with self.assertRaises(ValueError):  # serpent doesn't support object graphs
+        with self.assertRaises(ValueError):  # serpent doesn't support object graphs (since serpent 1.7 reports ValueError instead of crashing)
             super(SerializeTests_serpent, self).testCircular()
 
 

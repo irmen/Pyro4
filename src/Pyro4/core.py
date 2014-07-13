@@ -382,7 +382,7 @@ class Proxy(object):
             # socket connection (normal or Unix domain socket)
             conn = None
             log.debug("connecting to %s", uri)
-            connect_location = uri.sockname if uri.sockname else (uri.host, uri.port)
+            connect_location = uri.sockname or (uri.host, uri.port)
             with self.__pyroLock:
                 try:
                     if self._pyroConnection is not None:
@@ -620,24 +620,24 @@ def oneway(method):
     return method
 
 
-def expose(obj):
+def expose(method_or_class):
     """
     decorator to mark a method or class to be exposed for remote calls (relevant if REQUIRE_EXPOSE=True)
     """
-    if inspect.isdatadescriptor(obj):
-        func = obj.fget or obj.fset or obj.fdel
+    if inspect.isdatadescriptor(method_or_class):
+        func = method_or_class.fget or method_or_class.fset or method_or_class.fdel
         if func.__name__.startswith('_'):
             raise AttributeError("exposing private names (starting with _) is not allowed")
         func._pyroExposed = True
-        return obj
-    if obj.__name__.startswith('_'):
+        return method_or_class
+    if method_or_class.__name__.startswith('_'):
         raise AttributeError("exposing private names (starting with _) is not allowed")
-    if inspect.isclass(obj):
-        log.debug("exposing all members of %r", obj)
-        for name in obj.__dict__:
+    if inspect.isclass(method_or_class):
+        log.debug("exposing all members of %r", method_or_class)
+        for name in method_or_class.__dict__:
             if name.startswith('_'):
                 continue
-            thing = getattr(obj, name)
+            thing = getattr(method_or_class, name)
             if inspect.isfunction(thing):
                 thing._pyroExposed = True
             elif inspect.ismethod(thing):
@@ -649,8 +649,8 @@ def expose(obj):
                     thing.fget._pyroExposed = True
                 if thing.fdel:
                     thing.fdel._pyroExposed = True
-    obj._pyroExposed = True
-    return obj
+    method_or_class._pyroExposed = True
+    return method_or_class
 
 
 @expose

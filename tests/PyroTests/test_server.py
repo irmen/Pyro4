@@ -97,6 +97,7 @@ class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
 
 class ServerTestsBrokenHandshake(unittest.TestCase):
     def setUp(self):
+        Pyro4.config.LOGWIRE = True
         Pyro4.config.HMAC_KEY = b"testsuite"
         Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon = DaemonWithSabotagedHandshake(port=0)
@@ -132,6 +133,7 @@ class ServerTestsOnce(unittest.TestCase):
     """tests that are fine to run with just a single server type"""
 
     def setUp(self):
+        Pyro4.config.LOGWIRE = True
         Pyro4.config.HMAC_KEY = b"testsuite"
         Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon = Pyro4.core.Daemon(port=0)
@@ -161,6 +163,15 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual(Pyro4.message.MSG_PING, msg.type)
             self.assertEqual(999, msg.seq)
             self.assertEqual(b"pong", msg.data)
+
+    def testSequence(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            p.echo(1)
+            p.echo(2)
+            p.echo(3)
+            self.assertEqual(4, p._pyroSeq)
+            p._pyroSeq = 999   # hacking the seq nr won't have any effect because it is the reply from the server that is checked
+            self.assertEqual(42, p.echo(42))
 
     def testNoDottedNames(self):
         Pyro4.config.DOTTEDNAMES = False
@@ -499,6 +510,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
     COMMTIMEOUT = None
 
     def setUp(self):
+        Pyro4.config.LOGWIRE = True
         Pyro4.config.POLLTIMEOUT = 0.1
         Pyro4.config.SERVERTYPE = self.SERVERTYPE
         Pyro4.config.COMMTIMEOUT = self.COMMTIMEOUT

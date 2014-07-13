@@ -32,7 +32,6 @@ def _configLogging():
             # configure the logging with some sensible defaults.
             try:
                 import tempfile
-
                 tempfile = tempfile.TemporaryFile(dir=".")
                 tempfile.close()
             except OSError:
