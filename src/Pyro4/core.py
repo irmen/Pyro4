@@ -221,13 +221,12 @@ class Proxy(object):
         if name in Proxy.__pyroAttributes:
             # allows it to be safely pickled
             raise AttributeError(name)
-        # @todo: client-side check. Needs new unit tests and change some existing ones.
-        # if Pyro4.config.METADATA:
-        #     # client side check if the requested attr actually exists
-        #     if len(self._pyroMethods) + len(self._pyroAttrs) == 0:
-        #         self._pyroGetMetadata()
-        #     if name not in self._pyroMethods and name not in self._pyroAttrs:
-        #         raise AttributeError("remote object '%s' has no attribute '%s'" % (self._pyroUri.object, name))
+        if Pyro4.config.METADATA:
+            # client side check if the requested attr actually exists
+            if not self._pyroMethods and not self._pyroAttrs:
+                self._pyroGetMetadata()
+            if name not in self._pyroMethods and name not in self._pyroAttrs:
+                raise AttributeError("remote object '%s' has no attribute '%s'" % (self._pyroUri.object, name))
         return _RemoteMethod(self._pyroInvoke, name)
 
     def __repr__(self):
