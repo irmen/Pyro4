@@ -16,9 +16,13 @@ import Pyro4
 from testsupport import *
 
 
-class MyThing(object):
+@Pyro4.expose
+class ServerTestObject(object):
+    something = 99
+
     def __init__(self):
         self.dictionary = {"number": 42}
+        self._value = None
 
     def getDict(self):
         return self.dictionary
@@ -57,6 +61,13 @@ class MyThing(object):
     def oneway_multiply(self, x, y):
         return x * y
 
+    @property
+    def value(self):
+        return self._value
+    @value.setter
+    def value(self, newvalue):
+        self._value = newvalue
+
 
 class DaemonLoopThread(threadutil.Thread):
     def __init__(self, pyrodaemon):
@@ -89,7 +100,7 @@ class ServerTestsBrokenHandshake(unittest.TestCase):
         Pyro4.config.HMAC_KEY = b"testsuite"
         Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon = DaemonWithSabotagedHandshake(port=0)
-        obj = MyThing()
+        obj = ServerTestObject()
         uri = self.daemon.register(obj, "something")
         self.objectUri = uri
         self.daemonthread = DaemonLoopThread(self.daemon)
@@ -124,7 +135,7 @@ class ServerTestsOnce(unittest.TestCase):
         Pyro4.config.HMAC_KEY = b"testsuite"
         Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon = Pyro4.core.Daemon(port=0)
-        obj = MyThing()
+        obj = ServerTestObject()
         uri = self.daemon.register(obj, "something")
         self.objectUri = uri
         self.daemonthread = DaemonLoopThread(self.daemon)
@@ -210,6 +221,31 @@ class ServerTestsOnce(unittest.TestCase):
                 self.fail("should crash")
             except TypeError:
                 pass
+
+    def testProxyMetadata(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            # unconnected proxies have empty metadata
+            self.assertEqual(set(), p._pyroAttrs)
+            self.assertEqual(set(), p._pyroMethods)
+            self.assertEqual(set(), p._pyroOneway)
+            # connecting it should obtain metadata (as long as METADATA is true)
+            p._pyroBind()
+            self.assertEqual(set(['value']), p._pyroAttrs)
+            self.assertEqual(set(['echo', 'getDict', 'divide', 'nonserializableException', 'ping', 'oneway_delay', 'delayAndId', 'delay', 'testargs', 'multiply', 'oneway_multiply']), p._pyroMethods)
+            self.assertEqual(set(['oneway_multiply', 'oneway_delay']), p._pyroOneway)
+
+    def testProxyMetadataKnown(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            # unconnected proxies have empty metadata
+            self.assertEqual(set(), p._pyroAttrs)
+            self.assertEqual(set(), p._pyroMethods)
+            self.assertEqual(set(), p._pyroOneway)
+            # set some metadata manually, this should be kept
+            p._pyroMethods = set("abc")
+            p._pyroBind()
+            self.assertEqual(set(), p._pyroAttrs)
+            self.assertEqual(set("abc"), p._pyroMethods)
+            self.assertEqual(set(), p._pyroOneway)
 
     def testNonserializableException_other(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -369,28 +405,28 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertRaises(StopIteration, next, results)  # no more results should be available after the error
 
     def testAutoProxy(self):
-        obj = MyThing2()
+        obj = ServerTestObject()
         Pyro4.config.SERIALIZER = "pickle"
         try:
             with Pyro4.core.Proxy(self.objectUri) as p:
                 Pyro4.config.AUTOPROXY = False  # make sure autoproxy is disabled
                 result = p.echo(obj)
-                self.assertTrue(isinstance(result, MyThing2))
+                self.assertTrue(isinstance(result, ServerTestObject))
                 self.daemon.register(obj)
                 result = p.echo(obj)
-                self.assertTrue(isinstance(result, MyThing2), "with autoproxy off the object should be an instance of the class")
+                self.assertTrue(isinstance(result, ServerTestObject), "with autoproxy off the object should be an instance of the class")
                 self.daemon.unregister(obj)
                 result = p.echo(obj)
-                self.assertTrue(isinstance(result, MyThing2), "serialized object must still be normal object")
+                self.assertTrue(isinstance(result, ServerTestObject), "serialized object must still be normal object")
                 Pyro4.config.AUTOPROXY = True  # make sure autoproxying is enabled
                 result = p.echo(obj)
-                self.assertTrue(isinstance(result, MyThing2), "non-pyro object must be returned as normal class")
+                self.assertTrue(isinstance(result, ServerTestObject), "non-pyro object must be returned as normal class")
                 self.daemon.register(obj)
                 result = p.echo(obj)
                 self.assertTrue(isinstance(result, Pyro4.core.Proxy), "serialized pyro object must be a proxy")
                 self.daemon.unregister(obj)
                 result = p.echo(obj)
-                self.assertTrue(isinstance(result, MyThing2), "unregistered pyro object must be normal class again")
+                self.assertTrue(isinstance(result, ServerTestObject), "unregistered pyro object must be normal class again")
                 # note: the custom serializer may still be active but it should be smart enough to see
                 # that the object is no longer a pyro object, and therefore, no proxy should be created.
         finally:
@@ -469,7 +505,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro4.config.HMAC_KEY = b"testsuite"
         Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon = Pyro4.core.Daemon(port=0)
-        obj = MyThing()
+        obj = ServerTestObject()
         uri = self.daemon.register(obj, "something")
         self.objectUri = uri
         self.daemonthread = DaemonLoopThread(self.daemon)
@@ -629,7 +665,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         proxy2.ping()
         # try copying a connected proxy
         import copy
-
         proxy3 = copy.copy(proxy)
         self.assertTrue(proxy3._pyroConnection is None)
         self.assertFalse(proxy._pyroConnection is None)
@@ -673,7 +708,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         # set up a unresponsive daemon
         with Pyro4.core.Daemon(port=0) as d:
             time.sleep(0.5)
-            obj = MyThing()
+            obj = ServerTestObject()
             uri = d.register(obj)
             # we're not going to start the daemon's event loop
             p = Pyro4.core.Proxy(uri)

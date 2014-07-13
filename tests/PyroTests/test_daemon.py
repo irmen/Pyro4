@@ -26,6 +26,14 @@ class MyObj(object):
     __hash__ = object.__hash__
 
 
+class CustomDaemonInterface(Pyro4.core.DaemonObject):
+    def __init__(self, daemon):
+        super(CustomDaemonInterface, self).__init__(daemon)
+
+    def custom_daemon_method(self):
+        return 42
+
+
 class DaemonTests(unittest.TestCase):
     # We create a daemon, but notice that we are not actually running the requestloop.
     # 'on-line' tests are all taking place in another test, to keep this one simple.
@@ -91,6 +99,11 @@ class DaemonTests(unittest.TestCase):
                 self.fail("should not succeed to call unexposed method")
             except AttributeError:
                 pass
+
+    def testDaemonCustomInterface(self):
+        with Pyro4.core.Daemon(port=0, interface=CustomDaemonInterface) as d:
+            obj = d.objectsById[Pyro4.constants.DAEMON_NAME]
+            self.assertEqual(42, obj.custom_daemon_method())
 
     @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "unix domain sockets required")
     def testDaemonUnixSocket(self):

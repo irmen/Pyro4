@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.27**
 
-- requires serpent 1.6 or newer (because of some changes regarding to set literals)
+- requires serpent 1.7 or newer (because of some changes regarding to set literals and the error for circular references)
 - pep8'ified the unit test source code
 - added @Pyro4.expose and @Pyro4.oneway decorators
 - attr lookup now actually honors 'private' attributes in all cases (name starting with underscore-- these are blocked from remote access no matter what)
@@ -12,7 +12,8 @@ Change Log
 - added REQUIRE_EXPOSE config item (default True, everything is exposed. Set to false to cherry pick with @expose)
 - echoserver gained a few more methods to test the new decorators
 - Proxy._pyroGetMetadata method added. Is used internally as well (if METADATA is enabled), to obtain info about remote object attributes and methods.
-
+- copying a proxy now also copies its meta attributes (timeout, oneways, etc) instead of just the uri
+- Daemon can now be constructed with custom interface class (so you can change the behavior of the DaemonObject default implementation easily)
 
 **Pyro 4.26**
 

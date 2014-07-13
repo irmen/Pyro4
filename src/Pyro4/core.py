@@ -261,7 +261,12 @@ class Proxy(object):
 
     def __copy__(self):
         uriCopy = URI(self._pyroUri)
-        return Proxy(uriCopy)
+        p = Proxy(uriCopy)
+        p._pyroOneway = set(self._pyroOneway)
+        p._pyroMethods = set(self._pyroMethods)
+        p._pyroAttrs = set(self._pyroAttrs)
+        p._pyroTimeout = self._pyroTimeout
+        return p
 
     def __enter__(self):
         return self
@@ -419,20 +424,20 @@ class Proxy(object):
                         self._pyroUri = uri
                     log.debug("connected to %s", self._pyroUri)
             if Pyro4.config.METADATA:
-                # reset and obtain metadata if this feature is enabled
-                self._pyroAttrs = set()
-                self._pyroMethods = set()
-                self._pyroOneway = set()
-                self._pyroGetMetadata(uri.object)
+                # obtain metadata if this feature is enabled, and the metadata is not known yet
+                if self._pyroMethods or self._pyroAttrs:
+                    log.debug("reusing existing metadata")
+                else:
+                    self._pyroGetMetadata(uri.object)
             return True
 
-    def _pyroGetMetadata(self, objectId=None):
+    def _pyroGetMetadata(self, objectId=None, known_metadata=None):
         """get metadata from server (methods, attrs, oneway, ...) and remember them in some attributes of the proxy"""
         objectId = objectId or self._pyroUri.object
         log.debug("getting metadata for object %s", objectId)
         try:
             # invoke the get_metadata method on the daemon
-            result = self._pyroInvoke("get_metadata", [objectId], {}, objectId=constants.DAEMON_NAME)
+            result = known_metadata or self._pyroInvoke("get_metadata", [objectId], {}, objectId=constants.DAEMON_NAME)
             self._pyroOneway = set(result["oneway"])
             self._pyroMethods = set(result["methods"])
             self._pyroAttrs = set(result["attrs"])
@@ -440,7 +445,7 @@ class Proxy(object):
                 log.debug("from meta: oneway methods=%s", sorted(self._pyroOneway))
                 log.debug("from meta: methods=%s", sorted(self._pyroMethods))
                 log.debug("from meta: attributes=%s", sorted(self._pyroAttrs))
-            if len(self._pyroMethods) + len(self._pyroAttrs) == 0:
+            if not self._pyroMethods and not self._pyroAttrs:
                 raise errors.PyroError("remote object doesn't expose any methods or attributes")
         except errors.PyroError as x:
             log.error("problem getting metadata: %r", x)
@@ -585,14 +590,14 @@ def async(proxy):
     return proxy._pyroAsync()
 
 
-def pyroObjectToAutoProxy(self):
+def pyroObjectToAutoProxy(obj):
     """reduce function that automatically replaces Pyro objects by a Proxy"""
     if Pyro4.config.AUTOPROXY:
-        daemon = getattr(self, "_pyroDaemon", None)
+        daemon = getattr(obj, "_pyroDaemon", None)
         if daemon:
             # only return a proxy if the object is a registered pyro object
-            return Proxy(daemon.uriFor(self))
-    return self
+            return daemon.proxyFor(obj)
+    return obj
 
 
 # decorators
@@ -685,7 +690,7 @@ class Daemon(object):
     to the appropriate objects.
     """
 
-    def __init__(self, host=None, port=0, unixsocket=None, nathost=None, natport=None):
+    def __init__(self, host=None, port=0, unixsocket=None, nathost=None, natport=None, interface=DaemonObject):
         _check_hmac()  # check if hmac secret key is set
         if host is None:
             host = Pyro4.config.HOST
@@ -719,7 +724,7 @@ class Daemon(object):
         self.natLocationStr = "%s:%d" % (nathost, natport_for_loc) if nathost else None
         if self.natLocationStr:
             log.debug("NAT address is %s", self.natLocationStr)
-        pyroObject = DaemonObject(self)
+        pyroObject = interface(self)
         pyroObject._pyroId = constants.DAEMON_NAME
         #: Dictionary from Pyro object id to the actual Pyro object registered by this id
         self.objectsById = {pyroObject._pyroId: pyroObject}
@@ -978,7 +983,7 @@ class Daemon(object):
                 # Don't remove the custom type serializer because there may be
                 # other registered objects of the same type still depending on it.
 
-    def uriFor(self, objectOrId=None, nat=True):
+    def uriFor(self, objectOrId, nat=True):
         """
         Get a URI for the given object (or object id) from this daemon.
         Only a daemon can hand out proper uris because the access location is
@@ -990,13 +995,27 @@ class Daemon(object):
         """
         if not isinstance(objectOrId, basestring):
             objectOrId = getattr(objectOrId, "_pyroId", None)
-            if objectOrId is None:
-                raise errors.DaemonError("object isn't registered")
+            if objectOrId is None or objectOrId not in self.objectsById:
+                raise errors.DaemonError("object isn't registered in this daemon")
         if nat:
             loc = self.natLocationStr or self.locationStr
         else:
             loc = self.locationStr
         return URI("PYRO:%s@%s" % (objectOrId, loc))
+
+    def proxyFor(self, objectOrId, nat=True):
+        """
+        Get a fully initialized Pyro Proxy for the given object (or object id) for this daemon.
+        If nat is False, the configured NAT address (if any) is ignored.
+        """
+        uri = self.uriFor(objectOrId, nat)
+        proxy = Proxy(uri)
+        registered_object = self.objectsById.get(uri.object)
+        if registered_object:
+            meta = util.get_exposed_members(registered_object, only_exposed=Pyro4.config.REQUIRE_EXPOSE)
+            proxy._pyroGetMetadata(known_metadata=meta)
+        return proxy
+
 
     def close(self):
         """Close down the server and release resources"""

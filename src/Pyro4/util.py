@@ -249,7 +249,7 @@ class SerializerBase(object):
             if isinstance(obj, clazz):
                 return cls.__custom_class_to_dict_registry[clazz](obj)
         if type(obj) in (set, dict, tuple, list):
-            raise Pyro4.errors.ProtocolError("couldn't serialize sequence " + str(obj.__class__) + ", one of its elements is unserializable")
+            raise ValueError("couldn't serialize sequence " + str(obj.__class__) + ", one of its elements is unserializable")
         if hasattr(obj, "_pyroDaemon"):
             obj._pyroDaemon = None
         if isinstance(obj, BaseException):
@@ -555,8 +555,8 @@ try:
     else:
         ver = serpent.__version__
     ver = tuple(map(int, ver.split(".")))
-    if ver < (1, 6):
-        raise RuntimeError("requires serpent 1.6 or better")
+    if ver < (1, 7):
+        raise RuntimeError("requires serpent 1.7 or better")
     _ser = SerpentSerializer()
     _serializers["serpent"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser

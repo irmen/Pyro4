@@ -25,16 +25,6 @@ if sys.version_info >= (3, 0):
     reload = importlib.reload
 
 
-class Thing(object):
-    def __init__(self, arg):
-        self.arg = arg
-
-    def __eq__(self, other):
-        return self.arg == other.arg
-
-    __hash__ = object.__hash__
-
-
 class CoreTestsWithoutHmac(unittest.TestCase):
     def setUp(self):
         warnings.simplefilter("ignore")
@@ -293,6 +283,24 @@ class CoreTests(unittest.TestCase):
         self.assertFalse(Pyro4.core.URI.isUnixsockLocation("./p:name"))
         self.assertFalse(Pyro4.core.URI.isUnixsockLocation("./x:name"))
         self.assertFalse(Pyro4.core.URI.isUnixsockLocation("foobar"))
+
+    def testProxyCopy(self):
+        u = Pyro4.core.URI("PYRO:12345@hostname:9999")
+        p1 = Pyro4.core.Proxy(u)
+        p2 = copy.copy(p1)  # check that most basic copy also works
+        self.assertEqual(p1, p2)
+        self.assertEqual(set(), p2._pyroOneway)
+        p1._pyroAttrs = set("abc")
+        p1._pyroTimeout = 42
+        p1._pyroOneway = set("def")
+        p1._pyroMethods = set("ghi")
+        p2 = copy.copy(p1)
+        self.assertEqual(p1, p2)
+        self.assertEqual(p1._pyroUri, p2._pyroUri)
+        self.assertEqual(p1._pyroOneway, p2._pyroOneway)
+        self.assertEqual(p1._pyroMethods, p2._pyroMethods)
+        self.assertEqual(p1._pyroAttrs, p2._pyroAttrs)
+        self.assertEqual(p1._pyroTimeout, p2._pyroTimeout)
 
     def testProxyOffline(self):
         # only offline stuff here.
@@ -652,8 +660,8 @@ class TestSimpleServe(unittest.TestCase):
 
     def testSimpleServe(self):
         d = TestSimpleServe.DaemonMock()
-        o1 = Thing(1)
-        o2 = Thing(2)
+        o1 = MyThing(1)
+        o2 = MyThing(2)
         objects = {o1: "test.o1", o2: None}
         Pyro4.core.Daemon.serveSimple(objects, daemon=d, ns=False, verbose=False)
         self.assertEqual({o1: "test.o1", o2: None}, d.objects)
