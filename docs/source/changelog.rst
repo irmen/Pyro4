@@ -8,6 +8,7 @@ Change Log
 - added @Pyro4.expose and @Pyro4.oneway decorators
 - attr lookup now actually honors 'private' attributes in all cases (name starting with underscore-- these are blocked from remote access no matter what)
 - added METADATA config item to enable/disable the automatic metadata query that a proxy now does.
+- proper client side attribute validation if metadata is enabled. This also means that hasattr(proxy, "something") now actually works.
 - added REQUIRE_EXPOSE config item to toggle exposing everything in a server object, or that you must cherrypick with the new @expose decorator
 - Proxy._pyroGetMetadata method added. Is used internally as well (if METADATA is enabled), to obtain info about remote object attributes and methods.
 - copying a proxy now also copies its meta attributes (timeout, oneways, etc) instead of just the uri
