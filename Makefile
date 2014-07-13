@@ -25,7 +25,7 @@ install:
 	python setup.py install
 
 test:
-	python tests/run_suite_simple.py
+	python tests/run_testsuite.py
 
 clean:
 	@echo "Removing tox dirs, logfiles, Pyro URI dumps, .pyo/.pyc files..."
@@ -38,8 +38,11 @@ clean:
 	find . -name \*.pyc -print0 | xargs -0  rm -f
 	find . -name \*.class -print0 | xargs -0  rm -f
 	find . -name \*.DS_Store -print0 | xargs -0  rm -f
+	find . -name \.coverage -print0 | xargs -0  rm -f
+	find . -name \coverage.xml -print0 | xargs -0  rm -f
 	rm -f MANIFEST 
 	rm -rf build
+	rm -rf tests/test-reports
 	find . -name  '.#*' -print0 | xargs -0  rm -f
 	find . -name  '#*#' -print0 | xargs -0  rm -f
 	@echo "clean!"

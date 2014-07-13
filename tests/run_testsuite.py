@@ -10,6 +10,7 @@ import sys
 import os
 
 from_tox = "--tox" in sys.argv
+xml_report = "--xml" in sys.argv
 
 if from_tox:
     # running from Tox, don't screw with paths otherwise it screws up the virtualenv
@@ -37,7 +38,13 @@ if __name__ == "__main__":
         testcases = unittest.defaultTestLoader.loadTestsFromModule(m)
         suite.addTest(testcases)
 
-    print("\nRUNNING UNIT TESTS...")
-    result = unittest.TextTestRunner(verbosity=1).run(suite)
+    if xml_report:
+        print("\nRUNNING UNIT TESTS (XML reporting)...")
+        import xmlrunner
+        result = xmlrunner.XMLTestRunner(verbosity=1, output="test-reports").run(suite)
+    else:
+        print("\nRUNNING UNIT TESTS...")
+        result = unittest.TextTestRunner(verbosity=1).run(suite)
+
     if not result.wasSuccessful():
         sys.exit(10)
