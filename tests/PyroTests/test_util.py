@@ -37,12 +37,12 @@ class TestUtils(unittest.TestCase):
             self.fail("must crash with ZeroDivisionError")
         except ZeroDivisionError:
             tb = "".join(Pyro4.util.formatTraceback(detailed=False))
-            self.assertTrue("p3 = p1 // p2" in tb)
-            self.assertTrue("ZeroDivisionError" in tb)
-            self.assertFalse(" a = 10" in tb)
-            self.assertFalse(" s = 'whiteblack'" in tb)
-            self.assertFalse(" pre2 = 999" in tb)
-            self.assertFalse(" x = 999" in tb)
+            self.assertIn("p3 = p1 // p2", tb)
+            self.assertIn("ZeroDivisionError", tb)
+            self.assertNotIn(" a = 10", tb)
+            self.assertNotIn(" s = 'whiteblack'", tb)
+            self.assertNotIn(" pre2 = 999", tb)
+            self.assertNotIn(" x = 999", tb)
 
     def testFormatTracebackDetail(self):
         try:
@@ -50,13 +50,13 @@ class TestUtils(unittest.TestCase):
             self.fail("must crash with ZeroDivisionError")
         except ZeroDivisionError:
             tb = "".join(Pyro4.util.formatTraceback(detailed=True))
-            self.assertTrue("p3 = p1 // p2" in tb)
-            self.assertTrue("ZeroDivisionError" in tb)
+            self.assertIn("p3 = p1 // p2", tb)
+            self.assertIn("ZeroDivisionError", tb)
             if sys.platform != "cli":
-                self.assertTrue(" a = 10" in tb)
-                self.assertTrue(" q = 'whiteblack'" in tb)
-                self.assertTrue(" pre2 = 999" in tb)
-                self.assertTrue(" x = 999" in tb)
+                self.assertIn(" a = 10", tb)
+                self.assertIn(" q = 'whiteblack'", tb)
+                self.assertIn(" pre2 = 999", tb)
+                self.assertIn(" x = 999", tb)
 
     def testPyroTraceback(self):
         try:
@@ -65,7 +65,7 @@ class TestUtils(unittest.TestCase):
         except ZeroDivisionError:
             pyro_tb = Pyro4.util.formatTraceback(detailed=True)
             if sys.platform != "cli":
-                self.assertTrue(" Extended stacktrace follows (most recent call last)\n" in pyro_tb)
+                self.assertIn(" Extended stacktrace follows (most recent call last)\n", pyro_tb)
         try:
             crash("stringvalue")
             self.fail("must crash with TypeError")
@@ -73,16 +73,16 @@ class TestUtils(unittest.TestCase):
             x = sys.exc_info()[1]
             x._pyroTraceback = pyro_tb  # set the remote traceback info
             pyrotb = "".join(Pyro4.util.getPyroTraceback())
-            self.assertTrue("Remote traceback" in pyrotb)
-            self.assertTrue("crash(\"stringvalue\")" in pyrotb)
-            self.assertTrue("TypeError:" in pyrotb)
-            self.assertTrue("ZeroDivisionError" in pyrotb)
+            self.assertIn("Remote traceback", pyrotb)
+            self.assertIn("crash(\"stringvalue\")", pyrotb)
+            self.assertIn("TypeError:", pyrotb)
+            self.assertIn("ZeroDivisionError", pyrotb)
             del x._pyroTraceback
             pyrotb = "".join(Pyro4.util.getPyroTraceback())
-            self.assertFalse("Remote traceback" in pyrotb)
-            self.assertFalse("ZeroDivisionError" in pyrotb)
-            self.assertTrue("crash(\"stringvalue\")" in pyrotb)
-            self.assertTrue("TypeError:" in pyrotb)
+            self.assertNotIn("Remote traceback", pyrotb)
+            self.assertNotIn("ZeroDivisionError", pyrotb)
+            self.assertIn("crash(\"stringvalue\")", pyrotb)
+            self.assertIn("TypeError:", pyrotb)
 
     def testPyroTracebackArgs(self):
         try:
@@ -122,10 +122,10 @@ class TestUtils(unittest.TestCase):
                 sys.stderr = StringIO()
                 Pyro4.util.excepthook(ex_type, ex_value, ex_tb)
                 output = sys.stderr.getvalue()
-                self.assertTrue("Remote traceback" in output)
-                self.assertTrue("crash(\"stringvalue\")" in output)
-                self.assertTrue("TypeError:" in output)
-                self.assertTrue("ZeroDivisionError" in output)
+                self.assertIn("Remote traceback", output)
+                self.assertIn("crash(\"stringvalue\")", output)
+                self.assertIn("TypeError:", output)
+                self.assertIn("ZeroDivisionError", output)
             finally:
                 sys.stderr = oldstderr
 

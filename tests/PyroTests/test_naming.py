@@ -43,12 +43,12 @@ class BCSetupTests(unittest.TestCase):
     def testBCstart(self):
         myIpAddress = Pyro4.socketutil.getIpAddress("", workaround127=True)
         nsUri, nameserver, bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=False)
-        self.assertTrue(bcserver is None)
+        self.assertIsNone(bcserver)
         nameserver.close()
         nsUri, nameserver, bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=True)
-        self.assertTrue(bcserver is not None, "expected a BC server to be running. Check DNS setup (hostname must not resolve to loopback address")
-        self.assertTrue(bcserver.fileno() > 1)
-        self.assertTrue(bcserver.sock is not None)
+        self.assertIsNotNone(bcserver, "expected a BC server to be running. Check DNS setup (hostname must not resolve to loopback address")
+        self.assertGreater(bcserver.fileno(), 1)
+        self.assertIsNotNone(bcserver.sock)
         nameserver.close()
         bcserver.close()
 
@@ -59,7 +59,7 @@ class NameServerTests(unittest.TestCase):
         Pyro4.config.HMAC_KEY = b"testsuite"
         myIpAddress = Pyro4.socketutil.getIpAddress("", workaround127=True)
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0)
-        self.assertTrue(self.bcserver is not None, "expected a BC server to be running")
+        self.assertIsNotNone(self.bcserver, "expected a BC server to be running")
         self.bcserver.runInThread()
         self.daemonthread = NSLoopThread(self.nameserver)
         self.daemonthread.start()
@@ -84,10 +84,10 @@ class NameServerTests(unittest.TestCase):
 
     def testLookupAndRegister(self):
         ns = Pyro4.naming.locateNS()  # broadcast lookup
-        self.assertTrue(isinstance(ns, Pyro4.core.Proxy))
+        self.assertIsInstance(ns, Pyro4.core.Proxy)
         ns._pyroRelease()
         ns = Pyro4.naming.locateNS(self.nsUri.host)  # normal lookup
-        self.assertTrue(isinstance(ns, Pyro4.core.Proxy))
+        self.assertIsInstance(ns, Pyro4.core.Proxy)
         uri = ns._pyroUri
         self.assertEqual("PYRO", uri.protocol)
         self.assertEqual(self.nsUri.host, uri.host)
@@ -188,11 +188,15 @@ class NameServerTests(unittest.TestCase):
         self.assertRaises(TypeError, Pyro4.naming.resolve, 999)  # wrong arg type
 
     def testRefuseDottedNames(self):
+        old_metadata = Pyro4.config.METADATA
+        Pyro4.config.METADATA = False
         with Pyro4.naming.locateNS(self.nsUri.host, self.nsUri.port) as ns:
             # the name server should never have dotted names enabled
             self.assertRaises(AttributeError, ns.namespace.keys)
-            self.assertTrue(ns._pyroConnection is not None)
-        self.assertTrue(ns._pyroConnection is None)
+            self.assertIsNotNone(ns._pyroConnection)
+        self.assertIsNone(ns._pyroConnection)
+        Pyro4.config.METADATA = old_metadata
+
 
 
 class NameServerTests0000(unittest.TestCase):
@@ -204,7 +208,7 @@ class NameServerTests0000(unittest.TestCase):
         if host_check == "0:0:0:0:0:0:0:0":  # this happens on jython
             host_check = "0.0.0.0"
         self.assertEqual("0.0.0.0", host_check, "for hostname \"\" the resulting ip must be 0.0.0.0 (or ipv6 equivalent)")
-        self.assertTrue(self.bcserver is not None, "expected a BC server to be running")
+        self.assertIsNotNone(self.bcserver, "expected a BC server to be running")
         self.bcserver.runInThread()
         self.old_bcPort = Pyro4.config.NS_BCPORT
         self.old_nsPort = Pyro4.config.NS_PORT
@@ -225,7 +229,7 @@ class NameServerTests0000(unittest.TestCase):
     @unittest.skipUnless(os.name != "java", "jython does strange things with bc server on 0.0.0.0 (it hangs)")
     def testBCLookup0000(self):
         ns = Pyro4.naming.locateNS()  # broadcast lookup
-        self.assertTrue(isinstance(ns, Pyro4.core.Proxy))
+        self.assertIsInstance(ns, Pyro4.core.Proxy)
         self.assertNotEqual("0.0.0.0", ns._pyroUri.host, "returned location must not be 0.0.0.0 when running on 0.0.0.0")
         ns._pyroRelease()
 

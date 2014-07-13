@@ -43,7 +43,7 @@ class TestSocketStuff(unittest.TestCase):
             self.assertEqual("0.0.0.0", host)  # ipv4 support only at this time
         else:
             # jython somehow seems to return ipv6 sockname on ipv4 sockets
-            self.assertTrue(host in ("0.0.0.0", "0:0:0:0:0:0:0:0"))
+            self.assertIn(host, ("0.0.0.0", "0:0:0:0:0:0:0:0"))
         s.close()
 
 
@@ -63,9 +63,9 @@ class TestSocketutil(unittest.TestCase):
 
     @unittest.skipUnless(has_ipv6, "ipv6 testcase")
     def testGetIP6(self):
-        self.assertTrue(":" in SU.getIpAddress("::1", ipVersion=6))
+        self.assertIn(":", SU.getIpAddress("::1", ipVersion=6))
         # self.assertTrue(":" in SU.getIpAddress("", ipVersion=6))
-        self.assertTrue(":" in SU.getIpAddress("localhost", ipVersion=6))
+        self.assertIn(":", SU.getIpAddress("localhost", ipVersion=6))
 
     def testGetIpVersion4(self):
         version = Pyro4.config.PREFER_IP_VERSION
@@ -98,7 +98,7 @@ class TestSocketutil(unittest.TestCase):
     def testGetInterfaceAddress(self):
         self.assertTrue(SU.getInterfaceAddress("localhost").startswith("127."))
         if has_ipv6:
-            self.assertTrue(":" in SU.getInterfaceAddress("::1"))
+            self.assertIn(":", SU.getInterfaceAddress("::1"))
 
     def testUnusedPort(self):
         port1 = SU.findProbablyUnusedPort()
@@ -142,7 +142,7 @@ class TestSocketutil(unittest.TestCase):
         self.assertTrue(port1 > 0)
         self.assertNotEqual(port1, port2)
         host, port, _, _ = sock1.getsockname()
-        self.assertTrue(":" in host)
+        self.assertIn(":", host)
         self.assertEqual(port1, port)
         sock1.close()
         sock2.close()
@@ -203,8 +203,8 @@ class TestSocketutil(unittest.TestCase):
         s = SU.createSocket(bind=('::1', 0))
         self.assertEqual(socket.AF_INET6, s.family)
         bs = SU.createBroadcastSocket(bind=('::1', 0))
-        self.assertTrue(':' in s.getsockname()[0])
-        self.assertTrue(':' in bs.getsockname()[0])
+        self.assertIn(':', s.getsockname()[0])
+        self.assertIn(':', bs.getsockname()[0])
         s.close()
         bs.close()
         self.assertRaises(ValueError, SU.createSocket, bind=('::1', 12345), connect=('::1', 1234))
@@ -375,16 +375,16 @@ class TestSocketServer(unittest.TestCase):
         serv = SocketServer_Threadpool()
         serv.init(daemon, "localhost", port)
         self.assertEqual("localhost:" + str(port), serv.locationStr)
-        self.assertTrue(serv.sock is not None)
+        self.assertIsNotNone(serv.sock)
         conn = SU.SocketConnection(serv.sock, "ID12345")
         self.assertEqual("ID12345", conn.objectId)
-        self.assertTrue(conn.sock is not None)
+        self.assertIsNotNone(conn.sock)
         conn.close()
         conn.close()
-        self.assertFalse(conn.sock is None, "connections keep their socket object even if it's closed")
+        self.assertIsNotNone(conn.sock, "connections keep their socket object even if it's closed")
         serv.close()
         serv.close()
-        self.assertTrue(serv.sock is None)
+        self.assertIsNone(serv.sock)
 
     def testServer_select(self):
         daemon = ServerCallback()
@@ -392,16 +392,16 @@ class TestSocketServer(unittest.TestCase):
         serv = SocketServer_Select()
         serv.init(daemon, "localhost", port)
         self.assertEqual("localhost:" + str(port), serv.locationStr)
-        self.assertTrue(serv.sock is not None)
+        self.assertIsNotNone(serv.sock)
         conn = SU.SocketConnection(serv.sock, "ID12345")
         self.assertEqual("ID12345", conn.objectId)
-        self.assertTrue(conn.sock is not None)
+        self.assertIsNotNone(conn.sock)
         conn.close()
         conn.close()
-        self.assertFalse(conn.sock is None, "connections keep their socket object even if it's closed")
+        self.assertIsNotNone(conn.sock, "connections keep their socket object even if it's closed")
         serv.close()
         serv.close()
-        self.assertTrue(serv.sock is None)
+        self.assertIsNone(serv.sock)
 
     def testServer_poll(self):
         daemon = ServerCallback()
@@ -409,16 +409,16 @@ class TestSocketServer(unittest.TestCase):
         serv = SocketServer_Poll()
         serv.init(daemon, "localhost", port)
         self.assertEqual("localhost:" + str(port), serv.locationStr)
-        self.assertTrue(serv.sock is not None)
+        self.assertIsNotNone(serv.sock)
         conn = SU.SocketConnection(serv.sock, "ID12345")
         self.assertEqual("ID12345", conn.objectId)
-        self.assertTrue(conn.sock is not None)
+        self.assertIsNotNone(conn.sock)
         conn.close()
         conn.close()
-        self.assertFalse(conn.sock is None, "connections keep their socket object even if it's closed")
+        self.assertIsNotNone(conn.sock, "connections keep their socket object even if it's closed")
         serv.close()
         serv.close()
-        self.assertTrue(serv.sock is None)
+        self.assertIsNone(serv.sock)
 
 
 @unittest.skipUnless(SU.hasSelect, "requires select()")
@@ -503,9 +503,9 @@ class TestServerDOS_select(unittest.TestCase):
                 data = msg.data
                 if sys.version_info >= (2, 7):
                     data = msg.data.decode("ascii", errors="ignore")  # convert raw message to string to check some stuff
-                self.assertTrue("Traceback" in data)
-                self.assertTrue("ProtocolError" in data)
-                self.assertTrue("version" in data)
+                self.assertIn("Traceback", data)
+                self.assertIn("ProtocolError", data)
+                self.assertIn("version", data)
             except errors.ConnectionClosedError:
                 # invalid message can have caused the connection to be closed, this is fine
                 pass

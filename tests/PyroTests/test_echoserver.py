@@ -58,8 +58,8 @@ class TestEchoserver(unittest.TestCase):
                 self.fail("expected exception")
             except:
                 tb = "".join(Pyro4.util.getPyroTraceback())
-                self.assertTrue("Remote traceback" in tb)
-                self.assertTrue("ZeroDivisionError" in tb)
+                self.assertIn("Remote traceback", tb)
+                self.assertIn("ZeroDivisionError", tb)
         finally:
             echo.shutdown()
 

@@ -51,7 +51,7 @@ if sys.platform == "cli":
                 ex_t, ex_v, ex_tb = sys.exc_info()
                 while ex_tb.tb_next:
                     ex_tb = ex_tb.tb_next
-                self.assertEqual(None, ex_tb.tb_frame.f_back)  # should not be none... :(
+                self.assertIsNone(ex_tb.tb_frame.f_back)  # should not be none... :(
 
 
 if __name__ == "__main__":

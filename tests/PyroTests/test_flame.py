@@ -67,8 +67,8 @@ class FlameTests(unittest.TestCase):
             Pyro4.utils.flame.start(d)
             flameserver = d.objectsById[Pyro4.constants.FLAME_NAME]
             with Pyro4.utils.flame.FlameModule(flameserver, "sys") as m:
-                self.assertTrue("module 'sys' at" in str(m))
-                self.assertTrue(isinstance(m.exc_info, Pyro4.core._RemoteMethod))
+                self.assertIn("module 'sys' at", str(m))
+                self.assertIsInstance(m.exc_info, Pyro4.core._RemoteMethod)
 
     def testFlameBuiltin(self):
         with Pyro4.core.Daemon() as d:
@@ -76,7 +76,7 @@ class FlameTests(unittest.TestCase):
             flameserver = d.objectsById[Pyro4.constants.FLAME_NAME]
             with Pyro4.utils.flame.FlameBuiltin(flameserver, "max") as builtin:
                 self.assertTrue(hasattr(builtin, "__call__"))
-                self.assertTrue("builtin 'max' at" in str(builtin))
+                self.assertIn("builtin 'max' at", str(builtin))
 
 
 if __name__ == "__main__":

@@ -74,16 +74,16 @@ class SerializeTests_pickle(unittest.TestCase):
         e = self.ser.deserializeData(p)
         if sys.platform == "cli":
             Pyro4.util.fixIronPythonExceptionForPickle(e, False)
-        self.assertTrue(isinstance(e, Pyro4.errors.NamingError))
+        self.assertIsInstance(e, Pyro4.errors.NamingError)
         self.assertEqual(repr(orig_e), repr(e))
         self.assertEqual(["this is the remote traceback"], e._pyroTraceback, "remote traceback info should be present")
         p, _ = self.ser.serializeData(e2)
         e = self.ser.deserializeData(p)
-        self.assertTrue(isinstance(e, Pyro4.errors.PyroError))
+        self.assertIsInstance(e, Pyro4.errors.PyroError)
         self.assertEqual(repr(e2), repr(e))
         p, _ = self.ser.serializeData(e3)
         e = self.ser.deserializeData(p)
-        self.assertTrue(isinstance(e, Pyro4.errors.ProtocolError))
+        self.assertIsInstance(e, Pyro4.errors.ProtocolError)
         self.assertEqual(repr(e3), repr(e))
 
     def testSerializeExceptionWithAttr(self):
@@ -106,7 +106,7 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual("9999", uri2.object)
         self.assertEqual("host.com:4444", uri2.location)
         self.assertEqual(4444, uri2.port)
-        self.assertEqual(None, uri2.sockname)
+        self.assertIsNone(uri2.sockname)
 
         uri = Pyro4.core.URI("PYRO:12345@./u:/tmp/socketname")
         p, _ = self.ser.serializeData(uri)
@@ -115,16 +115,16 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual("PYRO", uri2.protocol)
         self.assertEqual("12345", uri2.object)
         self.assertEqual("./u:/tmp/socketname", uri2.location)
-        self.assertEqual(None, uri2.port)
+        self.assertIsNone(uri2.port)
         self.assertEqual("/tmp/socketname", uri2.sockname)
 
         proxy = Pyro4.core.Proxy("PYRO:9999@host.com:4444")
         proxy._pyroTimeout = 42
-        self.assertTrue(proxy._pyroConnection is None)
+        self.assertIsNone(proxy._pyroConnection)
         p, _ = self.ser.serializeData(proxy)
         proxy2 = self.ser.deserializeData(p)
-        self.assertTrue(proxy._pyroConnection is None)
-        self.assertTrue(proxy2._pyroConnection is None)
+        self.assertIsNone(proxy._pyroConnection)
+        self.assertIsNone(proxy2._pyroConnection)
         self.assertEqual(proxy2._pyroUri, proxy._pyroUri)
         self.assertEqual(42, proxy2._pyroTimeout)
 
@@ -190,7 +190,6 @@ class SerializeTests_pickle(unittest.TestCase):
         s, c = self.ser.serializeData(daemon)
         x = self.ser.deserializeData(s, c)
         self.assertIsInstance(x, Pyro4.core.Daemon)
-        self.assertTrue(isinstance(x, Pyro4.core.Daemon))
         wrapper = Pyro4.futures._ExceptionWrapper(ZeroDivisionError("divided by zero"))
         s, c = self.ser.serializeData(wrapper)
         x = self.ser.deserializeData(s, c)
@@ -284,8 +283,8 @@ class SerializeTests_pickle(unittest.TestCase):
             self.fail("must fail")
         except Pyro4.errors.ProtocolError as x:
             msg = str(x)
-            self.assertTrue(msg in ["unsupported serialized class: testsupport.MyThing",
-                                    "unsupported serialized class: PyroTests.testsupport.MyThing"])
+            self.assertIn(msg, ["unsupported serialized class: testsupport.MyThing",
+                                "unsupported serialized class: PyroTests.testsupport.MyThing"])
 
     def testData(self):
         data = [42, "hello"]
@@ -334,28 +333,28 @@ class SerializeTests_pickle(unittest.TestCase):
         obj, method, vargs, kwargs = self.ser.deserializeCall(ser, compressed=False)
         self.assertEqual("object", obj)
         self.assertEqual("method", method)
-        self.assertTrue(isinstance(vargs, list))
-        self.assertTrue(isinstance(vargs[0], ZeroDivisionError))
+        self.assertIsInstance(vargs, list)
+        self.assertIsInstance(vargs[0], ZeroDivisionError)
         self.assertEqual("hello", str(vargs[0]))
-        self.assertTrue(isinstance(kwargs["thing"], ZeroDivisionError))
+        self.assertIsInstance(kwargs["thing"], ZeroDivisionError)
         self.assertEqual("hello", str(kwargs["thing"]))
 
     def testSerializeException(self):
         e = ZeroDivisionError()
         d, c = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(d, c)
-        self.assertTrue(isinstance(e2, ZeroDivisionError))
+        self.assertIsInstance(e2, ZeroDivisionError)
         self.assertEqual("", str(e2))
         e = ZeroDivisionError("hello")
         d, c = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(d, c)
-        self.assertTrue(isinstance(e2, ZeroDivisionError))
+        self.assertIsInstance(e2, ZeroDivisionError)
         self.assertEqual("hello", str(e2))
         e = ZeroDivisionError("hello", 42)
         d, c = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(d, c)
-        self.assertTrue(isinstance(e2, ZeroDivisionError))
-        self.assertTrue(str(e2) in ("('hello', 42)", "(u'hello', 42)"))
+        self.assertIsInstance(e2, ZeroDivisionError)
+        self.assertIn(str(e2), ("('hello', 42)", "(u'hello', 42)"))
         e.custom_attribute = 999
         if sys.platform == "cli":
             Pyro4.util.fixIronPythonExceptionForPickle(e, True)
@@ -363,16 +362,16 @@ class SerializeTests_pickle(unittest.TestCase):
         e2 = self.ser.deserializeData(ser, compressed)
         if sys.platform == "cli":
             Pyro4.util.fixIronPythonExceptionForPickle(e2, False)
-        self.assertTrue(isinstance(e2, ZeroDivisionError))
-        self.assertTrue(str(e2) in ("('hello', 42)", "(u'hello', 42)"))
+        self.assertIsInstance(e2, ZeroDivisionError)
+        self.assertIn(str(e2), ("('hello', 42)", "(u'hello', 42)"))
         self.assertEqual(999, e2.custom_attribute)
 
     def testSerializeSpecialException(self):
-        self.assertTrue("GeneratorExit" in Pyro4.util.all_exceptions)
+        self.assertIn("GeneratorExit", Pyro4.util.all_exceptions)
         e = GeneratorExit()
         d, c = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(d, c)
-        self.assertTrue(isinstance(e2, GeneratorExit))
+        self.assertIsInstance(e2, GeneratorExit)
 
     def testRecreateClasses(self):
         self.assertEqual([1, 2, 3], self.ser.recreate_classes([1, 2, 3]))
@@ -484,7 +483,7 @@ class GenericTests(unittest.TestCase):
         uri = Pyro4.core.URI("PYRO:object@host:4444")
         d = Pyro4.util.SerializerBase.class_to_dict(uri)
         self.assertEqual("Pyro4.core.URI", d["__class__"])
-        self.assertTrue("state" in d)
+        self.assertIn("state", d)
         x = Pyro4.util.SerializerBase.dict_to_class(d)
         self.assertIsInstance(x, Pyro4.core.URI)
         self.assertEqual(uri, x)
@@ -492,7 +491,7 @@ class GenericTests(unittest.TestCase):
         uri = Pyro4.core.URI("PYRO:12345@./u:/tmp/socketname")
         d = Pyro4.util.SerializerBase.class_to_dict(uri)
         self.assertEqual("Pyro4.core.URI", d["__class__"])
-        self.assertTrue("state" in d)
+        self.assertIn("state", d)
         x = Pyro4.util.SerializerBase.dict_to_class(d)
         self.assertIsInstance(x, Pyro4.core.URI)
         self.assertEqual(uri, x)

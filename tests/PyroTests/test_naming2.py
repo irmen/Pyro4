@@ -77,7 +77,7 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertEqual(0, ns.remove(Pyro4.constants.NAMESERVER_NAME))
         self.assertEqual(0, ns.remove(prefix="Pyro"))
         self.assertEqual(0, ns.remove(regex="Pyro.*"))
-        self.assertTrue(Pyro4.constants.NAMESERVER_NAME in ns.list())
+        self.assertIn(Pyro4.constants.NAMESERVER_NAME, ns.list())
 
     def testUnicodeNames(self):
         ns = Pyro4.naming.NameServer()
@@ -103,7 +103,7 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertEqual(6, len(objects))
         objects = ns.list(regex=r".+other..")
         self.assertEqual(3, len(objects))
-        self.assertTrue("test.other.a" in objects)
+        self.assertIn("test.other.a", objects)
         self.assertEqual("PYRONAME:somethingA", objects["test.other.a"])
         objects = ns.list(regex=r"\d\d\d\d\d\d\d\d\d\d")
         self.assertEqual(0, len(objects))
@@ -121,21 +121,21 @@ class OfflineNameServerTests(unittest.TestCase):
 
     def testNameserverWithStmt(self):
         ns = Pyro4.naming.NameServerDaemon(port=0)
-        self.assertFalse(ns.nameserver is None)
+        self.assertIsNotNone(ns.nameserver)
         ns.close()
-        self.assertTrue(ns.nameserver is None)
+        self.assertIsNone(ns.nameserver)
         with Pyro4.naming.NameServerDaemon(port=0) as ns:
-            self.assertFalse(ns.nameserver is None)
+            self.assertIsNotNone(ns.nameserver)
             pass
-        self.assertTrue(ns.nameserver is None)
+        self.assertIsNone(ns.nameserver)
         try:
             with Pyro4.naming.NameServerDaemon(port=0) as ns:
-                self.assertFalse(ns.nameserver is None)
+                self.assertIsNotNone(ns.nameserver)
                 print(1 // 0)  # cause an error
             self.fail("expected error")
         except ZeroDivisionError:
             pass
-        self.assertTrue(ns.nameserver is None)
+        self.assertIsNone(ns.nameserver)
         ns = Pyro4.naming.NameServerDaemon(port=0)
         with ns:
             pass
@@ -152,10 +152,10 @@ class OfflineNameServerTests(unittest.TestCase):
         myIpAddress = Pyro4.socketutil.getIpAddress("", workaround127=True)
         uri1, ns1, bc1 = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=False)
         uri2, ns2, bc2 = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=True)
-        self.assertTrue(isinstance(uri1, Pyro4.core.URI))
-        self.assertTrue(isinstance(ns1, Pyro4.naming.NameServerDaemon))
-        self.assertTrue(bc1 is None)
-        self.assertTrue(isinstance(bc2, Pyro4.naming.BroadcastServer))
+        self.assertIsInstance(uri1, Pyro4.core.URI)
+        self.assertIsInstance(ns1, Pyro4.naming.NameServerDaemon)
+        self.assertIsNone(bc1)
+        self.assertIsInstance(bc2, Pyro4.naming.BroadcastServer)
         sock = bc2.sock
         self.assertTrue(hasattr(sock, "fileno"))
         _ = bc2.processRequest
@@ -233,13 +233,13 @@ class OfflineNameServerTests(unittest.TestCase):
             self.assertTrue(sys.stdout.getvalue().endswith("END LIST \n"))
             Pyro4.nsc.handleCommand(ns, None, ["listmatching", "name.$"])
             self.assertTrue(sys.stdout.getvalue().endswith("END LIST - regex 'name.$'\n"))
-            self.assertFalse("name1" in sys.stdout.getvalue())
+            self.assertNotIn("name1", sys.stdout.getvalue())
             Pyro4.nsc.handleCommand(ns, None, ["register", "name1", "PYRO:obj1@hostname:9999"])
             self.assertTrue(sys.stdout.getvalue().endswith("Registered name1\n"))
             Pyro4.nsc.handleCommand(ns, None, ["remove", "name2"])
             self.assertTrue(sys.stdout.getvalue().endswith("Nothing removed\n"))
             Pyro4.nsc.handleCommand(ns, None, ["listmatching", "name.$"])
-            self.assertTrue("name1 --> PYRO:obj1@hostname:9999" in sys.stdout.getvalue())
+            self.assertIn("name1 --> PYRO:obj1@hostname:9999", sys.stdout.getvalue())
             # Pyro4.nsc.handleCommand(ns, None, ["removematching","name?"])
         finally:
             sys.stdout = oldstdout

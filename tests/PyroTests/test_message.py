@@ -135,7 +135,7 @@ class MessageTestsHmac(unittest.TestCase):
         self.assertEqual(5, msg.data_size)
         self.assertEqual(b"hello", msg.data)
         self.assertEqual(b"abcde", msg.annotations["TEST"])
-        self.assertTrue("HMAC" in msg.annotations)
+        self.assertIn("HMAC", msg.annotations)
 
     def testProtocolVersion(self):
         version = Pyro4.constants.PROTOCOL_VERSION
@@ -157,7 +157,7 @@ class MessageTestsHmac(unittest.TestCase):
             Message.recv(c)
             self.fail("crash expected")
         except Pyro4.errors.SecurityError as x:
-            self.assertTrue("hmac" in str(x))
+            self.assertIn("hmac", str(x))
         c = ConnectionMock(data)
         # test that it works again when resetting the key
         try:
@@ -174,7 +174,7 @@ class MessageTestsHmac(unittest.TestCase):
             Message.recv(c)
             self.fail("crash expected")
         except Pyro4.errors.SecurityError as x:
-            self.assertTrue("hmac key config" in str(x))
+            self.assertIn("hmac key config", str(x))
         finally:
             Pyro4.config.HMAC_KEY = hk
 
@@ -190,7 +190,7 @@ class MessageTestsHmac(unittest.TestCase):
             Message.recv(c)
             self.fail("crash expected")
         except Pyro4.errors.ProtocolError as x:
-            self.assertTrue("checksum" in str(x))
+            self.assertIn("checksum", str(x))
 
 
 class MessageTestsNoHmac(unittest.TestCase):

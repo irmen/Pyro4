@@ -61,7 +61,7 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(type(Pyro4.config.NS_PORT) is int)
         config = Pyro4.config.asDict()
         self.assertTrue(type(config) is dict)
-        self.assertTrue("COMPRESSION" in config)
+        self.assertIn("COMPRESSION", config)
         self.assertEqual(Pyro4.config.COMPRESSION, config["COMPRESSION"])
 
     def testConfigValid(self):
@@ -88,8 +88,8 @@ class CoreTests(unittest.TestCase):
     def testConfigDump(self):
         config = Pyro4.configuration.Configuration()
         dump = config.dump()
-        self.assertTrue("version:" in dump)
-        self.assertTrue("LOGLEVEL" in dump)
+        self.assertIn("version:", dump)
+        self.assertIn("LOGLEVEL", dump)
 
     def testLogInit(self):
         _ = logging.getLogger("Pyro4")
@@ -135,9 +135,9 @@ class CoreTests(unittest.TestCase):
         p = Pyro4.core.URI("PYRONAME:some_obj_name")
         self.assertEqual("PYRONAME", p.protocol)
         self.assertEqual("some_obj_name", p.object)
-        self.assertEqual(None, p.host)
-        self.assertEqual(None, p.sockname)
-        self.assertEqual(None, p.port)
+        self.assertIsNone(p.host)
+        self.assertIsNone(p.sockname)
+        self.assertIsNone(p.port)
         p = Pyro4.core.URI("PYRONAME:some_obj_name@host.com:9999")
         self.assertEqual("PYRONAME", p.protocol)
         self.assertEqual("some_obj_name", p.object)
@@ -148,7 +148,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("PYRO", p.protocol)
         self.assertEqual("12345", p.object)
         self.assertEqual("host.com", p.host)
-        self.assertEqual(None, p.sockname)
+        self.assertIsNone(p.sockname)
         self.assertEqual(4444, p.port)
         self.assertEqual("host.com:4444", p.location)
         p = Pyro4.core.URI("PYRO:12345@./u:sockname")
@@ -164,7 +164,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("PYRO", p.protocol)
         self.assertEqual("12345", p.object)
         self.assertEqual("host.com", p.host)
-        self.assertEqual(None, p.sockname)
+        self.assertIsNone(p.sockname)
         self.assertEqual(4444, p.port)
         p = Pyro4.core.URI("pyro:12345@[::1]:4444")
         self.assertEqual("::1", p.host)
@@ -177,8 +177,8 @@ class CoreTests(unittest.TestCase):
         p = Pyro4.core.URI("PYRONAME:objectname")
         self.assertEqual("PYRONAME", p.protocol)
         self.assertEqual("objectname", p.object)
-        self.assertEqual(None, p.host)
-        self.assertEqual(None, p.port)
+        self.assertIsNone(p.host)
+        self.assertIsNone(p.port)
         p = Pyro4.core.URI("PYRONAME:objectname@nameserverhost")
         self.assertEqual("PYRONAME", p.protocol)
         self.assertEqual("objectname", p.object)
@@ -227,7 +227,7 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(type(p.protocol) is unicode)
         self.assertTrue(type(p.object) is unicode)
         self.assertTrue(type(p.host) is unicode)
-        self.assertEqual(None, p.sockname)
+        self.assertIsNone(p.sockname)
         self.assertEqual(4444, p.port)
 
         uri = "PYRO:12345@hostname:9999"
@@ -327,15 +327,15 @@ class CoreTests(unittest.TestCase):
         p1 = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
         p2 = Pyro4.core.Proxy(Pyro4.core.URI("PYRO:9999@localhost:15555"))
         self.assertEqual(p1._pyroUri, p2._pyroUri)
-        self.assertTrue(p1._pyroConnection is None)
+        self.assertIsNone(p1._pyroConnection)
         p1._pyroRelease()
         p1._pyroRelease()
         # try copying a not-connected proxy
         p3 = copy.copy(p1)
-        self.assertTrue(p3._pyroConnection is None)
-        self.assertTrue(p1._pyroConnection is None)
+        self.assertIsNone(p3._pyroConnection)
+        self.assertIsNone(p1._pyroConnection)
         self.assertEqual(p3._pyroUri, p1._pyroUri)
-        self.assertFalse(p3._pyroUri is p1._pyroUri)
+        self.assertIsNot(p3._pyroUri, p1._pyroUri)
 
     def testProxyRepr(self):
         p = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
@@ -348,9 +348,9 @@ class CoreTests(unittest.TestCase):
         p1 = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
         p2 = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
         p1._pyroOneway.add("method")
-        self.assertTrue("method" in p1._pyroOneway, "p1 should have oneway method")
-        self.assertFalse("method" in p2._pyroOneway, "p2 should not have the same oneway method")
-        self.assertFalse(p1._pyroOneway is p2._pyroOneway, "p1 and p2 should have different oneway tables")
+        self.assertIn("method", p1._pyroOneway, "p1 should have oneway method")
+        self.assertNotIn("method", p2._pyroOneway, "p2 should not have the same oneway method")
+        self.assertIsNot(p1._pyroOneway, p2._pyroOneway, "p1 and p2 should have different oneway tables")
 
     def testProxyWithStmt(self):
         class ConnectionMock(object):
@@ -365,13 +365,13 @@ class CoreTests(unittest.TestCase):
         p._pyroConnection = connMock
         self.assertFalse(connMock.closeCalled)
         p._pyroRelease()
-        self.assertTrue(p._pyroConnection is None)
+        self.assertIsNone(p._pyroConnection)
         self.assertTrue(connMock.closeCalled)
 
         connMock = ConnectionMock()
         with Pyro4.core.Proxy("PYRO:9999@localhost:15555") as p:
             p._pyroConnection = connMock
-        self.assertTrue(p._pyroConnection is None)
+        self.assertIsNone(p._pyroConnection)
         self.assertTrue(connMock.closeCalled)
         connMock = ConnectionMock()
         try:
@@ -381,13 +381,13 @@ class CoreTests(unittest.TestCase):
             self.fail("expected error")
         except ZeroDivisionError:
             pass
-        self.assertTrue(p._pyroConnection is None)
+        self.assertIsNone(p._pyroConnection)
         self.assertTrue(connMock.closeCalled)
         p = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
         with p:
-            self.assertTrue(p._pyroUri is not None)
+            self.assertIsNotNone(p._pyroUri)
         with p:
-            self.assertTrue(p._pyroUri is not None)
+            self.assertIsNotNone(p._pyroUri)
 
     def testNoConnect(self):
         wrongUri = Pyro4.core.URI("PYRO:foobar@localhost:59999")
@@ -408,12 +408,12 @@ class CoreTests(unittest.TestCase):
 
         Pyro4.config.COMMTIMEOUT = None
         p = Pyro4.core.Proxy("PYRO:obj@host:555")
-        self.assertEqual(None, p._pyroTimeout)
+        self.assertIsNone(p._pyroTimeout)
         p._pyroTimeout = 5
         self.assertEqual(5, p._pyroTimeout)
         p = Pyro4.core.Proxy("PYRO:obj@host:555")
         p._pyroConnection = ConnectionMock()
-        self.assertEqual(None, p._pyroTimeout)
+        self.assertIsNone(p._pyroTimeout)
         p._pyroTimeout = 5
         self.assertEqual(5, p._pyroTimeout)
         self.assertEqual(5, p._pyroConnection.timeout)
@@ -423,8 +423,8 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(2, p._pyroTimeout)
         self.assertEqual(2, p._pyroConnection.timeout)
         p._pyroTimeout = None
-        self.assertEqual(None, p._pyroTimeout)
-        self.assertEqual(None, p._pyroConnection.timeout)
+        self.assertIsNone(p._pyroTimeout)
+        self.assertIsNone(p._pyroConnection.timeout)
         Pyro4.config.COMMTIMEOUT = None
 
     def testCallbackDecorator(self):
@@ -513,32 +513,41 @@ class RemoteMethodTests(unittest.TestCase):
     def tearDown(self):
         Pyro4.config.HMAC_KEY = None
 
-    def testRemoteMethod(self):
-        class ProxyMock(object):
-            def invoke(self, name, args, kwargs):
-                return "INVOKED name=%s args=%s kwargs=%s" % (name, args, kwargs)
+    def testRemoteMethodMetaOff(self):
+        try:
+            Pyro4.config.METADATA = False
+            class ProxyMock(object):
+                def invoke(self, name, args, kwargs):
+                    return "INVOKED name=%s args=%s kwargs=%s" % (name, args, kwargs)
 
-            def __getattr__(self, name):
-                return Pyro4.core._RemoteMethod(self.invoke, name)
+                def __getattr__(self, name):
+                    return Pyro4.core._RemoteMethod(self.invoke, name)
 
-        o = ProxyMock()
-        self.assertEqual("INVOKED name=foo args=(1,) kwargs={}", o.foo(1))  # normal
-        self.assertEqual("INVOKED name=foo.bar args=(1,) kwargs={}", o.foo.bar(1))  # dotted
-        self.assertEqual("INVOKED name=foo.bar args=(1, 'hello') kwargs={'a': True}", o.foo.bar(1, "hello", a=True))
-        p = Pyro4.core.Proxy("PYRO:obj@host:666")
-        a = p.someattribute
-        self.assertTrue(isinstance(a, Pyro4.core._RemoteMethod), "attribute access should just be a RemoteMethod")
-        a2 = a.nestedattribute
-        self.assertTrue(isinstance(a2, Pyro4.core._RemoteMethod), "nested attribute should just be another RemoteMethod")
+            o = ProxyMock()
+            self.assertEqual("INVOKED name=foo args=(1,) kwargs={}", o.foo(1))  # normal
+            self.assertEqual("INVOKED name=foo.bar args=(1,) kwargs={}", o.foo.bar(1))  # dotted
+            self.assertEqual("INVOKED name=foo.bar args=(1, 'hello') kwargs={'a': True}", o.foo.bar(1, "hello", a=True))
+            p = Pyro4.core.Proxy("PYRO:obj@host:666")
+            a = p.someattribute
+            self.assertIsInstance(a, Pyro4.core._RemoteMethod, "attribute access should just be a RemoteMethod")
+            a2 = a.nestedattribute.nested2
+            self.assertIsInstance(a2, Pyro4.core._RemoteMethod, "nested attribute should just be another RemoteMethod")
+        finally:
+            Pyro4.config.METADATA = True
+
+    def testRemoteMethodMetaOn(self):
+        p = Pyro4.core.Proxy("PYRO:obj@localhost:59999")
+        with self.assertRaises(Pyro4.errors.CommunicationError):
+            _ = p.someattribute     # triggers attempt to get metadata
 
     def testBatchMethod(self):
         proxy = self.BatchProxyMock()
         batch = Pyro4.batch(proxy)
-        self.assertEqual(None, batch.foo(42))
-        self.assertEqual(None, batch.bar("abc"))
-        self.assertEqual(None, batch.baz(42, "abc", arg=999))
-        self.assertEqual(None, batch.error())  # generate an exception
-        self.assertEqual(None, batch.foo(42))  # this call should not be performed after the error
+        self.assertIsNone(batch.foo(42))
+        self.assertIsNone(batch.bar("abc"))
+        self.assertIsNone(batch.baz(42, "abc", arg=999))
+        self.assertIsNone(batch.error())  # generate an exception
+        self.assertIsNone(batch.foo(42))  # this call should not be performed after the error
         results = batch()
         result = next(results)
         self.assertEqual("INVOKED foo args=(42,) kwargs={}", result)
@@ -553,27 +562,27 @@ class RemoteMethodTests(unittest.TestCase):
     def testBatchMethodOneway(self):
         proxy = self.BatchProxyMock()
         batch = Pyro4.batch(proxy)
-        self.assertEqual(None, batch.foo(42))
-        self.assertEqual(None, batch.bar("abc"))
-        self.assertEqual(None, batch.baz(42, "abc", arg=999))
-        self.assertEqual(None, batch.error())  # generate an exception
-        self.assertEqual(None, batch.foo(42))  # this call should not be performed after the error
+        self.assertIsNone(batch.foo(42))
+        self.assertIsNone(batch.bar("abc"))
+        self.assertIsNone(batch.baz(42, "abc", arg=999))
+        self.assertIsNone(batch.error())  # generate an exception
+        self.assertIsNone(batch.foo(42))  # this call should not be performed after the error
         results = batch(oneway=True)
-        self.assertEqual(None, results)  # oneway always returns None
+        self.assertIsNone(results)  # oneway always returns None
         self.assertEqual(4, len(proxy.result))  # should have done 4 calls, not 5
         self.assertRaises(Pyro4.errors.PyroError, batch, oneway=True, async=True)  # oneway+async=booboo
 
     def testBatchMethodAsync(self):
         proxy = self.BatchProxyMock()
         batch = Pyro4.batch(proxy)
-        self.assertEqual(None, batch.foo(42))
-        self.assertEqual(None, batch.bar("abc"))
-        self.assertEqual(None, batch.pause(0.5))  # pause shouldn't matter with async
-        self.assertEqual(None, batch.baz(42, "abc", arg=999))
+        self.assertIsNone(batch.foo(42))
+        self.assertIsNone(batch.bar("abc"))
+        self.assertIsNone(batch.pause(0.5))  # pause shouldn't matter with async
+        self.assertIsNone(batch.baz(42, "abc", arg=999))
         begin = time.time()
         asyncresult = batch(async=True)
         duration = time.time() - begin
-        self.assertTrue(duration < 0.1, "batch oneway with pause should still return almost immediately")
+        self.assertLess(duration, 0.1, "batch oneway with pause should still return almost immediately")
         results = asyncresult.value
         self.assertEqual(4, len(proxy.result))  # should have done 4 calls
         result = next(results)
@@ -607,7 +616,7 @@ class RemoteMethodTests(unittest.TestCase):
         begin = time.time()
         result = async.pause_and_divide(0.2, 10, 2)  # returns immediately
         duration = time.time() - begin
-        self.assertTrue(duration < 0.1)
+        self.assertLess(duration, 0.1)
         self.assertFalse(result.ready)
         _ = result.value
         self.assertTrue(result.ready)
@@ -700,7 +709,7 @@ class TestFutures(unittest.TestCase):
     def testSimpleFuture(self):
         f = Pyro4.Future(futurestestfunc)
         r = f(4, 5)
-        self.assertTrue(isinstance(r, Pyro4.futures.FutureResult))
+        self.assertIsInstance(r, Pyro4.futures.FutureResult)
         value = r.value
         self.assertEqual(9, value)
 

@@ -63,8 +63,8 @@ class DaemonTests(unittest.TestCase):
             def send(self, data):
                 pass
 
-        self.assertTrue("marshal" in Pyro4.config.SERIALIZERS_ACCEPTED)
-        self.assertFalse("pickle" in Pyro4.config.SERIALIZERS_ACCEPTED)
+        self.assertIn("marshal", Pyro4.config.SERIALIZERS_ACCEPTED)
+        self.assertNotIn("pickle", Pyro4.config.SERIALIZERS_ACCEPTED)
         with Pyro4.core.Daemon(port=0) as d:
             msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_MARSHAL, 0, 0)
             cm = ConnectionMock(msg)
@@ -75,14 +75,14 @@ class DaemonTests(unittest.TestCase):
                 d.handleRequest(cm)
                 self.fail("should crash")
             except Pyro4.errors.ProtocolError as x:
-                self.assertTrue("serializer that is not accepted" in str(x))
+                self.assertIn("serializer that is not accepted", str(x))
                 pass
 
     def testDaemon(self):
         with Pyro4.core.Daemon(port=0) as d:
             hostname, port = d.locationStr.split(":")
             port = int(port)
-            self.assertTrue(Pyro4.constants.DAEMON_NAME in d.objectsById)
+            self.assertIn(Pyro4.constants.DAEMON_NAME, d.objectsById)
             self.assertEqual("PYRO:" + Pyro4.constants.DAEMON_NAME + "@" + d.locationStr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
             # check the string representations
             expected = "<Pyro4.core.Daemon at 0x%x, %s, 1 objects>" % (id(d), d.locationStr)
@@ -137,7 +137,7 @@ class DaemonTests(unittest.TestCase):
         Pyro4.config.SERVERTYPE = "thread"
         with Pyro4.core.Daemon(port=0) as d:
             sock = d.sock
-            self.assertTrue(sock in d.sockets, "daemon's socketlist should contain the server socket")
+            self.assertIn(sock, d.sockets, "daemon's socketlist should contain the server socket")
             self.assertTrue(len(d.sockets) == 1, "daemon without connections should have just 1 socket")
         Pyro4.config.SERVERTYPE = old_servertype
 
@@ -146,7 +146,7 @@ class DaemonTests(unittest.TestCase):
         Pyro4.config.SERVERTYPE = "multiplex"
         with Pyro4.core.Daemon(port=0) as d:
             sock = d.sock
-            self.assertTrue(sock in d.sockets, "daemon's socketlist should contain the server socket")
+            self.assertIn(sock, d.sockets, "daemon's socketlist should contain the server socket")
             self.assertTrue(len(d.sockets) == 1, "daemon without connections should have just 1 socket")
         Pyro4.config.SERVERTYPE = old_servertype
 
@@ -193,26 +193,26 @@ class DaemonTests(unittest.TestCase):
             d.unregister("obj2a")
             d.unregister(o1._pyroId)
             self.assertEqual(1, len(d.objectsById))
-            self.assertTrue(o1._pyroId not in d.objectsById)
-            self.assertTrue(o2._pyroId not in d.objectsById)
+            self.assertNotIn(o1._pyroId, d.objectsById)
+            self.assertNotIn(o2._pyroId, d.objectsById)
 
             # test unregister objects
             del o2._pyroId
             d.register(o2)
             objectid = o2._pyroId
-            self.assertTrue(objectid in d.objectsById)
+            self.assertIn(objectid, d.objectsById)
             self.assertEqual(2, len(d.objectsById))
             d.unregister(o2)
             # no more _pyro attributes must remain after unregistering
             for attr in vars(o2):
                 self.assertFalse(attr.startswith("_pyro"))
             self.assertEqual(1, len(d.objectsById))
-            self.assertFalse(objectid in d.objectsById)
+            self.assertNotIn(objectid, d.objectsById)
             self.assertRaises(DaemonError, d.unregister, [1, 2, 3])
 
             # test unregister daemon name
             d.unregister(Pyro4.constants.DAEMON_NAME)
-            self.assertTrue(Pyro4.constants.DAEMON_NAME in d.objectsById)
+            self.assertIn(Pyro4.constants.DAEMON_NAME, d.objectsById)
 
             # weird args
             w = MyObj("weird")
@@ -222,9 +222,9 @@ class DaemonTests(unittest.TestCase):
 
             # uri return value from register
             uri = d.register(MyObj("xyz"))
-            self.assertTrue(isinstance(uri, Pyro4.core.URI))
+            self.assertIsInstance(uri, Pyro4.core.URI)
             uri = d.register(MyObj("xyz"), "test.register")
-            self.assertTrue("test.register", uri.object)
+            self.assertEqual("test.register", uri.object)
 
         finally:
             d.close()
@@ -270,9 +270,9 @@ class DaemonTests(unittest.TestCase):
             registered = daemon.registered()
             self.assertTrue(type(registered) is list)
             self.assertEqual(4, len(registered))
-            self.assertTrue("obj1" in registered)
-            self.assertTrue("obj2" in registered)
-            self.assertTrue(obj3._pyroId in registered)
+            self.assertIn("obj1", registered)
+            self.assertIn("obj2", registered)
+            self.assertIn(obj3._pyroId, registered)
             try:
                 daemon.shutdown()
                 self.fail("should not succeed to call unexposed method")
@@ -306,20 +306,20 @@ class DaemonTests(unittest.TestCase):
 
     def testDaemonWithStmt(self):
         d = Pyro4.core.Daemon()
-        self.assertTrue(d.transportServer is not None)
+        self.assertIsNotNone(d.transportServer)
         d.close()  # closes the transportserver and sets it to None
-        self.assertTrue(d.transportServer is None)
+        self.assertIsNone(d.transportServer)
         with Pyro4.core.Daemon() as d:
-            self.assertTrue(d.transportServer is not None)
+            self.assertIsNotNone(d.transportServer)
             pass
-        self.assertTrue(d.transportServer is None)
+        self.assertIsNone(d.transportServer)
         try:
             with Pyro4.core.Daemon() as d:
                 print(1 // 0)  # cause an error
             self.fail("expected error")
         except ZeroDivisionError:
             pass
-        self.assertTrue(d.transportServer is None)
+        self.assertIsNone(d.transportServer)
         d = Pyro4.core.Daemon()
         with d:
             pass
@@ -363,7 +363,7 @@ class DaemonTests(unittest.TestCase):
 
     def testNAT(self):
         with Pyro4.core.Daemon() as d:
-            self.assertTrue(d.natLocationStr is None)
+            self.assertIsNone(d.natLocationStr)
         with Pyro4.core.Daemon(nathost="nathosttest", natport=12345) as d:
             self.assertEqual("nathosttest:12345", d.natLocationStr)
             self.assertNotEqual(d.locationStr, d.natLocationStr)
@@ -416,7 +416,7 @@ class DaemonTests(unittest.TestCase):
             Pyro4.config.NATHOST = None
             Pyro4.config.NATPORT = 0
             with Pyro4.core.Daemon() as d:
-                self.assertTrue(d.natLocationStr is None)
+                self.assertIsNone(d.natLocationStr)
             Pyro4.config.NATHOST = "nathosttest"
             Pyro4.config.NATPORT = 12345
             with Pyro4.core.Daemon() as d:
