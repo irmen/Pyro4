@@ -186,7 +186,8 @@ class Proxy(object):
     """
     __pyroAttributes = frozenset(
         ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway",
-         "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq"])
+         "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq",
+         "_Proxy__pyroTimeout", "_Proxy__pyroLock", "_Proxy__pyroConnLock"])
 
     def __init__(self, uri):
         """
@@ -236,6 +237,17 @@ class Proxy(object):
             # client side check if the requested attr actually exists
             raise AttributeError("remote object '%s' has no exposed attribute '%s'" % (self._pyroUri.object, name))
         return _RemoteMethod(self._pyroInvoke, name)
+    
+    def __setattr__(self, name, value):
+        if name in Proxy.__pyroAttributes:
+            return super(Proxy, self).__setattr__(name, value)  # one of the special pyro attributes
+        if name in self._pyroAttrs:
+            return self._pyroInvoke("__setattr__", (name, value), None)  # remote attribute
+        if Pyro4.config.METADATA:
+            # client side validation if the requested attr actually exists
+            raise AttributeError("remote object '%s' has no exposed attribute '%s'" % (self._pyroUri.object, name))
+        # metadata disabled, just treat it as a local attribute on the proxy:
+        return super(Proxy, self).__setattr__(name, value)
 
     def __repr__(self):
         connected = "connected" if self._pyroConnection else "not connected"
@@ -884,6 +896,9 @@ class Daemon(object):
                     if method == "__getattr__":
                         # special case for direct attribute access (only exposed @properties are accessible)
                         data = util.get_exposed_property_value(obj, vargs[0], only_exposed=Pyro4.config.REQUIRE_EXPOSE)
+                    elif method == "__setattr__":
+                        # special case for direct attribute access (only exposed @properties are accessible)
+                        data = util.set_exposed_property_value(obj, vargs[0], vargs[1], only_exposed=Pyro4.config.REQUIRE_EXPOSE)
                     else:
                         method = util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
                         if request_flags & Pyro4.message.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:

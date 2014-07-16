@@ -654,8 +654,8 @@ def get_exposed_members(obj, only_exposed=True):
         # to give them a _pyroExposed tag either.
         # The way to expose attributes is by using properties for them.
         # This automatically solves the protection/security issue: you have to
-        # explicitly decide to make an attribute into a @property (and to @expose it)
-        # before it is remotely accessible.
+        # explicitly decide to make an attribute into a @property (and to @expose it
+        # if REQUIRE_EXPOSED=True) before it is remotely accessible.
     return {
         "methods": methods,
         "oneway": oneway,
@@ -673,4 +673,18 @@ def get_exposed_property_value(obj, propname, only_exposed=True):
     if inspect.isdatadescriptor(v):
         if v.fget and getattr(v.fget, "_pyroExposed", not only_exposed):
             return v.fget(obj)
+    raise AttributeError("attempt to access unexposed or unknown remote attribute '%s'" % propname)
+
+
+def set_exposed_property_value(obj, propname, value, only_exposed=True):
+    """
+    Sets the value of an @exposed @property.
+    If the requested property is not a @property or not exposed,
+    an AttributeError is raised instead.
+    """
+    v = getattr(obj.__class__, propname)
+    if inspect.isdatadescriptor(v):
+        pfunc = v.fget or v.fset or v.fdel
+        if v.fset and getattr(pfunc, "_pyroExposed", not only_exposed):
+            return v.fset(obj, value)
     raise AttributeError("attempt to access unexposed or unknown remote attribute '%s'" % propname)

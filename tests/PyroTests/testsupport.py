@@ -113,6 +113,16 @@ class MyThing(object):
     def prop1(self):
         return self.propvalue
 
+    @Pyro4.expose
+    @prop1.setter
+    def prop1(self, value):
+        self.propvalue = value
+
+    @Pyro4.expose
+    @property
+    def readonly_prop1(self):
+        return self.propvalue
+
     @property
     def prop2(self):
         return self.propvalue
@@ -160,7 +170,11 @@ class MyThingExposed(object):
 
     @name.setter
     def name(self, value):
-        pass
+        self._name = value
+
+    @property
+    def readonly_name(self):
+        return self._name
 
     @Pyro4.oneway
     def remotemethod(self, arg):

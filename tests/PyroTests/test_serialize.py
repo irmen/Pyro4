@@ -243,7 +243,7 @@ class SerializeTests_pickle(unittest.TestCase):
             self.assertIsInstance(p2, Pyro4.core.Proxy)
             self.assertEqual("thingy1", p1._pyroUri.object)
             self.assertEqual("thingy2", p2._pyroUri.object)
-            self.assertEqual(set(["prop1", "prop2"]), p1._pyroAttrs)
+            self.assertEqual(set(["prop1", "prop2", "readonly_prop1"]), p1._pyroAttrs)
             self.assertEqual(set(['classmethod', 'method', 'oneway', 'staticmethod', 'exposed']), p1._pyroMethods)
             self.assertEqual(set(['oneway']), p1._pyroOneway)
 
