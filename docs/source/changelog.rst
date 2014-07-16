@@ -10,11 +10,13 @@ Change Log
 - added METADATA config item to enable/disable the automatic metadata query that a proxy now does.
 - proper client side attribute validation if metadata is enabled. This also means that hasattr(proxy, "something") now actually works.
 - added REQUIRE_EXPOSE config item to toggle exposing everything in a server object, or that you must cherrypick with the new @expose decorator
-- Proxy._pyroGetMetadata method added. Is used internally as well (if METADATA is enabled), to obtain info about remote object attributes and methods.
 - copying a proxy now also copies its meta attributes (timeout, oneways, etc) instead of just the uri
+- Proxy._pyroGetMetadata method added. Is used internally as well (if METADATA is enabled), to obtain info about remote object attributes and methods.
+- The daemon got a new method that is used by the metadata mechanism: get_metadata
 - Daemon can now be constructed with custom interface class (so you can change the behavior of the DaemonObject default implementation easily)
 - echoserver gained a few more methods to test the new decorators
 - pep8'ified most of the source code
+- DOTTEDNAMES is deprecated and will be removed in the next version
 
 
 **Pyro 4.26**

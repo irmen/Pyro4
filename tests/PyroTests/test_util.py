@@ -266,7 +266,7 @@ class TestMeta(unittest.TestCase):
     def testOnlyExposed(self):
         o = MyThing("irmen")
         m = Pyro4.util.get_exposed_members(o)
-        self.assertEqual(set(), m["attrs"])
+        self.assertEqual(set(["prop1"]), m["attrs"])
         self.assertEqual(set(), m["oneway"])
         self.assertEqual(set(["exposed"]), m["methods"])
 
@@ -293,7 +293,29 @@ class TestMeta(unittest.TestCase):
             class _Test3(object):
                 pass
 
+    def testGetExposedProperty(self):
+        o = MyThingExposed("irmen")
+        with self.assertRaises(AttributeError):
+            Pyro4.util.get_exposed_property_value(o, "blurp")
+        with self.assertRaises(AttributeError):
+            Pyro4.util.get_exposed_property_value(o, "_name")
+        with self.assertRaises(AttributeError):
+            Pyro4.util.get_exposed_property_value(o, "unexisting_attribute")
+        self.assertEqual("irmen", Pyro4.util.get_exposed_property_value(o, "name"))
+
+    def testGetExposedPropertyFromPartiallyExposed(self):
+        o = MyThing("irmen")
+        with self.assertRaises(AttributeError):
+            Pyro4.util.get_exposed_property_value(o, "propvalue")
+        with self.assertRaises(AttributeError):
+            Pyro4.util.get_exposed_property_value(o, "_name")
+        with self.assertRaises(AttributeError):
+            Pyro4.util.get_exposed_property_value(o, "prop2")
+        with self.assertRaises(AttributeError):
+            Pyro4.util.get_exposed_property_value(o, "unexisting_attribute")
+        self.assertEqual(42, Pyro4.util.get_exposed_property_value(o, "prop1"))  # prop1 is the only exposed property
+
 
 if __name__ == "__main__":
-    # import sys;sys.argv = ['', 'Test.testName']
+    # import sys; sys.argv = ['', 'Test.testName']
     unittest.main()

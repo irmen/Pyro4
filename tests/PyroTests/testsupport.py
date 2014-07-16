@@ -80,6 +80,7 @@ class MyThing(object):
     propvalue = 42
     _private_attr1 = "hi"
     __private_attr2 = "hi"
+    name = ""
 
     def __init__(self, name="dummy"):
         self.name = name
@@ -107,6 +108,7 @@ class MyThing(object):
     def _private(self):
         pass
 
+    @Pyro4.expose
     @property
     def prop1(self):
         return self.propvalue
@@ -133,9 +135,13 @@ class MyThing(object):
 @Pyro4.expose
 class MyThingExposed(object):
     blurp = 99   # won't be exposed, because it is a class attribute and not a property
+    _name = ""
 
     def __init__(self, name="dummy"):
-        self.name = name
+        self._name = name
+
+    def __eq__(self, other):
+        return self._name == other._name
 
     def foo(self, arg):
         return arg
@@ -150,7 +156,7 @@ class MyThingExposed(object):
 
     @property
     def name(self):
-        return "thing"
+        return self._name
 
     @name.setter
     def name(self, value):

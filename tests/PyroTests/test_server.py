@@ -19,13 +19,18 @@ from testsupport import *
 @Pyro4.expose
 class ServerTestObject(object):
     something = 99
+    dict_attr = {}
 
     def __init__(self):
         self._dictionary = {"number": 42}
+        self.dict_attr = {"number2": 43}
         self._value = 12345
 
     def getDict(self):
         return self._dictionary
+
+    def getDictAttr(self):
+        return self.dict_attr
 
     def multiply(self, x, y):
         return x * y
@@ -188,23 +193,54 @@ class ServerTestsOnce(unittest.TestCase):
             p.echo(1)
             p.echo(2)
             p.echo(3)
-            self.assertEqual(5, p._pyroSeq)
+            self.assertEqual(4, p._pyroSeq, "should have 3 method calls + 1 get meta call")
             p._pyroSeq = 999   # hacking the seq nr won't have any effect because it is the reply from the server that is checked
             self.assertEqual(42, p.echo(42))
 
-    def testNoDottedNames(self):
-        Pyro4.config.DOTTEDNAMES = False
-        with Pyro4.core.Proxy(self.objectUri) as p:
-            self.assertEqual(55, p.multiply(5, 11))
-            x = p.getDict()
-            self.assertEqual({"number": 42}, x)
-            try:
-                p.dictionary.update({"more": 666})  # should fail with DOTTEDNAMES=False (the default)
-                self.fail("expected AttributeError")
-            except AttributeError:
-                pass
-            x = p.getDict()
-            self.assertEqual({"number": 42}, x)
+    def testDottedNamesOffMetaOff(self):
+        try:
+            old_dotted = Pyro4.config.DOTTEDNAMES
+            old_meta = Pyro4.config.METADATA
+            Pyro4.config.DOTTEDNAMES = False
+            Pyro4.config.METADATA = False
+            # should fail here, because there is no meta info about attributes and dotted names are disabled
+            with Pyro4.core.Proxy(self.objectUri) as p:
+                self.assertEqual(55, p.multiply(5, 11))
+                x = p.getDict()
+                self.assertEqual({"number": 42}, x)
+                # property
+                with self.assertRaises(AttributeError):
+                    p.dictionary.update({"more": 666})
+                # attribute
+                with self.assertRaises(AttributeError):
+                    p.dict_attr.update({"more": 666})
+                x = p.getDict()
+                self.assertEqual({"number": 42}, x)
+        finally:
+            Pyro4.config.METADATA = old_meta
+            Pyro4.config.DOTTEDNAMES = old_dotted
+
+    def testDottedNamesOffMetaOn(self):
+        try:
+            old_dotted = Pyro4.config.DOTTEDNAMES
+            old_meta = Pyro4.config.METADATA
+            Pyro4.config.DOTTEDNAMES = False
+            Pyro4.config.METADATA = True
+            with Pyro4.core.Proxy(self.objectUri) as p:
+                self.assertEqual(55, p.multiply(5, 11))
+                # property
+                x = p.getDict()
+                self.assertEqual({"number": 42}, x)
+                p.dictionary.update({"more": 666})  # should not fail because metadata is enabled and the dictionary property is retrieved as local copy
+                x = p.getDict()
+                self.assertEqual({"number": 42}, x)  # not updated remotely because we had a local copy
+            with Pyro4.core.Proxy(self.objectUri) as p:
+                with self.assertRaises(AttributeError):
+                    # attribute should fail (meta only works for exposed properties)
+                    p.dict_attr.update({"more": 666})
+        finally:
+            Pyro4.config.METADATA = old_meta
+            Pyro4.config.DOTTEDNAMES = old_dotted
 
     def testSomeArgumentTypes(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -222,30 +258,44 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertTrue(type(key) is unicode)
             self.assertEqual(key, unichr(0x20ac))
 
-    def testDottedNamesMetaOff(self):
+    def testDottedNamesOnMetaOff(self):
         try:
             Pyro4.config.DOTTEDNAMES = True
             Pyro4.config.METADATA = False
+            # property
             with Pyro4.core.Proxy(self.objectUri) as p:
                 x = p.getDict()
                 self.assertEqual({"number": 42}, x)
-                p.dictionary.update({"more": 666})  # updating it remotely should work with DOTTEDNAMES=True
+                p.dictionary.update({"more": 666})  # updating it remotely should work here
                 x = p.getDict()
-                self.assertEqual({"number": 42, "more": 666}, x)  # eek, it got updated!
+                self.assertEqual({"number": 42, "more": 666}, x)  # it got updated remotely!
+            # attribute
+            with Pyro4.core.Proxy(self.objectUri) as p:
+                x = p.getDictAttr()
+                self.assertEqual({"number2": 43}, x)
+                p.dict_attr.update({"more": 666})  # updating it remotely should work here
+                x = p.getDictAttr()
+                self.assertEqual({"number2": 43, "more": 666}, x)  # it got updated remotely!
         finally:
             Pyro4.config.DOTTEDNAMES = False
             Pyro4.config.METADATA = True
 
-    def testDottedNamesMetaOn(self):
+    def testDottedNamesOnMetaOn(self):
         try:
             Pyro4.config.DOTTEDNAMES = True
             Pyro4.config.METADATA = True
+            # property
             with Pyro4.core.Proxy(self.objectUri) as p:
                 x = p.getDict()
                 self.assertEqual({"number": 42}, x)
-                p.dictionary.update({"more": 666})  # updating it remotely should work with DOTTEDNAMES=True
+                p.dictionary.update({"more": 666})  # updating it remotely won't work anymore because the attribute value is transfered to the client
                 x = p.getDict()
-                self.assertEqual({"number": 42, "more": 666}, x)  # eek, it got updated!
+                self.assertEqual({"number": 42}, x)  # it didn't get updated ... the update() only executed on a local copy...
+            # attribute
+            with Pyro4.core.Proxy(self.objectUri) as p:
+                with self.assertRaises(AttributeError):
+                    # attribute should fail (meta only works for exposed properties)
+                    p.dict_attr.update({"more": 666})
         finally:
             Pyro4.config.DOTTEDNAMES = False
 
@@ -275,7 +325,8 @@ class ServerTestsOnce(unittest.TestCase):
             # connecting it should obtain metadata (as long as METADATA is true)
             p._pyroBind()
             self.assertEqual(set(['value', 'dictionary']), p._pyroAttrs)
-            self.assertEqual(set(['echo', 'getDict', 'divide', 'nonserializableException', 'ping', 'oneway_delay', 'delayAndId', 'delay', 'testargs', 'multiply', 'oneway_multiply']), p._pyroMethods)
+            self.assertEqual(set(['echo', 'getDict', 'divide', 'nonserializableException', 'ping', 'oneway_delay', 'delayAndId', 'delay', 'testargs',
+                                  'multiply', 'oneway_multiply', 'getDictAttr']), p._pyroMethods)
             self.assertEqual(set(['oneway_multiply', 'oneway_delay']), p._pyroOneway)
 
     def testProxyMetadataAttrs(self):
@@ -292,10 +343,10 @@ class ServerTestsOnce(unittest.TestCase):
             with Pyro4.core.Proxy(self.objectUri) as p:
                 # unconnected proxy still has empty metadata.
                 # but, as soon as an attribute is used, the metadata is obtained (as long as METADATA is true)
-                a = p.multiply
-                self.assertIsInstance(a, Pyro4.core._RemoteMethod)
                 a = p.value
-                self.assertIsInstance(a, Pyro4.core._RemoteMethod)
+                self.assertEqual(12345, a)
+                a = p.multiply
+                self.assertIsInstance(a, Pyro4.core._RemoteMethod)  # multiply is still a regular method
                 with self.assertRaises(AttributeError):
                     _ = p.non_existing_attribute
         finally:
@@ -321,12 +372,11 @@ class ServerTestsOnce(unittest.TestCase):
                 self.assertEqual("hello", p.getName())
                 with self.assertRaises(AttributeError) as e:
                     p.unexposed()
-                self.assertEquals("remote object 'unexposed' has no attribute 'unexposed'", str(e.exception))
+                self.assertEquals("remote object 'unexposed' has no exposed attribute 'unexposed'", str(e.exception))
         finally:
             Pyro4.config.REQUIRE_EXPOSE = old_require
 
-    @unittest.skip("property access is still broken atm and just returns a remotemethod instance")
-    def testProperties(self):  # @todo fix ! (property access still returns just a remotemethod instance)
+    def testProperties(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
             _ = p.value
             # metadata should be loaded now
@@ -339,6 +389,23 @@ class ServerTestsOnce(unittest.TestCase):
                 _ = p._value
             self.assertEqual(12345, p.value)
             self.assertEqual({"number": 42}, p.dictionary)
+
+    def testPropertiesDottedNames(self):
+        try:
+            old_dotted = Pyro4.config.DOTTEDNAMES
+            Pyro4.config.DOTTEDNAMES = True
+            with Pyro4.core.Proxy(self.objectUri) as p:
+                _ = p.value
+                # metadata should be loaded now
+                d = p.dictionary
+                self.assertEqual({"number": 42}, d)
+                self.assertEqual(set(["number"]), set(p.dictionary.keys()))
+                d2 = p.dictionary
+                self.assertIsNot(d, d2)
+                p.dictionary.update({"qwerty": 1234})   # remotely update won't work because we get a local copy by accessing the attribute
+                self.assertEqual({"number": 42}, p.dictionary)   # .. not updated remotely.
+        finally:
+            Pyro4.config.DOTTEDNAMES = old_dotted
 
     def testHasAttr(self):
         try:

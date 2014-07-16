@@ -561,7 +561,7 @@ try:
     _serializers["serpent"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser
 except ImportError:
-    # warnings.warn("serpent serializer not available", RuntimeWarning)
+    log.warn("serpent serializer is not available")
     pass
 del _ser
 
@@ -649,12 +649,28 @@ def get_exposed_members(obj, only_exposed=True):
             assert func is not None
             if getattr(func, "_pyroExposed", not only_exposed):
                 attrs.add(m)
-        # Note that we don't expose class attributes no matter what.
+        # Note that we don't expose plain class attributes no matter what.
         # it is a syntax error to add a decorator on them, and it is not possible
         # to give them a _pyroExposed tag either.
         # The way to expose attributes is by using properties for them.
+        # This automatically solves the protection/security issue: you have to
+        # explicitly decide to make an attribute into a @property (and to @expose it)
+        # before it is remotely accessible.
     return {
         "methods": methods,
         "oneway": oneway,
         "attrs": attrs
     }
+
+
+def get_exposed_property_value(obj, propname, only_exposed=True):
+    """
+    Return the value of an @exposed @property.
+    If the requested property is not a @property or not exposed,
+    an AttributeError is raised instead.
+    """
+    v = getattr(obj.__class__, propname)
+    if inspect.isdatadescriptor(v):
+        if v.fget and getattr(v.fget, "_pyroExposed", not only_exposed):
+            return v.fget(obj)
+    raise AttributeError("attempt to access unexposed or unknown remote attribute '%s'" % propname)

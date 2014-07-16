@@ -12,6 +12,7 @@ import sys
 import time
 import os
 import uuid
+import warnings
 import Pyro4.futures
 from Pyro4 import errors, threadutil, socketutil, util, constants, message
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
@@ -210,8 +211,12 @@ class Proxy(object):
         self.__pyroConnLock = threadutil.Lock()
         util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
         if os.name == "java" and Pyro4.config.SERIALIZER == "marshal":
-            import warnings
             warnings.warn("marshal doesn't work correctly with Jython (issue 2077); please choose another serializer", RuntimeWarning)
+        if Pyro4.config.DOTTEDNAMES:
+            warnings.warn("DOTTEDNAMES support is deprecated and will be removed in a future version", DeprecationWarning)
+            if Pyro4.config.METADATA:
+                warnings.warn("DOTTEDNAMES and METADATA are both enabled, DOTTEDNAMES doesn't really work in this situation", RuntimeWarning)
+
 
     def __del__(self):
         if hasattr(self, "_pyroConnection"):
@@ -222,11 +227,14 @@ class Proxy(object):
             # allows it to be safely pickled
             raise AttributeError(name)
         if Pyro4.config.METADATA:
-            # client side check if the requested attr actually exists
+            # get metadata if it's not there yet
             if not self._pyroMethods and not self._pyroAttrs:
                 self._pyroGetMetadata()
-            if name not in self._pyroMethods and name not in self._pyroAttrs:
-                raise AttributeError("remote object '%s' has no attribute '%s'" % (self._pyroUri.object, name))
+        if name in self._pyroAttrs:
+            return self._pyroInvoke("__getattr__", (name,), None)
+        if Pyro4.config.METADATA and name not in self._pyroMethods:
+            # client side check if the requested attr actually exists
+            raise AttributeError("remote object '%s' has no exposed attribute '%s'" % (self._pyroUri.object, name))
         return _RemoteMethod(self._pyroInvoke, name)
 
     def __repr__(self):
@@ -434,6 +442,10 @@ class Proxy(object):
         """get metadata from server (methods, attrs, oneway, ...) and remember them in some attributes of the proxy"""
         objectId = objectId or self._pyroUri.object
         log.debug("getting metadata for object %s", objectId)
+        if self._pyroConnection is None and not known_metadata:
+            self.__pyroCreateConnection()
+            if self._pyroMethods or self._pyroAttrs:
+                return  # metadata has already been retrieved as part of creating the connection
         try:
             # invoke the get_metadata method on the daemon
             result = known_metadata or self._pyroInvoke("get_metadata", [objectId], {}, objectId=constants.DAEMON_NAME)
@@ -869,15 +881,19 @@ class Daemon(object):
                     wasBatched = True
                 else:
                     # normal single method call
-                    method = util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
-                    if request_flags & Pyro4.message.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:
-                        # oneway call to be run inside its own thread
-                        thread = threadutil.Thread(target=method, args=vargs, kwargs=kwargs)
-                        thread.setDaemon(True)
-                        thread.start()
+                    if method == "__getattr__":
+                        # special case for direct attribute access (only exposed @properties are accessible)
+                        data = util.get_exposed_property_value(obj, vargs[0], only_exposed=Pyro4.config.REQUIRE_EXPOSE)
                     else:
-                        isCallback = getattr(method, "_pyroCallback", False)
-                        data = method(*vargs, **kwargs)  # this is the actual method call to the Pyro object
+                        method = util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
+                        if request_flags & Pyro4.message.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:
+                            # oneway call to be run inside its own thread
+                            thread = threadutil.Thread(target=method, args=vargs, kwargs=kwargs)
+                            thread.setDaemon(True)
+                            thread.start()
+                        else:
+                            isCallback = getattr(method, "_pyroCallback", False)
+                            data = method(*vargs, **kwargs)  # this is the actual method call to the Pyro object
             else:
                 log.debug("unknown object requested: %s", objId)
                 raise errors.DaemonError("unknown object")

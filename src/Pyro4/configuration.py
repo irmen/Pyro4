@@ -40,7 +40,7 @@ class Configuration(object):
         self.NATPORT = 0
         self.COMPRESSION = False
         self.SERVERTYPE = "thread"
-        self.DOTTEDNAMES = False  # server-side
+        self.DOTTEDNAMES = False  # server-side. Deprecated.
         self.COMMTIMEOUT = 0.0
         self.POLLTIMEOUT = 2.0  # seconds
         self.SOCK_REUSE = False  # so_reuseaddr on server sockets?
@@ -58,7 +58,7 @@ class Configuration(object):
         self.SERIALIZERS_ACCEPTED = "serpent,marshal,json"
         self.LOGWIRE = False  # log wire-level messages
         self.PICKLE_PROTOCOL_VERSION = pickle.HIGHEST_PROTOCOL
-        self.METADATA = True  # send metadata on connect
+        self.METADATA = True  # get metadata from server on proxy connect
         self.REQUIRE_EXPOSE = False  # require @expose to make members remotely accessible (if False, everything is accessible)
 
         if useenvironment:

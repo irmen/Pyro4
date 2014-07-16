@@ -75,7 +75,8 @@ Dotted names (object traversal)
 Using dotted names on Pyro proxies (such as ``proxy.aaa.bbb.ccc()``)
 is disallowed by default because it is a security vulnerability
 (for similar reasons as described here http://www.python.org/news/security/PSF-2005-001/ ).
-You can enable it with the ``DOTTEDNAMES`` config item, but be aware of the implications.
+You can enable it with the ``DOTTEDNAMES`` config item (deprecated, it will be removed in
+a future version), but be aware of the implications.
 
 The :file:`attributes` example shows one of the exploits you can perform if it is enabled.
 
