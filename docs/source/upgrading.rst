@@ -70,10 +70,10 @@ to see what the new API and features of Pyro4 are like.
 
 General differences from Pyro 3.x
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- Pyro4 requires Python 2.6 or newer. Pyro 3.x supports Python 2.5 (Pyro 3.12 and older, even support Python 2.4)
+- Pyro4 requires Python 2.6 or newer. Pyro 3.x supports Python 2.5 (Pyro 3.12 and older even support Python 2.4)
 - Toplevel package name has been changed from ``Pyro`` into ``Pyro4``
 - Mobile code support has been removed.
-- Remote attribute access (``DynamicProxyWithAttrs``) has been removed (slight chance it appears again in the future in a different form)
+- Remote attribute access (``DynamicProxyWithAttrs``) is available in the normal proxy but different (you need to use exposed properties)
 - Event server has been removed (slight chance it appears again in the future in a different form).
 - SSL support has been removed. Likely to appear again in a future version.
 - You don't need to import the various sub packages. Just ``import Pyro4`` and you're done: the main Pyro API elements are available directly in the ``Pyro4`` package.

@@ -3,6 +3,7 @@ import sys
 
 import Pyro4
 
+Pyro4.config.METADATA = False  # XXX
 
 if sys.version_info < (3, 0):
     input = raw_input
@@ -17,6 +18,11 @@ p = Pyro4.Proxy(uri)
 # (however it is a security risk because it is possible to exploit object
 # traversal and obtain internal info of your server or execute arbitrary code).
 print("DOTTEDNAMES on the server is:", p.dottedNames())
+if p.dottedNames():
+    print("Disabling METADATA on the client because DOTTEDNAMES is not compatible with that.")
+    print("Note that DOTTEDNAMES is a deprecated feature that will be removed in a future version.")
+    Pyro4.config.METADATA = False  # disable
+print("")
 value = p.getSubValue()
 print("value gotten from p.getSubValue()=", value)
 try:
@@ -37,7 +43,10 @@ try:
 except AttributeError:
     print("AttributeError occurred:", sys.exc_info()[1])
 
-# try an object traversal exploit
+# SECURITY ISSUE when DOTTEDNAMES is enabled:
+# client code can overwrite globals in the server by means of the object traversal exploit.
+# (Similar to an old exploit of the xmlrpc lib: http://www.python.org/news/security/PSF-2005-001/ )
+Pyro4.config.METADATA = True  # back to the default
 print("attempt to do an object traversal exploit...")
 oldvalue = p.printSomething()
 try:
@@ -46,16 +55,37 @@ try:
 except AttributeError:
     # this exception occurs when the server has DOTTEDNAMES set to false.
     print("Attributeerror, couldn't update the server's global variable")
+else:
+    print("No attributeerror occurred, we have overwritten a global value in the server")
 newvalue = p.printSomething()
 if newvalue != oldvalue:
-    print("The server has been exploited, a global variable has been updated with a different value.")
+    print("The server has been exploited, a global variable has been updated with a different value:")
     print("Old value: {0}    new value: {1}".format(oldvalue, newvalue))
 
-# Direct attribute access @todo: not supported yet, will only print a bunch of <RemoteMethod> lines
-# print("\nDirect attribute access.  (not supported yet!)")
-# print("p.value:",p.value)
-# print("p._value:",p._value)
-# print("p.__value:",p.__value)
-# print("p.sub.value:",p.sub.value)
-# print("p.sub._value:",p.sub._value)
-# print("p.sub.__value:",p.sub.__value)
+# Direct remote attribute access.
+print("\nDirect remote attribute access.")
+print("accessing p.prop_value...")
+print("p.prop_value=", p.prop_value)
+print("setting p.prop_value to 9999")
+p.prop_value = 9999
+print("p.prop_value=", p.prop_value)
+print("p.getValue():", p.getValue(), " (this is the actual remote value)")
+print
+try:
+    print("accessing p.value...")
+    _ = p.value
+    raise RuntimeError("this should not happen!")   # because p.value is not an exposed property
+except AttributeError as x:
+    print("ok, got an error:", x)
+try:
+    print("accessing p._value...")
+    _ = p._value
+    raise RuntimeError("this should not happen!")   # because p._value is private
+except AttributeError as x:
+    print("ok, got an error:", x)
+try:
+    print("accessing p.__value...")
+    _ = p.__value
+    raise RuntimeError("this should not happen!")   # because p.__value is private
+except AttributeError as x:
+    print("ok, got an error:", x)

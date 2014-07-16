@@ -46,6 +46,24 @@ class Thingy(object):
         print("something:", something)
         return something
 
+    def getValue(self):
+        return self.value
+
+    @Pyro4.expose
+    @property
+    def prop_value(self):
+        return self.value
+
+    @Pyro4.expose
+    @prop_value.setter
+    def prop_value(self, value):
+        self.value = value
+
+    @Pyro4.expose
+    @property
+    def prop_sub(self):
+        return self.sub
+
 
 d = Pyro4.Daemon()
 uri = d.register(Thingy(), "example.attributes")
