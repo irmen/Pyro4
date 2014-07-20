@@ -247,7 +247,7 @@ locator function without any arguments.
 If you want to circumvent the broadcast lookup (because you know the location of the
 server already, somehow) you can specify the hostname.
 
-.. function:: locateNS([host=None, port=None])
+.. function:: locateNS([host=None, port=None, broadcast=True])
 
     Get a proxy for a name server somewhere in the network.
     If you're not providing host or port arguments, the configured defaults are used.
@@ -263,9 +263,12 @@ server already, somehow) you can specify the hostname.
 
         * host parameter given: the port now means the actual name server port.
         * host parameter not given: the port now means the broadcast port.
+    :param broadcast: should a broadcast be used to locate the name server, if
+        no location is specified? Default is True.
 
 
 .. index:: PYRONAME protocol type
+.. _nameserver-pyroname:
 
 The 'magical' PYRONAME protocol type
 ====================================
@@ -274,9 +277,19 @@ Because it is so convenient, the name server logic has been integrated into Pyro
 by means of the special ``PYRONAME`` protocol type (rather than the normal ``PYRO`` protocol type).
 This protocol type tells Pyro to treat the URI as a logical object name instead, and Pyro will
 do a name server lookup automatically to get the actual object's URI. The form of a PYRONAME uri
-is very simple: ``PYRONAME:some_logical_object_name``, where
-"some_logical_object_name" is the name of a registered Pyro object in the name server.
-This means that instead of manually resolving objects like this::
+is very simple::
+
+    PYRONAME:some_logical_object_name
+    PYRONAME:some_logical_object_name@nshostname           # with optional host name
+    PYRONAME:some_logical_object_name@nshostname:nsport    # with optional host name + port
+
+where "some_logical_object_name" is the name of a registered Pyro object in the name server.
+When you also provide the ``nshostname`` and perhaps even ``nsport`` parts in the uri, you tell Pyro to look
+for the name server on that specific location (instead of relying on a broadcast lookup mechanism).
+(You can achieve more or less the same by setting the ``NS_HOST`` and ``NS_PORT`` config items,
+but Pyro still does a broadcast lookup first in that case.)
+
+All this means that instead of manually resolving objects like this::
 
     nameserver=Pyro4.locateNS()
     uri=nameserver.lookup("Department.BackupServer")

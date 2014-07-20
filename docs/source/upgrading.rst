@@ -88,9 +88,6 @@ General differences from Pyro 3.x
   it would bind on all network interfaces by default (potentially exposing unwanted servers).
 - Logging is done using Python's standard logging module instead of custom logger stuff from ``Pyro.util``. There is some autoconfig voodoo in the package init code that reacts to some environment variable settings.
 - All classes are new style classes, so you can use super() etc. (this was already the case in the later Pyro 3.x releases but not in earlier ones)
-- There are no batch files for the utilities (yet), but you can use aliases like this:
-   | ``alias pyro-ns=python -m Pyro4.naming``
-   | ``alias pyro-nsc=python -m Pyro4.nsc``
 - The command line syntax of these tools has changed, just check out the new usage with '-h'.
 - The name server doesn't have any groups anymore. The namespace is now 'flat'. You don't have to use the ':' in front of names, or separate parts using '.' anymore. You can look up names matching a prefix string or a regular expression now, so with clever names you can still achieve mostly the same as with the old group based namespace.
 - The name server doesn't have a default group any longer. Name server proxies are regular Pyro proxies and don't perform any voodoo magic on the names anymore.

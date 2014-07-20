@@ -115,9 +115,8 @@ While the use of the Pyro name server is optional, we will use it in this tutori
 It also shows a few basic Pyro concepts, so let us begin by explaining a little about it.
 Open a console window and execute the following command to start a name server:
 
-:command:`python -Wignore -m Pyro4.naming`
+:command:`python -m Pyro4.naming`
 
-The :kbd:`-Wignore` is added to suppress a Pyro warning that we're not interested in right now.
 The name server will start and it prints something like::
 
     Not starting broadcast server for localhost.
@@ -146,9 +145,9 @@ There's another command line tool that let you interact with the name server: "n
 You can use it, amongst other things, to see what all known registered objects in the naming server are.
 Let's do that right now. Type:
 
-:command:`python -Wignore -m Pyro4.nsc list`
+:command:`python -m Pyro4.nsc list`
 
-(the :kbd:`-Wignore` again is to suppress a warning) and it will print something like this::
+and it will print something like this::
 
     --------START LIST
     Pyro.NameServer --> PYRO:Pyro.NameServer@localhost:9090
@@ -306,7 +305,8 @@ listens for and processes incoming remote method calls)::
                 },
                 ns = False)
 
-You'll also need to add a little ``main`` function so it will be started correctly, which should
+For now, ignore de details of what exactly the :py:meth:`serveSimple` method call does.
+Next up is addding a little ``main`` function so it will be started correctly, which should
 make the code now look like this (:file:`warehouse.py`)::
 
     from __future__ import print_function
@@ -424,7 +424,9 @@ that you started in `Starting a name server`_ is still running in its own consol
 In :file:`warehouse.py` locate the statement ``Pyro4.Daemon.serveSimple(...`` and change the ``ns = False`` argument to ``ns = True``.
 This tells Pyro to use a name server to register the objects in.
 (The ``Pyro4.Daemon.serveSimple`` is a very easy way to start a Pyro server but it provides very little control.
-You will learn about another way of starting a server in `Building a Stock market simulator`_).
+Look here :ref:`server-servesimple` for some more details, and
+you will learn about another way of starting a server in `Building a Stock market simulator`_).
+
 
 In :file:`visit.py` remove the input statement that asks for the warehouse uri, and change the way the warehouse proxy
 is created. Because you are now using a name server you can ask Pyro to locate the warehouse object automatically::
@@ -460,7 +462,7 @@ Start the warehouse program again in a separate console window. It will print so
 
 As you can see the uri is different this time, it now contains some random id code instead of a name.
 However it also printed an object name. This is the name that is now used in the name server for your warehouse
-object. Check this with the 'nsc' tool: :command:`python -m Pyro4.nsc list`, which will print something like::
+object. Check this with the 'nsc' tool: :command:`python -m Pyro4.nsc list` (or simply: :command:`pyro4-nsc list`), which will print something like::
 
     --------START LIST
     Pyro.NameServer --> PYRO:Pyro.NameServer@localhost:9090
@@ -687,7 +689,7 @@ once more with comments on what changed with respect to the version in phase 1 (
 for an easier transition).
 
 .. note::
-    This time we won't be using ``serveSimple`` to publish the objects and start the Daemon.
+    This time we won't be using :py:meth:`serveSimple` to publish the objects and start the Daemon.
     Instead, a daemon is created manually, we register our own objects,
     and start the request loop ourselves. This needs more code but gives you more control.
 
@@ -920,7 +922,7 @@ To run the final stock quote system you need to do the following:
 
   Once more, ignore the exact meaning of this particular setting. It is needed to get the stock market
   tutorial running in the form presented here. In other chapters the meaning of this setting will be explained.
-- start the Pyro name server (:command:`python -m Pyro4.naming`) in this window.
+- start the Pyro name server (:command:`python -m Pyro4.naming`, or simply: :command:`pyro4-ns`) in this window.
 
 After that, start the following, each in a separate console window (so they run in parallel):
 
@@ -962,9 +964,9 @@ The output of the viewer looks like this::
     NASDAQ.GOOG: 7.59
     ...
 
-If you're interested to see what the name server now contains, type :command:`python -m Pyro4.nsc list`::
+If you're interested to see what the name server now contains, type :command:`python -m Pyro4.nsc list` (or simply: :command:`pyro4-nsc list`)::
 
-    $ python -m Pyro4.nsc list
+    $ pyro4-nsc list
     --------START LIST
     Pyro.NameServer --> PYRO:Pyro.NameServer@localhost:9090
     example.stockmarket.nasdaq --> PYRO:obj_fc742f1656bd4c7e80bee17c33787147@localhost:50510
@@ -988,6 +990,7 @@ For more details, refer to the chapters in this manual about the relevant Pyro c
 *Name server*
     to start the nameserver in such a way that it is accessible from other machines,
     start it with an appropriate -n argument, like this: :command:`python -m Pyro4.naming -n your_hostname_here`
+    (or simply: :command:`pyro4-ns -n your_hostname_here`)
 
 *Warehouse server*
     You'll have to modify :file:`warehouse.py`. Right before the ``serveSimple`` call you have to tell it to bind the daemon on your hostname
@@ -996,9 +999,9 @@ For more details, refer to the chapters in this manual about the relevant Pyro c
         Pyro4.config.HOST = "your_hostname_here"
         Pyro4.Daemon.serveSimple(...)
 
-    You can also choose to leave the code alone, and instead set the ``PYRO_HOST`` environment variable
+    Optional: you can choose to leave the code alone, and instead set the ``PYRO_HOST`` environment variable
     before starting the warehouse server.
-    Another option is pass the required host (and perhaps even port) arguments to ``serveSimple``::
+    Another choice is to pass the required host (and perhaps even port) arguments to ``serveSimple``::
 
         Pyro4.Daemon.serveSimple(
                 {
@@ -1008,7 +1011,7 @@ For more details, refer to the chapters in this manual about the relevant Pyro c
                 ns = True)
 
 *Stock market servers*
-    This example already creates a daemon object instead of using the ``serveSimple`` call.
+    This example already creates a daemon object instead of using the :py:meth:`serveSimple` call.
     You'll have to modify the three source files because they all create a daemon.
     But you'll only have to add the proper ``host`` argument to the construction of the Daemon,
     to set it to your machine name instead of the default of localhost.

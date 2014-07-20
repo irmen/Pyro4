@@ -43,7 +43,7 @@ Resetting the config to default values
     Do this before using any other part of the Pyro library.
 
 
-.. index:: current config
+.. index:: current config, pyro4-check-config
 
 Inspecting current config
 -------------------------
@@ -51,7 +51,7 @@ Inspecting current config
 To inspect the current configuration you have several options:
 
 1. Access individual config items: ``print(Pyro4.config.COMPRESSION)``
-2. Dump the config in a console window: :command:`python -m Pyro4.configuration`
+2. Dump the config in a console window: :command:`python -m Pyro4.configuration` (or simply :command:`pyro4-check-config`)
    This will print something like::
 
         Pyro version: 4.6

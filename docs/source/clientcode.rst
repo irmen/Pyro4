@@ -58,7 +58,8 @@ You can create it in a number of ways.
     identifier ``PYRONAME`` in your URI string. It lets Pyro know that it should lookup
     the name following it, in the name server. Pyro should then
     use the resulting URI from the name server to contact the actual object.
-    So this means you can write::
+    See :ref:`nameserver-pyroname`.
+    This means you can write::
 
         uri_string = "PYRONAME:musicserver"
         # or Pyro4.URI("PYRONAME:musicserver") for an URI object

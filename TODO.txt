@@ -7,7 +7,6 @@ The most pressing issues can be found in the issue tracker on Github.
 * let async/Future use a client-side threadpool instead of spawning endless new threads
 * automatic callback handling if you pass a callable to the server
 * Make Pyro support listening to multiple network interfaces at the same time (and returning the correct URI from the daemon. Name server is harder...)
-* docs: explain callbacks better
 * docs: how to use the socketserver API to write your own implementation
 * add multiprocess server (forking?) based on multiprocessing?
 * simplify the shutdown/close methods so that they only signal a shutdown condition and let the eventloop thread clean up nicely. This to avoid all kinds of exceptions on shutdown (mainly socketserver on ironpython now)
