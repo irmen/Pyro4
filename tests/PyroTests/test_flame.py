@@ -5,6 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
+import sys
 import Pyro4.utils.flame
 import Pyro4.utils.flameserver
 import Pyro4.core
@@ -78,7 +79,23 @@ class FlameTests(unittest.TestCase):
                 self.assertTrue(hasattr(builtin, "__call__"))
                 self.assertIn("builtin 'max' at", str(builtin))
 
+    def testFlameserverMain(self):
+        oldstdout = sys.stdout
+        oldstderr = sys.stderr
+        try:
+            sys.stdout = StringIO()
+            sys.stderr = StringIO()
+            self.assertRaises(SystemExit, Pyro4.utils.flameserver.main, ["--invalidarg"])
+            self.assertTrue("no such option" in sys.stderr.getvalue())
+            sys.stderr.truncate(0)
+            sys.stdout.truncate(0)
+            self.assertRaises(SystemExit, Pyro4.utils.flameserver.main, ["-h"])
+            self.assertTrue("show this help message" in sys.stdout.getvalue())
+        finally:
+            sys.stdout = oldstdout
+            sys.stderr = oldstderr
+
 
 if __name__ == "__main__":
-    # import sys;sys.argv = ['', 'Test.testName']
+    # import sys; sys.argv = ['', 'Test.testName']
     unittest.main()

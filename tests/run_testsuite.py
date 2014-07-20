@@ -1,6 +1,6 @@
 """
 Run the complete test suite.
-use --tox to make this work from Tox,
+use --tox to make this work from Tox.
 
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """

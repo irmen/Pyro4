@@ -19,7 +19,7 @@ import Pyro4.utils.flame
 import Pyro4.core
 
 
-def main(returnWithoutLooping=False):
+def main(args=None, returnWithoutLooping=False):
     from optparse import OptionParser
 
     parser = OptionParser()
@@ -28,7 +28,7 @@ def main(returnWithoutLooping=False):
     parser.add_option("-u", "--unixsocket", help="Unix domain socket name to bind server on")
     parser.add_option("-q", "--quiet", action="store_true", default=False, help="don't output anything")
     parser.add_option("-k", "--key", help="the HMAC key to use")
-    options, args = parser.parse_args()
+    options, args = parser.parse_args(args)
 
     if not options.quiet:
         print("Starting Pyro Flame server.")

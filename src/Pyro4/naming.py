@@ -376,7 +376,7 @@ def resolve(uri):
         raise PyroError("invalid uri protocol")
 
 
-def main():
+def main(args=None):
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option("-n", "--host", dest="host", help="hostname to bind server on")
@@ -389,7 +389,7 @@ def main():
     parser.add_option("", "--natport", dest="natport", type="int", help="external port in case of NAT")
     parser.add_option("-x", "--nobc", dest="enablebc", action="store_false", default=True,
                       help="don't start a broadcast server")
-    options, args = parser.parse_args()
+    options, args = parser.parse_args(args)
     startNSloop(options.host, options.port, enableBroadcast=options.enablebc,
                 bchost=options.bchost, bcport=options.bcport, unixsocket=options.unixsocket,
                 nathost=options.nathost, natport=options.natport)
