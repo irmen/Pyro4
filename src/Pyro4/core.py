@@ -769,10 +769,11 @@ class Daemon(object):
     @staticmethod
     def serveSimple(objects, host=None, port=0, daemon=None, ns=True, verbose=True):
         """
-        Very basic method to fire up a daemon (or supply one yourself).
+        Basic method to fire up a daemon (or supply one yourself).
         objects is a dict containing objects to register as keys, and
         their names (or None) as values. If ns is true they will be registered
         in the naming server as well, otherwise they just stay local.
+        See the documentation on 'publishing objects' (in chapter: Servers) for more details.
         """
         if not daemon:
             daemon = Daemon(host, port)

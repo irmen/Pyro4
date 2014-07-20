@@ -8,7 +8,8 @@ You'll have to start a Pyro Flame server before running the client.
 Set the correct configuration (see below) and run the following command:
 
   python -m Pyro4.utils.flameserver
-
+    or:
+  pyro4-flameserver
 
 Security (explicitly enable Flame, pickle serializer
 ----------------------------------------------------

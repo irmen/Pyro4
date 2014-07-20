@@ -115,7 +115,7 @@ While the use of the Pyro name server is optional, we will use it in this tutori
 It also shows a few basic Pyro concepts, so let us begin by explaining a little about it.
 Open a console window and execute the following command to start a name server:
 
-:command:`python -m Pyro4.naming`
+:command:`python -m Pyro4.naming` (or simply: :command:`pyro4-ns`)
 
 The name server will start and it prints something like::
 
@@ -145,7 +145,7 @@ There's another command line tool that let you interact with the name server: "n
 You can use it, amongst other things, to see what all known registered objects in the naming server are.
 Let's do that right now. Type:
 
-:command:`python -m Pyro4.nsc list`
+:command:`python -m Pyro4.nsc list` (or simply: :command:`pyro4-nsc list`)
 
 and it will print something like this::
 
@@ -989,8 +989,8 @@ For more details, refer to the chapters in this manual about the relevant Pyro c
 
 *Name server*
     to start the nameserver in such a way that it is accessible from other machines,
-    start it with an appropriate -n argument, like this: :command:`python -m Pyro4.naming -n your_hostname_here`
-    (or simply: :command:`pyro4-ns -n your_hostname_here`)
+    start it with an appropriate -n argument, like this: :command:`python -m Pyro4.naming -n your_hostname`
+    (or simply: :command:`pyro4-ns -n your_hostname`)
 
 *Warehouse server*
     You'll have to modify :file:`warehouse.py`. Right before the ``serveSimple`` call you have to tell it to bind the daemon on your hostname

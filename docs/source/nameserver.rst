@@ -48,14 +48,15 @@ Starting the Name Server
 
 The easiest way to start a name server is by using the command line tool.
 
-synopsys: :command:`python -m Pyro4.naming [options]`
+synopsys: :command:`python -m Pyro4.naming [options]` (or simply: :command:`pyro4-ns [options]`)
+
 
 Starts the Pyro Name Server. It can run without any arguments but there are several that you
 can use, for instance to control the hostname and port that the server is listening on.
 A short explanation of the available options can be printed with the help option.
 When it starts, it prints a message similar to this::
 
-    $ python -m Pyro4.naming -n neptune
+    $ pyro4-ns -n neptune
     Broadcast server running on 0.0.0.0:9091
     NS running on neptune:9090 (192.168.1.100)
     URI = PYRO:Pyro.NameServer@neptune:9090
@@ -151,7 +152,7 @@ The name server control tool (or 'nsc') is used to talk to a running name server
 diagnostic or maintenance actions such as querying the registered objects, adding or removing
 a name registration manually, etc.
 
-synopsis: :command:`python -m Pyro4.nsc [options] command [arguments]`
+synopsis: :command:`python -m Pyro4.nsc [options] command [arguments]` (or simply: :command:`pyro4-nsc [options] command [arguments]`)
 
 
 .. program:: Pyro4.nsc
@@ -202,10 +203,10 @@ ping
 
 Example::
 
-  $ python -m Pyro4.nsc ping
+  $ pyro4-nsc ping
   Name server ping ok.
 
-  $ python -m Pyro4.nsc list Pyro
+  $ pyro4-nsc list Pyro
   --------START LIST - prefix 'Pyro'
   Pyro.NameServer --> PYRO:Pyro.NameServer@localhost:9090
   --------END LIST - prefix 'Pyro'
@@ -403,7 +404,7 @@ setting the ``SERIALIZERS_ACCEPTED`` config item to a set of serializers that in
 and then restart the name server. For instance::
 
     $ export PYRO_SERIALIZERS_ACCEPTED=serpent,json,marshal,pickle
-    $ python -m Pyro4.naming
+    $ pyro4-ns
 
 If you enable logging you will then see that the name server says that pickle is among the accepted serializers.
 

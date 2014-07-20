@@ -9,6 +9,11 @@ the echo server first in another window:
 
 $ python -m Pyro4.test.echoserver
 
+    or:
+
+$ pyro4-test-echoserver
+
+
 You can try to set the PYRO_MAX_MESSAGE_SIZE environment variable
 to a small value (such as 2000) before starting the echo server,
 to see how it deals with receiving messages that are too large on the server.

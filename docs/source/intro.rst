@@ -240,15 +240,15 @@ The :file:`client.py` is actually simpler now because we can use the name server
     print greeting_maker.get_fortune(name)
 
 The program now needs a Pyro name server that is running. You can start one by typing the
-following command: :command:`python -m Pyro4.naming` in a separate console window
+following command: :command:`python -m Pyro4.naming` (or simply: :command:`pyro4-ns`) in a separate console window
 (usually there is just *one* name server running in your network).
 After that, start the server and client as before.
 There's no need to copy-paste the object uri in the client any longer, it will 'discover'
 the server automatically, based on the object name (:kbd:`example.greeting`).
 If you want you can check that this name is indeed known in the name server, by typing
-the command :command:`python -m Pyro4.nsc list`, which will produce::
+the command :command:`python -m Pyro4.nsc list` (or simply: :command:`pyro4-nsc list`), which will produce::
 
-    $ python -m Pyro4.nsc list
+    $ pyro4-nsc list
     --------START LIST
     Pyro.NameServer --> PYRO:Pyro.NameServer@localhost:9090
     example.greeting --> PYRO:obj_663a31d2dde54b00bfe52ec2557d4f4f@localhost:51707

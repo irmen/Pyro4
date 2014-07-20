@@ -4,3 +4,9 @@ So, this example only contains some client code.
 You are supposed to start the echo server with something like:
 
 $ python -m Pyro4.test.echoserver
+
+ or:
+
+$ pyro4-test-echoserver
+
+

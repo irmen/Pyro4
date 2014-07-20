@@ -58,7 +58,7 @@ There's a little command line server program that will launch a flame enabled Py
 to avoid the hassle of having to write a custom server program yourself everywhere you want
 to provide a Flame server:
 
-:command:`python -m Pyro4.utils.flameserver`
+:command:`python -m Pyro4.utils.flameserver` (or simply: :command:`pyro4-flameserver`)
 
 The command line arguments are similar to the echo server (see :ref:`command-line-echoserver`).
 Use ``-h`` to make it print a short help text. For the command line server you'll also have
