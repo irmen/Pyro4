@@ -96,7 +96,7 @@ def startNameServer(host):
     return ns
 
 
-def main(returnWithoutLooping=False):
+def main(returnWithoutLooping=False, quiet=False):
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=localhost)")
@@ -105,7 +105,7 @@ def main(returnWithoutLooping=False):
     parser.add_option("-n", "--naming", action="store_true", default=False, help="register with nameserver")
     parser.add_option("-N", "--nameserver", action="store_true", default=False, help="also start a nameserver")
     parser.add_option("-v", "--verbose", action="store_true", default=False, help="verbose output")
-    parser.add_option("-q", "--quiet", action="store_true", default=False, help="don't output anything")
+    parser.add_option("-q", "--quiet", action="store_true", default=quiet, help="don't output anything")
     parser.add_option("-k", "--key", help="the HMAC key to use")
     options, args = parser.parse_args()
 
