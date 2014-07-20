@@ -196,7 +196,6 @@ class GameEngine(object):
         r = VisibleRobot(name, (x, y), (0, 0), self.grid, color=color)
         self.world.add_robot(r)
         r.observer = observer
-        observer._pyroOneway.add("world_update")
         r.popuptext(name)
         return remote.RemoteBot(r, self)
 
