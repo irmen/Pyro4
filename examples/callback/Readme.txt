@@ -34,10 +34,14 @@ of setting a PYRO_COMMTIMEOUT, because that one already breaks periodically.
 2) second example: server2.py + client2.py
 
 This example shows how to use the @Pyro4.callback decorator to flag a method
-to be a callback method. This makes Pyro raise any exceptions that occur in
+to be a callback method. This makes Pyro log any exceptions that occur in
 this method also on the side where the method is running. Otherwise it would
 just silently pass the exception back to the side that was calling the
-callback method.
+callback method, and there is no way to see it occur on the callback side itself.
+
+It only logs a warning with the error and the traceback though. It doesn't
+actually print it to the screen, or raise the exception again. So you have to
+enable logging to see it appear.
 
 
 Also note that this example makes use of Pyro's AutoProxy feature. Sending

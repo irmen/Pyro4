@@ -6,7 +6,7 @@ Uses a single worker thread per client connection.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 import socket
 import logging
 import sys
@@ -44,6 +44,12 @@ class ClientConnectionJob(object):
                         log.debug("security error on client %s", self.caddr)
                         break
                         # other errors simply crash this loop and abort the job (and close the client connection)
+                    except:
+                        # other error occurred, close the connection, but also log a warning
+                        ex_t, ex_v, ex_tb = sys.exc_info()
+                        tb = Pyro4.util.formatTraceback(ex_t, ex_v, ex_tb)
+                        msg = "error during handleRequest: %s; %s" % (ex_v, "".join(tb))
+                        log.warning(msg)
             finally:
                 self.csock.close()
 

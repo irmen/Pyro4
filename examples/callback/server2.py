@@ -5,19 +5,19 @@ import Pyro4
 class CallbackServer(object):
     @Pyro4.oneway
     def doCallback(self, callback):
-        print("server: doing callback 1 to client")
+        print("\n\nserver: doing callback 1 to client")
         try:
             callback.call1()
         except:
-            print("got an exception from the callback.")
+            print("got an exception from the callback:")
             print("".join(Pyro4.util.getPyroTraceback()))
-        print("server: doing callback 2 to client")
+        print("\n\nserver: doing callback 2 to client")
         try:
             callback.call2()
         except:
-            print("got an exception from the callback.")
+            print("got an exception from the callback:")
             print("".join(Pyro4.util.getPyroTraceback()))
-        print("server: callbacks done")
+        print("server: callbacks done.\n")
 
 
 with Pyro4.core.Daemon() as daemon:

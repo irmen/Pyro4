@@ -411,13 +411,13 @@ it is by itself still waiting for results from the server.
 
 **Exceptions in callback objects:**
 If your callback object raises an exception, Pyro will return that to the server doing the
-callback. Depending on what that does with it, you might never see the actual exception,
+callback. Depending on what the server does with it, you might never see the actual exception,
 let alone the stack trace. This is why Pyro provides a decorator that you can use
 on the methods in your callback object in the client program: ``@Pyro4.core.callback``
 (also available for convenience as ``@Pyro4.callback``).
 This way, an exception in that method is not only returned to the caller, but also
-raised again locally in your client program, so you can see it happen including the
-stack trace::
+logged locally in your client program, so you can see it happen including the
+stack trace (if you have logging enabled)::
 
     class Callback(object):
     

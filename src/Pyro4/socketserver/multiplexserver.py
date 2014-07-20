@@ -4,6 +4,7 @@ Socket server based on socket multiplexing. Doesn't use threads.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
+from __future__ import with_statement, print_function
 import socket
 import select
 import sys
@@ -12,7 +13,7 @@ import os
 from Pyro4 import socketutil, errors, util
 import Pyro4.constants
 
-log = logging.getLogger("Pyro4.socketserver.multiplexed")
+log = logging.getLogger("Pyro4.multiplexedserver")
 
 
 class MultiplexedSocketServerBase(object):
@@ -143,7 +144,8 @@ class MultiplexedSocketServerBase(object):
             # other error occurred, close the connection, but also log a warning
             ex_t, ex_v, ex_tb = sys.exc_info()
             tb = util.formatTraceback(ex_t, ex_v, ex_tb)
-            log.warning("error during handleRequest: %s; %s", ex_v, "\n".join(tb))
+            msg = "error during handleRequest: %s; %s" % (ex_v, "".join(tb))
+            log.warning(msg)
             return False
 
 
