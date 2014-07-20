@@ -69,7 +69,7 @@ def handleCommand(nameserver, options, args):
         print("Error: %s - %s" % (xt.__name__, xv))
 
 
-def main(args):
+def main():
     from optparse import OptionParser
     usage = "usage: %prog [options] command [arguments]\nCommand is one of: " \
             "register remove removematching list listmatching ping"
@@ -79,7 +79,7 @@ def main(args):
                       help="port of the NS (or bc-port if host isn't specified)")
     parser.add_option("-u", "--unixsocket", help="Unix domain socket name of the NS")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose output")
-    options, args = parser.parse_args(args)
+    options, args = parser.parse_args()
     if not args or args[0] not in ("register", "remove", "removematching", "list", "listmatching", "ping"):
         parser.error("invalid or missing command")
     if options.verbose:
@@ -100,4 +100,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()

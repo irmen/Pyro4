@@ -65,7 +65,16 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
             "Topic :: Software Development :: Object Brokering",
             "Topic :: System :: Distributed Computing",
             "Topic :: System :: Networking"
-        ]
+        ],
+        "entry_points": {
+            'console_scripts': [
+                'pyro4-ns = Pyro4.naming:main',
+                'pyro4-nsc = Pyro4.nsc:main',
+                'pyro4-test-echoserver = Pyro4.test.echoserver:main',
+                'pyro4-check-config = Pyro4.configuration:configuration_dump',
+                'pyro4-flameserver = Pyro4.utils.flameserver:main'
+            ]
+        }
     }
 
     if os.name != "java":

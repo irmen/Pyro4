@@ -7,6 +7,9 @@ You can start this module as a script from the command line, to easily get a
 flame server running:
 
   :command:`python -m Pyro4.utils.flameserver`
+  or simply: :command:`pyro4-flameserver`
+
+You have to explicitly enable Flame first though by setting the FLAME_ENABLED config item.
 
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
@@ -16,7 +19,7 @@ import Pyro4.utils.flame
 import Pyro4.core
 
 
-def main(args, returnWithoutLooping=False):
+def main(returnWithoutLooping=False):
     from optparse import OptionParser
 
     parser = OptionParser()
@@ -25,7 +28,7 @@ def main(args, returnWithoutLooping=False):
     parser.add_option("-u", "--unixsocket", help="Unix domain socket name to bind server on")
     parser.add_option("-q", "--quiet", action="store_true", default=False, help="don't output anything")
     parser.add_option("-k", "--key", help="the HMAC key to use")
-    options, args = parser.parse_args(args)
+    options, args = parser.parse_args()
 
     if not options.quiet:
         print("Starting Pyro Flame server.")
@@ -54,4 +57,4 @@ def main(args, returnWithoutLooping=False):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())

@@ -126,5 +126,9 @@ class Configuration(object):
         return "\n".join(result)
 
 
-if __name__ == "__main__":
+def configuration_dump():
     print(Configuration().dump())
+
+
+if __name__ == "__main__":
+    configuration_dump()

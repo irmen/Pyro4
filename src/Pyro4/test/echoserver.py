@@ -3,6 +3,8 @@ Echo server for test purposes.
 This is usually invoked by starting this module as a script:
 
   :command:`python -m Pyro4.test.echoserver`
+  or simply: :command:`pyro4-test-echoserver`
+
 
 It is also possible to use the :class:`EchoServer` in user code
 but that is not terribly useful.
@@ -94,7 +96,7 @@ def startNameServer(host):
     return ns
 
 
-def main(args, returnWithoutLooping=False):
+def main(returnWithoutLooping=False):
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=localhost)")
@@ -105,7 +107,7 @@ def main(args, returnWithoutLooping=False):
     parser.add_option("-v", "--verbose", action="store_true", default=False, help="verbose output")
     parser.add_option("-q", "--quiet", action="store_true", default=False, help="don't output anything")
     parser.add_option("-k", "--key", help="the HMAC key to use")
-    options, args = parser.parse_args(args)
+    options, args = parser.parse_args()
 
     if options.verbose:
         options.quiet = False
@@ -157,4 +159,4 @@ def main(args, returnWithoutLooping=False):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()

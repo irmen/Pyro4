@@ -283,7 +283,7 @@ def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None
     return nsUri, daemon, bcserver
 
 
-def locateNS(host=None, port=None):
+def locateNS(host=None, port=None, broadcast=True):
     """Get a proxy for a name server somewhere in the network."""
     if host is None:
         # first try localhost if we have a good chance of finding it there
@@ -300,37 +300,40 @@ def locateNS(host=None, port=None):
                 return proxy
             except PyroError:
                 pass
-        # broadcast lookup
-        if not port:
-            port = Pyro4.config.NS_BCPORT
-        log.debug("broadcast locate")
-        sock = Pyro4.socketutil.createBroadcastSocket(reuseaddr=Pyro4.config.SOCK_REUSE, timeout=0.7)
-        for _ in range(3):
+        if broadcast:
+            # broadcast lookup
+            if not port:
+                port = Pyro4.config.NS_BCPORT
+            log.debug("broadcast locate")
+            sock = Pyro4.socketutil.createBroadcastSocket(reuseaddr=Pyro4.config.SOCK_REUSE, timeout=0.7)
+            for _ in range(3):
+                try:
+                    for bcaddr in Pyro4.config.parseAddressesString(Pyro4.config.BROADCAST_ADDRS):
+                        try:
+                            sock.sendto(BroadcastServer.REQUEST_NSURI, 0, (bcaddr, port))
+                        except socket.error:
+                            x = sys.exc_info()[1]
+                            err = getattr(x, "errno", x.args[0])
+                            if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:  # yeah, windows likes to throw these...
+                                if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:  # and jython likes to throw thses...
+                                    raise
+                    data, _ = sock.recvfrom(100)
+                    sock.close()
+                    if sys.version_info >= (3, 0):
+                        data = data.decode("iso-8859-1")
+                    log.debug("located NS: %s", data)
+                    return core.Proxy(data)
+                except socket.timeout:
+                    continue
             try:
-                for bcaddr in Pyro4.config.parseAddressesString(Pyro4.config.BROADCAST_ADDRS):
-                    try:
-                        sock.sendto(BroadcastServer.REQUEST_NSURI, 0, (bcaddr, port))
-                    except socket.error:
-                        x = sys.exc_info()[1]
-                        err = getattr(x, "errno", x.args[0])
-                        if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:  # yeah, windows likes to throw these...
-                            if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:  # and jython likes to throw thses...
-                                raise
-                data, _ = sock.recvfrom(100)
-                sock.close()
-                if sys.version_info >= (3, 0):
-                    data = data.decode("iso-8859-1")
-                log.debug("located NS: %s", data)
-                return core.Proxy(data)
-            except socket.timeout:
-                continue
-        try:
-            sock.shutdown(socket.SHUT_RDWR)
-        except (OSError, socket.error):
-            pass
-        sock.close()
-        log.debug("broadcast locate failed, try direct connection on NS_HOST")
-        # broadcast failed, try PYRO directly on specific host
+                sock.shutdown(socket.SHUT_RDWR)
+            except (OSError, socket.error):
+                pass
+            sock.close()
+            log.debug("broadcast locate failed, try direct connection on NS_HOST")
+        else:
+            log.debug("skipping broadcast lookup")
+        # broadcast failed or skipped, try PYRO directly on specific host
         host = Pyro4.config.NS_HOST
         port = Pyro4.config.NS_PORT
     # pyro direct lookup
@@ -373,7 +376,7 @@ def resolve(uri):
         raise PyroError("invalid uri protocol")
 
 
-def main(args):
+def main():
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option("-n", "--host", dest="host", help="hostname to bind server on")
@@ -386,11 +389,11 @@ def main(args):
     parser.add_option("", "--natport", dest="natport", type="int", help="external port in case of NAT")
     parser.add_option("-x", "--nobc", dest="enablebc", action="store_false", default=True,
                       help="don't start a broadcast server")
-    options, args = parser.parse_args(args)
+    options, args = parser.parse_args()
     startNSloop(options.host, options.port, enableBroadcast=options.enablebc,
                 bchost=options.bchost, bcport=options.bcport, unixsocket=options.unixsocket,
                 nathost=options.nathost, natport=options.natport)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
