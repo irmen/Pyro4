@@ -372,7 +372,12 @@ class ServerTestsOnce(unittest.TestCase):
                 self.assertEqual("hello", p.getName())
                 with self.assertRaises(AttributeError) as e:
                     p.unexposed()
-                self.assertEqual("remote object 'unexposed' has no exposed attribute 'unexposed'", str(e.exception))
+                expected_msg = "remote object '%s' has no exposed attribute or method 'unexposed'" % p._pyroUri
+                self.assertEqual(expected_msg, str(e.exception))
+                with self.assertRaises(AttributeError) as e:
+                    p.unexposed_set = 999
+                expected_msg = "remote object '%s' has no exposed attribute 'unexposed_set'" % p._pyroUri
+                self.assertEqual(expected_msg, str(e.exception))
         finally:
             Pyro4.config.REQUIRE_EXPOSE = old_require
 
