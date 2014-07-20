@@ -13,7 +13,7 @@ import os
 from Pyro4 import socketutil, errors, util
 import Pyro4.constants
 
-log = logging.getLogger("Pyro4.multiplexedserver")
+log = logging.getLogger("Pyro4.multiplexserver")
 
 
 class MultiplexedSocketServerBase(object):

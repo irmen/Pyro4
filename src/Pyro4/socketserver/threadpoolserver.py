@@ -43,13 +43,13 @@ class ClientConnectionJob(object):
                     except errors.SecurityError:
                         log.debug("security error on client %s", self.caddr)
                         break
-                        # other errors simply crash this loop and abort the job (and close the client connection)
                     except:
-                        # other error occurred, close the connection, but also log a warning
+                        # other errors log a warning, break this loop and close the client connection
                         ex_t, ex_v, ex_tb = sys.exc_info()
                         tb = Pyro4.util.formatTraceback(ex_t, ex_v, ex_tb)
                         msg = "error during handleRequest: %s; %s" % (ex_v, "".join(tb))
                         log.warning(msg)
+                        break
             finally:
                 self.csock.close()
 

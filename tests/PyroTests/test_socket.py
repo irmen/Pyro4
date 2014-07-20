@@ -509,10 +509,10 @@ class TestServerDOS_select(unittest.TestCase):
             except errors.ConnectionClosedError:
                 # invalid message can have caused the connection to be closed, this is fine
                 pass
-            # invoke something again, this should still work (server must still be running)
+            # invoke something again, this should still work (server must still be running, but our client connection was terminated)
             conn.close()
             conn = connect(host, port)
-            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"something", 42, 0, 999)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"something", 42, 0, 999)  # a valid message this time
             conn.send(msg.to_bytes())
             msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_PING])
             self.assertEqual(Pyro4.message.MSG_PING, msg.type)

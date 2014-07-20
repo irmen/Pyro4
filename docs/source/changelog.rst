@@ -17,11 +17,12 @@ Change Log
 - echoserver gained a few more methods to test the new decorators
 - DOTTEDNAMES is deprecated and will be removed in the next version
 - setting proxy._pyroOneway yourself is deprecated and support for that will be removed in the next version
-- pep8'ified most of the source code
-- setup script now generates a bunch of console commands such as 'pyro4-ns' (previously you had to type 'python -m Pyro4.naming' etc.)
 - locateNS() has a new parameter 'broadcast' to choose if it should use a broadcast lookup (default=True)
 - the 'robots' example no longer requires pickle
 - fixed the way the tracebacks are handled with the @callback decorator. They will now be logged as a warning (not printed) in both server types
+- setup script now generates a bunch of console commands such as 'pyro4-ns' (previously you had to type 'python -m Pyro4.naming' etc.)
+- made logger category names of the two socket servers consistent
+- pep8'ified most of the source code
 - documentation improvements
 
 
