@@ -1,4 +1,4 @@
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 import sys
 import time
 
@@ -12,7 +12,6 @@ else:
     current_thread = threadutil.current_thread
 
 serv = Pyro4.core.Proxy("PYRONAME:example.servertypes")
-serv._pyroOneway.add("onewaydelay")
 
 print("--------------------------------------------------------------")
 print("    This part is independent of the type of the server.       ")
@@ -28,13 +27,12 @@ serv.onewaydelay()
 print("Done with the oneway calls.")
 completed = serv.getcount()
 print("Number of completed calls in the server: %d" % completed)
-print("This should be 0, because all 5 calls are still busy in the background.")
+print("  (this should be 0, because all 5 calls are still busy in the background)")
 if completed > 0:
     print("  !!! The oneway calls were not running in the background !!!")
     print("  ??? Are you sure ONEWAY_THREADED=True on the server ???")
 print()
-print("Calling normal delay 5 times. They will all be processed")
-print("by the same server thread because we're using the same proxy.")
+print("Calling normal delay 5 times. They will all be processed by the same server thread because we're using the same proxy.")
 r = serv.delay()
 print("  call processed by: %s" % r)
 r = serv.delay()
@@ -47,7 +45,7 @@ r = serv.delay()
 print("  call processed by: %s" % r)
 time.sleep(2)
 print("Number of completed calls in the server: %d" % serv.getcount())
-print("This should be 10, because by now the 5 oneway calls have completed as well.")
+print("  (this should be 10, because by now the 5 oneway calls have completed as well)")
 serv.reset()
 
 print("\n--------------------------------------------------------------")
@@ -71,7 +69,7 @@ def func(uri):
     # This will run in a thread. Create a proxy just for this thread:
     with Pyro4.core.Proxy(uri) as p:
         processed = p.delay()
-        print("  thread %s called delay, processed by: %s" % (current_thread().getName(), processed))
+        print("[ thread %s called delay, processed by: %s ]  " % (current_thread().getName(), processed))
 
 
 serv._pyroBind()  # simplify the uri

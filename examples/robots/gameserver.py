@@ -12,10 +12,7 @@ except ImportError:
     from Tkinter import *
 import Pyro4
 from Pyro4 import threadutil
-
-# because we're using some custom classes over the wire, we need to use pickle
-Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
-Pyro4.config.SERIALIZER = 'pickle'
+import Pyro4.util
 
 
 class VisibleRobot(robot.Robot):
@@ -58,8 +55,6 @@ class VisibleRobot(robot.Robot):
 
     def died(self, killer, world):
         self.popuptext("ARGH I died")
-        if killer:
-            killer = killer.serializable()
         self.observer.death(killer=killer)
         self.grid.after(800, lambda: self.grid.delete(self.tkid))
 
@@ -136,8 +131,7 @@ class GameEngine(object):
     def notify_worldupdate(self):
         self.iteration += 1
         for robot in self.world.robots:
-            robotdata = robot.serializable()
-            robot.observer.world_update(self.iteration, self.world, robotdata)
+            robot.observer.world_update(self.iteration, self.world, robot)
 
     def notify_winner(self, winner):
         winner.observer.victory()
@@ -261,6 +255,10 @@ class PyroDaemonThread(threadutil.Thread):
                 self.ns.register("example.robotserver", uri)
                 print("Pyro server registered on %s" % self.pyrodaemon.locationStr)
                 self.pyrodaemon.requestLoop()
+
+
+# register the Robot class with Pyro's serializers:
+Pyro4.util.SerializerBase.register_class_to_dict(VisibleRobot, robot.Robot.robot_to_dict)
 
 
 def main():

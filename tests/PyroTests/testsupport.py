@@ -12,7 +12,8 @@ import pickle
 import Pyro4
 
 __all__ = ["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO", "next",
-           "AtomicCounter", "NonserializableError", "MyThing", "MyThingExposed", "unittest"]
+           "AtomicCounter", "NonserializableError", "MyThing", "MyThingExposed",
+           "MyThingExposedSub", "MyThingSub", "unittest"]
 
 if sys.version_info < (3, 0):
     # noinspection PyUnresolvedReferences
@@ -187,3 +188,20 @@ class MyThingExposed(object):
         pass
 
     __hash__ = object.__hash__
+
+
+class MyThingExposedSub(MyThingExposed):
+    def sub_exposed(self):
+        pass
+
+    def sub_unexposed(self):
+        pass
+
+
+class MyThingSub(MyThing):
+    @Pyro4.expose
+    def sub_exposed(self):
+        pass
+
+    def sub_unexposed(self):
+        pass

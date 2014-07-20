@@ -9,8 +9,11 @@ class Wall(object):
     def __init__(self, position):
         self.x, self.y = position
 
-    def serializable(self):
-        return self
+    def __getstate__(self):
+        return self.x, self.y
+
+    def __setstate__(self, state):
+        self.x, self.y = state
 
 
 class Robot(object):
@@ -26,11 +29,21 @@ class Robot(object):
     def __str__(self):
         return "ROBOT '%s'; pos(%d,%d); dir(%d,%d); strength %d" % (self.name, self.x, self.y, self.dx, self.dy, self.strength)
 
-    def serializable(self):
-        if type(self) is Robot:
-            return self
-        else:
-            return Robot(self.name, (self.gridw, self.gridh), (self.x, self.y), (self.dx, self.dy), self.strength)
+    @staticmethod
+    def dict_to_robot(classname, data):
+        assert classname == "robot.Robot"
+        return Robot(data["name"], data["grid_dimensions"], data["position"], data["direction"], data["strength"])
+
+    @staticmethod
+    def robot_to_dict(robot):
+        return {
+            "__class__": "robot.Robot",
+            "name": robot.name,
+            "grid_dimensions": (robot.gridw, robot.gridh),
+            "position": (robot.x, robot.y),
+            "direction": (robot.dx, robot.dy),
+            "strength": robot.strength,
+        }
 
     def move(self, world=None):
         # minmax to avoid moving off the sides
@@ -111,9 +124,7 @@ class World(object):
         return grid
 
     def __getstate__(self):
-        all = [o.serializable() for o in self.all]
-        robots = [r.serializable() for r in self.robots]
-        return (self.width, self.height, all, robots)
+        return self.width, self.height, self.all, self.robots
 
-    def __setstate__(self, args):
-        self.width, self.height, self.all, self.robots = args
+    def __setstate__(self, state):
+        self.width, self.height, self.all, self.robots = state

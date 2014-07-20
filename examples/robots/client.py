@@ -1,17 +1,13 @@
 from __future__ import with_statement
 import random
 import sys
-
+import robot
 import remote
 import Pyro4
 
 
-# because we're using some custom classes over the wire, we need to use pickle
-Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
-Pyro4.config.SERIALIZER = 'pickle'
-
-
 class DrunkenGameObserver(remote.GameObserver):
+    @Pyro4.oneway
     def world_update(self, iteration, world, robotdata):
         # change directions randomly
         if random.random() > 0.8:
@@ -30,6 +26,7 @@ class AngryGameObserver(remote.GameObserver):
         self.directions = [(1, 0), (0, 1), (-1, 0), (0, -1)]  # clockwise motion
         self.directioncounter = 0
 
+    @Pyro4.oneway
     def world_update(self, iteration, world, robotdata):
         # move in a loop yelling angry stuff
         if iteration % 50 == 0:
@@ -49,6 +46,7 @@ class ScaredGameObserver(remote.GameObserver):
         super(ScaredGameObserver, self).start()
         self.robot.change_direction(self.direction)
 
+    @Pyro4.oneway
     def world_update(self, iteration, world, robotdata):
         if iteration % 50 == 0:
             self.robot.emote("I'm scared!")
@@ -59,6 +57,11 @@ observers = {
     "angry": AngryGameObserver,
     "scared": ScaredGameObserver,
 }
+
+
+# register the Robot class with Pyro's serializers:
+Pyro4.util.SerializerBase.register_class_to_dict(robot.Robot, robot.Robot.robot_to_dict)
+Pyro4.util.SerializerBase.register_dict_to_class("robot.Robot", robot.Robot.dict_to_robot)
 
 
 def main(args):

@@ -291,7 +291,6 @@ class SerializerBase(object):
         classname = data.get("__class__", "<unknown>")
         if isinstance(classname, bytes):
             classname = classname.decode("utf-8")
-
         if classname in cls.__custom_dict_to_class_registry:
             converter = cls.__custom_dict_to_class_registry[classname]
             return converter(classname, data)
@@ -561,7 +560,7 @@ try:
     _serializers["serpent"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser
 except ImportError:
-    log.warn("serpent serializer is not available")
+    log.warning("serpent serializer is not available")
     pass
 del _ser
 
@@ -634,7 +633,7 @@ def get_exposed_members(obj, only_exposed=True):
     methods = set()  # all methods
     oneway = set()  # oneway methods
     attrs = set()  # attributes
-    for m in obj.__dict__:
+    for m in dir(obj):      # also lists names inherited from super classes
         if m.startswith("_"):
             continue
         v = getattr(obj, m)

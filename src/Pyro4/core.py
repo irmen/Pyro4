@@ -214,7 +214,7 @@ class Proxy(object):
         if os.name == "java" and Pyro4.config.SERIALIZER == "marshal":
             warnings.warn("marshal doesn't work correctly with Jython (issue 2077); please choose another serializer", RuntimeWarning)
         if Pyro4.config.DOTTEDNAMES:
-            warnings.warn("DOTTEDNAMES support is deprecated and will be removed in a future version", DeprecationWarning)
+            warnings.warn("DOTTEDNAMES is deprecated and it will be removed in the next version", DeprecationWarning)
             if Pyro4.config.METADATA:
                 warnings.warn("DOTTEDNAMES and METADATA are both enabled, DOTTEDNAMES doesn't really work in this situation", RuntimeWarning)
 
@@ -235,7 +235,7 @@ class Proxy(object):
             return self._pyroInvoke("__getattr__", (name,), None)
         if Pyro4.config.METADATA and name not in self._pyroMethods:
             # client side check if the requested attr actually exists
-            raise AttributeError("remote object '%s' has no exposed attribute '%s'" % (self._pyroUri.object, name))
+            raise AttributeError("remote object '%s' has no exposed attribute or method '%s'" % (self._pyroUri, name))
         return _RemoteMethod(self._pyroInvoke, name)
     
     def __setattr__(self, name, value):
@@ -245,7 +245,7 @@ class Proxy(object):
             return self._pyroInvoke("__setattr__", (name, value), None)  # remote attribute
         if Pyro4.config.METADATA:
             # client side validation if the requested attr actually exists
-            raise AttributeError("remote object '%s' has no exposed attribute '%s'" % (self._pyroUri.object, name))
+            raise AttributeError("remote object '%s' has no exposed attribute '%s'" % (self._pyroUri, name))
         # metadata disabled, just treat it as a local attribute on the proxy:
         return super(Proxy, self).__setattr__(name, value)
 
@@ -445,6 +445,7 @@ class Proxy(object):
             if Pyro4.config.METADATA:
                 # obtain metadata if this feature is enabled, and the metadata is not known yet
                 if self._pyroMethods or self._pyroAttrs:
+                    # not checking _pyroOneway because that feature already existed and people are already modifying it on the proxy
                     log.debug("reusing existing metadata")
                 else:
                     self._pyroGetMetadata(uri.object)
@@ -459,9 +460,17 @@ class Proxy(object):
             if self._pyroMethods or self._pyroAttrs:
                 return  # metadata has already been retrieved as part of creating the connection
         try:
+            user_specified_oneways = self._pyroOneway   # possible old client code writes to _pyroOneway instead of relying on metadata
             # invoke the get_metadata method on the daemon
             result = known_metadata or self._pyroInvoke("get_metadata", [objectId], {}, objectId=constants.DAEMON_NAME)
-            self._pyroOneway = set(result["oneway"])
+            meta_oneways = set(result["oneway"])
+            if not user_specified_oneways.issubset(meta_oneways):
+                msg = "metadata oneway differs from code, forgot @Pyro4.oneway on the server method(s)? objectId=%s\n" \
+                      "user-specified: %s  metadata from server: %s" % (objectId, user_specified_oneways, meta_oneways)
+                log.warning(msg)
+                warnings.warn(msg, UserWarning)
+                warnings.warn("setting _pyroOneway yourself is deprecated and support for that will be dropped in the next version", DeprecationWarning)
+            self._pyroOneway = meta_oneways | user_specified_oneways  # merge the old oneway stuff with the info we got from the metadata
             self._pyroMethods = set(result["methods"])
             self._pyroAttrs = set(result["attrs"])
             if log.isEnabledFor(logging.DEBUG):

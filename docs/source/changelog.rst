@@ -16,11 +16,12 @@ Change Log
 - Daemon can now be constructed with custom interface class (so you can change the behavior of the DaemonObject default implementation easily)
 - echoserver gained a few more methods to test the new decorators
 - DOTTEDNAMES is deprecated and will be removed in the next version
+- setting proxy._pyroOneway yourself is deprecated and support for that will be removed in the next version
 - pep8'ified most of the source code
 - setup script now generates a bunch of console commands such as 'pyro4-ns' (previously you had to type 'python -m Pyro4.naming' etc.)
 - locateNS() has a new parameter 'broadcast' to choose if it should use a broadcast lookup (default=True)
 - documentation improvements
-- @todo: fix up docs about command line tools
+- the 'robots' example no longer requires pickle
 
 
 **Pyro 4.26**

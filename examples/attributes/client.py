@@ -20,7 +20,7 @@ p = Pyro4.Proxy(uri)
 print("DOTTEDNAMES on the server is:", p.dottedNames())
 if p.dottedNames():
     print("Disabling METADATA on the client because DOTTEDNAMES is not compatible with that.")
-    print("Note that DOTTEDNAMES is a deprecated feature that will be removed in a future version.")
+    print("Note that DOTTEDNAMES is a deprecated feature that will be removed in the next version.")
     Pyro4.config.METADATA = False  # disable
 print("")
 value = p.getSubValue()

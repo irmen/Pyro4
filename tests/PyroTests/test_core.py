@@ -348,9 +348,17 @@ class CoreTests(unittest.TestCase):
         p1 = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
         p2 = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
         p1._pyroOneway.add("method")
-        self.assertIn("method", p1._pyroOneway, "p1 should have oneway method")
-        self.assertNotIn("method", p2._pyroOneway, "p2 should not have the same oneway method")
+        p1._pyroAttrs.add("attr")
+        p1._pyroMethods.add("method2")
+        self.assertIn("method", p1._pyroOneway)
+        self.assertIn("attr", p1._pyroAttrs)
+        self.assertIn("method2", p1._pyroMethods)
+        self.assertNotIn("method", p2._pyroOneway)
+        self.assertNotIn("attr", p2._pyroAttrs)
+        self.assertNotIn("method2", p2._pyroMethods)
         self.assertIsNot(p1._pyroOneway, p2._pyroOneway, "p1 and p2 should have different oneway tables")
+        self.assertIsNot(p1._pyroAttrs, p2._pyroAttrs, "p1 and p2 should have different attr tables")
+        self.assertIsNot(p1._pyroMethods, p2._pyroMethods, "p1 and p2 should have different method tables")
 
     def testProxyWithStmt(self):
         class ConnectionMock(object):

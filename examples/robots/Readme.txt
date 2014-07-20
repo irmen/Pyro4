@@ -9,7 +9,6 @@ Before starting the gameserver, you need to start a nameserver,
 if you want to connect remotely to the game server! If you don't
 have a nameserver running, you can still launch the gameserver but
 you won't be able to connect to it with the Pyro clients.
-(make sure you launch the name server with SERIALIZERS_ACCEPTED=pickle)
 
 You can click a button to add a couple of robots that are controlled
 by the server itself. But it is more interesting to actually connect
@@ -29,7 +28,3 @@ The most interesting parts of this example are perhaps these:
  - this example makes use of Pyro's AutoProxy feature. Registering
    observers and getting a robot object back is done via proxies
    automatically because those are Pyro objects.
-
-
-Because we are using some custom classes, this example requires the
-pickle serializer.

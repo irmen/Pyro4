@@ -277,6 +277,20 @@ class TestMeta(unittest.TestCase):
         self.assertEqual(set(["remotemethod"]), m["oneway"])
         self.assertEqual(set(["classmethod", "foo", "staticmethod", "remotemethod"]), m["methods"])
 
+    def testOnlyExposedSub(self):
+        o = MyThingSub("irmen")
+        m = Pyro4.util.get_exposed_members(o)
+        self.assertEqual(set(["prop1", "readonly_prop1"]), m["attrs"])
+        self.assertEqual(set(), m["oneway"])
+        self.assertEqual(set(["sub_exposed", "exposed"]), m["methods"])
+
+    def testExposedSubclass(self):
+        o = MyThingExposedSub("irmen")
+        m = Pyro4.util.get_exposed_members(o)
+        self.assertEqual(set(["name", "readonly_name"]), m["attrs"])
+        self.assertEqual(set(["remotemethod"]), m["oneway"])
+        self.assertEqual(set(["classmethod", "foo", "staticmethod", "remotemethod"]), m["methods"])
+
     def testExposePrivateFails(self):
         with self.assertRaises(AttributeError):
             class Test1(object):

@@ -1,5 +1,6 @@
 from __future__ import print_function
 import random
+import Pyro4
 
 
 class GameServer(object):
@@ -18,7 +19,7 @@ class RemoteBot(object):
         self.engine = engine
 
     def get_data(self):
-        return self.robot.serializable()
+        return self.robot
 
     def change_direction(self, direction):
         self.robot.dx, self.robot.dy = direction
@@ -36,6 +37,7 @@ class LocalGameObserver(object):
         self.robot = None
         self._pyroOneway = set()  # remote observers have this
 
+    @Pyro4.oneway
     def world_update(self, iteration, world, robotdata):
         # change directions randomly
         if random.random() > 0.8:
