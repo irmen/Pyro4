@@ -3,6 +3,7 @@ import Pyro4
 
 
 class CallbackServer(object):
+    @Pyro4.oneway
     def doCallback(self, callback):
         print("server: doing callback 1 to client")
         try:

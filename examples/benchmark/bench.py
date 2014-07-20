@@ -1,3 +1,6 @@
+import Pyro4
+
+
 class sub1(object):
     def meth1(s, arg):
         return 'This is sub1.meth1'
@@ -49,6 +52,7 @@ class bench(sub4):
     def echo(self, *args):
         return args
 
+    @Pyro4.oneway
     def oneway(self, *args):
         # oneway doesn't return anything
         pass

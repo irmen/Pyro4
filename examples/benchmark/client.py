@@ -11,7 +11,6 @@ if sys.version_info < (3, 0):
 
 uri = input("Uri of benchmark server? ").strip()
 object = Pyro4.core.Proxy(uri)
-object._pyroOneway.add('oneway')
 object._pyroBind()
 
 
@@ -68,7 +67,8 @@ def fd():
 
 
 def fe():
-    object.oneway('stringetje', 432423434)
+    assert "oneway" in object._pyroOneway   # make sure this method is indeed marked as @oneway
+    object.oneway('stringetje', 432423434, 9.8765432)
 
 
 def ff():

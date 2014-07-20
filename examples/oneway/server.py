@@ -13,7 +13,8 @@ class Server(object):
     def __init__(self):
         self.busy = False
 
-    def start(self, duration):
+    @Pyro4.oneway
+    def oneway_start(self, duration):
         print("start request received. Starting work...")
         self.busy = True
         for i in range(duration):
@@ -31,6 +32,13 @@ class Server(object):
 
     def nothing(self):
         print("nothing got called, doing nothing")
+
+    @Pyro4.oneway
+    def oneway_work(self):
+        for i in range(10):
+            print("work work..", i+1)
+            time.sleep(1)
+        print("work's done!")
 
 
 # main program

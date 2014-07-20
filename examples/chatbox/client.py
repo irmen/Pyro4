@@ -17,6 +17,7 @@ class Chatter(object):
         self.chatbox = Pyro4.core.Proxy('PYRONAME:example.chatbox.server')
         self.abort = 0
 
+    @Pyro4.oneway
     def message(self, nick, msg):
         if nick != self.nick:
             print('[{0}] {1}'.format(nick, msg))

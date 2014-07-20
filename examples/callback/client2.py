@@ -16,7 +16,7 @@ class CallbackHandler(object):
     @Pyro4.callback
     def call2(self):
         print("callback 2 received from server!")
-        print("going to crash - but you will see the exception here too")
+        print("going to crash - but you will see the exception here too")    # XXX doesn't work anymore ! :(
         return self.crash()
 
 
@@ -25,7 +25,6 @@ callback = CallbackHandler()
 daemon.register(callback)
 
 with Pyro4.core.Proxy("PYRONAME:example.callback2") as server:
-    server._pyroOneway.add("doCallback")
     server.doCallback(callback)
 
 print("waiting for callbacks to arrive...")

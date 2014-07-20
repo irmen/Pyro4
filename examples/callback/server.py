@@ -10,6 +10,7 @@ class Worker(object):
         self.callback = callback
         print("Worker %d created" % self.number)
 
+    @Pyro4.oneway
     def work(self, amount):
         print("Worker %d busy..." % self.number)
         time.sleep(amount)

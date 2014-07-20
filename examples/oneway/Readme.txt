@@ -1,7 +1,9 @@
-Shows the use of 'oneway' method calls.
-If you flag a method call 'oneway', Pyro will not wait for a response
-from the remote object. This means that your client program can continue to
-work, while the remote object is still busy processing the method call.
+This example shows the use of 'oneway' method calls.
+
+If you flag a method call 'oneway' (with the @Pyro4.oneway decorator),
+Pyro will not wait for a response from the remote object.
+This means that your client program can continue to work,
+while the remote object is still busy processing the method call.
 (Normal remote method calls are synchronous and will always block until the
 remote object is done with the method call).
 

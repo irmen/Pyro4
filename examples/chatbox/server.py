@@ -25,7 +25,6 @@ class ChatBox(object):
             self.channels[channel] = []
         self.channels[channel].append((nick, callback))
         self.nicks.append(nick)
-        callback._pyroOneway.add('message')  # don't wait for results for this method
         print("%s JOINED %s" % (nick, channel))
         self.publish(channel, 'SERVER', '** ' + nick + ' joined **')
         return [nick for (nick, c) in self.channels[channel]]  # return all nicks in this channel
