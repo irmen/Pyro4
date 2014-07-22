@@ -104,6 +104,28 @@ For normal usage, there's not a single line of Pyro specific code once you have 
     double: serialization; marshal
     double: serialization; json
 
+
+.. index::
+    double: Proxy; remote attributes
+
+Accessing remote attributes
+===========================
+You can access exposed attributes of your remote objects directly via the proxy.
+If you try to access an undefined or unexposed attribute, the proxy will raise an AttributeError stating the problem.
+Note that direct remote attribute access only works if the metadata feature is enabled (``METADATA`` config item, enabled by default).
+::
+
+    import Pyro4
+
+    p = Pyro4.Proxy("...")
+    velo = p.velocity    # attribute access, no method call
+    print("velocity = ", velo)
+
+
+See the :file:`attributes` example for more information.
+
+
+
 .. _object-serialization:
 
 Serialization
@@ -235,31 +257,70 @@ Here are some rules:
         with Pyro4.Proxy(".....") as obj:
             obj.method()
 
-  .. note::
-    You can still use the proxy object when it is disconnected: Pyro will reconnect it as soon as it's needed again.
+  *Note:* you can still use the proxy object when it is disconnected: Pyro will reconnect it as soon as it's needed again.
 
 
-.. index:: oneway call, _pyroOneway
+.. index:: oneway call
 
 Oneway calls
 ============
-Normal method calls always block until the response is returned. This can be a normal return value, ``None``,
-or an error in the form of a raised exception.
 
-If you know that some methods never return any response or you are simply not interested in it (including
-exceptions!) you can tell Pyro that certain methods of a proxy object are *one-way* calls::
+Normal method calls always block until the response is returned. This can be any normal return value, ``None``,
+or an error in the form of a raised exception. The client code execution is suspended until the method call
+has finished and produced its result.
 
-    proxy._pyroOneway.add("someMethod")
-    proxy._pyroOneway.update(["otherMethod", "processStuff"])
+Some methods never return any response or you are simply not interested in it (including errors and
+exceptions!), or you don't want to wait until the result is available but rather continue immediately.
+You can tell Pyro that calls to these methods should be done as *one-way calls*.
+For calls to such methods, Pyro will not wait for a response from the remote object.
+The return value of these calls is always ``None``, which is returned *immediately* after submitting the method
+invocation to the server. The server will process the call while your client continues execution.
+The client can't tell if the method call was successful, because no return value, no errors and no exceptions will be returned!
+If you want to find out later what - if anything - happened, you have to call another (non-oneway) method that does return a value.
 
-the :py:attr:`Pyro4.core.Proxy._pyroOneway` property is a set containing the names of the methods that
-should be called as one-way (by default it is an empty set). For these methods, Pyro will not wait for a response
-from the remote object. This means that your client program continues to
-work, while the remote object is still busy processing the method call.
-The return value of these calls is always ``None``. You can't tell if the method call
-was successful, or if the method even exists on the remote object, because errors won't be returned either!
+Note that this is different from :ref:`async-calls`: they are also executed while your client code
+continues with its work, but they *do* return a value (but at a later moment in time). Oneway calls
+are more efficient because they immediately produce ``None`` as result and that's it.
+
+.. index::
+    double: @Pyro4.oneway; client handling
+    double: decorator; oneway
+
+**Specifying one-way methods using the @Pyro4.oneway decorator:**
+
+You decide on the class of your Pyro object on the server, what methods are to be called as one-way.
+You use the ``@Pyro4.oneway`` decorator on these methods to mark them for Pyro.
+When the client proxy connects to the server it gets told automatically what methods are one-way,
+you don't have to do anything on the client yourself. Any calls your client code makes on the proxy object
+to methods that are marked with ``@Pyro4.oneway`` on the server, will happen as one-way calls::
+
+    import Pyro4
+
+    class PyroService(object):
+
+        def normal_method(self, args):
+            result = do_long_calculation(args)
+            return result
+
+        @Pyro4.oneway
+        def oneway_method(self, args):
+            result = do_long_calculation(args)
+            # no return value, cannot return anything to the client
+
 
 See the :file:`oneway` example for more details.
+
+.. index:: _pyroOneway
+.. note::
+    There's another way of doing this, which was used in older Pyro versions. It is now deprecated
+    and support for it will be removed in the next Pyro version. It didn't use the metadata mechanism, but
+    instead you simply marked all the methods you want to call as one-way explicitly on the proxy yourself::
+
+        proxy._pyroOneway.add("someMethod")
+        proxy._pyroOneway.update(["otherMethod", "processStuff"])
+
+    The :py:attr:`Pyro4.core.Proxy._pyroOneway` property is a set containing the names of the methods that
+    should be called as one-way (by default it is an empty set).
 
 
 .. index:: batch calls
@@ -407,24 +468,28 @@ background thread. Or make heavy use of oneway method calls.
 If you don't, your client program won't be able to process the callback requests because
 it is by itself still waiting for results from the server.
 
-.. index:: exception in callback
+.. index::
+    single: exception in callback
+    single: @Pyro4.callback
+    double: decorator; callback
 
 **Exceptions in callback objects:**
 If your callback object raises an exception, Pyro will return that to the server doing the
 callback. Depending on what the server does with it, you might never see the actual exception,
 let alone the stack trace. This is why Pyro provides a decorator that you can use
-on the methods in your callback object in the client program: ``@Pyro4.core.callback``
-(also available for convenience as ``@Pyro4.callback``).
+on the methods in your callback object in the client program: ``@Pyro4.callback``.
 This way, an exception in that method is not only returned to the caller, but also
 logged locally in your client program, so you can see it happen including the
 stack trace (if you have logging enabled)::
+
+    import Pyro4
 
     class Callback(object):
     
         @Pyro4.callback
         def call(self):
             print("callback received from server!")
-            return 1//0    # crash away
+            return 1//0    # crash!
 
 See the :file:`callback` example for more details and code.
 
@@ -518,3 +583,23 @@ Here are a couple of suggestions on how to make copies of a proxy:
 #. simply create a proxy in the thread itself (pass the uri to the thread instead of a proxy)
 
 See the :file:`proxysharing` example for more details.
+
+
+.. index:: metadata
+
+Metadata from the daemon
+------------------------
+A proxy will obtain some meta-data from the daemon about the object it connects to.
+It does that by calling the (public) :py:meth:`Pyro4.core.DaemonObject.get_metadata` daemon-method as soon as
+it connects to the daemon. A bunch of information about the object (or rather, its class) is returned:
+what methods and attributes are defined, and which of the methods are to be called as one-way.
+This information is used to properly execute one-way calls, and to do client-side validation of calls on the proxy
+(for instance to see if a method or attribute is actually available, without having to do a round-trip to the server).
+Also this enables a properly working ``hasattr`` on the proxy, and efficient and specific error messages
+if you try to access a method or attribute that is not defined or not exposed on the Pyro object.
+Lastly the direct access to attributes on the remote object is also made possible, because the proxy knows about what
+attributes are available.
+
+You can disable this mechanism by setting the ``METADATA`` config item to ``False`` (it's ``True`` by default).
+This will improve efficiency when connecting a proxy (because no meta data roundtrip to the server has to be done)
+but your proxy will not know about the features of the Pyro object as mentioned above.

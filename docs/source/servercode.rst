@@ -18,6 +18,25 @@ Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
     :doc:`config` for several config items that you can use to tweak various server side aspects.
 
 
+.. index::
+    single: decorators
+    single: @Pyro4.expose
+    single: @Pyro4.oneway
+    double: decorator; expose
+    double: decorator; oneway
+
+Creating a Pyro class and using the Pyro4 decorators
+====================================================
+@todo: @expose on class
+
+@todo: @expose on methods / properties
+
+@todo: @oneway
+
+@todo: explain REQUIRE_EXPOSE config item
+
+
+
 .. index:: publishing objects
 
 .. _publish-objects:
@@ -142,7 +161,7 @@ configuration. Then provide it to this function using the ``daemon`` parameter. 
 
 Creating a Daemon
 -----------------
-Pyro's daemon is :class:`Pyro4.core.Daemon` and you can also access it by its shortcut ``Pyro4.Daemon``.
+Pyro's daemon is ``Pyro4.Daemon`` (shortcut to :class:`Pyro4.core.Daemon`).
 It has a few optional arguments when you create it:
 
 

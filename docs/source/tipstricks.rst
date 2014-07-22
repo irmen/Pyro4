@@ -221,6 +221,7 @@ As you see, the URI now contains the external address.
 :py:meth:`Pyro4.core.Daemon.uriFor` by default returns URIs with a NAT address in it (if ``nathost``
 and ``natport`` were used). You can override this by setting ``nat=False``::
 
+    # d = Pyro4.Daemon(...)
     print d.uriFor("thing")                 # "PYRO:thing@pyro.server.com:5555"
     print d.uriFor("thing", nat=False)      # "PYRO:thing@localhost:36124"
     uri2 = d.uriFor(uri.object, nat=False)  # get non-natted uri

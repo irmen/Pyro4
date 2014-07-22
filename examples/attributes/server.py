@@ -1,12 +1,12 @@
 from __future__ import print_function
 import sys
-
 import Pyro4
 
 
 if sys.version_info < (3, 0):
     input = raw_input
 
+print("Note that DOTTEDNAMES is a deprecated feature that will be removed in the next version.")
 dotted = input("enter value for DOTTEDNAMES config item: ").strip()
 Pyro4.config.DOTTEDNAMES = dotted in ("1", "true", "on", "yes")
 
@@ -22,8 +22,8 @@ class SubThingy(object):
     def getValue(self):
         return self.value
 
-    def setValue(self, value):
-        self.value = value
+    def addToValue(self, amount):
+        self.value += amount
 
 
 class Thingy(object):
@@ -36,8 +36,8 @@ class Thingy(object):
     def getSubValue(self):
         return self.sub.getValue()
 
-    def setSubValue(self, value):
-        self.sub.setValue(value)
+    def addSubValue(self, amount):
+        self.sub.addToValue(amount)
 
     def dottedNames(self):
         return Pyro4.config.DOTTEDNAMES

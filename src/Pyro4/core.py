@@ -192,8 +192,6 @@ class Proxy(object):
     def __init__(self, uri):
         """
         .. autoattribute:: _pyroOneway
-        .. autoattribute:: _pyroMethods
-        .. autoattribute:: _pyroAttrs
         .. autoattribute:: _pyroTimeout
         """
         _check_hmac()  # check if hmac secret key is set
@@ -205,7 +203,7 @@ class Proxy(object):
         self._pyroConnection = None
         self._pyroMethods = set()  # all methods of the remote object, gotten from meta-data
         self._pyroAttrs = set()  # attributes of the remote object, gotten from meta-data
-        self._pyroOneway = set()  # oneway-methods of the remote object, gotten from meta-data (or set manually, if not using METADATA)
+        self._pyroOneway = set()  # oneway-methods of the remote object, gotten from meta-data (or set by user, that's deprecated though.)
         self._pyroSeq = 0  # message sequence number
         self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
         self.__pyroLock = threadutil.Lock()

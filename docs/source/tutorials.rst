@@ -74,7 +74,7 @@ Proxy
     where the actual method call is done, and the results are returned to the caller.
     This means the calling code doesn't have to know if it's dealing with a normal or a remote object,
     because the code is identical.
-    The class implementing Pyro proxies is :class:`Pyro4.core.Proxy`
+    The class implementing Pyro proxies is ``Pyro4.Proxy`` (shortcut for :class:`Pyro4.core.Proxy`)
 
 :abbr:`URI (Unique resource identifier)`
     This is what Pyro uses to identify every object.
@@ -83,7 +83,7 @@ Proxy
     There are a few other forms it can take as well.
     You can write the protocol in lowercase too if you want ("pyro:") but it will
     automatically be converted to uppercase internally.
-    The class implementing Pyro uris is :class:`Pyro4.core.URI`
+    The class implementing Pyro uris is ``Pyro4.URI`` (shortcut for :class:`Pyro4.core.URI`)
 
 Pyro object
     This is a normal Python object but it is registered with Pyro so that you can access it remotely.
