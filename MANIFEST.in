@@ -12,3 +12,7 @@ global-exclude *.pyc
 global-exclude *.pyo
 global-exclude *.coverage
 global-exclude nosetests.xml
+global-exclude .git
+global-exclude .gitignore
+global-exclude .tox
+global-exclude __pycache__

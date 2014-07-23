@@ -260,7 +260,10 @@ Here are some rules:
   *Note:* you can still use the proxy object when it is disconnected: Pyro will reconnect it as soon as it's needed again.
 
 
-.. index:: oneway call
+.. index::
+    double: oneway; client method call
+
+.. _oneway-calls-client:
 
 Oneway calls
 ============
@@ -284,43 +287,25 @@ are more efficient because they immediately produce ``None`` as result and that'
 
 .. index::
     double: @Pyro4.oneway; client handling
-    double: decorator; oneway
 
-**Specifying one-way methods using the @Pyro4.oneway decorator:**
-
-You decide on the class of your Pyro object on the server, what methods are to be called as one-way.
-You use the ``@Pyro4.oneway`` decorator on these methods to mark them for Pyro.
-When the client proxy connects to the server it gets told automatically what methods are one-way,
-you don't have to do anything on the client yourself. Any calls your client code makes on the proxy object
-to methods that are marked with ``@Pyro4.oneway`` on the server, will happen as one-way calls::
-
-    import Pyro4
-
-    class PyroService(object):
-
-        def normal_method(self, args):
-            result = do_long_calculation(args)
-            return result
-
-        @Pyro4.oneway
-        def oneway_method(self, args):
-            result = do_long_calculation(args)
-            # no return value, cannot return anything to the client
-
-
-See the :file:`oneway` example for more details.
+**How to make methods one-way:**
+You mark the methods of your class *in the server* as one-way by using a special *decorator*.
+See :ref:`decorating-pyro-class` for details on how to do this.
+See the :file:`oneway` example for some code that demonstrates the use of oneway methods.
 
 .. index:: _pyroOneway
 .. note::
-    There's another way of doing this, which was used in older Pyro versions. It is now deprecated
-    and support for it will be removed in the next Pyro version. It didn't use the metadata mechanism, but
-    instead you simply marked all the methods you want to call as one-way explicitly on the proxy yourself::
+    There's another way of telling Pyro what methods are one-way, which was used in older Pyro versions.
+    It is now deprecated and support for it will be removed in the next Pyro version. It didn't use the metadata mechanism, but
+    instead you simply marked all the methods you want to call as one-way explicitly on the proxy yourself.
+    You had to do this in every piece of client code that creates the proxy.
+    The :py:attr:`Pyro4.core.Proxy._pyroOneway` property on the proxy object is a set containing the names of the methods that
+    should be called as one-way (by default it is an empty set)::
 
+        proxy = Pyro4.Proxy(...)
         proxy._pyroOneway.add("someMethod")
         proxy._pyroOneway.update(["otherMethod", "processStuff"])
 
-    The :py:attr:`Pyro4.core.Proxy._pyroOneway` property is a set containing the names of the methods that
-    should be called as one-way (by default it is an empty set).
 
 
 .. index:: batch calls

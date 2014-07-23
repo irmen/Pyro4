@@ -22,19 +22,96 @@ Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
     single: decorators
     single: @Pyro4.expose
     single: @Pyro4.oneway
+    single: REQUIRE_EXPOSE
     double: decorator; expose
     double: decorator; oneway
 
+.. _decorating-pyro-class:
+
 Creating a Pyro class and using the Pyro4 decorators
 ====================================================
-@todo: @expose on class
 
-@todo: @expose on methods / properties
+**What is exposed by default, and the REQUIRE_EXPOSE config item**
 
-@todo: @oneway
+Pyro's default behavior is to expose *all* methods of your class
+(unless they are private, which means the name is starting with a single or double underscore).
+You don't have to do anything to your server side code to make it available to remote calls, apart from
+registering the class with a Pyro daemon ofcourse.
+This is for backward compatibility and ease-of-use reasons.
 
-@todo: explain REQUIRE_EXPOSE config item
+If you don't like this (maybe security reasons) or simply want to expose only a part of your class to the remote world,
+you can tell Pyro to *require* the explicit use of the ``@expose`` decorator (described below) on the items that you want to make
+available for remote access. If something doesn't have the decorator, it is not remotely accessible.
+This behavior can be chosen by setting the ``REQUIRE_EXPOSE`` config item to ``True``. It is set to ``False`` by default.
 
+**Exposing methods and attributes for remote access: the @expose decorator**
+
+The ``@Pyro4.expose`` decorator is provided that lets you mark the following items to be available for remote access:
+
+- classes (exposing a class has the effect of exposing every method and property of the class automatically)
+- methods (including classmethod and staticmethod. You cannot expose a private method, i.e. name starting with underscore)
+- properties (will be available as remote attributes on the proxy)
+
+Remember that you must set the ``REQUIRE_EXPOSE`` config item to ``True`` to let all this have any effect!
+Also because it is not possible to decorate attributes on a class, it is required to provide a @property for them
+and decorate that with @exposed, if you want to provide a remotely accessible attribute.
+
+Here's a piece of example code that shows how a partially exposed Pyro class may look like::
+
+    import Pyro4
+
+    Pyro4.config.REQUIRE_EXPOSE = True      # make @expose do something
+
+    class PyroService(object):
+
+        value = 42                  # not exposed
+
+        def __private__(self):      # not exposed
+            pass
+
+        def _private(self):         # not exposed
+            pass
+
+        @Pyro4.expose
+        def get_value(self):        # exposed
+            return self.value
+
+        @Pyro4.expose
+        @property
+        def attr(self):             # exposed as 'proxy.attr' remote attribute
+            return self.value
+
+        @Pyro4.expose
+        @attr.setter
+        def attr(self, value):      # exposed as 'proxy.attr' writable
+            self.value = value
+
+
+
+**Specifying one-way methods using the @Pyro4.oneway decorator:**
+
+You decide on the class of your Pyro object on the server, what methods are to be called as one-way.
+You use the ``@Pyro4.oneway`` decorator on these methods to mark them for Pyro.
+When the client proxy connects to the server it gets told automatically what methods are one-way,
+you don't have to do anything on the client yourself. Any calls your client code makes on the proxy object
+to methods that are marked with ``@Pyro4.oneway`` on the server, will happen as one-way calls::
+
+    import Pyro4
+
+    class PyroService(object):
+
+        def normal_method(self, args):
+            result = do_long_calculation(args)
+            return result
+
+        @Pyro4.oneway
+        def oneway_method(self, args):
+            result = do_long_calculation(args)
+            # no return value, cannot return anything to the client
+
+
+See :ref:`oneway-calls-client` for the documentation about how client code handles this.
+See the :file:`oneway` example for some code that demonstrates the use of oneway methods.
 
 
 .. index:: publishing objects

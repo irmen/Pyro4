@@ -88,7 +88,7 @@ class NotEverythingExposedClass(object):
         return self.name
 
     def unexposed(self):
-        return "you should not see this"
+        return "you should not see this"    # .... only when REQUIRE_EXPOSE is set to True is this valid
 
 
 class DaemonLoopThread(threadutil.Thread):
@@ -359,7 +359,7 @@ class ServerTestsOnce(unittest.TestCase):
             with self.daemon.proxyFor("unexposed") as p:
                 self.assertEqual(set(["unexposed", "getName"]), p._pyroMethods)
                 self.assertEqual("hello", p.getName())
-                self.assertEqual("you should not see this", p.unexposed())
+                self.assertEqual("you should not see this", p.unexposed())   # well, you should see it when REQUIRE_EXPOSE is False :)
         finally:
             Pyro4.config.REQUIRE_EXPOSE = old_require
 
