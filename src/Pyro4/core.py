@@ -813,8 +813,10 @@ class Daemon(object):
         try:
             self.__loopstopped.clear()
             condition = lambda: not self.__mustshutdown.isSet() and loopCondition()
+            print("enter Transportserver.loop") # XXX
             self.transportServer.loop(loopCondition=condition)
         finally:
+            print("exit Transportserver.loop") # XXX
             self.__loopstopped.set()
         log.debug("daemon exits requestloop")
 
@@ -823,14 +825,13 @@ class Daemon(object):
         return self.transportServer.events(eventsockets)
 
     def shutdown(self):
-        """Cleanly terminate a daemon that is running in the requestloop. It must be running
-        in a different thread, or this method will deadlock."""
+        """Cleanly terminate a daemon that is running in the requestloop."""
         log.debug("daemon shutting down")
         self.__mustshutdown.set()
         self.transportServer.wakeup()
         time.sleep(0.05)
         self.close()
-        self.__loopstopped.wait()
+        self.__loopstopped.wait(timeout=1)  # use timeout to avoid deadlock situations
         log.info("daemon %s shut down", self.locationStr)
 
     def _handshake(self, conn):
@@ -1053,7 +1054,6 @@ class Daemon(object):
             meta = util.get_exposed_members(registered_object, only_exposed=Pyro4.config.REQUIRE_EXPOSE)
             proxy._pyroGetMetadata(known_metadata=meta)
         return proxy
-
 
     def close(self):
         """Close down the server and release resources"""

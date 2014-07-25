@@ -539,6 +539,6 @@ def triggerSocket(sock):
         data = b"!" * 16
         if sys.platform == "cli":
             data = "!" * 16
-        sock.send(data)
+        sock.sendall(data)
     except (socket.error, AttributeError):  # attributeerror can occur here in jython
         pass
