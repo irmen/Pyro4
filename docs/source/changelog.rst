@@ -22,6 +22,7 @@ Change Log
 - fixed the way the tracebacks are handled with the @callback decorator. They will now be logged as a warning (not printed) in both server types
 - setup script now generates a bunch of console commands such as 'pyro4-ns' (previously you had to type 'python -m Pyro4.naming' etc.)
 - made logger category names of the two socket servers consistent
+- improved the clean shutdown mechanism of the daemon
 - pep8'ified most of the source code
 - documentation improvements
 

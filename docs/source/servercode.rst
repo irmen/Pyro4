@@ -424,12 +424,16 @@ Ofcourse, once the daemon is running, you first need a clean way to stop the req
 you can even begin to clean things up.
 
 You can use force and hit ctrl-C or ctrl-\ or ctrl-Break to abort the request loop, but
-this usulally doesn't allow your program to clean up neatly as well.
-It is also possible to leave the loop cleanly from within your code (without using :py:meth:`sys.exit` or similar).
+this usually doesn't allow your program to clean up neatly as well.
+It is therefore also possible to leave the loop cleanly from within your code (without using :py:meth:`sys.exit` or similar).
 You'll have to provide a ``loopCondition`` that you set to ``False`` in your code when you want
 the daemon to stop the loop. You could use some form of semi-global variable for this.
+(But if you're using the threaded server type, you have to also set ``COMMTIMEOUT`` because otherwise
+the daemon simply keeps blocking inside one of the worker threads).
+
 Another possibility is calling  :py:meth:`Pyro4.core.Daemon.shutdown` on the running daemon object.
-Usually this will also break out of the request loop and allows your code to neatly clean up after itself.
+This will also break out of the request loop and allows your code to neatly clean up after itself,
+and will also work on the threaded server type without any other requirements.
 
 If you are using your own event loop mechanism you have to use something else, depending on your own loop.
 
