@@ -588,3 +588,6 @@ attributes are available.
 You can disable this mechanism by setting the ``METADATA`` config item to ``False`` (it's ``True`` by default).
 This will improve efficiency when connecting a proxy (because no meta data roundtrip to the server has to be done)
 but your proxy will not know about the features of the Pyro object as mentioned above.
+Disabling it also allows you to connect to older Pyro versions that don't implement the metadata protocol yet (4.26 and older).
+You can tell if you need to do this if you're getting errors in your proxy saying that 'DaemonObject' has no attribute 'get_metdata'.
+Either upgrade the Pyro version of the server, or set the ``METDATA`` config item to False in your client code.

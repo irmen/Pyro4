@@ -7,7 +7,7 @@ Change Log
 - requires serpent 1.7 or newer (because of some changes regarding to set literals and the error for circular references)
 - added @Pyro4.expose and @Pyro4.oneway decorators
 - attr lookup now actually honors 'private' attributes in all cases (name starting with underscore-- these are blocked from remote access no matter what)
-- added METADATA config item to enable/disable the automatic metadata query that a proxy now does.
+- added METADATA config item to enable/disable the automatic metadata query that a proxy now does. To talk to older Pyro versions you'll have to set this to False.
 - proper client side attribute validation if metadata is enabled. This also means that hasattr(proxy, "something") now actually works.
 - added REQUIRE_EXPOSE config item to toggle exposing everything in a server object, or that you must cherrypick with the new @expose decorator
 - copying a proxy now also copies its meta attributes (timeout, oneways, etc) instead of just the uri
