@@ -24,6 +24,7 @@ Change Log
 - made logger category names of the two socket servers consistent
 - improved the clean shutdown mechanism of the daemon
 - pep8'ified most of the source code
+- flame server methods _invokeBuiltin and _invokeModule renamed without underscores to follow the public exposed method name rule
 - documentation improvements
 
 

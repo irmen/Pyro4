@@ -81,7 +81,7 @@ class FlameModule(object):
         self.__dict__ = args
 
     def __invoke(self, module, args, kwargs):
-        return self.flameserver._invokeModule(module, args, kwargs)
+        return self.flameserver.invokeModule(module, args, kwargs)
 
     def __enter__(self):
         return self
@@ -103,7 +103,7 @@ class FlameBuiltin(object):
         self.builtin = builtin
 
     def __call__(self, *args, **kwargs):
-        return self.flameserver._invokeBuiltin(self.builtin, args, kwargs)
+        return self.flameserver.invokeBuiltin(self.builtin, args, kwargs)
 
     def __enter__(self):
         return self
@@ -182,6 +182,7 @@ class InteractiveConsole(code.InteractiveConsole):
         self.resetbuffer()
 
 
+@Pyro4.expose
 class Flame(object):
     """
     The actual FLAME server logic.
@@ -245,10 +246,12 @@ class Flame(object):
         console.banner = "Python %s on %s\n(Remote console on %s)" % (sys.version, sys.platform, uri.location)
         return RemoteInteractiveConsole(uri)
 
-    def _invokeBuiltin(self, builtin, args, kwargs):
+    @Pyro4.expose
+    def invokeBuiltin(self, builtin, args, kwargs):
         return getattr(builtins, builtin)(*args, **kwargs)
 
-    def _invokeModule(self, dottedname, args, kwargs):
+    @Pyro4.expose
+    def invokeModule(self, dottedname, args, kwargs):
         # dottedname is something like "os.path.walk" so strip off the module name
         modulename, dottedname = dottedname.split('.', 1)
         module = sys.modules[modulename]

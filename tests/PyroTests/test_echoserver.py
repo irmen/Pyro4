@@ -41,6 +41,10 @@ class TestEchoserver(unittest.TestCase):
         self.echoserverthread.terminated.wait()
         Pyro4.config.HMAC_KEY = None
 
+    def testExposed(self):
+        e = Pyro4.test.echoserver.EchoServer()
+        self.assertTrue(hasattr(e, "_pyroExposed"))
+
     def testEcho(self):
         echo = Pyro4.Proxy(self.uri)
         try:

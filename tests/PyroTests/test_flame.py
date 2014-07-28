@@ -40,6 +40,10 @@ class FlameTests(unittest.TestCase):
         Pyro4.config.FLAME_ENABLED = False
         Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
 
+    def testExposed(self):
+        e = Pyro4.utils.flame.Flame()
+        self.assertTrue(hasattr(e, "_pyroExposed"))
+
     def testCreateModule(self):
         module = Pyro4.utils.flame.createModule("testmodule", "def x(y): return y*y")
         self.assertEqual(9, module.x(3))
