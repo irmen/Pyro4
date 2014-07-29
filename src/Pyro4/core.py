@@ -787,7 +787,7 @@ class Daemon(object):
         in the naming server as well, otherwise they just stay local.
         See the documentation on 'publishing objects' (in chapter: Servers) for more details.
         """
-        if not daemon:
+        if daemon is None:
             daemon = Daemon(host, port)
         with daemon:
             if ns:
@@ -983,21 +983,23 @@ class Daemon(object):
         msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq)
         connection.send(msg.to_bytes())
 
-    def register(self, obj, objectId=None):
+    def register(self, obj, objectId=None, force=False):
         """
         Register a Pyro object under the given id. Note that this object is now only
         known inside this daemon, it is not automatically available in a name server.
         This method returns a URI for the registered object.
+        Pyro checks if an object is already registered, unless you set force=True.
         """
         if objectId:
             if not isinstance(objectId, basestring):
                 raise TypeError("objectId must be a string or None")
         else:
             objectId = "obj_" + uuid.uuid4().hex  # generate a new objectId
-        if hasattr(obj, "_pyroId") and obj._pyroId != "":  # check for empty string is needed for Cython
-            raise errors.DaemonError("object already has a Pyro id")
-        if objectId in self.objectsById:
-            raise errors.DaemonError("object already registered with that id")
+        if not force:
+            if hasattr(obj, "_pyroId") and obj._pyroId != "":  # check for empty string is needed for Cython
+                raise errors.DaemonError("object already has a Pyro id")
+            if objectId in self.objectsById:
+                raise errors.DaemonError("an object was already registered with that id")
         # set some pyro attributes
         obj._pyroId = objectId
         obj._pyroDaemon = self

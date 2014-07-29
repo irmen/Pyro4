@@ -677,29 +677,41 @@ class RemoteMethodTests(unittest.TestCase):
 
 
 class TestSimpleServe(unittest.TestCase):
-    class DaemonMock(object):
-        def __init__(self):
-            self.objects = {}
-
-        def register(self, obj, name):
-            self.objects[obj] = name
-
-        def __enter__(self):
-            pass
-
-        def __exit__(self, *args):
-            pass
-
+    class DaemonWrapper(Pyro4.core.Daemon):
         def requestLoop(self, *args):
+            # override with empty method to fall out of the serveSimple call
             pass
 
     def testSimpleServe(self):
-        d = TestSimpleServe.DaemonMock()
-        o1 = MyThing(1)
-        o2 = MyThing(2)
-        objects = {o1: "test.o1", o2: None}
-        Pyro4.core.Daemon.serveSimple(objects, daemon=d, ns=False, verbose=False)
-        self.assertEqual({o1: "test.o1", o2: None}, d.objects)
+        with TestSimpleServe.DaemonWrapper() as d:
+            o1 = MyThing(1)
+            o2 = MyThing(2)
+            objects = {o1: "test.o1", o2: None}
+            Pyro4.core.Daemon.serveSimple(objects, daemon=d, ns=False, verbose=False)
+            self.assertEqual(3, len(d.objectsById))
+            self.assertIn("test.o1", d.objectsById)
+            self.assertIn(o1, d.objectsById.values())
+            self.assertIn(o2, d.objectsById.values())
+
+    def testSimpleServeSameNames(self):
+        with TestSimpleServe.DaemonWrapper() as d:
+            o1 = MyThing(1)
+            o2 = MyThing(2)
+            o3 = MyThing(3)
+            objects = {o1: "test.name", o2: "test.name", o3: "test.othername"}
+            with self.assertRaises(Pyro4.errors.DaemonError):
+                Pyro4.core.Daemon.serveSimple(objects, daemon=d, ns=False, verbose=False)
+
+    def testSimpleServeNameAsKey(self):
+        with TestSimpleServe.DaemonWrapper() as d:
+            o1 = MyThing(1)
+            o2 = MyThing(2)
+            objects = {"test.o1": o1, None: o2:}
+            Pyro4.core.Daemon.serveSimple(objects, daemon=d, ns=False, verbose=False)
+            self.assertEqual(3, len(d.objectsById))
+            self.assertIn("test.o1", d.objectsById)
+            self.assertIn(o1, d.objectsById.values())
+            self.assertIn(o2, d.objectsById.values())
 
 
 def futurestestfunc(a, b, extra=None):

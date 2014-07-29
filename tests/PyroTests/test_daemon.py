@@ -160,16 +160,39 @@ class DaemonTests(unittest.TestCase):
         with Pyro4.core.Daemon(port=0) as d:
             o1 = MyObj("object1")
             d.register(o1)
-            self.assertRaises(DaemonError, d.register, o1, None)
+            with self.assertRaises(DaemonError) as x:
+                d.register(o1)
+            self.assertEqual("object already has a Pyro id", str(x.exception))
             d.unregister(o1)
-            d.register(o1)
+            d.register(o1, "samename")
+            o2 = MyObj("object2")
+            with self.assertRaises(DaemonError) as x:
+                d.register(o2, "samename")
+            self.assertEqual("an object was already registered with that id", str(x.exception))
             self.assertTrue(hasattr(o1, "_pyroId"))
+            self.assertTrue(hasattr(o1, "_pyroDaemon"))
             d.unregister(o1)
             self.assertFalse(hasattr(o1, "_pyroId"))
+            self.assertFalse(hasattr(o1, "_pyroDaemon"))
             o1._pyroId = "FOOBAR"
-            self.assertRaises(DaemonError, d.register, o1, None)
+            with self.assertRaises(DaemonError) as x:
+                d.register(o1)
+            self.assertEqual("object already has a Pyro id", str(x.exception))
             o1._pyroId = ""
             d.register(o1)  # with empty-string _pyroId register should work
+
+    def testRegisterTwiceForced(self):
+        with Pyro4.core.Daemon(port=0) as d:
+            o1 = MyObj("object1")
+            d.register(o1, "name1")
+            d.register(o1, "name2", force=True)
+            d.register(o1, "name1", force=True)
+            self.assertIs(d.objectsById["name1"], d.objectsById["name2"])
+            d.unregister(o1)
+            o1._pyroId = "FOOBAR_ID"
+            d.register(o1, "newname", force=True)
+            self.assertEqual("newname", o1._pyroId)
+            self.assertIn("newname", d.objectsById)
 
     def testRegisterEtc(self):
         d = Pyro4.core.Daemon(port=0)

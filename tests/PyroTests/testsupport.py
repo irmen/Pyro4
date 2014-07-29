@@ -87,7 +87,9 @@ class MyThing(object):
         self.name = name
 
     def __eq__(self, other):
-        return self.name == other.name
+        if type(other) is MyThing:
+            return self.name == other.name
+        return False
 
     def method(self, arg, default=99, **kwargs):
         pass
@@ -152,7 +154,9 @@ class MyThingExposed(object):
         self._name = name
 
     def __eq__(self, other):
-        return self._name == other._name
+        if type(other) is MyThingExposed:
+            return self._name == other._name
+        return False
 
     def foo(self, arg):
         return arg
