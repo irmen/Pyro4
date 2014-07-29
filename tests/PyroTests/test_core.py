@@ -702,17 +702,6 @@ class TestSimpleServe(unittest.TestCase):
             with self.assertRaises(Pyro4.errors.DaemonError):
                 Pyro4.core.Daemon.serveSimple(objects, daemon=d, ns=False, verbose=False)
 
-    def testSimpleServeNameAsKey(self):
-        with TestSimpleServe.DaemonWrapper() as d:
-            o1 = MyThing(1)
-            o2 = MyThing(2)
-            objects = {"test.o1": o1, None: o2:}
-            Pyro4.core.Daemon.serveSimple(objects, daemon=d, ns=False, verbose=False)
-            self.assertEqual(3, len(d.objectsById))
-            self.assertIn("test.o1", d.objectsById)
-            self.assertIn(o1, d.objectsById.values())
-            self.assertIn(o2, d.objectsById.values())
-
 
 def futurestestfunc(a, b, extra=None):
     if extra is None:
