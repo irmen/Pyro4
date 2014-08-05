@@ -20,7 +20,7 @@ import Pyro4.futures
 from testsupport import *
 
 
-if sys.version_info >= (3, 0):
+if sys.version_info >= (3, 4):
     import importlib
     reload = importlib.reload
 
