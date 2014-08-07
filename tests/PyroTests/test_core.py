@@ -351,7 +351,9 @@ class CoreTests(unittest.TestCase):
         p = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
         # make sure that __dir__ implementation works the same way as dir()
         dir_result = dir(p)
-        dir_result.remove('__dir__')
+        if sys.version_info < (3, 3):
+            # before 3.3 python's object class didn't have __dir__ method
+            dir_result.remove('__dir__')
         dir_method = getattr(Pyro4.core.Proxy, '__dir__')
         try:
             delattr(Pyro4.core.Proxy, '__dir__')
