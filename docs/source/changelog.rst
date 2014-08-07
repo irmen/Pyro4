@@ -27,6 +27,7 @@ Change Log
 - flame server methods _invokeBuiltin and _invokeModule renamed without underscores to follow the public exposed method name rule
 - pep8'ified most of the source code
 - documentation improvements
+- linked to Travis CI: https://travis-ci.org/irmen/Pyro4
 
 
 **Pyro 4.26**
