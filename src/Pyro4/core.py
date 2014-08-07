@@ -304,6 +304,10 @@ class Proxy(object):
     def __hash__(self):
         return hash(self._pyroUri)
 
+    def __dir__(self):
+        result = dir(self.__class__) + list(self.__dict__.keys())
+        return sorted(set(result) | self._pyroMethods | self._pyroAttrs)
+
     def _pyroRelease(self):
         """release the connection to the pyro daemon"""
         with self.__pyroConnLock:
