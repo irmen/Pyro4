@@ -1,5 +1,7 @@
 PYRO - Python Remote Objects
 
+[![Build Status](https://travis-ci.org/irmen/Pyro4.svg?branch=master)](https://travis-ci.org/irmen/Pyro4)
+
 
 Pyro enables you to build applications in which objects can talk
 to each other over the network, with minimal programming effort.
