@@ -347,6 +347,40 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(expected, repr(p))
         self.assertEqual(unicode(expected), unicode(p))
 
+    def testProxyDir(self):
+        # PyPy tries to call deprecated __members__ and __methods__
+        # that causes a CommunicationError since we use a fake URI
+        class ProxyWithFixedGettattr(Pyro4.core.Proxy):
+            def __getattr__(self, name):
+                if name in ('__members__', '__methods__'):
+                    raise AttributeError(name)
+                return super(Pyro4.core.Proxy, self).__getattr__(name)
+        ProxyClass = ProxyWithFixedGettattr if 'pypy' in sys.version.lower() else Pyro4.core.Proxy
+        p = ProxyClass("PYRO:9999@localhost:15555")
+        # make sure that __dir__ implementation works the same way as dir()
+        dir_result = dir(p)
+        if sys.version_info < (3, 3):
+            # before 3.3 python's object class didn't have __dir__ method
+            dir_result.remove('__dir__')
+        old_dir_method = getattr(Pyro4.core.Proxy, '__dir__')
+        try:
+            delattr(Pyro4.core.Proxy, '__dir__')
+            self.assertEqual(dir_result, dir(p))
+        finally:
+            setattr(Pyro4.core.Proxy, '__dir__', old_dir_method)
+
+    def testProxyDirMetadata(self):
+        p = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
+        # metadata isn't loaded
+        self.assertIn('__hash__', dir(p))
+        self.assertNotIn('ping', dir(p))
+        # emulate obtaininng metadata
+        p._pyroAttrs = set(['prop'])
+        p._pyroMethods = set(['ping'])
+        self.assertIn('__hash__', dir(p))
+        self.assertIn('prop', dir(p))
+        self.assertIn('ping', dir(p))
+
     def testProxySettings(self):
         p1 = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
         p2 = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
