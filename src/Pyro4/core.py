@@ -216,7 +216,6 @@ class Proxy(object):
             if Pyro4.config.METADATA:
                 warnings.warn("DOTTEDNAMES and METADATA are both enabled, DOTTEDNAMES doesn't really work in this situation", RuntimeWarning)
 
-
     def __del__(self):
         if hasattr(self, "_pyroConnection"):
             self._pyroRelease()

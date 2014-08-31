@@ -374,7 +374,7 @@ class CoreTests(unittest.TestCase):
         # metadata isn't loaded
         self.assertIn('__hash__', dir(p))
         self.assertNotIn('ping', dir(p))
-        # emulate obtaininng metadata
+        # emulate obtaining metadata
         p._pyroAttrs = set(['prop'])
         p._pyroMethods = set(['ping'])
         self.assertIn('__hash__', dir(p))

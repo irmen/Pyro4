@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.28**
+
+- implemented dir() on a Proxy to also return remote methods if known (useful for autocompletion in certain python shells)
+
+
 **Pyro 4.27**
 
 - requires serpent 1.7 or newer (because of some changes regarding to set literals and the error for circular references)
