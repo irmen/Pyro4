@@ -528,7 +528,7 @@ class _BatchedRemoteMethod(object):
 class _BatchProxyAdapter(object):
     """Helper class that lets you batch multiple method calls into one.
     It is constructed with a reference to the normal proxy that will
-    carry out the batched calls. Call methods on this object thatyou want to batch,
+    carry out the batched calls. Call methods on this object that you want to batch,
     and finally call the batch proxy itself. That call will return a generator
     for the results of every method call in the batch (in sequence)."""
 
