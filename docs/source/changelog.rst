@@ -6,6 +6,7 @@ Change Log
 
 - implemented dir() on a Proxy to also return remote methods if known (useful for autocompletion in certain python shells)
 - USE_MSG_WAITALL config item added because there remain certain other systems where MSG_WAITALL is unreliable
+- removed Pyro4.socketutil.USE_MSG_WAITALL attribute (because it got promoted to a config item)
 
 
 **Pyro 4.27**
