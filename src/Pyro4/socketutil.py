@@ -26,11 +26,6 @@ if os.name == "java":
 else:
     selectfunction = select.select
 
-if sys.platform == "win32":
-    USE_MSG_WAITALL = False  # it doesn't work reliably on Windows even though it's defined
-else:
-    USE_MSG_WAITALL = hasattr(socket, "MSG_WAITALL")
-
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.
 # So I didn't include them in de list of retryable errors.
@@ -157,7 +152,7 @@ def receiveData(sock, size):
         EMPTY_BYTES = b""
         if sys.platform == "cli":
             EMPTY_BYTES = ""
-        if USE_MSG_WAITALL:
+        if Pyro4.config.USE_MSG_WAITALL:
             # waitall is very convenient and if a socket error occurs,
             # we can assume the receive has failed. No need for a loop,
             # unless it is a retryable error.

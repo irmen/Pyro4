@@ -108,6 +108,8 @@ PICKLE_PROTOCOL_VERSION int     highest poss   The pickle protocol version to us
 LOGWIRE                 bool    False          If wire-level message data should be written to the logfile (you may want to disable COMPRESSION)
 METADATA                bool    True           Client: Get remote object metadata from server automatically on proxy connect (methods, attributes, oneways, etc) and use local checks in the proxy against it (set to False to use compatible behavior with Pyro 4.26 and earlier)
 REQUIRE_EXPOSE          bool    False          Server: Is @expose required to make members remotely accessible. If False, everything is accessible (this is the default for now).
+USE_MSG_WAITALL         bool    True (False if Some systems have broken socket MSG_WAITALL support. Set this item to False if your system is one of these. Pyro will then use another (but slower) piece of code to receive network data.
+                                on Windows)
 ======================= ======= ============== =======
 
 .. index::

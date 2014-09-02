@@ -7,6 +7,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import socket
 import os
 import sys
+import platform
 import time
 import Pyro4.socketutil as SU
 from Pyro4 import threadutil, errors
@@ -294,7 +295,7 @@ class TestSocketutil(unittest.TestCase):
         port = ss.getsockname()[1]
         cs = SU.createSocket(connect=("localhost", port), timeout=2)
         a = ss.accept()
-        # test some sizes that might be problematic with MSG_WAITALL
+        # test some sizes that might be problematic with MSG_WAITALL and check that they work fine
         for size in [1000, 10000, 32000, 32768, 32780, 41950, 41952, 42000, 65000, 65535, 65600, 80000]:
             SU.sendData(cs, tobytes("x") * size)
             data = SU.receiveData(a[0], size)
@@ -326,7 +327,7 @@ class TestSocketutil(unittest.TestCase):
         serverthread.start()
         port = ss.getsockname()[1]
         cs = SU.createSocket(connect=("localhost", port), timeout=2)
-        # test some sizes that might be problematic with MSG_WAITALL
+        # test some sizes that might be problematic with MSG_WAITALL and check that they work fine
         for size in SIZES:
             SU.sendData(cs, tobytes("x") * size)
             data = SU.receiveData(cs, size)
@@ -334,6 +335,14 @@ class TestSocketutil(unittest.TestCase):
         serverthread.join()
         ss.close()
         cs.close()
+
+    def testMsgWaitAllConfig(self):
+        if platform.system() == "Windows":
+            # default config should be False on these platforms
+            self.assertFalse(Pyro4.config.USE_MSG_WAITALL)
+        else:
+            # on all other platforms, default config should be True
+            self.assertTrue(Pyro4.config.USE_MSG_WAITALL)
 
 
 class ServerCallback(object):

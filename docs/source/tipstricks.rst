@@ -294,10 +294,13 @@ wire protocol overhead for the possible binary types:
 MSG_WAITALL socket option
 =========================
 Pyro will use the ``MSG_WAITALL`` socket option to receive large messages, if it decides that
-the feature is available and working correctly. On most systems that define the ``socket.MSG_WAITALL``
-symbol, it does, except on Windows: even though the option is there, it doesn't work reliably.
-If you want to check in your code what Pyro's behavior is, see the ``socketutil.USE_MSG_WAITALL`` attribute
-(it's a boolean that will be set to False if Pyro decides it can't or should not use MSG_WAITALL).
+the feature is available and working correctly. This avoids having to use a slower function that
+needs a loop to get all data. On most systems that define the ``socket.MSG_WAITALL``
+symbol, it works fine, except on Windows: even though the option is there, it doesn't work reliably.
+Pyro thus won't use it by default on Windows, and will use it by default on other systems.
+You should set the ``USE_MSG_WAITALL`` config item to False yourself, if you find that your system has
+an unreliable implementation of this socket option. Please let me know what system (os/python version)
+it is so we could teach Pyro to select the correct option automatically in a new version.
 
 
 .. index:: IPv6

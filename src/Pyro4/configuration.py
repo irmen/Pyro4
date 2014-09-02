@@ -11,6 +11,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import os
 import platform
 import pickle
+import socket
 
 
 class Configuration(object):
@@ -21,7 +22,7 @@ class Configuration(object):
                  "THREADPOOL_SIZE", "HMAC_KEY", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
                  "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
                  "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
-                 "METADATA", "REQUIRE_EXPOSE")
+                 "METADATA", "REQUIRE_EXPOSE", "USE_MSG_WAITALL")
 
     def __init__(self):
         self.reset()
@@ -60,6 +61,7 @@ class Configuration(object):
         self.PICKLE_PROTOCOL_VERSION = pickle.HIGHEST_PROTOCOL
         self.METADATA = True  # get metadata from server on proxy connect
         self.REQUIRE_EXPOSE = False  # require @expose to make members remotely accessible (if False, everything is accessible)
+        self.USE_MSG_WAITALL = hasattr(socket, "MSG_WAITALL") and platform.system() != "Windows"      # not reliable on windows even though it is defined
 
         if useenvironment:
             # process environment variables
