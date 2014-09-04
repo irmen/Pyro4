@@ -1,23 +1,23 @@
-.. index:: errors, remote traceback
+.. index:: exceptions, remote traceback
 
-****************************
-Errors and remote tracebacks
-****************************
+********************************
+Exceptions and remote tracebacks
+********************************
 
 There is an example that shows various ways to deal with exceptions when writing Pyro code.
 Have a look at the ``exceptions`` example in the :file:`examples` directory.
 
-Pyro errors
------------
+Pyro exceptions
+---------------
 
 Pyro's exception classes can be found in :mod:`Pyro4.errors`.
 They are used by Pyro if something went wrong inside Pyro itself or related to something Pyro was doing.
 
 .. index:: remote errors
 
-Remote errors
--------------
-More interesting are the errors that occur in *your own* objects (the remote Pyro objects).
+Remote exceptions
+-----------------
+More interesting are the exceptions that occur in *your own* objects (the remote Pyro objects).
 Pyro is doing its best to make the remote objects appear as normal, local, Python objects.
 That also means that if they raise an error, Pyro will make it appear in the caller,
 as if the error occurred locally.
@@ -96,7 +96,7 @@ in the remote Pyro object.
 Detailed traceback information
 ------------------------------
 
-There is another utility that Pyro has to make it easier to debug remote object errors.
+There is another utility that Pyro has to make it easier to debug remote object exceptions.
 If you enable the ``DETAILED_TRACEBACK`` config item on the server (see :ref:`config-items`), the remote
 traceback is extended with details of the values of the local variables in every frame::
 
