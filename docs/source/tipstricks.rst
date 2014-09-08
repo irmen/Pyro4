@@ -66,6 +66,37 @@ It uses Python's standard :py:mod:`logging` module for this.
 Once enabled, your own program code could use Pyro's logging setup as well.
 But if you want to configure your own logging, make sure you do that before any Pyro imports. Then Pyro will skip its own autoconfig.
 
+A little example to enable logging by setting the required environment variables from the shell::
+
+    $ export PYRO_LOGFILE=pyro.log
+    $ export PYRO_LOGLEVEL=DEBUG
+    $ python my_pyro_program.py
+
+Another way is by modifiying ``os.environ`` from within your code itself, *before* any import of Pyro4 is done::
+
+    import os
+    os.environ["PYRO_LOGFILE"] = "pyro.log"
+    os.environ["PYRO_LOGLEVEL"] = "DEBUG"
+
+    import Pyro4
+    # do stuff...
+
+Finally, it is possible to initialize the logging by means of the standard Python ``logging`` module only, but
+then you still have to tell Pyro4 what log level it should use (or it won't log anything)::
+
+    import logging
+    logging.basicConfig()  # or your own sophisticated setup
+    logging.getLogger("Pyro4").setLevel(logging.DEBUG)
+    logging.getLogger("Pyro4.core").setLevel(logging.DEBUG)
+    # ... set level of other logger names as desired ...
+
+    import Pyro4
+    # do stuff...
+
+The various logger names are similar to the module that uses the logger,
+so for instance logging done by code in ``Pyro4.core`` will use a logger category name of ``Pyro4.core``.
+Look at the top of the source code of the various modules from Pyro to see what the exact names are.
+
 
 .. index:: multiple NICs, network interfaces
 

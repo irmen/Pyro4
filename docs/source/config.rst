@@ -115,9 +115,13 @@ USE_MSG_WAITALL         bool    True (False if Some systems have broken socket M
 .. index::
     double: configuration items; logging
 
-There are two special config items that are only available as environment variable settings.
-This is because they are used at module import time (when the Pyro4 package is being imported).
-They control Pyro's logging behavior:
+There are two special config items that control Pyro's logging, and that are only available as environment variable settings.
+This is because they are used at the moment the Pyro4 package is being imported
+(which means that modifying them as regular config items after importing Pyro4 is too late and won't work).
+
+It is up to you to set the environment variable you want to the desired value. You can do this from your OS or shell,
+or perhaps by modifying ``os.environ`` in your Python code *before* importing Pyro4.
+
 
 ======================= ======= ============== =======
 environment variable    type    default        meaning
