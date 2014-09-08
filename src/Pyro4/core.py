@@ -485,7 +485,11 @@ class Proxy(object):
             raise
 
     def _pyroReconnect(self, tries=100000000):
-        """(re)connect the proxy to the daemon containing the pyro object which the proxy is for"""
+        """
+        (Re)connect the proxy to the daemon containing the pyro object which the proxy is for.
+        In contrast to the _pyroBind method, this one first releases the connection (if the proxy is still connected)
+        and retries making a new connection until it succeeds or the given amount of tries ran out.
+        """
         self._pyroRelease()
         while tries:
             try:

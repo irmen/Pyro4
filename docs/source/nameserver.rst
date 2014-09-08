@@ -371,6 +371,43 @@ the following method on the name server proxy:
 
 You can unregister objects as well using the :py:meth:`unregister` method.
 
+
+.. index:: scaling Name Server connections
+
+Free connections quickly (or: scaling the Name Server)
+======================================================
+By default the Name server uses a Pyro socket server based on whatever configuration is the default.
+Usually that will be a threadpool based server with a limited pool size. If more clients connect to
+the name server than the pool size allows, new connections block (and may lock up your system if
+no existing connections are freed).
+
+It is suggested you apply the following pattern when using the name server in your code:
+
+#. obtain a proxy for the NS
+#. look up the stuff you need, store it
+#. free the NS proxy (See :ref:`client_cleanup`)
+#. use the uri's/proxies you've just looked up
+
+This makes sure your client code doesn't consume resources in the name server for an excessive amount of time,
+and more importantly, frees up the limited connection pool to let other clients get their turn.
+If you have a proxy to the name server and you let it live for too long, it may eventually deny
+other clients access to the name server because its connection pool is exhausted. If you don't need
+the proxy anymore, make sure to free it up.
+
+There are a number of things you can do to improve the matter on the side of the Name Server itself.
+You can control its behavior by setting certain Pyro config items before starting the server:
+
+- You can set ``SERVERTYPE=multiplex`` to create a server that doesn't use a limited connection (thread) pool,
+  but multiplexes as many connections as the system allows. However, the actual calls to the server must
+  now wait on eachother to complete before the next call is processed. This may impact performance in other ways.
+- You can set ``THREADPOOLSIZE`` to a larger number as the default. This extends the connection pool of
+  the server but it is still limited by an upper bound ofcourse.
+- You can set ``COMMTIMEOUT`` to a certain value, which frees up unused connections after the given time.
+  But the client code may now crash with a TimeoutError or ConnectionClosedError when it tries to use a
+  proxy it obtained earlier. (You can use Pyro's autoreconnect feature to work around this but it makes
+  the code more complex)
+
+
 .. index::
     double: name server; pickle
 

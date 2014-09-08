@@ -235,6 +235,7 @@ Server code configuration
 .. index:: release proxy connection
 .. index::
     double: Proxy; cleaning up
+.. _client_cleanup:
 
 Proxies, connections, threads and cleaning up
 =============================================
@@ -243,11 +244,9 @@ Here are some rules:
 * Every single Proxy object will have its own socket connection to the daemon.
 * You can share Proxy objects among threads, it will re-use the same socket connection.
 * Usually every connection in the daemon has its own processing thread there, but for more details see the :doc:`servercode` chapter.
-* The connection will remain active for the lifetime of the proxy object.
-* At proxy creation, no actual connection is made. The proxy is only actually connected at first use, or when you manually
-  connect it using the ``_pyroReconnect()`` method.
-* You can free resources by manually closing the proxy connection if you don't need it anymore.
-  This can be done in two ways:
+* The connection will remain active for the lifetime of the proxy object. Hence, consider cleaning up a proxy object explicitly
+  if you know you won't be using it again in a while. That will free up resources and socket connections.
+  You can do this in two ways:
 
   1. calling ``_pyroRelease()`` on the proxy.
   2. using the proxy as a context manager in a ``with`` statement.
@@ -258,6 +257,8 @@ Here are some rules:
             obj.method()
 
   *Note:* you can still use the proxy object when it is disconnected: Pyro will reconnect it as soon as it's needed again.
+* At proxy creation, no actual connection is made. The proxy is only actually connected at first use, or when you manually
+  connect it using the ``_pyroReconnect()`` or ``_pyroBind()`` methods.
 
 
 .. index::
