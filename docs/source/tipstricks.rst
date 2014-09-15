@@ -62,7 +62,7 @@ for your Pyro interfaces that hold the data you need, rather than passing a huge
 Logging
 =======
 If you configure it (see :ref:`config-items`) Pyro will write a bit of debug information, errors, and notifications to a log file.
-It uses Python's standard :py:mod:`logging` module for this.
+It uses Python's standard :py:mod:`logging` module for this (See https://docs.python.org/2/library/logging.html ).
 Once enabled, your own program code could use Pyro's logging setup as well.
 But if you want to configure your own logging, make sure you do that before any Pyro imports. Then Pyro will skip its own autoconfig.
 

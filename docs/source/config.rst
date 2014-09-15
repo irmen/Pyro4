@@ -126,6 +126,6 @@ or perhaps by modifying ``os.environ`` in your Python code *before* importing Py
 ======================= ======= ============== =======
 environment variable    type    default        meaning
 ======================= ======= ============== =======
-PYRO_LOGLEVEL           string  *not set*      The log level to use for Pyro's logger (DEBUG, WARN, ...) See Python's standard :py:mod:`logging` module for the allowed values. If it is not set, no logging is being configured.
+PYRO_LOGLEVEL           string  *not set*      The log level to use for Pyro's logger (DEBUG, WARN, ...) See Python's standard :py:mod:`logging` module for the allowed values (https://docs.python.org/2/library/logging.html#levels). If it is not set, no logging is being configured.
 PYRO_LOGFILE            string  pyro.log       The name of the log file. Use {stderr} to make the log go to the standard error output.
 ======================= ======= ============== =======
