@@ -917,8 +917,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             with self.assertRaises(Pyro4.errors.TimeoutError) as e:
                 p.ping()
             self.assertEqual("receiving: timeout", str(e.exception))
-            duration = time.time() - start
-            self.assertTrue(duration < 2.0)
 
     def testProxySharing(self):
         class SharedProxyThread(threadutil.Thread):

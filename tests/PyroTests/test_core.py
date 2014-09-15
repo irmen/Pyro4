@@ -627,7 +627,7 @@ class RemoteMethodTests(unittest.TestCase):
         begin = time.time()
         asyncresult = batch(async=True)
         duration = time.time() - begin
-        self.assertLess(duration, 0.1, "batch oneway with pause should still return almost immediately")
+        self.assertLess(duration, 0.2, "batch oneway with pause should still return almost immediately")
         results = asyncresult.value
         self.assertEqual(4, len(proxy.result))  # should have done 4 calls
         result = next(results)
