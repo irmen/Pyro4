@@ -575,11 +575,11 @@ def resolveDottedAttribute(obj, attr, allowDotted):
     if allowDotted:
         attrs = attr.split('.')
         for attr in attrs:
-            if attr.startswith('_'):
+            if is_private_attribute(attr):
                 raise AttributeError("attempt to access private attribute '%s'" % attr)
             else:
                 obj = getattr(obj, attr)
-    elif attr.startswith('_'):
+    elif is_private_attribute(attr):
         raise AttributeError("attempt to access private attribute '%s'" % attr)
     else:
         obj = getattr(obj, attr)
@@ -634,7 +634,7 @@ def get_exposed_members(obj, only_exposed=True):
     oneway = set()  # oneway methods
     attrs = set()  # attributes
     for m in dir(obj):      # also lists names inherited from super classes
-        if m.startswith("_"):
+        if is_private_attribute(m):
             continue
         v = getattr(obj, m)
         if inspect.ismethod(v) or inspect.isfunction(v):
@@ -644,9 +644,8 @@ def get_exposed_members(obj, only_exposed=True):
                 if getattr(v, "_pyroOneway", False):
                     oneway.add(m)
         elif inspect.isdatadescriptor(v):
-            func = v.fget or v.fset or v.fdel
-            assert func is not None
-            if getattr(func, "_pyroExposed", not only_exposed):
+            func = getattr(v, "fget", None) or getattr(v, "fset", None) or getattr(v, "fdel", None)
+            if func is not None and getattr(func, "_pyroExposed", not only_exposed):
                 attrs.add(m)
         # Note that we don't expose plain class attributes no matter what.
         # it is a syntax error to add a decorator on them, and it is not possible
@@ -687,3 +686,26 @@ def set_exposed_property_value(obj, propname, value, only_exposed=True):
         if v.fset and getattr(pfunc, "_pyroExposed", not only_exposed):
             return v.fset(obj, value)
     raise AttributeError("attempt to access unexposed or unknown remote attribute '%s'" % propname)
+
+
+_private_dunder_methods = frozenset([
+    "__init__", "__call__", "__new__", "__del__", "__repr__", "__unicode__",
+    "__str__", "__format__", "__nonzero__", "__bool__", "__coerce__",
+    "__cmp__", "__eq__", "__ne__", "__hash__",
+    "__dir__", "__enter__", "__exit__", "__copy__", "__deepcopy__", "__sizeof__",
+    "__getattr__", "__setattr__", "__hasattr__", "__getattribute__",
+    "__instancecheck__", "__subclasscheck__", "__getinitargs__", "__getnewargs__",
+    "__getstate__", "__setstate__", "__reduce__", "__reduce_ex__",
+    "__getstate_for_dict__", "__setstate_from_dict__"
+])
+
+
+def is_private_attribute(attr_name):
+    """returns if the attribute name is to be considered private or not."""
+    if attr_name in _private_dunder_methods:
+        return True
+    if not attr_name.startswith('_'):
+        return False
+    if len(attr_name) > 4 and attr_name.startswith("__") and attr_name.endswith("__"):
+        return False
+    return True

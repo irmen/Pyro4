@@ -181,6 +181,7 @@ class TestUtils(unittest.TestCase):
         class Test(object):
             def __init__(self, value):
                 self.value = value
+                self.__value__ = value
 
             def __str__(self):
                 return "<%s>" % self.value
@@ -188,10 +189,13 @@ class TestUtils(unittest.TestCase):
             def _p(self):
                 return "should not be allowed"
 
-            def __p__(self):
+            def __p(self):
                 return "should not be allowed"
 
-        obj = Test("obj")
+            def __p__(self):
+                return "should be allowed (dunder)"
+
+        obj = Test("hello")
         obj.a = Test("a")
         obj.a.b = Test("b")
         obj.a.b.c = Test("c")
@@ -201,8 +205,11 @@ class TestUtils(unittest.TestCase):
         obj.a.__p.q = Test("q2")
         # check the method with dotted disabled
         self.assertEqual("<a>", str(Pyro4.util.resolveDottedAttribute(obj, "a", False)))
+        self.assertEqual("hello", str(Pyro4.util.resolveDottedAttribute(obj, "__value__", False)))  # dunder is not private
+        dunder = str(Pyro4.util.resolveDottedAttribute(obj, "__p__", False))
+        self.assertTrue(dunder.startswith("<bound method Test.__p__ of"))  # dunder is not private
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "_p", False)  # private
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "__p__", False)  # private
+        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "__p", False)  # private
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b", False)
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b.c", False)
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b.c.d", False)
@@ -213,9 +220,12 @@ class TestUtils(unittest.TestCase):
         self.assertEqual("<a>", str(Pyro4.util.resolveDottedAttribute(obj, "a", True)))
         self.assertEqual("<b>", str(Pyro4.util.resolveDottedAttribute(obj, "a.b", True)))
         self.assertEqual("<c>", str(Pyro4.util.resolveDottedAttribute(obj, "a.b.c", True)))
+        self.assertEqual("hello", str(Pyro4.util.resolveDottedAttribute(obj, "__value__", True)))  # dunder is not private
+        dunder = str(Pyro4.util.resolveDottedAttribute(obj, "__p__", True))
+        self.assertTrue(dunder.startswith("<bound method Test.__p__ of"))  # dunder is not private
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b.c.d", True)  # doesn't exist
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "_p", True)  # private
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "__p__", True)  # private
+        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "__p", True)  # private
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a._p", True)  # private
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a._p.q", True)  # private
         self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.__p.q", True)  # private
@@ -231,7 +241,6 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(((1, 2, 3), {unichr(65): 42}), processed_args)
         processed_args = function(*(1, 2, 3), **{unichr(0x20ac): 42})
         key = list(processed_args[1].keys())[0]
-        self.assertTrue(type(key) is unicode)
         self.assertEqual(key, unichr(0x20ac))
         self.assertEqual(((1, 2, 3), {unichr(0x20ac): 42}), processed_args)
 
@@ -261,7 +270,7 @@ class TestMeta(unittest.TestCase):
         m = Pyro4.util.get_exposed_members(o, only_exposed=False)
         self.assertEqual(set(["prop1", "prop2", "readonly_prop1"]), m["attrs"])
         self.assertEqual(set(["oneway"]), m["oneway"])
-        self.assertEqual(set(["classmethod", "oneway", "method", "staticmethod", "exposed"]), m["methods"])
+        self.assertEqual(set(["classmethod", "oneway", "method", "staticmethod", "exposed", "__dunder__"]), m["methods"])
 
     def testOnlyExposed(self):
         o = MyThing("irmen")
@@ -275,7 +284,7 @@ class TestMeta(unittest.TestCase):
         m = Pyro4.util.get_exposed_members(o)
         self.assertEqual(set(["name", "readonly_name"]), m["attrs"])
         self.assertEqual(set(["remotemethod"]), m["oneway"])
-        self.assertEqual(set(["classmethod", "foo", "staticmethod", "remotemethod"]), m["methods"])
+        self.assertEqual(set(["classmethod", "foo", "staticmethod", "remotemethod", "__dunder__"]), m["methods"])
 
     def testOnlyExposedSub(self):
         o = MyThingSub("irmen")
@@ -289,7 +298,7 @@ class TestMeta(unittest.TestCase):
         m = Pyro4.util.get_exposed_members(o)
         self.assertEqual(set(["name", "readonly_name"]), m["attrs"])
         self.assertEqual(set(["remotemethod"]), m["oneway"])
-        self.assertEqual(set(["classmethod", "foo", "staticmethod", "remotemethod"]), m["methods"])
+        self.assertEqual(set(["classmethod", "foo", "staticmethod", "remotemethod", "__dunder__"]), m["methods"])
 
     def testExposePrivateFails(self):
         with self.assertRaises(AttributeError):
@@ -298,14 +307,31 @@ class TestMeta(unittest.TestCase):
                 def _private(self):
                     pass
         with self.assertRaises(AttributeError):
-            class Test2(object):
+            class Test3(object):
                 @Pyro4.expose
-                def __private__(self):
+                def __private(self):
                     pass
         with self.assertRaises(AttributeError):
             @Pyro4.expose
-            class _Test3(object):
+            class _Test4(object):
                 pass
+        with self.assertRaises(AttributeError):
+            @Pyro4.expose
+            class __Test5(object):
+                pass
+
+    def testExposeDunderOk(self):
+        class Test1(object):
+            @Pyro4.expose
+            def __dunder__(self):
+                pass
+        self.assertTrue(Test1.__dunder__._pyroExposed)
+        @Pyro4.expose
+        class Test2(object):
+            def __dunder__(self):
+                pass
+        self.assertTrue(Test2._pyroExposed)
+        self.assertTrue(Test2.__dunder__._pyroExposed)
 
     def testGetExposedProperty(self):
         o = MyThingExposed("irmen")
@@ -358,6 +384,54 @@ class TestMeta(unittest.TestCase):
         self.assertEqual(998877, o.propvalue)
         with self.assertRaises(AttributeError):
             Pyro4.util.set_exposed_property_value(o, "prop2", 998877)
+
+    def testIsPrivateName(self):
+        self.assertTrue(Pyro4.util.is_private_attribute("_"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("___"))
+        self.assertTrue(Pyro4.util.is_private_attribute("_p"))
+        self.assertTrue(Pyro4.util.is_private_attribute("_pp"))
+        self.assertTrue(Pyro4.util.is_private_attribute("_p_"))
+        self.assertTrue(Pyro4.util.is_private_attribute("_p__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__p"))
+        self.assertTrue(Pyro4.util.is_private_attribute("___p"))
+        self.assertFalse(Pyro4.util.is_private_attribute("__dunder__"))  # dunder methods should not be private except a list of exceptions as tested below
+
+        self.assertTrue(Pyro4.util.is_private_attribute("__init__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__call__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__new__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__del__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__repr__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__unicode__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__str__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__format__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__nonzero__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__bool__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__coerce__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__cmp__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__eq__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__ne__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__hash__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__dir__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__enter__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__exit__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__copy__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__deepcopy__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__sizeof__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__getattr__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__setattr__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__hasattr__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__getattribute__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__instancecheck__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__subclasscheck__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__getinitargs__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__getnewargs__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__getstate__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__setstate__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__reduce__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__reduce_ex__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__getstate_for_dict__"))
+        self.assertTrue(Pyro4.util.is_private_attribute("__setstate_from_dict__"))
 
 
 if __name__ == "__main__":

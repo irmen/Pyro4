@@ -7,6 +7,7 @@ Change Log
 - implemented dir() on a Proxy to also return remote methods if known (useful for autocompletion in certain python shells)
 - USE_MSG_WAITALL config item added because there remain certain other systems where MSG_WAITALL is unreliable
 - removed Pyro4.socketutil.USE_MSG_WAITALL attribute (because it got promoted to a config item)
+- remote access to 'dunder' attributes (__whatever__) is allowed again (pyro now follows python in making an exception for them rather than treating them as private)
 
 
 **Pyro 4.27**

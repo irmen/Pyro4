@@ -34,7 +34,7 @@ Creating a Pyro class and using the Pyro4 decorators
 **What is exposed by default, and the REQUIRE_EXPOSE config item**
 
 Pyro's default behavior is to expose *all* methods of your class
-(unless they are private, which means the name is starting with a single or double underscore).
+(unless they are private, which means the name is starting with a single or double underscore -- with an exception of the special 'dunder' names with double underscores such as ``__len__``).
 You don't have to do anything to your server side code to make it available to remote calls, apart from
 registering the class with a Pyro daemon ofcourse.
 This is for backward compatibility and ease-of-use reasons.
@@ -49,7 +49,7 @@ This behavior can be chosen by setting the ``REQUIRE_EXPOSE`` config item to ``T
 The ``@Pyro4.expose`` decorator is provided that lets you mark the following items to be available for remote access:
 
 - classes (exposing a class has the effect of exposing every method and property of the class automatically)
-- methods (including classmethod and staticmethod. You cannot expose a private method, i.e. name starting with underscore)
+- methods (including classmethod and staticmethod. You cannot expose a private method, i.e. name starting with underscore). You *can* expose a 'dunder' method with double underscore such as ``__len__``. There is a list of dunder methods that will never be remoted though (because they are essential to let the Pyro proxy function correctly).
 - properties (will be available as remote attributes on the proxy)
 
 Remember that you must set the ``REQUIRE_EXPOSE`` config item to ``True`` to let all this have any effect!
@@ -66,10 +66,13 @@ Here's a piece of example code that shows how a partially exposed Pyro class may
 
         value = 42                  # not exposed
 
-        def __private__(self):      # not exposed
+        def __dunder__(self):       # exposed
             pass
 
         def _private(self):         # not exposed
+            pass
+
+        def __private(self):        # not exposed
             pass
 
         @Pyro4.expose
@@ -148,6 +151,8 @@ It can be used in a *client* program to create a proxy and access your Pyro obje
 .. note:: Private methods
     Pyro considers any method or attribute whose name starts with at least one underscore ('_'), private.
     These cannot be accessed remotely.
+    An exception is made for the 'dunder' methods with double underscores, such as ``__len__``. Pyro follows
+    Python itself here and allows you to access these as normal methods, rather than treating them as private.
 
 .. note::
     You can publish any regular Python object as a Pyro object.

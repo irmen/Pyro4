@@ -102,7 +102,7 @@ class MyThing(object):
     def classmethod(cls, arg):
         pass
 
-    def __private__(self):
+    def __dunder__(self):
         pass
 
     def __private(self):
@@ -188,7 +188,10 @@ class MyThingExposed(object):
     def _p(self):
         pass
 
-    def __private__(self):
+    def __private(self):
+        pass
+
+    def __dunder__(self):
         pass
 
     __hash__ = object.__hash__

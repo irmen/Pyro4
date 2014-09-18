@@ -663,16 +663,16 @@ def expose(method_or_class):
     """
     if inspect.isdatadescriptor(method_or_class):
         func = method_or_class.fget or method_or_class.fset or method_or_class.fdel
-        if func.__name__.startswith('_'):
+        if util.is_private_attribute(func.__name__):
             raise AttributeError("exposing private names (starting with _) is not allowed")
         func._pyroExposed = True
         return method_or_class
-    if method_or_class.__name__.startswith('_'):
+    if util.is_private_attribute(method_or_class.__name__):
         raise AttributeError("exposing private names (starting with _) is not allowed")
     if inspect.isclass(method_or_class):
         log.debug("exposing all members of %r", method_or_class)
         for name in method_or_class.__dict__:
-            if name.startswith('_'):
+            if util.is_private_attribute(name):
                 continue
             thing = getattr(method_or_class, name)
             if inspect.isfunction(thing):
@@ -680,11 +680,11 @@ def expose(method_or_class):
             elif inspect.ismethod(thing):
                 thing.__func__._pyroExposed = True
             elif inspect.isdatadescriptor(thing):
-                if thing.fset:
+                if getattr(thing, "fset", None):
                     thing.fset._pyroExposed = True
-                if thing.fget:
+                if getattr(thing, "fget", None):
                     thing.fget._pyroExposed = True
-                if thing.fdel:
+                if getattr(thing, "fdel", None):
                     thing.fdel._pyroExposed = True
     method_or_class._pyroExposed = True
     return method_or_class

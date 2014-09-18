@@ -55,9 +55,13 @@ class EchoServer(object):
         """a 'private' method that should not be accessible"""
         return "should not be allowed"
 
-    def __private__(self):
+    def __private(self):
         """another 'private' method that should not be accessible"""
         return "should not be allowed"
+
+    def __dunder__(self):
+        """a double underscore method that should be accessible normally"""
+        return "should be allowed (dunder)"
 
     def shutdown(self):
         """called to signal the echo server to shut down"""

@@ -79,6 +79,11 @@ with Pyro4.Proxy(uri) as p:
         # they differ!? (should not happen)
         print("Remote value is different! The p.prop_value attribute must be a local one (not remote), this should not happen! (because metadata is enabled here)")
     print()
+
+    # dunder names
+    print("calling p.__dunder__()....: ", p.__dunder__())
+
+    # unexposed attributes
     try:
         print("accessing p.value...")
         _ = p.value

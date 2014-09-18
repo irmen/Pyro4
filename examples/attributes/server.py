@@ -33,6 +33,14 @@ class Thingy(object):
         self._value = 123
         self.__value = 999
 
+    @Pyro4.expose
+    def __dunder__(self):
+        return "yep"
+
+    @Pyro4.expose
+    def __len__(self):
+        return 200
+
     def getSubValue(self):
         return self.sub.getValue()
 
