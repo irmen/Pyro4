@@ -338,11 +338,14 @@ class TestSocketutil(unittest.TestCase):
 
     def testMsgWaitAllConfig(self):
         if platform.system() == "Windows":
-            # default config should be False on these platforms
+            # default config should be False on these platforms even though socket.MSG_WAITALL might exist
             self.assertFalse(Pyro4.config.USE_MSG_WAITALL)
         else:
-            # on all other platforms, default config should be True
-            self.assertTrue(Pyro4.config.USE_MSG_WAITALL)
+            # on all other platforms, default config should be True (as long as socket.MSG_WAITALL exists)
+            if hasattr(socket, "MSG_WAITALL"):
+                self.assertTrue(Pyro4.config.USE_MSG_WAITALL)
+            else:
+                self.assertFalse(Pyro4.config.USE_MSG_WAITALL)
 
 
 class ServerCallback(object):

@@ -693,10 +693,10 @@ _private_dunder_methods = frozenset([
     "__str__", "__format__", "__nonzero__", "__bool__", "__coerce__",
     "__cmp__", "__eq__", "__ne__", "__hash__",
     "__dir__", "__enter__", "__exit__", "__copy__", "__deepcopy__", "__sizeof__",
-    "__getattr__", "__setattr__", "__hasattr__", "__getattribute__",
+    "__getattr__", "__setattr__", "__hasattr__", "__getattribute__", "__delattr__",
     "__instancecheck__", "__subclasscheck__", "__getinitargs__", "__getnewargs__",
     "__getstate__", "__setstate__", "__reduce__", "__reduce_ex__",
-    "__getstate_for_dict__", "__setstate_from_dict__"
+    "__getstate_for_dict__", "__setstate_from_dict__", "__subclasshook__"
 ])
 
 
