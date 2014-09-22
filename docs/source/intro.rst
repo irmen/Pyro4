@@ -92,7 +92,7 @@ informational resources (data, privileged information)
 and business logic (departments, domains).
 
 An example would be a high performance compute cluster with a large storage system attached to it.
-Usually such a beast is not be accessible directly, rather, smaller systems connect to it and
+Usually this is not accessible directly, rather, smaller systems connect to it and
 feed it with jobs that need to run on the big cluster. Later, they collect the results.
 Pyro could be used to expose the available resources on the cluster to other computers.
 Their client software connects to the cluster and calls the Python program there to perform its
