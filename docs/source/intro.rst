@@ -65,19 +65,18 @@ Here's a quick overview of Pyro's features:
 
 Pyro's history
 ^^^^^^^^^^^^^^
-Pyro was started in 1998, more than ten years ago, when remote method invocation technology such as Java's RMI
+I started working on the first Pyro version in 1998, when remote method invocation technology such as Java's RMI
 and CORBA were quite popular. I wanted something like that in Python and there was nothing available, so I decided
 to write my own. Over the years it slowly gained features till it reached version 3.10 or so.
 At that point it was clear that the code base had become quite ancient and couldn't reliably support any new features,
-so Pyro4 was born in early 2010, written from scratch. After a couple of versions Pyro4 became stable enough to be considered
-the new 'main' Pyro version to be preferred over Pyro 3.x (unless you have specific requirements that force you
-to stick with Pyro3). See :doc:`upgrading` for more information on the different versions and how to upgrade old code to Pyro4.
+so Pyro4 was born in early 2010, written from scratch. See :doc:`upgrading` for more information on the different
+versions and how to upgrade old code to Pyro4.
 
-``Pyro`` is the package name of the older, 3.x version of Pyro.
-``Pyro4`` is the package name of the new, current version. Its API and behavior is similar to Pyro 3.x but it is not
-backwards compatible. So to avoid conflicts, this new version has a different package name.
+``Pyro`` is the package name of the old and no longer supported 3.x version of Pyro.
+``Pyro4`` is the package name of the current version. Its concepts are similar to Pyro 3.x but it is not
+backwards compatible. To avoid conflicts, this version has a different package name.
 
-If you're interested in the old version, here is `its homepage <http://irmen.home.xs4all.nl/pyro3/>`_
+If you're somehow still interested in the old version, here is `its git repo <https://github.com/irmen/Pyro3>`_
 and it is also `available on PyPi <http://pypi.python.org/pypi/Pyro/>`_.
 
 
