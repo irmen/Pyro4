@@ -211,10 +211,6 @@ class Proxy(object):
         util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
         if os.name == "java" and Pyro4.config.SERIALIZER == "marshal":
             warnings.warn("marshal doesn't work correctly with Jython (issue 2077); please choose another serializer", RuntimeWarning)
-        if Pyro4.config.DOTTEDNAMES:
-            warnings.warn("DOTTEDNAMES is deprecated and it will be removed in the next version", DeprecationWarning)
-            if Pyro4.config.METADATA:
-                warnings.warn("DOTTEDNAMES and METADATA are both enabled, DOTTEDNAMES doesn't really work in this situation", RuntimeWarning)
 
     def __del__(self):
         if hasattr(self, "_pyroConnection"):
@@ -905,7 +901,7 @@ class Daemon(object):
                     # batched method calls, loop over them all and collect all results
                     data = []
                     for method, vargs, kwargs in vargs:
-                        method = util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
+                        method = util.getAttribute(obj, method)
                         try:
                             result = method(*vargs, **kwargs)  # this is the actual method call to the Pyro object
                         except Exception:
@@ -928,7 +924,7 @@ class Daemon(object):
                         # special case for direct attribute access (only exposed @properties are accessible)
                         data = util.set_exposed_property_value(obj, vargs[0], vargs[1], only_exposed=Pyro4.config.REQUIRE_EXPOSE)
                     else:
-                        method = util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
+                        method = util.getAttribute(obj, method)
                         if request_flags & Pyro4.message.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:
                             # oneway call to be run inside its own thread
                             thread = threadutil.Thread(target=method, args=vargs, kwargs=kwargs)

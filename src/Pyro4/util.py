@@ -565,21 +565,14 @@ except ImportError:
 del _ser
 
 
-def resolveDottedAttribute(obj, attr, allowDotted):
+def getAttribute(obj, attr):
     """
-    Resolves a dotted attribute name to an object.  Raises
+    Resolves an attribute name to an object.  Raises
     an AttributeError if any attribute in the chain starts with a '``_``'.
-    If the optional allowDotted argument is false, dots are not
-    supported and this function operates similar to ``getattr(obj, attr)``.
+    Doesn't resolve a dotted name, because that is a security vulnerability.
+    It treats it as a single attribute name (and the lookup will likely fail).
     """
-    if allowDotted:
-        attrs = attr.split('.')
-        for attr in attrs:
-            if is_private_attribute(attr):
-                raise AttributeError("attempt to access private attribute '%s'" % attr)
-            else:
-                obj = getattr(obj, attr)
-    elif is_private_attribute(attr):
+    if is_private_attribute(attr):
         raise AttributeError("attempt to access private attribute '%s'" % attr)
     else:
         obj = getattr(obj, attr)

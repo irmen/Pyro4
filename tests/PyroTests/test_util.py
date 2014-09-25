@@ -203,32 +203,18 @@ class TestUtils(unittest.TestCase):
         obj.a._p.q = Test("q1")
         obj.a.__p = Test("p2")
         obj.a.__p.q = Test("q2")
-        # check the method with dotted disabled
-        self.assertEqual("<a>", str(Pyro4.util.resolveDottedAttribute(obj, "a", False)))
-        self.assertEqual("hello", str(Pyro4.util.resolveDottedAttribute(obj, "__value__", False)))  # dunder is not private
-        dunder = str(Pyro4.util.resolveDottedAttribute(obj, "__p__", False))
+        self.assertEqual("<a>", str(Pyro4.util.getAttribute(obj, "a")))
+        self.assertEqual("hello", str(Pyro4.util.getAttribute(obj, "__value__")))  # dunder is not private
+        dunder = str(Pyro4.util.getAttribute(obj, "__p__"))
         self.assertTrue(dunder.startswith("<bound method Test.__p__ of"))  # dunder is not private
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "_p", False)  # private
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "__p", False)  # private
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b", False)
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b.c", False)
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b.c.d", False)
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a._p", False)
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a._p.q", False)
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.__p.q", False)
-        # now with dotted enabled
-        self.assertEqual("<a>", str(Pyro4.util.resolveDottedAttribute(obj, "a", True)))
-        self.assertEqual("<b>", str(Pyro4.util.resolveDottedAttribute(obj, "a.b", True)))
-        self.assertEqual("<c>", str(Pyro4.util.resolveDottedAttribute(obj, "a.b.c", True)))
-        self.assertEqual("hello", str(Pyro4.util.resolveDottedAttribute(obj, "__value__", True)))  # dunder is not private
-        dunder = str(Pyro4.util.resolveDottedAttribute(obj, "__p__", True))
-        self.assertTrue(dunder.startswith("<bound method Test.__p__ of"))  # dunder is not private
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.b.c.d", True)  # doesn't exist
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "_p", True)  # private
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "__p", True)  # private
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a._p", True)  # private
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a._p.q", True)  # private
-        self.assertRaises(AttributeError, Pyro4.util.resolveDottedAttribute, obj, "a.__p.q", True)  # private
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "_p")  # private
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "__p")  # private
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a.b")
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a.b.c")
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a.b.c.d")
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a._p")
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a._p.q")
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a.__p.q")
 
     @unittest.skipUnless(sys.version_info >= (2, 6, 5), "unicode kwargs needs 2.6.5 or newer")
     def testUnicodeKwargs(self):

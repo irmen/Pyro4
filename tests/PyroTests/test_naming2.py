@@ -109,16 +109,6 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertEqual(0, len(objects))
         self.assertRaises(NamingError, ns.list, regex="((((((broken")
 
-    def testRefuseDotted(self):
-        try:
-            Pyro4.config.DOTTEDNAMES = True
-            _ = Pyro4.naming.NameServerDaemon(port=0)
-            self.fail("should refuse to create name server")
-        except PyroError:
-            pass
-        finally:
-            Pyro4.config.DOTTEDNAMES = False
-
     def testNameserverWithStmt(self):
         ns = Pyro4.naming.NameServerDaemon(port=0)
         self.assertIsNotNone(ns.nameserver)

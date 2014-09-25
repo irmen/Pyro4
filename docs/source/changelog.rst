@@ -2,6 +2,13 @@
 Change Log
 **********
 
+**Pyro 4.29**
+
+- removed support for server side object traversal using dotted names such as a.b.c.d
+- removed DOTTEDNAMES config item (was deprecated since 4.27)
+
+
+
 **Pyro 4.28**
 
 - implemented dir() on a Proxy to also return remote methods if known (useful for autocompletion in certain python shells)

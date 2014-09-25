@@ -16,7 +16,7 @@ import socket
 
 class Configuration(object):
     __slots__ = ("HOST", "NS_HOST", "NS_PORT", "NS_BCPORT", "NS_BCHOST",
-                 "COMPRESSION", "SERVERTYPE", "DOTTEDNAMES", "COMMTIMEOUT",
+                 "COMPRESSION", "SERVERTYPE", "COMMTIMEOUT",
                  "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
                  "DETAILED_TRACEBACK", "SOCK_REUSE", "PREFER_IP_VERSION",
                  "THREADPOOL_SIZE", "HMAC_KEY", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
@@ -41,7 +41,6 @@ class Configuration(object):
         self.NATPORT = 0
         self.COMPRESSION = False
         self.SERVERTYPE = "thread"
-        self.DOTTEDNAMES = False  # server-side. Deprecated.
         self.COMMTIMEOUT = 0.0
         self.POLLTIMEOUT = 2.0  # seconds
         self.SOCK_REUSE = False  # so_reuseaddr on server sockets?

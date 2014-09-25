@@ -255,9 +255,14 @@ class Flame(object):
         # dottedname is something like "os.path.walk" so strip off the module name
         modulename, dottedname = dottedname.split('.', 1)
         module = sys.modules[modulename]
-        # we override the DOTTEDNAMES setting here because this safeguard makes no sense
-        # with the Flame server (if enabled it already allows full access to anything):
-        method = Pyro4.util.resolveDottedAttribute(module, dottedname, True)
+        # Look up the actual method to call.
+        # Because Flame already opens all doors, security wise, we allow ourselves to
+        # look up a dotted name via object traversal. The security implication of that
+        # is overshadowed by the security implications of enabling Flame in the first place.
+        # We also don't check for access to 'private' methods. Same reasons.
+        method = module
+        for attr in dottedname.split('.'):
+            method = getattr(method, attr)
         return method(*args, **kwargs)
 
 

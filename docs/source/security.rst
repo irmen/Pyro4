@@ -65,20 +65,14 @@ possible to eavesdrop. Either encrypt the data yourself before passing it to Pyr
 over a secure network (VPN, ssl/ssh tunnel).
 
 
-.. index:: DOTTEDNAMES, PSF-2005-001
 .. index::
     double: security; object traversal
     double: security; dotted names
 
 Dotted names (object traversal)
 ===============================
-Using dotted names on Pyro proxies (such as ``proxy.aaa.bbb.ccc()``)
-is disallowed by default because it is a security vulnerability
+Using dotted names on Pyro proxies (such as ``proxy.aaa.bbb.ccc()``) is not possible in Pyro, because it is a security vulnerability
 (for similar reasons as described here http://www.python.org/news/security/PSF-2005-001/ ).
-You can enable it with the ``DOTTEDNAMES`` config item (deprecated, it will be removed in
-a future version), but be aware of the implications.
-
-The :file:`attributes` example shows one of the exploits you can perform if it is enabled.
 
 
 .. index::
