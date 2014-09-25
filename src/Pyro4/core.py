@@ -185,13 +185,12 @@ class Proxy(object):
     .. automethod:: _pyroAsync
     """
     __pyroAttributes = frozenset(
-        ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri", "_pyroOneway",
-         "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq",
+        ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri",
+         "_pyroOneway", "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq",
          "_Proxy__pyroTimeout", "_Proxy__pyroLock", "_Proxy__pyroConnLock"])
 
     def __init__(self, uri):
         """
-        .. autoattribute:: _pyroOneway
         .. autoattribute:: _pyroTimeout
         """
         _check_hmac()  # check if hmac secret key is set
@@ -203,7 +202,7 @@ class Proxy(object):
         self._pyroConnection = None
         self._pyroMethods = set()  # all methods of the remote object, gotten from meta-data
         self._pyroAttrs = set()  # attributes of the remote object, gotten from meta-data
-        self._pyroOneway = set()  # oneway-methods of the remote object, gotten from meta-data (or set by user, that's deprecated though.)
+        self._pyroOneway = set()  # oneway-methods of the remote object, gotten from meta-data
         self._pyroSeq = 0  # message sequence number
         self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
         self.__pyroLock = threadutil.Lock()
@@ -442,7 +441,6 @@ class Proxy(object):
             if Pyro4.config.METADATA:
                 # obtain metadata if this feature is enabled, and the metadata is not known yet
                 if self._pyroMethods or self._pyroAttrs:
-                    # not checking _pyroOneway because that feature already existed and people are already modifying it on the proxy
                     log.debug("reusing existing metadata")
                 else:
                     self._pyroGetMetadata(uri.object)
@@ -457,17 +455,9 @@ class Proxy(object):
             if self._pyroMethods or self._pyroAttrs:
                 return  # metadata has already been retrieved as part of creating the connection
         try:
-            user_specified_oneways = self._pyroOneway   # possible old client code writes to _pyroOneway instead of relying on metadata
             # invoke the get_metadata method on the daemon
             result = known_metadata or self._pyroInvoke("get_metadata", [objectId], {}, objectId=constants.DAEMON_NAME)
-            meta_oneways = set(result["oneway"])
-            if not user_specified_oneways.issubset(meta_oneways):
-                msg = "metadata oneway differs from code, forgot @Pyro4.oneway on the server method(s)? objectId=%s\n" \
-                      "user-specified: %s  metadata from server: %s" % (objectId, user_specified_oneways, meta_oneways)
-                log.warning(msg)
-                warnings.warn(msg, UserWarning)
-                warnings.warn("setting _pyroOneway yourself is deprecated and support for that will be dropped in the next version", DeprecationWarning)
-            self._pyroOneway = meta_oneways | user_specified_oneways  # merge the old oneway stuff with the info we got from the metadata
+            self._pyroOneway = set(result["oneway"])
             self._pyroMethods = set(result["methods"])
             self._pyroAttrs = set(result["attrs"])
             if log.isEnabledFor(logging.DEBUG):

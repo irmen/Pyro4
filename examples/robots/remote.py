@@ -35,7 +35,6 @@ class LocalGameObserver(object):
     def __init__(self, name):
         self.name = name
         self.robot = None
-        self._pyroOneway = set()  # remote observers have this
 
     @Pyro4.oneway
     def world_update(self, iteration, world, robotdata):

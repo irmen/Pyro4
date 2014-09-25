@@ -4,9 +4,9 @@ Change Log
 
 **Pyro 4.29**
 
-- removed support for server side object traversal using dotted names such as a.b.c.d
+- removed support for server side object traversal using dotted names such as a.b.c.d (was deprecated since 4.27)
 - removed DOTTEDNAMES config item (was deprecated since 4.27)
-
+- removed support for setting proxy._pyroOneway() in client code (was deprecated since 4.27. You must depend on the metadata mechanism now, which is enabled by default)
 
 
 **Pyro 4.28**

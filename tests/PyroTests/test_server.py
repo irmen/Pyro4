@@ -707,10 +707,8 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro4.config.METADATA = True
         with Pyro4.core.Proxy(self.objectUri) as p:
             self.assertEqual(set(), p._pyroOneway)  # when not bound, no meta info exchange has been done
-            p._pyroOneway.add("initial_method")   # set a method manually (old way of doing things)
             p._pyroBind()
             self.assertIn("oneway_multiply", p._pyroOneway)  # after binding, meta info has been processed
-            self.assertIn("initial_method", p._pyroOneway)  # because of backward compatibility, the manually set method from above is still in here as well
             self.assertEqual(55, p.multiply(5, 11))  # not tagged as @Pyro4.oneway
             self.assertIsNone(p.oneway_multiply(5, 11))  # tagged as @Pyro4.oneway
             p._pyroOneway = set()
