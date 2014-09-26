@@ -315,6 +315,7 @@ class CoreTests(unittest.TestCase):
         p1._pyroTimeout = 42
         p1._pyroOneway = set("def")
         p1._pyroMethods = set("ghi")
+        p1._pyroHmacKey = b"secret"
         p2 = copy.copy(p1)
         self.assertEqual(p1, p2)
         self.assertEqual(p1._pyroUri, p2._pyroUri)
@@ -322,6 +323,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(p1._pyroMethods, p2._pyroMethods)
         self.assertEqual(p1._pyroAttrs, p2._pyroAttrs)
         self.assertEqual(p1._pyroTimeout, p2._pyroTimeout)
+        self.assertEqual(p1._pyroHmacKey, p2._pyroHmacKey)
 
     def testProxyOffline(self):
         # only offline stuff here.
@@ -433,6 +435,31 @@ class CoreTests(unittest.TestCase):
             self.assertIsNotNone(p._pyroUri)
         with p:
             self.assertIsNotNone(p._pyroUri)
+
+    def testProxyHmac(self):
+        class ConnectionMock(object):
+            def __int__(self):
+                self.msgbytes = None
+            def close(self):
+                pass
+            def send(self, msgbytes):
+                self.msgbytes = msgbytes
+            def recv(self, size):
+                raise Pyro4.errors.ConnectionClosedError("mock")
+        proxy = Pyro4.core.Proxy("PYRO:foobar@localhost:59999")
+        self.assertEqual(b"testsuite", proxy._pyroHmacKey)  # set by (deprecated) HMAC_KEY config item
+        proxy._pyroHmacKey = b"secret"
+        conn_mock = ConnectionMock()
+        proxy._pyroConnection = conn_mock
+        with self.assertRaises(Pyro4.errors.ConnectionClosedError):
+            proxy.foo()
+        self.assertIn(b"HMAC", conn_mock.msgbytes)
+        conn_mock = ConnectionMock()
+        proxy._pyroConnection = conn_mock
+        proxy._pyroHmacKey = None
+        with self.assertRaises(Pyro4.errors.ConnectionClosedError):
+            proxy.foo()
+        self.assertNotIn(b"HMAC", conn_mock.msgbytes)
 
     def testNoConnect(self):
         wrongUri = Pyro4.core.URI("PYRO:foobar@localhost:59999")

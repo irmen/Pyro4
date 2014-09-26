@@ -78,12 +78,12 @@ class Message(object):
     An 'HMAC' annotation chunk contains the hmac digest of the message data bytes and
     all of the annotation chunk data bytes (except those of the HMAC chunk itself).
     """
-    __slots__ = ["type", "flags", "seq", "data", "data_size", "serializer_id", "annotations", "annotations_size"]
+    __slots__ = ["type", "flags", "seq", "data", "data_size", "serializer_id", "annotations", "annotations_size", "hmac_key"]
     header_format = '!4sHHHHiHHHH'
     header_size = struct.calcsize(header_format)
     checksum_magic = 0x34E9
 
-    def __init__(self, msgType, databytes, serializer_id, flags, seq, annotations=None):
+    def __init__(self, msgType, databytes, serializer_id, flags, seq, annotations=None, hmac_key=None):
         self.type = msgType
         self.flags = flags
         self.seq = seq
@@ -91,7 +91,8 @@ class Message(object):
         self.data_size = len(self.data)
         self.serializer_id = serializer_id
         self.annotations = annotations or {}
-        if Pyro4.config.HMAC_KEY:
+        self.hmac_key = hmac_key or Pyro4.config.HMAC_KEY
+        if self.hmac_key:
             self.annotations["HMAC"] = self.hmac()
         self.annotations_size = sum([6 + len(v) for v in self.annotations.values()])
         if 0 < Pyro4.config.MAX_MESSAGE_SIZE < (self.data_size + self.annotations_size):
@@ -150,14 +151,16 @@ class Message(object):
         return msg
 
     @classmethod
-    def recv(cls, connection, requiredMsgTypes=None):
+    def recv(cls, connection, requiredMsgTypes=None, hmac_key=None):
         """
         Receives a pyro message from a given connection.
         Accepts the given message types (None=any, or pass a sequence).
         Also reads annotation chunks and the actual payload data.
         Validates a HMAC chunk if present.
         """
+        hmac_key = hmac_key or Pyro4.config.HMAC_KEY
         msg = cls.from_header(connection.recv(cls.header_size))
+        msg.hmac_key = hmac_key
         if 0 < Pyro4.config.MAX_MESSAGE_SIZE < (msg.data_size + msg.annotations_size):
             errorMsg = "max message size exceeded (%d where max=%d)" % (msg.data_size + msg.annotations_size, Pyro4.config.MAX_MESSAGE_SIZE)
             log.error("connection " + str(connection) + ": " + errorMsg)
@@ -180,11 +183,11 @@ class Message(object):
                 i += 6 + length
         # read data
         msg.data = connection.recv(msg.data_size)
-        if "HMAC" in msg.annotations and Pyro4.config.HMAC_KEY:
+        if "HMAC" in msg.annotations and hmac_key:
             if msg.annotations["HMAC"] != msg.hmac():
                 raise errors.SecurityError("message hmac mismatch")
-        elif ("HMAC" in msg.annotations) != bool(Pyro4.config.HMAC_KEY):
-            # Message contains hmac and local HMAC_KEY not set, or vice versa. This is not allowed.
+        elif ("HMAC" in msg.annotations) != bool(hmac_key):
+            # Not allowed: message contains hmac but hmac_key is not set, or vice versa.
             err = "hmac key config not symmetric"
             log.warning(err)
             raise errors.SecurityError(err)
@@ -192,7 +195,7 @@ class Message(object):
 
     def hmac(self):
         """returns the hmac of the data and the annotation chunk values (except HMAC chunk itself)"""
-        mac = hmac.new(Pyro4.config.HMAC_KEY, self.data, digestmod=hashlib.sha1)
+        mac = hmac.new(self.hmac_key, self.data, digestmod=hashlib.sha1)
         for k, v in self.annotations.items():
             if k != "HMAC":
                 mac.update(v)

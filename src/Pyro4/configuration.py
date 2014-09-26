@@ -48,7 +48,7 @@ class Configuration(object):
         self.ONEWAY_THREADED = True  # oneway calls run in their own thread
         self.DETAILED_TRACEBACK = False
         self.THREADPOOL_SIZE = 16
-        self.HMAC_KEY = None  # must be bytes type
+        self.HMAC_KEY = None  # must be bytes type. Deprecated, will be removed in next version.
         self.AUTOPROXY = True
         self.MAX_MESSAGE_SIZE = 0  # 0 = unlimited
         self.BROADCAST_ADDRS = "<broadcast>, 0.0.0.0"  # comma separated list of broadcast addresses

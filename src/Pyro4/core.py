@@ -168,7 +168,7 @@ class _RemoteMethod(object):
         return self.__send(self.__name, args, kwargs)
 
 
-def _check_hmac():
+def _check_hmac():      # deprecated, HMAC_KEY will be removed in next version
     if Pyro4.config.HMAC_KEY:
         if sys.version_info >= (3, 0) and type(Pyro4.config.HMAC_KEY) is not bytes:
             raise errors.PyroError("HMAC_KEY must be bytes type")
@@ -186,7 +186,7 @@ class Proxy(object):
     """
     __pyroAttributes = frozenset(
         ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri",
-         "_pyroOneway", "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq",
+         "_pyroOneway", "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq", "_pyroHmacKey",
          "_Proxy__pyroTimeout", "_Proxy__pyroLock", "_Proxy__pyroConnLock"])
 
     def __init__(self, uri):
@@ -204,6 +204,7 @@ class Proxy(object):
         self._pyroAttrs = set()  # attributes of the remote object, gotten from meta-data
         self._pyroOneway = set()  # oneway-methods of the remote object, gotten from meta-data
         self._pyroSeq = 0  # message sequence number
+        self._pyroHmacKey = Pyro4.config.HMAC_KEY
         self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
         self.__pyroLock = threadutil.Lock()
         self.__pyroConnLock = threadutil.Lock()
@@ -250,7 +251,8 @@ class Proxy(object):
         return str(self)
 
     def __getstate_for_dict__(self):
-        return self._pyroUri.asString(), tuple(self._pyroOneway), tuple(self._pyroMethods), tuple(self._pyroAttrs), self.__pyroTimeout
+        return self._pyroUri.asString(), tuple(self._pyroOneway), tuple(self._pyroMethods), tuple(self._pyroAttrs),\
+            self.__pyroTimeout, self._pyroHmacKey
 
     def __setstate_from_dict__(self, state):
         uri = URI(state[0])
@@ -258,13 +260,14 @@ class Proxy(object):
         methods = set(state[2])
         attrs = set(state[3])
         timeout = state[4]
-        self.__setstate__((uri, oneway, methods, attrs, timeout))
+        hmac_key = state[5]
+        self.__setstate__((uri, oneway, methods, attrs, timeout, hmac_key))
 
     def __getstate__(self):
-        return self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout  # skip the connection
+        return self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout, self._pyroHmacKey  # skip the connection
 
     def __setstate__(self, state):
-        self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout = state
+        self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout, self._pyroHmacKey = state
         self._pyroConnection = None
         self._pyroSeq = 0
         self.__pyroLock = threadutil.Lock()
@@ -277,6 +280,7 @@ class Proxy(object):
         p._pyroMethods = set(self._pyroMethods)
         p._pyroAttrs = set(self._pyroAttrs)
         p._pyroTimeout = self._pyroTimeout
+        p._pyroHmacKey = self._pyroHmacKey
         return p
 
     def __enter__(self):
@@ -451,7 +455,11 @@ class Proxy(object):
         objectId = objectId or self._pyroUri.object
         log.debug("getting metadata for object %s", objectId)
         if self._pyroConnection is None and not known_metadata:
-            self.__pyroCreateConnection()
+            try:
+                self.__pyroCreateConnection()
+            except errors.PyroError:
+                log.error("problem getting metadata: cannot connect")
+                raise
             if self._pyroMethods or self._pyroAttrs:
                 return  # metadata has already been retrieved as part of creating the connection
         try:

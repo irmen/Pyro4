@@ -2,11 +2,8 @@ Ideas / TODO
 
 The most pressing issues can be found in the issue tracker on Github.
 
-* daemon (nameserver) should be able to disconnect clients that haven't been active over the past X seconds
-* HMAC: Allow per-proxy HMAC key (to be able to connect to different servers with different keys) -- but perhaps remove HMAC completely once the connection validator logic has been reimplemented
-* let async/Future use a client-side threadpool instead of spawning endless new threads
-* automatic callback handling if you pass a callable to the server
 * Make Pyro support listening to multiple network interfaces at the same time (and returning the correct URI from the daemon. Name server is harder...)
+* automatic callback handling if you pass a callable to the server
 * add multiprocess server (forking?) based on multiprocessing?
 * object activation / object registration strategies: instance_per_call, instance_per_connection, shared_instance (let the daemon instantiate your object's class instead of user code)
 * persistent Name Server (store namespace in a database on disk) use sqlite because it needs multithreading/transactions

@@ -178,6 +178,7 @@ class SerializeTests_pickle(unittest.TestCase):
         proxy._pyroMethods = set("def")
         proxy._pyroOneway = set("ghi")
         proxy._pyroTimeout = 42
+        proxy._pyroHmacKey = b"secret"
         s, c = self.ser.serializeData(proxy)
         x = self.ser.deserializeData(s, c)
         self.assertIsInstance(x, Pyro4.core.Proxy)
@@ -186,6 +187,7 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(set("abc"), x._pyroAttrs)
         self.assertEqual(set("def"), x._pyroMethods)
         self.assertEqual(set("ghi"), x._pyroOneway)
+        self.assertEqual(b"secret", x._pyroHmacKey)
         daemon = Pyro4.core.Daemon()
         s, c = self.ser.serializeData(daemon)
         x = self.ser.deserializeData(s, c)
@@ -208,8 +210,9 @@ class SerializeTests_pickle(unittest.TestCase):
         proxy._pyroMethods = set("def")
         proxy._pyroOneway = set("ghi")
         proxy._pyroTimeout = 42
+        proxy._pyroHmacKey = b"secret"
         state = proxy.__getstate_for_dict__()
-        self.assertEqual(('PYRO:object@host:4444', tuple(set("ghi")), tuple(set("def")), tuple(set("abc")), 42), state)
+        self.assertEqual(('PYRO:object@host:4444', tuple(set("ghi")), tuple(set("def")), tuple(set("abc")), 42, b'secret'), state)
         proxy2 = Pyro4.core.Proxy("PYRONAME:xxx")
         proxy2.__setstate_from_dict__(state)
         self.assertEqual(proxy, proxy2)
@@ -218,6 +221,7 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(proxy._pyroMethods, proxy2._pyroMethods)
         self.assertEqual(proxy._pyroOneway, proxy2._pyroOneway)
         self.assertEqual(proxy._pyroTimeout, proxy2._pyroTimeout)
+        self.assertEqual(proxy._pyroHmacKey, proxy2._pyroHmacKey)
         daemon = Pyro4.core.Daemon()
         state = daemon.__getstate_for_dict__()
         self.assertEqual(tuple(), state)

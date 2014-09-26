@@ -96,10 +96,11 @@ to prevent malicious requests. The idea is to only have legit clients connect to
 Using the HMAC signature ensures that only clients with the correct secret key can create valid requests,
 and that it is impossible to modify valid requests (even though the network data is not encrypted).
 
-You need to create and configure a secure shared key in the ``HMAC_KEY`` config item.
+You need to create and configure a secure shared key.
 The key is a byte string and must be cryptographically secure (there are various methods to create such a key).
 Your server needs to set this key and every client that wants to connect to it also needs to
 set it.
+You can set the shared key via the ``HMAC_KEY`` config item, but that is now deprecated and will be removed in the next version.
 
 Pyro will cause a Python-level warning message if you run it without a HMAC key, but it will run just fine.
 

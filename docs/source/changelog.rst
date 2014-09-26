@@ -4,17 +4,18 @@ Change Log
 
 **Pyro 4.29**
 
+- ``HMAC_KEY`` config item is deprecated, will be removed in next version
 - removed support for server side object traversal using dotted names such as a.b.c.d (was deprecated since 4.27)
-- removed DOTTEDNAMES config item (was deprecated since 4.27)
-- removed support for setting proxy._pyroOneway() in client code (was deprecated since 4.27. You must depend on the metadata mechanism now, which is enabled by default)
+- removed ``DOTTEDNAMES`` config item (was deprecated since 4.27)
+- removed support for setting ``proxy._pyroOneway()`` in client code (was deprecated since 4.27. You must depend on the metadata mechanism now, which is enabled by default)
 
 
 **Pyro 4.28**
 
 - implemented dir() on a Proxy to also return remote methods if known (useful for autocompletion in certain python shells)
-- USE_MSG_WAITALL config item added because there remain certain other systems where MSG_WAITALL is unreliable
-- removed Pyro4.socketutil.USE_MSG_WAITALL attribute (because it got promoted to a config item)
-- remote access to 'dunder' attributes (__whatever__) is allowed again (pyro now follows python in making an exception for them rather than treating them as private)
+- ``USE_MSG_WAITALL`` config item added because there remain certain other systems where ``MSG_WAITALL`` is unreliable
+- removed ``Pyro4.socketutil.USE_MSG_WAITALL`` attribute (because it got promoted to a config item)
+- remote access to 'dunder' attributes (``__whatever__``) is allowed again (pyro now follows python in making an exception for them rather than treating them as private)
 
 
 **Pyro 4.27**
