@@ -161,6 +161,12 @@ It can be used in a *client* program to create a proxy and access your Pyro obje
     * types that don't allow custom attributes, such as the builtin types (``str`` and ``int`` for instance)
     * types with ``__slots__`` (a possible way around this is to add Pyro's custom attributes to your ``__slots__``, but that isn't very nice)
 
+.. note::
+    Look at the address that was printed and notice that Pyro by default binds its daemons on localhost.
+    This means you cannot reach them from another machine on the network.
+    If you want to be able to talk to the daemon from other machines, you have to
+    explicitly provide a hostname to bind on. This is done by giving a ``host`` argument to
+    the daemon, see the paragraphs below for more details on this.
 
 .. index:: publishing objects oneliner, serveSimple
 .. _server-servesimple:
@@ -192,8 +198,8 @@ You can perform some limited customization:
     :param objects: mapping of objects to names, these are the Pyro objects that will be hosted by the daemon, using the names you provide as values in the mapping.
         Normally you'll provide a name yourself but in certain situations it may be useful to set it to ``None``. Read below for the exact behavior there.
     :type objects: dict
-    :param host: optional hostname where the daemon should be accessible on
-    :type host: str
+    :param host: optional hostname where the daemon should be accessible on. Necessary if you want to access the daemon from other machines.
+    :type host: str or None
     :param port: optional port number where the daemon should be accessible on
     :type port: int
     :param daemon: optional existing daemon to use, that you created yourself.
@@ -232,7 +238,7 @@ If you *do* specify ``host`` and/or ``port``, it will use these as parameters fo
 If you need to further tweak the behavior of the daemon, you have to create one yourself first, with the desired
 configuration. Then provide it to this function using the ``daemon`` parameter. Your daemon will then be used instead of a new one::
 
-    custom_daemon = Pyro4.Daemon(nathost="example")    # some additional custom configuration
+    custom_daemon = Pyro4.Daemon(host="example", nathost="example")    # some additional custom configuration
     Pyro4.Daemon.serveSimple(
         {
             MyPyroThing(): None
@@ -254,6 +260,7 @@ It has a few optional arguments when you create it:
     Create a new Pyro daemon.
 
     :param host: the hostname or IP address to bind the server on. Default is ``None`` which means it uses the configured default (which is localhost).
+                 It is necessary to set this argument to a visible hostname or ip address, if you want to access the daemon from other machines.
     :type host: str or None
     :param port: port to bind the server on. Defaults to 0, which means to pick a random port.
     :type port: int
@@ -357,7 +364,7 @@ Server code::
             return arg*2
 
     # ------ normal code ------
-    daemon = Pyro4.Daemon()
+    daemon = Pyro4.Daemon(host="yourhostname")
     ns = Pyro4.locateNS()
     uri = daemon.register(Thing())
     ns.register("mythingy", uri)
@@ -368,7 +375,7 @@ Server code::
         {
             Thing(): "mythingy"
         },
-        ns=True, verbose=True)
+        ns=True, verbose=True, host="yourhostname")
 
 Client code example to connect to this object::
 
@@ -584,15 +591,16 @@ to avoid the need of storing a global daemon object somewhere.
 
 These attributes will be removed again once you unregister the object.
 
-.. index:: network adapter binding, IP address
+.. index:: network adapter binding, IP address, localhost, 127.0.0.1
 
-Network adapter binding
------------------------
+Network adapter binding and localhost
+-------------------------------------
 
 All Pyro daemons bind on localhost by default. This is because of security reasons.
 This means only processes on the same machine have access to your Pyro objects.
 If you want to make them available for remote machines, you'll have to tell Pyro on what
 network interface address it must bind the daemon.
+This also extends to the built in servers such as the name server.
 
 .. warning::
     Read chapter :doc:`security` before exposing Pyro objects to remote machines!

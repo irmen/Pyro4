@@ -54,7 +54,7 @@ synopsys: :command:`python -m Pyro4.naming [options]` (or simply: :command:`pyro
 Starts the Pyro Name Server. It can run without any arguments but there are several that you
 can use, for instance to control the hostname and port that the server is listening on.
 A short explanation of the available options can be printed with the help option.
-When it starts, it prints a message similar to this::
+When it starts, it prints a message similar to this ('neptune' is the hostname of the machine it is running on)::
 
     $ pyro4-ns -n neptune
     Broadcast server running on 0.0.0.0:9091
@@ -63,9 +63,15 @@ When it starts, it prints a message similar to this::
 
 As you can see it prints that it started a broadcast server (and its location),
 a name server (and its location), and it also printed the URI that clients can use
-to access it directly. These things will be explained below.
+to access it directly.
 
-There are several command line options:
+.. note::
+    Pyro by default binds its servers on localhost which means you cannot reach them
+    from another machine on the network. This behavior also applies to the name server.
+    If you want to be able to talk to the name server from other machines, you have to
+    explicitly provide a hostname to bind on.
+
+There are several command line options for this tool:
 
 .. program:: Pyro4.naming
 
@@ -76,8 +82,9 @@ There are several command line options:
 .. option:: -n HOST, --host=HOST
 
    Specify hostname or ip address to bind the server on.
-   The default is localhost.
-   If the server binds on localhost, *no broadcast responder* is started.
+   The default is localhost, note that your name server will then not be visible from the network
+   If the server binds on localhost, *no broadcast responder* is started either.
+   Make sure to provide a hostname or ip address to make the name server reachable from other machines, if you want that.
 
 .. option:: -p PORT, --port=PORT
 
@@ -238,10 +245,12 @@ you may have to change this list to make the lookup work. It could be that you h
 network broadcast address for the specific network that the name server is located on.
 
 .. note::
-    Broadcast lookup only works if you started a name server that didn't bind on localhost.
+    You can only talk to a name server on a different machine if it didn't bind on localhost (that
+    means you have to start it with an explicit host to bind on). The broadcast lookup mechanism
+    only works in this case as well -- it doesn't work with a name server that binds on localhost.
     For instance, the name server started as an example in :ref:`nameserver-nameserver` was told to
     bind on the host name 'neptune' and it started a broadcast responder as well.
-    If you use the default host (localhost) no broadcast responder can be created.
+    If you use the default host (localhost) a broadcast responder will not be created.
 
 Normally, all name server lookups are done this way. In code, it is simply calling the
 locator function without any arguments.
