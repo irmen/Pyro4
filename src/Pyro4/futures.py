@@ -30,6 +30,7 @@ class Future(object):
     def __init__(self, somecallable):
         self.callable = somecallable
         self.chain = []
+        self.exceptionhandler = None
 
     def __call__(self, *args, **kwargs):
         """
@@ -52,8 +53,9 @@ class Future(object):
                 call = functools.partial(call, value)
                 value = call(*args, **kwargs)
             asyncresult.value = value
-        except Exception:
-            # ignore any exceptions here, return them as part of the async result instead
+        except Exception as x:
+            if self.exceptionhandler:
+                self.exceptionhandler(x)
             asyncresult.value = _ExceptionWrapper(sys.exc_info()[1])
 
     def then(self, call, *args, **kwargs):
@@ -61,8 +63,20 @@ class Future(object):
         Add a callable to the call chain, to be invoked when the results become available.
         The result of the current call will be used as the first argument for the next call.
         Optional extra arguments can be provided in args and kwargs.
+        Returns self so you can easily chain then() calls.
         """
         self.chain.append((call, args, kwargs))
+        return self
+
+    def iferror(self, exceptionhandler):    # XXX todo: add some docs about this one
+        """
+        Add an exception handler to the call chain, to be invoked (with the exception object as only
+        argument) when calculating the result raises an exception.
+        If no exception hanlder is set, any exception raised in the async call will be silently ignored.
+        Returns self so you can easily chain a then() call after it.
+        """
+        self.exceptionhandler = exceptionhandler
+        return self
 
 
 class FutureResult(object):
@@ -118,12 +132,15 @@ class FutureResult(object):
         Add a callable to the call chain, to be invoked when the results become available.
         The result of the current call will be used as the first argument for the next call.
         Optional extra arguments can be provided in args and kwargs.
+        Returns self so you can easily chain then() calls.
         """
         if self.__ready.isSet():
+            # print("then isset", self.__value)  # XXX
             # value is already known, we need to process it immediately (can't use the call chain anymore)
             call = functools.partial(call, self.__value)
             self.__value = call(*args, **kwargs)
         else:
+            # print("then notset")  # XXX
             # add the call to the call chain, it will be processed later when the result arrives
             with self.valueLock:
                 self.callchain.append((call, args, kwargs))

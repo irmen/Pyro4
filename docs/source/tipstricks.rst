@@ -204,13 +204,13 @@ object. This is the exact same class as with the async proxy. The most important
 and the ``wait`` method. See :ref:`async-calls` for more details.
 
 You can also chain multiple calls, so that the whole call chain is executed sequentially in the background.
-Rather than doing this on the ``FutureResult`` result object, you should do it directly on the ``Future`` object,
+You can do this directly on the ``Future`` object,
 with the :py:meth:`Pyro4.futures.Future.then` method. It has the same signature as the ``then`` method from
 the ``FutureResult`` class::
 
-    futurecall = Pyro4.Future(something)
-    futurecall.then(somethingelse, 44)
-    futurecall.then(lastthing, optionalargument="something")
+    futurecall = Pyro4.Future(something) \
+        .then(somethingelse, 44) \
+        .then(lastthing, optionalargument="something")
 
 See the :file:`futures` example for more details and example code.
 

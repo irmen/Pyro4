@@ -22,6 +22,17 @@ def asyncWithMoreArgs(a, b, extra=None):
 uri = input("enter async server object uri: ").strip()
 proxy = Pyro4.Proxy(uri)
 
+print("\n* async call with error:")
+async = Pyro4.async(proxy)
+def resulthandler(result):
+    print("RESULT: ", result)
+def errorhandler(error):
+    print("ERROR: ", error)
+asyncresult = async.divide(100, 0).then(resulthandler)
+time.sleep(5)
+print(asyncresult.value)
+raise SystemExit()  #XXX
+
 print("\n* async call with call chain:")
 async = Pyro4.async(proxy)
 asyncresult = async.divide(100, 5)

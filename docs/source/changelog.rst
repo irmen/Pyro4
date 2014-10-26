@@ -8,6 +8,8 @@ Change Log
 - removed support for server side object traversal using dotted names such as a.b.c.d (was deprecated since 4.27)
 - removed ``DOTTEDNAMES`` config item (was deprecated since 4.27)
 - removed support for setting ``proxy._pyroOneway()`` in client code (was deprecated since 4.27. You must depend on the metadata mechanism now, which is enabled by default)
+- Future and FutureResult then() methods now return itself, so they can be easiliy chained
+- added Future.iferror to handle exceptions (instead of silently ignoring them)
 
 
 **Pyro 4.28**
