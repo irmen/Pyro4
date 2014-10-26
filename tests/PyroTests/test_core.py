@@ -454,12 +454,22 @@ class CoreTests(unittest.TestCase):
         with self.assertRaises(Pyro4.errors.ConnectionClosedError):
             proxy.foo()
         self.assertIn(b"HMAC", conn_mock.msgbytes)
+
+        conn_mock = ConnectionMock()
+        proxy._pyroConnection = conn_mock
+        proxy._pyroHmacKey = None
+        with self.assertRaises(Pyro4.errors.ConnectionClosedError):
+            proxy.foo()
+        self.assertIn(b"HMAC", conn_mock.msgbytes)   # (deprecated) HMAC_KEY is still set
+        self.assertIsNone(proxy._pyroHmacKey)
+        Pyro4.config.HMAC_KEY = None
         conn_mock = ConnectionMock()
         proxy._pyroConnection = conn_mock
         proxy._pyroHmacKey = None
         with self.assertRaises(Pyro4.errors.ConnectionClosedError):
             proxy.foo()
         self.assertNotIn(b"HMAC", conn_mock.msgbytes)
+        self.assertIsNone(proxy._pyroHmacKey)
 
     def testNoConnect(self):
         wrongUri = Pyro4.core.URI("PYRO:foobar@localhost:59999")
@@ -778,6 +788,13 @@ def crashingfuturestestfunc(a):
     return 1 // 0  # crash
 
 
+class FuturesErrorHandlerStorage(object):
+    def __init__(self):
+        self.error = None
+    def errorhandler(self, err):
+        self.error = err
+
+
 class TestFutures(unittest.TestCase):
     def testSimpleFuture(self):
         f = Pyro4.Future(futurestestfunc)
@@ -787,24 +804,57 @@ class TestFutures(unittest.TestCase):
         self.assertEqual(9, value)
 
     def testFutureChain(self):
-        f = Pyro4.Future(futurestestfunc)
-        f.then(futurestestfunc, 6)
-        f.then(futurestestfunc, 7, extra=10)
+        f = Pyro4.Future(futurestestfunc) \
+            .then(futurestestfunc, 6) \
+            .then(futurestestfunc, 7, extra=10)
         r = f(4, 5)
         value = r.value
         self.assertEqual(4 + 5 + 6 + 7 + 10, value)
 
     def testCrashingChain(self):
-        f = Pyro4.Future(futurestestfunc)
-        f.then(futurestestfunc, 6)
-        f.then(crashingfuturestestfunc)
-        f.then(futurestestfunc, 8)
+        f = Pyro4.Future(futurestestfunc) \
+            .then(futurestestfunc, 6) \
+            .then(crashingfuturestestfunc) \
+            .then(futurestestfunc, 8)
         r = f(4, 5)
         try:
             _ = r.value
             self.fail("expected exception")
         except ZeroDivisionError:
             pass  # ok
+
+    def testErrorHandler(self):
+        storage = FuturesErrorHandlerStorage()
+        f = Pyro4.Future(crashingfuturestestfunc) \
+            .then(futurestestfunc, 5) \
+            .iferror(storage.errorhandler) \
+            .then(futurestestfunc, 5)
+        self.assertIsNone(storage.error)
+        r = f(42)
+        try:
+            _ = r.value
+        except ZeroDivisionError:
+            pass  # ok
+        self.assertIsInstance(storage.error, ZeroDivisionError)
+
+    def testFutureResultChainSlow(self):
+        f = Pyro4.Future(futurestestfunc)
+        result = f(4, 5)
+        time.sleep(.02)
+        result.then(futurestestfunc, 6)
+        time.sleep(.02)
+        result.then(futurestestfunc, 7)
+        time.sleep(.02)
+        result.then(futurestestfunc, 8)
+        time.sleep(.02)
+        value = result.value
+        self.assertEqual(4 + 5 + 6 + 7 + 8, value)
+
+    def testFutureResultChain(self):
+        f = Pyro4.Future(futurestestfunc)
+        result = f(4, 5).then(futurestestfunc, 6).then(futurestestfunc, 7).then(futurestestfunc, 8)
+        value = result.value
+        self.assertEqual(4 + 5 + 6 + 7 + 8, value)
 
 
 if __name__ == "__main__":

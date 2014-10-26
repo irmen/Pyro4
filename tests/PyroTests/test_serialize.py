@@ -10,7 +10,7 @@ import os
 import copy
 import pprint
 import pickle
-
+import base64
 import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
@@ -212,7 +212,8 @@ class SerializeTests_pickle(unittest.TestCase):
         proxy._pyroTimeout = 42
         proxy._pyroHmacKey = b"secret"
         state = proxy.__getstate_for_dict__()
-        self.assertEqual(('PYRO:object@host:4444', tuple(set("ghi")), tuple(set("def")), tuple(set("abc")), 42, b'secret'), state)
+        b64_secret = "b64:"+base64.b64encode(b"secret").decode("utf-8")
+        self.assertEqual(('PYRO:object@host:4444', tuple(set("ghi")), tuple(set("def")), tuple(set("abc")), 42, b64_secret), state)
         proxy2 = Pyro4.core.Proxy("PYRONAME:xxx")
         proxy2.__setstate_from_dict__(state)
         self.assertEqual(proxy, proxy2)

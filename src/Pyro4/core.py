@@ -13,6 +13,7 @@ import time
 import os
 import uuid
 import warnings
+import base64
 import Pyro4.futures
 from Pyro4 import errors, threadutil, socketutil, util, constants, message
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
@@ -251,8 +252,11 @@ class Proxy(object):
         return str(self)
 
     def __getstate_for_dict__(self):
+        encodedHmac = None
+        if self._pyroHmacKey is not None:
+            encodedHmac = "b64:"+(base64.b64encode(self._pyroHmacKey).decode("utf-8"))
         return self._pyroUri.asString(), tuple(self._pyroOneway), tuple(self._pyroMethods), tuple(self._pyroAttrs),\
-            self.__pyroTimeout, self._pyroHmacKey
+            self.__pyroTimeout, encodedHmac
 
     def __setstate_from_dict__(self, state):
         uri = URI(state[0])
@@ -261,6 +265,11 @@ class Proxy(object):
         attrs = set(state[3])
         timeout = state[4]
         hmac_key = state[5]
+        if hmac_key:
+            if hmac_key.startswith("b64:"):
+                hmac_key = base64.b64decode(hmac_key[4:])
+            else:
+                raise errors.ProtocolError("hmac encoding error")
         self.__setstate__((uri, oneway, methods, attrs, timeout, hmac_key))
 
     def __getstate__(self):
@@ -350,14 +359,14 @@ class Proxy(object):
             if Pyro4.config.LOGWIRE:
                 log.debug("proxy wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" %
                           (message.MSG_INVOKE, flags, serializer.serializer_id, self._pyroSeq, data))
-            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq)
+            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, hmac_key=self._pyroHmacKey)
             try:
                 self._pyroConnection.send(msg.to_bytes())
                 del msg  # invite GC to collect the object, don't wait for out-of-scope
                 if flags & message.FLAGS_ONEWAY:
                     return None  # oneway call, no response data
                 else:
-                    msg = message.Message.recv(self._pyroConnection, [message.MSG_RESULT])
+                    msg = message.Message.recv(self._pyroConnection, [message.MSG_RESULT], hmac_key=self._pyroHmacKey)
                     if Pyro4.config.LOGWIRE:
                         log.debug("proxy wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
                     self.__pyroCheckSequence(msg.seq)
