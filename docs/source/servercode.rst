@@ -476,7 +476,9 @@ There is a :file:`autoproxy` example that shows the use of this feature,
 and several other examples also make use of it.
 
 Note that when using the marshal serializer, this feature doesn't work. You have to use
-one of the other serializers to use autoproxying.
+one of the other serializers to use autoproxying. Also, it doesn't work correctly when
+you are using old-style classes (but they are from Python 2.2 and earlier, you should
+not be using these anyway).
 
 
 .. index:: object concurrency model, server types, SERVERTYPE
