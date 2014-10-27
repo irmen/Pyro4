@@ -254,7 +254,7 @@ class Proxy(object):
     def __getstate_for_dict__(self):
         encodedHmac = None
         if self._pyroHmacKey is not None:
-            encodedHmac = "b64:"+(base64.b64encode(self._pyroHmacKey).decode("utf-8"))
+            encodedHmac = "b64:"+(base64.b64encode(self._pyroHmacKey).decode("ascii"))
         return self._pyroUri.asString(), tuple(self._pyroOneway), tuple(self._pyroMethods), tuple(self._pyroAttrs),\
             self.__pyroTimeout, encodedHmac
 
@@ -267,7 +267,7 @@ class Proxy(object):
         hmac_key = state[5]
         if hmac_key:
             if hmac_key.startswith("b64:"):
-                hmac_key = base64.b64decode(hmac_key[4:])
+                hmac_key = base64.b64decode(hmac_key[4:].encode("ascii"))
             else:
                 raise errors.ProtocolError("hmac encoding error")
         self.__setstate__((uri, oneway, methods, attrs, timeout, hmac_key))

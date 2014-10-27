@@ -7,4 +7,5 @@ The most pressing issues can be found in the issue tracker on Github.
 * add multiprocess server (forking?) based on multiprocessing?
 * object activation / object registration strategies: instance_per_call, instance_per_connection, shared_instance (let the daemon instantiate your object's class instead of user code)
 * persistent Name Server (store namespace in a database on disk) use sqlite because it needs multithreading/transactions
-* Pyro-over-SSH (not SSL) using Paramiko
+* Pyro-over-SSH (not SSL/TLS) using Paramiko?
+

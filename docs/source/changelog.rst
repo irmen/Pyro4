@@ -5,9 +5,10 @@ Change Log
 **Pyro 4.29**
 
 - ``HMAC_KEY`` config item is deprecated, will be removed in next version
-- removed support for server side object traversal using dotted names such as a.b.c.d (was deprecated since 4.27)
-- removed ``DOTTEDNAMES`` config item (was deprecated since 4.27)
-- removed support for setting ``proxy._pyroOneway()`` in client code (was deprecated since 4.27. You must depend on the metadata mechanism now, which is enabled by default)
+- set hmac key directly on proxy._pyroHmacKey property, this makes per-proxy hmac keys possible
+- removed support for server side object traversal using dotted names such as a.b.c.d (has been deprecated since 4.27)
+- removed ``DOTTEDNAMES`` config item (has been deprecated since 4.27)
+- removed support for setting ``proxy._pyroOneway()`` in client code (has been deprecated since 4.27. You must depend on the metadata mechanism now, which is enabled by default)
 - Future and FutureResult then() methods now return itself, so they can be easiliy chained
 - added Future.iferror and FutureResult.iferror to handle exceptions (instead of silently ignoring them)
 - fixed FutureResult.then to correctly evaluate all chained functions
