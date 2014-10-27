@@ -27,11 +27,19 @@ async = Pyro4.async(proxy)
 def resulthandler(result):
     print("RESULT: ", result)
 def errorhandler(error):
-    print("ERROR: ", error)
+    print("ERRORHANDLER: ", error)
+asyncresult = async.divide(100, 0).iferror(errorhandler).then(resulthandler)
+time.sleep(4)
+print("^^^^ above an error message should be printed out...")
+print("\n* async call with error, but without errorhandler:")
 asyncresult = async.divide(100, 0).then(resulthandler)
-time.sleep(5)
-print(asyncresult.value)
-raise SystemExit()  #XXX
+time.sleep(4)
+print("^^^^ above, no error message should be printed out...")
+try:
+    _ = asyncresult.value
+    print("SHOULD RAISE ERROR INSTEAD!!")
+except ZeroDivisionError as x:
+    print("expected error occurred when trying to obtain the result:", x)
 
 print("\n* async call with call chain:")
 async = Pyro4.async(proxy)

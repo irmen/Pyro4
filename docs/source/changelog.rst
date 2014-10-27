@@ -9,7 +9,8 @@ Change Log
 - removed ``DOTTEDNAMES`` config item (was deprecated since 4.27)
 - removed support for setting ``proxy._pyroOneway()`` in client code (was deprecated since 4.27. You must depend on the metadata mechanism now, which is enabled by default)
 - Future and FutureResult then() methods now return itself, so they can be easiliy chained
-- added Future.iferror to handle exceptions (instead of silently ignoring them)
+- added Future.iferror and FutureResult.iferror to handle exceptions (instead of silently ignoring them)
+- fixed FutureResult.then to correctly evaluate all chained functions
 
 
 **Pyro 4.28**

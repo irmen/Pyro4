@@ -806,10 +806,12 @@ class TestFutures(unittest.TestCase):
     def testFutureChain(self):
         f = Pyro4.Future(futurestestfunc) \
             .then(futurestestfunc, 6) \
-            .then(futurestestfunc, 7, extra=10)
+            .then(futurestestfunc, 7) \
+            .then(futurestestfunc, 8) \
+            .then(futurestestfunc, 9, extra=10)
         r = f(4, 5)
         value = r.value
-        self.assertEqual(4 + 5 + 6 + 7 + 10, value)
+        self.assertEqual(4 + 5 + 6 + 7 + 8 + 9 + 10, value)
 
     def testCrashingChain(self):
         f = Pyro4.Future(futurestestfunc) \
@@ -828,7 +830,7 @@ class TestFutures(unittest.TestCase):
         f = Pyro4.Future(crashingfuturestestfunc) \
             .then(futurestestfunc, 5) \
             .iferror(storage.errorhandler) \
-            .then(futurestestfunc, 5)
+            .then(futurestestfunc, 6)
         self.assertIsNone(storage.error)
         r = f(42)
         try:
@@ -847,14 +849,18 @@ class TestFutures(unittest.TestCase):
         time.sleep(.02)
         result.then(futurestestfunc, 8)
         time.sleep(.02)
+        result.then(futurestestfunc, 9)
+        time.sleep(.02)
+        result.then(futurestestfunc, 10)
+        time.sleep(.02)
         value = result.value
-        self.assertEqual(4 + 5 + 6 + 7 + 8, value)
+        self.assertEqual(4 + 5 + 6 + 7 + 8 + 9 + 10, value)
 
     def testFutureResultChain(self):
         f = Pyro4.Future(futurestestfunc)
-        result = f(4, 5).then(futurestestfunc, 6).then(futurestestfunc, 7).then(futurestestfunc, 8)
+        result = f(4, 5).then(futurestestfunc, 6).then(futurestestfunc, 7).then(futurestestfunc, 8).then(futurestestfunc, 9).then(futurestestfunc, 10)
         value = result.value
-        self.assertEqual(4 + 5 + 6 + 7 + 8, value)
+        self.assertEqual(4 + 5 + 6 + 7 + 8 + 9 + 10, value)
 
 
 if __name__ == "__main__":

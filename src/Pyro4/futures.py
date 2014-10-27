@@ -68,12 +68,12 @@ class Future(object):
         self.chain.append((call, args, kwargs))
         return self
 
-    def iferror(self, exceptionhandler):    # XXX todo: add some docs about this one
+    def iferror(self, exceptionhandler):    # XXX add some docs about this one
         """
-        Add an exception handler to the call chain, to be invoked (with the exception object as only
+        Specify the exception handler to be invoked (with the exception object as only
         argument) when calculating the result raises an exception.
-        If no exception hanlder is set, any exception raised in the async call will be silently ignored.
-        Returns self so you can easily chain a then() call after it.
+        If no exception handler is set, any exception raised in the async call will be silently ignored.
+        Returns self so you can easily chain other calls.
         """
         self.exceptionhandler = exceptionhandler
         return self
@@ -88,6 +88,7 @@ class FutureResult(object):
         self.__ready = threadutil.Event()
         self.callchain = []
         self.valueLock = threadutil.Lock()
+        self.exceptionhandler = None
 
     def wait(self, timeout=None):
         """
@@ -115,8 +116,11 @@ class FutureResult(object):
     def set_value(self, value):
         with self.valueLock:
             self.__value = value
-            # walk the call chain but only as long as the result is not an exception
-            if not isinstance(value, _ExceptionWrapper):
+            # walk the call chain if the result is not an exception, otherwise invoke the errorhandler (if any)
+            if isinstance(value, _ExceptionWrapper):
+                if self.exceptionhandler:
+                    self.exceptionhandler(value.exception)
+            else:
                 for call, args, kwargs in self.callchain:
                     call = functools.partial(call, self.__value)
                     self.__value = call(*args, **kwargs)
@@ -134,16 +138,24 @@ class FutureResult(object):
         Optional extra arguments can be provided in args and kwargs.
         Returns self so you can easily chain then() calls.
         """
-        if self.__ready.isSet():
-            # print("then isset", self.__value)  # XXX
-            # value is already known, we need to process it immediately (can't use the call chain anymore)
-            call = functools.partial(call, self.__value)
-            self.__value = call(*args, **kwargs)
-        else:
-            # print("then notset")  # XXX
-            # add the call to the call chain, it will be processed later when the result arrives
-            with self.valueLock:
+        with self.valueLock:
+            if self.__ready.isSet():
+                # value is already known, we need to process it immediately (can't use the call chain anymore)
+                call = functools.partial(call, self.__value)
+                self.__value = call(*args, **kwargs)
+            else:
+                # add the call to the call chain, it will be processed later when the result arrives
                 self.callchain.append((call, args, kwargs))
+            return self
+
+    def iferror(self, exceptionhandler):    # XXX add some docs about this one
+        """
+        Specify the exception handler to be invoked (with the exception object as only
+        argument) when asking for the result raises an exception.
+        If no exception handler is set, any exception result will be silently ignored (unless
+        you explicitly ask for the value). Returns self so you can easily chain other calls.
+        """
+        self.exceptionhandler = exceptionhandler
         return self
 
 
