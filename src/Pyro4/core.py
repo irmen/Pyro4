@@ -254,6 +254,9 @@ class Proxy(object):
     def __getstate_for_dict__(self):
         encodedHmac = None
         if self._pyroHmacKey is not None:
+            if sys.platform == 'cli' and type(self._pyroHmacKey) is bytes:
+                # ironpython doesn't grok bytes for b64encode
+                self._pyroHmacKey = str(self._pyroHmacKey)
             encodedHmac = "b64:"+(base64.b64encode(self._pyroHmacKey).decode("ascii"))
         return self._pyroUri.asString(), tuple(self._pyroOneway), tuple(self._pyroMethods), tuple(self._pyroAttrs),\
             self.__pyroTimeout, encodedHmac
