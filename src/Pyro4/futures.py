@@ -68,7 +68,7 @@ class Future(object):
         self.chain.append((call, args, kwargs))
         return self
 
-    def iferror(self, exceptionhandler):    # XXX add some docs about this one
+    def iferror(self, exceptionhandler):
         """
         Specify the exception handler to be invoked (with the exception object as only
         argument) when calculating the result raises an exception.
@@ -148,7 +148,7 @@ class FutureResult(object):
                 self.callchain.append((call, args, kwargs))
             return self
 
-    def iferror(self, exceptionhandler):    # XXX add some docs about this one
+    def iferror(self, exceptionhandler):
         """
         Specify the exception handler to be invoked (with the exception object as only
         argument) when asking for the result raises an exception.

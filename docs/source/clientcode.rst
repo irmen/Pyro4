@@ -391,9 +391,17 @@ This object means 'the result of this will be available at some moment in the fu
 
 .. py:method:: then(callable [, *args, **kwargs])
 
-     Add a callable to the call chain, to be invoked when the results become available.
-     The result of the current call will be used as the first argument for the next call.
-     Optional extra arguments can be provided via ``args`` and ``kwargs``.
+    Add a callable to the call chain, to be invoked when the results become available.
+    The result of the current call will be used as the first argument for the next call.
+    Optional extra arguments can be provided via ``args`` and ``kwargs``.
+
+.. py:method:: iferror(errorhandler)
+
+    Specify the exception handler to be invoked (with the exception object as only
+    argument) when asking for the result raises an exception.
+    If no exception handler is set, any exception result will be silently ignored (unless
+    you explicitly ask for the value). Returns self so you can easily chain other calls.
+
 
 A simple piece of code showing an asynchronous method call::
 

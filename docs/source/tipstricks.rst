@@ -212,6 +212,8 @@ the ``FutureResult`` class::
         .then(somethingelse, 44) \
         .then(lastthing, optionalargument="something")
 
+There's also a :py:meth:`Pyro4.futures.Future.iferror` method that allows you to register a callback to be invoked
+when an exception occurs. This method also exists on the ``FutureResult`` class.
 See the :file:`futures` example for more details and example code.
 
 
