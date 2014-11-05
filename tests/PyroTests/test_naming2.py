@@ -20,12 +20,15 @@ from testsupport import *
 class OfflineNameServerTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.HMAC_KEY = b"testsuite"
+        self.storageProvider = Pyro4.naming.DictStorage()
 
     def tearDown(self):
         Pyro4.config.HMAC_KEY = None
+        self.storageProvider.clear()
 
     def testRegister(self):
-        ns = Pyro4.naming.NameServer()
+        ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
+        ns.clear()
         ns.ping()
         ns.register("test.object1", "PYRO:000000@host.com:4444")
         ns.register("test.object2", "PYRO:222222@host.com:4444")
@@ -57,7 +60,8 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertRaises(PyroError, ns.register, "test.nonurivalue", "THISVALUEISNOTANURI")
 
     def testRemove(self):
-        ns = Pyro4.naming.NameServer()
+        ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
+        ns.clear()
         ns.register(Pyro4.constants.NAMESERVER_NAME, "PYRO:nameserver@host:555")
         for i in range(20):
             ns.register("test.%d" % i, "PYRO:obj@host:555")
@@ -72,7 +76,8 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertEqual(1, len(ns.list()))
 
     def testRemoveProtected(self):
-        ns = Pyro4.naming.NameServer()
+        ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
+        ns.clear()
         ns.register(Pyro4.constants.NAMESERVER_NAME, "PYRO:nameserver@host:555")
         self.assertEqual(0, ns.remove(Pyro4.constants.NAMESERVER_NAME))
         self.assertEqual(0, ns.remove(prefix="Pyro"))
@@ -80,14 +85,16 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertIn(Pyro4.constants.NAMESERVER_NAME, ns.list())
 
     def testUnicodeNames(self):
-        ns = Pyro4.naming.NameServer()
+        ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
+        ns.clear()
         uri = Pyro4.core.URI("PYRO:unicode" + unichr(0x20ac) + "@host:5555")
         ns.register("unicodename" + unichr(0x20ac), uri)
         x = ns.lookup("unicodename" + unichr(0x20ac))
         self.assertEqual(uri, x)
 
     def testList(self):
-        ns = Pyro4.naming.NameServer()
+        ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
+        ns.clear()
         ns.register("test.objects.1", "PYRONAME:something1")
         ns.register("test.objects.2", "PYRONAME:something2")
         ns.register("test.objects.3", "PYRONAME:something3")
@@ -214,7 +221,7 @@ class OfflineNameServerTests(unittest.TestCase):
         try:
             sys.stdout = StringIO()
             sys.stderr = StringIO()
-            ns = Pyro4.naming.NameServer()
+            ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
             Pyro4.nsc.handleCommand(ns, None, ["foo"])
             self.assertTrue(sys.stdout.getvalue().startswith("Error: KeyError "))
             Pyro4.nsc.handleCommand(ns, None, ["ping"])
@@ -242,6 +249,20 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertNotEqual("nathosttest:12345", bc.nsUri.location, "broadcast location must not be the NAT location")
         ns.close()
         bc.close()
+
+
+@unittest.skipIf(not hasattr(Pyro4.naming, "DbmStorage"), "dbm must be available")
+class OfflineNameServerTestsDbmStorage(OfflineNameServerTests):
+    def setUp(self):
+        super(OfflineNameServerTestsDbmStorage, self).setUp()
+        self.storageProvider = Pyro4.naming.DbmStorage("pyro-test.dbm")
+
+    def tearDown(self):
+        super(OfflineNameServerTestsDbmStorage, self).tearDown()
+        self.storageProvider.clear()
+        import glob
+        for file in glob.glob("pyro-test.dbm*"):
+            os.remove(file)
 
 
 if __name__ == "__main__":

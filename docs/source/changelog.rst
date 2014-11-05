@@ -2,6 +2,12 @@
 Change Log
 **********
 
+**Pyro 4.30**
+
+- persistent name server
+
+
+
 **Pyro 4.29**
 
 - ``HMAC_KEY`` config item is deprecated, will be removed in next version

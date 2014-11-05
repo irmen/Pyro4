@@ -22,18 +22,138 @@ if sys.version_info >= (3, 0):
 
 log = logging.getLogger("Pyro4.naming")
 
+dbm = None
+try:
+    import anydbm as dbm
+except ImportError:
+    try:
+        import dbm
+    except ImportError:
+        pass
+except Exception as x:
+    # pypy can generate a distutils error somehow if dbm is not available there
+    pass
+
+
+class DbmStorage(object):  # XXX todo:  concurrency!
+    """
+    Storage implementation that uses a persistent dbm file.
+    Because dbm only supports strings as key/value, we encode/decode them in utf-8.
+    """
+    def __init__(self, dbmfile):
+        self.dbmfile = dbmfile
+        db = dbm.open(self.dbmfile, "c", mode=0o600)
+        db.close()
+
+    def __getitem__(self, item):
+        item = item.encode("utf-8")
+        db = dbm.open(self.dbmfile)
+        try:
+            return db[item].decode("utf-8")
+        finally:
+            db.close()
+
+    def __setitem__(self, key, value):
+        key = key.encode("utf-8")
+        value = value.encode("utf-8")
+        db = dbm.open(self.dbmfile, "w")
+        try:
+            db[key] = value
+        finally:
+            db.close()
+
+    def __len__(self):
+        db = dbm.open(self.dbmfile)
+        try:
+            return len(db)
+        finally:
+            db.close()
+
+    def __contains__(self, item):
+        item = item.encode("utf-8")
+        db = dbm.open(self.dbmfile)
+        try:
+            return item in db
+        finally:
+            db.close()
+
+    def __delitem__(self, key):
+        key = key.encode("utf-8")
+        db = dbm.open(self.dbmfile, "w")
+        try:
+            del db[key]
+        finally:
+            db.close()
+
+    def __iter__(self):
+        db = dbm.open(self.dbmfile)
+        try:
+            return iter([key.decode("utf-8") for key in db])
+        finally:
+            db.close()
+
+    def clear(self):
+        db = dbm.open(self.dbmfile, "w")
+        try:
+            db.clear()
+        finally:
+            db.close()
+
+    def __getattr__(self, item):
+        raise NotImplementedError("DbmStorage doesn't implement method/attribute '"+item+"'")
+
+    def optimized_prefix_list(self, prefix):
+        return None  # there's no optimized prefix search possible on dbm keys
+
+    def optimized_regex_list(self, regex):
+        return None  # there's no optimized regex search possible on dbm keys
+
+    def everything(self):
+        db = dbm.open(self.dbmfile)
+        try:
+            result = {}
+            for key, value in db.items():
+                result[key.decode("utf-8")] = value.decode("utf-8")
+            return result
+        finally:
+            db.close()
+
+
+if not dbm:
+    del DbmStorage
+
+
+class DictStorage(dict):
+    """
+    Storage implementation that is just an in-memory dict.
+    Stopping the nameserver will make the server instantly forget about everything.
+    """
+    def optimized_prefix_list(self, prefix):
+        return None
+
+    def optimized_regex_list(self, regex):
+        return None
+
+    def everything(self):
+        return self.copy()
+
 
 class NameServer(object):
-    """Pyro name server. Provides a simple flat name space to map logical object names to Pyro URIs."""
-
-    def __init__(self):
-        self.namespace = {}
+    """
+    Pyro name server. Provides a simple flat name space to map logical object names to Pyro URIs.
+    Default storage is done in an in-memory dictionary. You can provide custom storage types.
+    """
+    def __init__(self, storageProvider=None):
+        self.storage = storageProvider or DictStorage()
         self.lock = RLock()
+
+    def clear(self):
+        self.storage.clear()      # very rarely needed! (mostly only in test cases)
 
     def lookup(self, name):
         """Lookup the given name, returns an URI if found"""
         try:
-            return core.URI(self.namespace[name])
+            return core.URI(self.storage[name])
         except KeyError:
             raise NamingError("unknown name: " + name)
 
@@ -48,16 +168,16 @@ class NameServer(object):
             core.URI(uri)  # check if uri is valid
         if not isinstance(name, basestring):
             raise TypeError("name must be a str")
-        if safe and name in self.namespace:
+        if safe and name in self.storage:
             raise NamingError("name already registered: " + name)
         with self.lock:
-            self.namespace[name] = uri
+            self.storage[name] = uri
 
     def remove(self, name=None, prefix=None, regex=None):
         """Remove a registration. returns the number of items removed."""
-        if name and name in self.namespace and name != Pyro4.constants.NAMESERVER_NAME:
+        if name and name in self.storage and name != Pyro4.constants.NAMESERVER_NAME:
             with self.lock:
-                del self.namespace[name]
+                del self.storage[name]
             return 1
         if prefix:
             with self.lock:
@@ -65,7 +185,7 @@ class NameServer(object):
                 if Pyro4.constants.NAMESERVER_NAME in items:
                     items.remove(Pyro4.constants.NAMESERVER_NAME)
                 for item in items:
-                    del self.namespace[item]
+                    del self.storage[item]
                 return len(items)
         if regex:
             with self.lock:
@@ -73,7 +193,7 @@ class NameServer(object):
                 if Pyro4.constants.NAMESERVER_NAME in items:
                     items.remove(Pyro4.constants.NAMESERVER_NAME)
                 for item in items:
-                    del self.namespace[item]
+                    del self.storage[item]
                 return len(items)
         return 0
 
@@ -83,12 +203,18 @@ class NameServer(object):
         You can filter by prefix or by regex."""
         with self.lock:
             if prefix:
+                result = self.storage.optimized_prefix_list(prefix)
+                if result is not None:
+                    return result
                 result = {}
-                for name in self.namespace:
+                for name in self.storage:
                     if name.startswith(prefix):
-                        result[name] = self.namespace[name]
+                        result[name] = self.storage[name]
                 return result
             elif regex:
+                result = self.storage.optimized_regex_list(regex)
+                if result is not None:
+                    return result
                 result = {}
                 try:
                     regex = re.compile(regex + "$")  # add end of string marker
@@ -96,13 +222,13 @@ class NameServer(object):
                     x = sys.exc_info()[1]
                     raise NamingError("invalid regex: " + str(x))
                 else:
-                    for name in self.namespace:
+                    for name in self.storage:
                         if regex.match(name):
-                            result[name] = self.namespace[name]
+                            result[name] = self.storage[name]
                     return result
             else:
                 # just return (a copy of) everything
-                return self.namespace.copy()
+                return self.storage.everything()
 
     def ping(self):
         """A simple test method to check if the name server is running correctly."""
@@ -122,7 +248,7 @@ class NameServerDaemon(core.Daemon):
         if natport is None:
             natport = Pyro4.config.NATPORT or None
         super(NameServerDaemon, self).__init__(host, port, unixsocket, nathost=nathost, natport=natport)
-        self.nameserver = NameServer()
+        self.nameserver = NameServer()   # XXX make storageProvider configurable
         self.register(self.nameserver, Pyro4.constants.NAMESERVER_NAME)
         self.nameserver.register(Pyro4.constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
         log.info("nameserver daemon created")
