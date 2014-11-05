@@ -782,6 +782,7 @@ class Daemon(object):
         # assert that the configured serializers are available, and remember their ids:
         self.__serializer_ids = set([util.get_serializer(ser_name).serializer_id for ser_name in Pyro4.config.SERIALIZERS_ACCEPTED])
         log.debug("accepted serializers: %s" % Pyro4.config.SERIALIZERS_ACCEPTED)
+        log.debug("pyro protocol version: %d  pickle version: %d" % (constants.PROTOCOL_VERSION, Pyro4.config.PICKLE_PROTOCOL_VERSION))
 
     @property
     def sock(self):
