@@ -88,14 +88,18 @@ class DbmStorage(object):  # XXX todo:  concurrency!
     def __iter__(self):
         db = dbm.open(self.dbmfile)
         try:
-            return iter([key.decode("utf-8") for key in db])
+            return iter([key.decode("utf-8") for key in db.keys()])
         finally:
             db.close()
 
     def clear(self):
         db = dbm.open(self.dbmfile, "w")
         try:
-            db.clear()
+            if hasattr(db, "clear"):
+                db.clear()
+            else:
+                for key in db.keys():
+                    del db[key]
         finally:
             db.close()
 
@@ -112,8 +116,12 @@ class DbmStorage(object):  # XXX todo:  concurrency!
         db = dbm.open(self.dbmfile)
         try:
             result = {}
-            for key, value in db.items():
-                result[key.decode("utf-8")] = value.decode("utf-8")
+            if hasattr(db, "items"):
+                for key, value in db.items():
+                    result[key.decode("utf-8")] = value.decode("utf-8")
+            else:
+                for key in db.keys():
+                    result[key.decode("utf-8")] = db[key].decode("utf-8")
             return result
         finally:
             db.close()
