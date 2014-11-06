@@ -286,6 +286,15 @@ is fine (:doc:`flame` even provides a convenience method for that, if you like:
 :meth:`Pyro4.utils.flame.Flame.sendfile`) but usually it is better to use something else to do
 the actual data transfer (file share+file copy, ftp, scp, rsync).
 
+.. note:: Serpent and binary data:
+    If you do transfer binary data using the serpent serializer, you have to be aware of the following.
+    The wire protocol is text based so serpent has to encode any binary data. It uses base-64 to do that.
+    This means on the receiving side, instead of the raw bytes, you get a little dictionary
+    like this instead: ``{'data': 'aXJtZW4gZGUgam9uZw==', 'encoding': 'base64'}``
+    Your client code needs to be aware of this and to get the original binary data back, it has to base-64
+    decode the data element by itself.
+
+
 The following table is an indication of the relative speeds when dealing with large amounts
 of binary data. It lists the results of the :file:`hugetransfer` example, using python 3.3,
 over a 100 mbit lan connection:
@@ -300,8 +309,8 @@ json       22.5       not supported not supported
 ========== ========== ============= ================
 
 The json serializer can't deal with actual binary data at all because it can't serialize these types.
-The serpent serializer is particularly inefficient when dealing with binary data, because by design,
-it has to encode and decode it as a base-64 string.
+The serpent serializer is inefficient when dealing with binary data, because
+it has to encode and decode it as a base-64 string (this is by design).
 
 Marshal and pickle are relatively efficient. But here is a short overview of the ``pickle``
 wire protocol overhead for the possible binary types:
@@ -321,6 +330,8 @@ wire protocol overhead for the possible binary types:
     *Python 2.x:* very inefficient; every element is encoded as a separate token+value.
     *Python 3.x:* efficient; uses machine type encoding on the wire (a byte sequence).
 
+``numpy arrays``
+    usually cannot be transferred directly, see :ref:`numpy`.
 
 .. index:: MSG_WAITALL
 
@@ -360,6 +371,7 @@ it needs to deal with an ipv6 address rather than ipv4, but these are rarely use
 
 
 .. index:: Numpy, numpy.ndarray
+.. _numpy:
 
 Pyro and Numpy
 ==============

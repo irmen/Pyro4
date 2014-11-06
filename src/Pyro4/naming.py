@@ -268,6 +268,9 @@ class NameServer(object):
     def clear(self):
         self.storage.clear()      # very rarely needed! (mostly only in test cases)
 
+    def count(self):
+        return len(self.storage)
+
     def lookup(self, name):
         """Lookup the given name, returns an URI if found"""
         try:
@@ -376,6 +379,9 @@ class NameServerDaemon(core.Daemon):
             self.nameserver = NameServer(SqlStorage(sqlfile))
         else:
             raise ValueError("invalid storage type '%s'" % storage)
+        existing_count = self.nameserver.count()
+        if existing_count > 0:
+            log.debug("number of existing entries in storage: %d", existing_count)
         super(NameServerDaemon, self).__init__(host, port, unixsocket, nathost=nathost, natport=natport)
         self.register(self.nameserver, Pyro4.constants.NAMESERVER_NAME)
         self.nameserver.register(Pyro4.constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
@@ -503,6 +509,9 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
             bcserver = BroadcastServer(internalUri, bchost, bcport)
             print("Broadcast server running on %s" % bcserver.locationStr)
             bcserver.runInThread()
+    existing = daemon.nameserver.count()
+    if existing > 1:   # don't count our own nameserver registration
+        print("Persistent store contains %d existing registrations." % existing)
     print("NS running on %s (%s)" % (daemon.locationStr, hostip))
     if daemon.natLocationStr:
         print("internal URI = %s" % internalUri)

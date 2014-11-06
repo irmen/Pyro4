@@ -8,6 +8,5 @@ The most pressing issues can be found in the issue tracker on Github.
 * this requires that the daemon can instantiate your object's class instead of user code, so you register a class and not an object
 * what about initialization methods?
 * concurrency strategies in the daemon? (reentrant, single)
-* persistent Name Server (store namespace in a database on disk) use sqlite because it needs multithreading/transactions
 * Pyro-over-SSH (not SSL/TLS) using Paramiko?
 
