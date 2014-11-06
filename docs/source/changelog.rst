@@ -4,8 +4,7 @@ Change Log
 
 **Pyro 4.30**
 
-- persistent name server
-
+- Persistent name server option: -s (currently implemented: dbm datastore). Default is still the volatile in-memory storage.
 
 
 **Pyro 4.29**

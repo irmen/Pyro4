@@ -10,7 +10,7 @@ import re
 import logging
 import socket
 import sys
-from Pyro4.threadutil import RLock, Thread
+from Pyro4.threadutil import RLock, Lock, Thread
 from Pyro4.errors import NamingError, PyroError, ProtocolError
 from Pyro4 import core, socketutil
 import Pyro4.constants
@@ -22,113 +22,210 @@ if sys.version_info >= (3, 0):
 
 log = logging.getLogger("Pyro4.naming")
 
-dbm = None
 try:
-    import anydbm as dbm
+    import anydbm as dbm   # python 2
 except ImportError:
     try:
-        import dbm
+        import dbm   # python 3
     except ImportError:
         pass
 except Exception as x:
-    # pypy can generate a distutils error somehow if dbm is not available there
+    # pypy can generate a distutils error somehow if dbm is not available
     pass
 
 
-class DbmStorage(object):  # XXX todo:  concurrency!
+class SqlStorage(object):
+    """
+    Sqlite-based storage.
+    """
+    def __init__(self, dbmfile):
+        raise NotImplementedError("Sqlite storage not yet implemented")   # XXX implement this :)
+
+
+class DbmStorage(object):
     """
     Storage implementation that uses a persistent dbm file.
     Because dbm only supports strings as key/value, we encode/decode them in utf-8.
+    Dbm files cannot be accessed concurrently, so a strict concurrency model
+    is used where only one operation is processed at the same time
+    (this is very slow when compared to the in-memory storage)
     """
     def __init__(self, dbmfile):
         self.dbmfile = dbmfile
         db = dbm.open(self.dbmfile, "c", mode=0o600)
         db.close()
+        self.lock = Lock()
 
     def __getitem__(self, item):
         item = item.encode("utf-8")
-        db = dbm.open(self.dbmfile)
-        try:
-            return db[item].decode("utf-8")
-        finally:
-            db.close()
+        with self.lock:
+            try:
+                db = dbm.open(self.dbmfile)
+                try:
+                    return db[item].decode("utf-8")
+                finally:
+                    db.close()
+            except dbm.error as e:
+                raise NamingError("dbm error in getitem: "+str(e))
 
     def __setitem__(self, key, value):
         key = key.encode("utf-8")
         value = value.encode("utf-8")
-        db = dbm.open(self.dbmfile, "w")
-        try:
-            db[key] = value
-        finally:
-            db.close()
+        with self.lock:
+            try:
+                db = dbm.open(self.dbmfile, "w")
+                try:
+                    db[key] = value
+                finally:
+                    db.close()
+            except dbm.error as e:
+                raise NamingError("dbm error in setitem: "+str(e))
 
     def __len__(self):
-        db = dbm.open(self.dbmfile)
-        try:
-            return len(db)
-        finally:
-            db.close()
+        with self.lock:
+            try:
+                db = dbm.open(self.dbmfile)
+                try:
+                    return len(db)
+                finally:
+                    db.close()
+            except dbm.error as e:
+                raise NamingError("dbm error in len: "+str(e))
 
     def __contains__(self, item):
         item = item.encode("utf-8")
-        db = dbm.open(self.dbmfile)
-        try:
-            return item in db
-        finally:
-            db.close()
+        with self.lock:
+            try:
+                db = dbm.open(self.dbmfile)
+                try:
+                    return item in db
+                finally:
+                    db.close()
+            except dbm.error as e:
+                raise NamingError("dbm error in contains: "+str(e))
 
     def __delitem__(self, key):
         key = key.encode("utf-8")
-        db = dbm.open(self.dbmfile, "w")
-        try:
-            del db[key]
-        finally:
-            db.close()
+        with self.lock:
+            try:
+                db = dbm.open(self.dbmfile, "w")
+                try:
+                    del db[key]
+                finally:
+                    db.close()
+            except dbm.error as e:
+                raise NamingError("dbm error in delitem: "+str(e))
 
     def __iter__(self):
-        db = dbm.open(self.dbmfile)
-        try:
-            return iter([key.decode("utf-8") for key in db.keys()])
-        finally:
-            db.close()
+        with self.lock:
+            try:
+                db = dbm.open(self.dbmfile)
+                try:
+                    return iter([key.decode("utf-8") for key in db.keys()])
+                finally:
+                    db.close()
+            except dbm.error as e:
+                raise NamingError("dbm error in iter: "+str(e))
 
     def clear(self):
-        db = dbm.open(self.dbmfile, "w")
-        try:
-            if hasattr(db, "clear"):
-                db.clear()
-            else:
-                for key in db.keys():
-                    del db[key]
-        finally:
-            db.close()
+        with self.lock:
+            try:
+                db = dbm.open(self.dbmfile, "w")
+                try:
+                    if hasattr(db, "clear"):
+                        db.clear()
+                    else:
+                        for key in db.keys():
+                            del db[key]
+                finally:
+                    db.close()
+            except dbm.error as e:
+                raise NamingError("dbm error in clear: "+str(e))
 
     def __getattr__(self, item):
         raise NotImplementedError("DbmStorage doesn't implement method/attribute '"+item+"'")
 
     def optimized_prefix_list(self, prefix):
-        return None  # there's no optimized prefix search possible on dbm keys
+        with self.lock:
+            try:
+                db = dbm.open(self.dbmfile)
+                try:
+                    result = {}
+                    if hasattr(db, "items"):
+                        for key, value in db.items():
+                            key = key.decode("utf-8")
+                            if key.startswith(prefix):
+                                result[key] = value.decode("utf-8")
+                    else:
+                        for key in db.keys():
+                            keystr = key.decode("utf-8")
+                            if keystr.startswith(prefix):
+                                result[keystr] = db[key].decode("utf-8")
+                    return result
+                finally:
+                    db.close()
+            except dbm.error as e:
+                raise NamingError("dbm error in optimized_prefix_list: "+str(e))
 
     def optimized_regex_list(self, regex):
-        return None  # there's no optimized regex search possible on dbm keys
+        try:
+            regex = re.compile(regex + "$")  # add end of string marker
+        except re.error:
+            x = sys.exc_info()[1]
+            raise NamingError("invalid regex: " + str(x))
+        with self.lock:
+            try:
+                db = dbm.open(self.dbmfile)
+                try:
+                    result = {}
+                    if hasattr(db, "items"):
+                        for key, value in db.items():
+                            key = key.decode("utf-8")
+                            if regex.match(key):
+                                result[key] = value.decode("utf-8")
+                    else:
+                        for key in db.keys():
+                            keystr = key.decode("utf-8")
+                            if regex.match(keystr):
+                                result[keystr] = db[key].decode("utf-8")
+                    return result
+                finally:
+                    db.close()
+            except dbm.error as e:
+                raise NamingError("dbm error in optimized_regex_list: "+str(e))
+
+    def remove_all(self, items):
+        with self.lock:
+            try:
+                db = dbm.open(self.dbmfile, "w")
+                try:
+                    for item in items:
+                        try:
+                            del db[item.encode("utf-8")]
+                        except KeyError:
+                            pass
+                finally:
+                    db.close()
+            except dbm.error as e:
+                raise NamingError("dbm error in remove_all: "+str(e))
 
     def everything(self):
-        db = dbm.open(self.dbmfile)
-        try:
-            result = {}
-            if hasattr(db, "items"):
-                for key, value in db.items():
-                    result[key.decode("utf-8")] = value.decode("utf-8")
-            else:
-                for key in db.keys():
-                    result[key.decode("utf-8")] = db[key].decode("utf-8")
-            return result
-        finally:
-            db.close()
-
-
-if not dbm:
-    del DbmStorage
+        with self.lock:
+            try:
+                db = dbm.open(self.dbmfile)
+                try:
+                    result = {}
+                    if hasattr(db, "items"):
+                        for key, value in db.items():
+                            result[key.decode("utf-8")] = value.decode("utf-8")
+                    else:
+                        for key in db.keys():
+                            result[key.decode("utf-8")] = db[key].decode("utf-8")
+                    return result
+                finally:
+                    db.close()
+            except dbm.error as e:
+                raise NamingError("dbm error in everything: "+str(e))
 
 
 class DictStorage(dict):
@@ -136,6 +233,9 @@ class DictStorage(dict):
     Storage implementation that is just an in-memory dict.
     Stopping the nameserver will make the server instantly forget about everything.
     """
+    def __init__(self, **kwargs):
+        super(DictStorage, self).__init__(**kwargs)
+
     def optimized_prefix_list(self, prefix):
         return None
 
@@ -145,6 +245,13 @@ class DictStorage(dict):
     def everything(self):
         return self.copy()
 
+    def remove_all(self, items):
+        for item in items:
+            try:
+                del self[item]
+            except KeyError:
+                pass
+
 
 class NameServer(object):
     """
@@ -152,7 +259,10 @@ class NameServer(object):
     Default storage is done in an in-memory dictionary. You can provide custom storage types.
     """
     def __init__(self, storageProvider=None):
-        self.storage = storageProvider or DictStorage()
+        self.storage = storageProvider
+        if storageProvider is None:
+            self.storage = DictStorage()
+            log.debug("using volatile in-memory dict storage")
         self.lock = RLock()
 
     def clear(self):
@@ -176,9 +286,9 @@ class NameServer(object):
             core.URI(uri)  # check if uri is valid
         if not isinstance(name, basestring):
             raise TypeError("name must be a str")
-        if safe and name in self.storage:
-            raise NamingError("name already registered: " + name)
         with self.lock:
+            if safe and name in self.storage:
+                raise NamingError("name already registered: " + name)
             self.storage[name] = uri
 
     def remove(self, name=None, prefix=None, regex=None):
@@ -188,23 +298,20 @@ class NameServer(object):
                 del self.storage[name]
             return 1
         if prefix:
-            with self.lock:
-                items = list(self.list(prefix=prefix).keys())
-                if Pyro4.constants.NAMESERVER_NAME in items:
-                    items.remove(Pyro4.constants.NAMESERVER_NAME)
-                for item in items:
-                    del self.storage[item]
-                return len(items)
+            items = list(self.list(prefix=prefix).keys())
+            if Pyro4.constants.NAMESERVER_NAME in items:
+                items.remove(Pyro4.constants.NAMESERVER_NAME)
+            self.storage.remove_all(items)
+            return len(items)
         if regex:
-            with self.lock:
-                items = list(self.list(regex=regex).keys())
-                if Pyro4.constants.NAMESERVER_NAME in items:
-                    items.remove(Pyro4.constants.NAMESERVER_NAME)
-                for item in items:
-                    del self.storage[item]
-                return len(items)
+            items = list(self.list(regex=regex).keys())
+            if Pyro4.constants.NAMESERVER_NAME in items:
+                items.remove(Pyro4.constants.NAMESERVER_NAME)
+            self.storage.remove_all(items)
+            return len(items)
         return 0
 
+    # noinspection PyNoneFunctionAssignment
     def list(self, prefix=None, regex=None):
         """Retrieve the registered items as a dictionary name-to-URI. The URIs
         in the resulting dict are strings, not URI objects.
@@ -246,7 +353,7 @@ class NameServer(object):
 class NameServerDaemon(core.Daemon):
     """Daemon that contains the Name Server."""
 
-    def __init__(self, host=None, port=None, unixsocket=None, nathost=None, natport=None):
+    def __init__(self, host=None, port=None, unixsocket=None, nathost=None, natport=None, storage=None):
         if host is None:
             host = Pyro4.config.HOST
         if port is None:
@@ -255,8 +362,21 @@ class NameServerDaemon(core.Daemon):
             nathost = Pyro4.config.NATHOST
         if natport is None:
             natport = Pyro4.config.NATPORT or None
+        storage = storage or "memory"
+        if storage == "memory":
+            log.debug("using volatile in-memory dict storage")
+            self.nameserver = NameServer(DictStorage())
+        elif storage.startswith("dbm:") and len(storage) > 4:
+            dbmfile = storage[4:]
+            log.debug("using persistent dbm storage in file %s", dbmfile)
+            self.nameserver = NameServer(DbmStorage(dbmfile))
+        elif storage.startswith("sql:") and len(storage) > 4:
+            sqlfile = storage[4:]
+            log.debug("using persistent sql storage in file %s", sqlfile)
+            self.nameserver = NameServer(SqlStorage(sqlfile))
+        else:
+            raise ValueError("invalid storage type '%s'" % storage)
         super(NameServerDaemon, self).__init__(host, port, unixsocket, nathost=nathost, natport=natport)
-        self.nameserver = NameServer()   # XXX make storageProvider configurable
         self.register(self.nameserver, Pyro4.constants.NAMESERVER_NAME)
         self.nameserver.register(Pyro4.constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
         log.info("nameserver daemon created")
@@ -362,9 +482,9 @@ class BroadcastServer(object):
         self.close()
 
 
-def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None, nathost=None, natport=None):
+def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None, nathost=None, natport=None, storage=None):
     """utility function that starts a new Name server and enters its requestloop."""
-    daemon = NameServerDaemon(host, port, unixsocket, nathost=nathost, natport=natport)
+    daemon = NameServerDaemon(host, port, unixsocket, nathost=nathost, natport=natport, storage=storage)
     nsUri = daemon.uriFor(daemon.nameserver)
     internalUri = daemon.uriFor(daemon.nameserver, nat=False)
     bcserver = None
@@ -398,10 +518,10 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
     print("NS shut down.")
 
 
-def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None, nathost=None, natport=None):
+def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None, nathost=None, natport=None, storage=None):
     """utility fuction to quickly get a Name server daemon to be used in your own event loops.
     Returns (nameserverUri, nameserverDaemon, broadcastServer)."""
-    daemon = NameServerDaemon(host, port, unixsocket, nathost=nathost, natport=natport)
+    daemon = NameServerDaemon(host, port, unixsocket, nathost=nathost, natport=natport, storage=storage)
     bcserver = None
     nsUri = daemon.uriFor(daemon.nameserver)
     if not unixsocket:
@@ -514,6 +634,7 @@ def main(args=None):
     parser.add_option("-n", "--host", dest="host", help="hostname to bind server on")
     parser.add_option("-p", "--port", dest="port", type="int", help="port to bind server on (0=random)")
     parser.add_option("-u", "--unixsocket", help="Unix domain socket name to bind server on")
+    parser.add_option("-s", "--storage", help="Storage system to use, default=memory", default="memory")
     parser.add_option("", "--bchost", dest="bchost", help="hostname to bind broadcast server on (default is \"\")")
     parser.add_option("", "--bcport", dest="bcport", type="int",
                       help="port to bind broadcast server on (0=random)")
@@ -524,7 +645,7 @@ def main(args=None):
     options, args = parser.parse_args(args)
     startNSloop(options.host, options.port, enableBroadcast=options.enablebc,
                 bchost=options.bchost, bcport=options.bcport, unixsocket=options.unixsocket,
-                nathost=options.nathost, natport=options.natport)
+                nathost=options.nathost, natport=options.natport, storage=options.storage)
 
 
 if __name__ == "__main__":

@@ -63,7 +63,9 @@ class NamingTrasher(threadutil.Thread):
 def main():
     threads = []
     ns = Pyro4.naming.locateNS()
+    print("Removing previous stresstest registrations...")
     ns.remove(prefix="stresstest.")
+    print("Done. Starting.")
     for i in range(5):
         nt = NamingTrasher(ns._pyroUri, i)
         nt.start()
