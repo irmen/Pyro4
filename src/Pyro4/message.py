@@ -199,3 +199,10 @@ class Message(object):
             if k != "HMAC":
                 mac.update(v)
         return mac.digest()
+
+    @staticmethod
+    def ping(pyroConnection, hmac_key=None):
+        """Convenience method to send a 'ping' message and wait for the 'pong' response"""
+        ping = Message(MSG_PING, b"ping", 42, 0, 0, hmac_key=hmac_key)
+        pyroConnection.send(ping.to_bytes())
+        Message.recv(pyroConnection, [MSG_PING])

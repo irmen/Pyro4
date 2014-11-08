@@ -27,30 +27,27 @@ class AutoReconnectingProxy(Pyro4.core.Proxy):
     This uses some advanced features of the Pyro API.
     """
 
-    def _pyroInvoke(self, methodname, vargs, kwargs, flags=0):
-        # first test if we have an open connection, if not, we just reconnect
+    def _pyroInvoke(self, *args, **kwargs):
+        # We override the method that does the actual remote calls: _pyroInvoke.
+        # If there's still a connection, try a ping to see if it is still alive.
+        # If it isn't alive, reconnect it. If there's no connection, simply call
+        # the original method (it will reconnect automatically).
         if self._pyroConnection:
             try:
                 print("  <proxy: ping>")
-                # send the special 'ping' message to the daemon, to see if this connection is still alive
-                # we expect a 'ping' response (no-op)
-                # XXX move this to a class method on proxy: (also accepting hmac param)
-                ping = Pyro4.message.Message(Pyro4.message.MSG_PING, b"ping", 42, 0, 0)
-                self._pyroConnection.send(ping.to_bytes())
-                Pyro4.message.Message.recv(self._pyroConnection, [Pyro4.message.MSG_PING])
+                Pyro4.message.Message.ping(self._pyroConnection, hmac_key=None)    # utility method on the Message class
                 print("  <proxy: ping reply (still connected)>")
-            except Pyro4.errors.ConnectionClosedError:  # or possibly even ProtocolError
+            except Pyro4.errors.ConnectionClosedError:
                 print("  <proxy: Connection lost. REBINDING...>")
                 self._pyroReconnect()
                 print("  <proxy: Connection restored, continue with actual method call...>")
-        return super(AutoReconnectingProxy, self)._pyroInvoke(methodname, vargs, kwargs, flags)
+        return super(AutoReconnectingProxy, self)._pyroInvoke(*args, **kwargs)
 
 
 with AutoReconnectingProxy(uri) as obj:
     result = obj.echo("12345")
     print("result =", result)
-    print(
-        "\nClient proxy connection is still open. Disable the network now (or wait until the connection timeout on the server expires) and see what the server does.")
+    print("\nClient proxy connection is still open. Disable the network now (or wait until the connection timeout on the server expires) and see what the server does.")
     print("Once you see on the server that it got a timeout or a disconnect, enable the network again.")
     input("Press enter to continue:")
     print("\nDoing a new call on the same proxy:")

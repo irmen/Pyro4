@@ -183,6 +183,7 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual(Pyro4.message.MSG_PING, msg.type)
             self.assertEqual(999, msg.seq)
             self.assertEqual(b"pong", msg.data)
+            Pyro4.message.Message.ping(p._pyroConnection)  # the convenience method that does the above
 
     def testSequence(self):
         with Pyro4.core.Proxy(self.objectUri) as p:

@@ -7,10 +7,12 @@ Change Log
 - Persistent name server option: -s (currently implemented: dbm, sqlite, and the default volatile in-memory storage)
 - Name server utility methods have new 'storage' parameter to customize storage mechanism
 - nsc got new 'lookup' command to get one single registration from the nameserver
-- removed ``HMAC_KEY`` config item (deprecated in 4.29), use the ``_pyroHmacKey`` property on proxy and daemon instead
+- removed ``HMAC_KEY`` config item (deprecated in 4.29), use the ``_pyroHmacKey`` property on proxy and daemon instead.
+  This finalizes the change that allows you to have a per-proxy hmac key instead of a single global one. (Also counts for daemons)
 - name server and nsc command line tools gained -k/--key option to specify hmac key (just as the echoserver and flameserver already had)
 - name server locateNS and resolve methods gained hmac key parameter
 - configuration dump now also includes protocol version
+- message class now has a static convenience 'ping' method to send ping messages. Useful for instance in the 'disconnects' example.
 
 
 **Pyro 4.29**
