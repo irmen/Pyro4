@@ -12,6 +12,7 @@ import os
 import platform
 import pickle
 import socket
+import Pyro4.constants
 
 
 class Configuration(object):
@@ -19,7 +20,7 @@ class Configuration(object):
                  "COMPRESSION", "SERVERTYPE", "COMMTIMEOUT",
                  "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
                  "DETAILED_TRACEBACK", "SOCK_REUSE", "PREFER_IP_VERSION",
-                 "THREADPOOL_SIZE", "HMAC_KEY", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
+                 "THREADPOOL_SIZE", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
                  "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
                  "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
                  "METADATA", "REQUIRE_EXPOSE", "USE_MSG_WAITALL")
@@ -48,7 +49,6 @@ class Configuration(object):
         self.ONEWAY_THREADED = True  # oneway calls run in their own thread
         self.DETAILED_TRACEBACK = False
         self.THREADPOOL_SIZE = 16
-        self.HMAC_KEY = None  # must be bytes type. Deprecated, will be removed in next version.
         self.AUTOPROXY = True
         self.MAX_MESSAGE_SIZE = 0  # 0 = unlimited
         self.BROADCAST_ADDRS = "<broadcast>, 0.0.0.0"  # comma separated list of broadcast addresses
@@ -83,8 +83,6 @@ class Configuration(object):
                         else:
                             envvalue = valuetype(envvalue)  # just cast the value to the appropriate type
                     setattr(self, symbol, envvalue)
-        if self.HMAC_KEY and type(self.HMAC_KEY) is not bytes:
-            self.HMAC_KEY = self.HMAC_KEY.encode("utf-8")  # convert to bytes
         self.SERIALIZERS_ACCEPTED = set(self.SERIALIZERS_ACCEPTED.split(','))
 
     def asDict(self):
@@ -121,7 +119,8 @@ class Configuration(object):
         result = ["Pyro version: %s" % VERSION,
                   "Loaded from: %s" % os.path.abspath(os.path.split(inspect.getfile(Configuration))[0]),
                   "Python version: %s %s (%s, %s)" % (implementation, platform.python_version(), platform.system(), os.name),
-                  "Active configuration settings:"]
+                  "Protocol version: %d" % Pyro4.constants.PROTOCOL_VERSION,
+                  "Currently active configuration settings:"]
         for n, v in sorted(config.items()):
             result.append("%s = %s" % (n, v))
         return "\n".join(result)

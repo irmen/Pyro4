@@ -34,6 +34,7 @@ class AutoReconnectingProxy(Pyro4.core.Proxy):
                 print("  <proxy: ping>")
                 # send the special 'ping' message to the daemon, to see if this connection is still alive
                 # we expect a 'ping' response (no-op)
+                # XXX move this to a class method on proxy: (also accepting hmac param)
                 ping = Pyro4.message.Message(Pyro4.message.MSG_PING, b"ping", 42, 0, 0)
                 self._pyroConnection.send(ping.to_bytes())
                 Pyro4.message.Message.recv(self._pyroConnection, [Pyro4.message.MSG_PING])

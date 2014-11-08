@@ -40,10 +40,6 @@ class DaemonTests(unittest.TestCase):
 
     def setUp(self):
         Pyro4.config.POLLTIMEOUT = 0.1
-        Pyro4.config.HMAC_KEY = b"testsuite"
-
-    def tearDown(self):
-        Pyro4.config.HMAC_KEY = None
 
     def testSerializerConfig(self):
         self.assertIsInstance(Pyro4.config.SERIALIZERS_ACCEPTED, set)
@@ -66,10 +62,10 @@ class DaemonTests(unittest.TestCase):
         self.assertIn("marshal", Pyro4.config.SERIALIZERS_ACCEPTED)
         self.assertNotIn("pickle", Pyro4.config.SERIALIZERS_ACCEPTED)
         with Pyro4.core.Daemon(port=0) as d:
-            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_MARSHAL, 0, 0)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_MARSHAL, 0, 0, hmac_key=d._pyroHmacKey)
             cm = ConnectionMock(msg)
             d.handleRequest(cm)  # marshal serializer should be accepted
-            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_PICKLE, 0, 0)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_PICKLE, 0, 0, hmac_key=d._pyroHmacKey)
             cm = ConnectionMock(msg)
             try:
                 d.handleRequest(cm)
@@ -380,7 +376,7 @@ class DaemonTests(unittest.TestCase):
         with Pyro4.core.Daemon(port=0) as d:
             success = d._handshake(conn)
             self.assertTrue(success)
-            msg = Pyro4.message.Message.recv(conn)
+            msg = Pyro4.message.Message.recv(conn, hmac_key=d._pyroHmacKey)
             self.assertEqual(Pyro4.message.MSG_CONNECTOK, msg.type)
             self.assertEqual(1, msg.seq)
 

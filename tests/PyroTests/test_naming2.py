@@ -20,11 +20,9 @@ from testsupport import *
 
 class OfflineNameServerTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY = b"testsuite"
         self.storageProvider = Pyro4.naming.MemoryStorage()
 
     def tearDown(self):
-        Pyro4.config.HMAC_KEY = None
         self.storageProvider.clear()
         self.storageProvider.close()
 

@@ -28,36 +28,15 @@ elif sys.version_info >= (3, 4):
     reload = importlib.reload
 
 
-class CoreTestsWithoutHmac(unittest.TestCase):
-    def setUp(self):
-        warnings.simplefilter("ignore")
-        Pyro4.config.reset()
-
-    def testProxy(self):
-        Pyro4.config.HMAC_KEY = None
+class CoreTests(unittest.TestCase):
+    def testProxyNoHmac(self):
         # check that proxy without hmac is possible
         _ = Pyro4.Proxy("PYRO:object@host:9999")
 
-    def testDaemon(self):
-        Pyro4.config.HMAC_KEY = None
+    def testDaemonNoHmac(self):
         # check that daemon without hmac is possible
         d = Pyro4.Daemon()
         d.shutdown()
-
-    @unittest.skipIf(sys.version_info < (3, 0), "hmac bytes only checked on python 3.0+")
-    def testHmacBytes(self):
-        Pyro4.config.HMAC_KEY = "stringnotallowed"
-        with self.assertRaises(Pyro4.errors.PyroError):
-            Pyro4.core._check_hmac()
-        Pyro4.config.HMAC_KEY = None
-
-
-class CoreTests(unittest.TestCase):
-    def setUp(self):
-        Pyro4.config.HMAC_KEY = b"testsuite"
-
-    def tearDown(self):
-        Pyro4.config.HMAC_KEY = None
 
     def testConfig(self):
         self.assertTrue(type(Pyro4.config.COMPRESSION) is bool)
@@ -447,7 +426,6 @@ class CoreTests(unittest.TestCase):
             def recv(self, size):
                 raise Pyro4.errors.ConnectionClosedError("mock")
         proxy = Pyro4.core.Proxy("PYRO:foobar@localhost:59999")
-        self.assertEqual(b"testsuite", proxy._pyroHmacKey)  # set by (deprecated) HMAC_KEY config item
         proxy._pyroHmacKey = b"secret"
         conn_mock = ConnectionMock()
         proxy._pyroConnection = conn_mock
@@ -458,17 +436,6 @@ class CoreTests(unittest.TestCase):
         else:
             self.assertIn(b"HMAC", conn_mock.msgbytes)
 
-        conn_mock = ConnectionMock()
-        proxy._pyroConnection = conn_mock
-        proxy._pyroHmacKey = None
-        with self.assertRaises(Pyro4.errors.ConnectionClosedError):
-            proxy.foo()
-        if sys.platform == 'cli':
-            self.assertIn("HMAC", conn_mock.msgbytes)   # (deprecated) HMAC_KEY is still set
-        else:
-            self.assertIn(b"HMAC", conn_mock.msgbytes)   # (deprecated) HMAC_KEY is still set
-        self.assertIsNone(proxy._pyroHmacKey)
-        Pyro4.config.HMAC_KEY = None
         conn_mock = ConnectionMock()
         proxy._pyroConnection = conn_mock
         proxy._pyroHmacKey = None
@@ -594,12 +561,6 @@ class RemoteMethodTests(unittest.TestCase):
                 return vargs[1] // vargs[2]
             else:
                 raise NotImplementedError(methodname)
-
-    def setUp(self):
-        Pyro4.config.HMAC_KEY = b"testsuite"
-
-    def tearDown(self):
-        Pyro4.config.HMAC_KEY = None
 
     def testRemoteMethodMetaOff(self):
         try:

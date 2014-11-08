@@ -37,7 +37,6 @@ fi
 
 # Add Pyro Config
 # here you can add others ...
-export PYRO_HMAC_KEY=12345
 export PYRO_LOGFILE="$MESSAGELOG"
 export PYRO_LOGLEVEL=DEBUG
 

@@ -34,15 +34,14 @@ def main(args=None, returnWithoutLooping=False):
         print("Starting Pyro Flame server.")
 
     hmac = (options.key or "").encode("utf-8")
-    if not hmac:
+    if not hmac and not options.quiet:
         print("Warning: HMAC key not set. Anyone can connect to this server!")
-    Pyro4.config.HMAC_KEY = hmac or Pyro4.config.HMAC_KEY
-    if not options.quiet and Pyro4.config.HMAC_KEY:
-        print("HMAC_KEY set to: %s" % Pyro4.config.HMAC_KEY)
 
     Pyro4.config.SERIALIZERS_ACCEPTED = set(["pickle"])  # flame requires pickle serializer, doesn't work with the others.
 
     daemon = Pyro4.core.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
+    if hmac:
+        daemon._pyroHmacKey = hmac
     uri = Pyro4.utils.flame.start(daemon)
     if not options.quiet:
         print("server uri: %s" % uri)

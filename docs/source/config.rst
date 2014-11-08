@@ -80,7 +80,6 @@ AUTOPROXY               bool    True           Enable to make Pyro automatically
 COMMTIMEOUT             float   0.0            network communication timeout in seconds. 0.0=no timeout (infinite wait)
 COMPRESSION             bool    False          Enable to make Pyro compress the data that travels over the network
 DETAILED_TRACEBACK      bool    False          Enable to get detailed exception tracebacks (including the value of local variables per stack frame)
-HMAC_KEY                bytes   None           Shared secret key to sign all communication messages (deprecated, will be removed in next version)
 HOST                    str     localhost      Hostname where Pyro daemons will bind on
 MAX_MESSAGE_SIZE        int     0              Maximum size in bytes of the messages sent or received on the wire. If a message exceeds this size, a ProtocolError is raised.
 NS_HOST                 str     *equal to      Hostname for the name server

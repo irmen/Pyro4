@@ -25,11 +25,9 @@ class SerializeTests_pickle(unittest.TestCase):
     def setUp(self):
         self.previous_serializer = Pyro4.config.SERIALIZER
         Pyro4.config.SERIALIZER = self.SERIALIZER
-        Pyro4.config.HMAC_KEY = b"testsuite"
         self.ser = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
 
     def tearDown(self):
-        Pyro4.config.HMAC_KEY = None
         Pyro4.config.SERIALIZER = self.previous_serializer
 
     def testSerItself(self):

@@ -91,7 +91,7 @@ class Message(object):
         self.data_size = len(self.data)
         self.serializer_id = serializer_id
         self.annotations = annotations or {}
-        self.hmac_key = hmac_key or Pyro4.config.HMAC_KEY     # use (deprecated) HMAC_KEY if no key is specified
+        self.hmac_key = hmac_key
         if self.hmac_key:
             self.annotations["HMAC"] = self.hmac()
         self.annotations_size = sum([6 + len(v) for v in self.annotations.values()])
@@ -158,7 +158,6 @@ class Message(object):
         Also reads annotation chunks and the actual payload data.
         Validates a HMAC chunk if present.
         """
-        hmac_key = hmac_key or Pyro4.config.HMAC_KEY    # use (deprecated) HMAC_KEY if no key is specified
         msg = cls.from_header(connection.recv(cls.header_size))
         msg.hmac_key = hmac_key
         if 0 < Pyro4.config.MAX_MESSAGE_SIZE < (msg.data_size + msg.annotations_size):

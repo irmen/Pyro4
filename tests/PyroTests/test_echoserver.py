@@ -29,7 +29,6 @@ class EchoServerThread(Thread):
 
 class TestEchoserver(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY = b"testsuite"
         self.echoserverthread = EchoServerThread()
         self.echoserverthread.start()
         self.echoserverthread.started.wait()
@@ -39,7 +38,6 @@ class TestEchoserver(unittest.TestCase):
         self.echoserverthread.echodaemon.shutdown()
         time.sleep(0.01)
         self.echoserverthread.terminated.wait()
-        Pyro4.config.HMAC_KEY = None
 
     def testExposed(self):
         e = Pyro4.test.echoserver.EchoServer()

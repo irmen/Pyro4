@@ -112,7 +112,7 @@ class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
         # a bit of a hack, overriding this internal method to return a CONNECTFAIL...
         serializer = Pyro4.util.get_serializer("marshal")
         data, _ = serializer.serializeData("rigged connection failure", compress=False)
-        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTFAIL, data, serializer.serializer_id, 0, 1)
+        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTFAIL, data, serializer.serializer_id, 0, 1, hmac_key=self._pyroHmacKey)
         conn.send(msg.to_bytes())
         return False
 
@@ -120,7 +120,6 @@ class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
 class ServerTestsBrokenHandshake(unittest.TestCase):
     def setUp(self):
         Pyro4.config.LOGWIRE = True
-        Pyro4.config.HMAC_KEY = b"testsuite"
         Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon = DaemonWithSabotagedHandshake(port=0)
         obj = ServerTestObject()
@@ -135,7 +134,6 @@ class ServerTestsBrokenHandshake(unittest.TestCase):
         time.sleep(0.05)
         self.daemon.shutdown()
         self.daemonthread.join()
-        Pyro4.config.HMAC_KEY = None
         Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
 
     def testDaemonConnectFail(self):
@@ -156,7 +154,6 @@ class ServerTestsOnce(unittest.TestCase):
 
     def setUp(self):
         Pyro4.config.LOGWIRE = True
-        Pyro4.config.HMAC_KEY = b"testsuite"
         Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon = Pyro4.core.Daemon(port=0)
         obj = ServerTestObject()
@@ -174,16 +171,15 @@ class ServerTestsOnce(unittest.TestCase):
         if self.daemon is not None:
             self.daemon.shutdown()
             self.daemonthread.join()
-        Pyro4.config.HMAC_KEY = None
         Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
 
     def testPingMessage(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
             p._pyroBind()
             conn = p._pyroConnection
-            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"something", 42, 0, 999)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"something", 42, 0, 999, hmac_key=p._pyroHmacKey)
             conn.send(msg.to_bytes())
-            msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_PING])
+            msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_PING], hmac_key=p._pyroHmacKey)
             self.assertEqual(Pyro4.message.MSG_PING, msg.type)
             self.assertEqual(999, msg.seq)
             self.assertEqual(b"pong", msg.data)
@@ -640,7 +636,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         Pyro4.config.POLLTIMEOUT = 0.1
         Pyro4.config.SERVERTYPE = self.SERVERTYPE
         Pyro4.config.COMMTIMEOUT = self.COMMTIMEOUT
-        Pyro4.config.HMAC_KEY = b"testsuite"
         Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon = Pyro4.core.Daemon(port=0)
         obj = ServerTestObject()
@@ -657,7 +652,6 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         self.daemonthread.join()
         Pyro4.config.SERVERTYPE = "thread"
         Pyro4.config.COMMTIMEOUT = None
-        Pyro4.config.HMAC_KEY = None
         Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
 
     def testConnectionStuff(self):

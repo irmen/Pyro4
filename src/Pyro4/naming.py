@@ -289,9 +289,10 @@ class BroadcastServer(object):
         self.close()
 
 
-def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None, nathost=None, natport=None, storage=None):
+def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None, nathost=None, natport=None, storage=None, hmac=None):
     """utility function that starts a new Name server and enters its requestloop."""
     daemon = NameServerDaemon(host, port, unixsocket, nathost=nathost, natport=natport, storage=storage)
+    daemon._pyroHmacKey = hmac
     nsUri = daemon.uriFor(daemon.nameserver)
     internalUri = daemon.uriFor(daemon.nameserver, nat=False)
     bcserver = None
@@ -314,6 +315,8 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
     if existing > 1:   # don't count our own nameserver registration
         print("Persistent store contains %d existing registrations." % existing)
     print("NS running on %s (%s)" % (daemon.locationStr, hostip))
+    if not hmac:
+        print("Warning: HMAC key not set. Anyone can connect to this server!")
     if daemon.natLocationStr:
         print("internal URI = %s" % internalUri)
         print("external URI = %s" % nsUri)
@@ -328,10 +331,11 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
     print("NS shut down.")
 
 
-def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None, nathost=None, natport=None, storage=None):
+def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None, nathost=None, natport=None, storage=None, hmac=None):
     """utility fuction to quickly get a Name server daemon to be used in your own event loops.
     Returns (nameserverUri, nameserverDaemon, broadcastServer)."""
     daemon = NameServerDaemon(host, port, unixsocket, nathost=nathost, natport=natport, storage=storage)
+    daemon._pyroHmacKey = hmac
     bcserver = None
     nsUri = daemon.uriFor(daemon.nameserver)
     if not unixsocket:
@@ -345,7 +349,7 @@ def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None
     return nsUri, daemon, bcserver
 
 
-def locateNS(host=None, port=None, broadcast=True):
+def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
     """Get a proxy for a name server somewhere in the network."""
     if host is None:
         # first try localhost if we have a good chance of finding it there
@@ -356,6 +360,7 @@ def locateNS(host=None, port=None, broadcast=True):
             uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port or Pyro4.config.NS_PORT)
             log.debug("locating the NS: %s", uristring)
             proxy = core.Proxy(uristring)
+            proxy._pyroHmacKey = hmac_key
             try:
                 proxy.ping()
                 log.debug("located NS")
@@ -410,6 +415,7 @@ def locateNS(host=None, port=None, broadcast=True):
     uri = core.URI(uristring)
     log.debug("locating the NS: %s", uri)
     proxy = core.Proxy(uri)
+    proxy._pyroHmacKey = hmac_key
     try:
         proxy.ping()
         log.debug("located NS")
@@ -420,7 +426,7 @@ def locateNS(host=None, port=None, broadcast=True):
         raise e
 
 
-def resolve(uri):
+def resolve(uri, hmac_key=None):
     """Resolve a 'magic' uri (PYRONAME) into the direct PYRO uri."""
     if isinstance(uri, basestring):
         uri = core.URI(uri)
@@ -430,7 +436,7 @@ def resolve(uri):
         return uri
     log.debug("resolving %s", uri)
     if uri.protocol == "PYRONAME":
-        nameserver = locateNS(uri.host, uri.port)
+        nameserver = locateNS(uri.host, uri.port, hmac_key=hmac_key)
         uri = nameserver.lookup(uri.object)
         nameserver._pyroRelease()
         return uri
@@ -452,10 +458,12 @@ def main(args=None):
     parser.add_option("", "--natport", dest="natport", type="int", help="external port in case of NAT")
     parser.add_option("-x", "--nobc", dest="enablebc", action="store_false", default=True,
                       help="don't start a broadcast server")
+    parser.add_option("-k", "--key", help="the HMAC key to use")
     options, args = parser.parse_args(args)
     startNSloop(options.host, options.port, enableBroadcast=options.enablebc,
                 bchost=options.bchost, bcport=options.bcport, unixsocket=options.unixsocket,
-                nathost=options.nathost, natport=options.natport, storage=options.storage)
+                nathost=options.nathost, natport=options.natport, storage=options.storage,
+                hmac=options.key)
 
 
 if __name__ == "__main__":

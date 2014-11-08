@@ -31,12 +31,10 @@ class FlameDisabledTests(unittest.TestCase):
 
 class FlameTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.HMAC_KEY = b"testsuite"
         Pyro4.config.FLAME_ENABLED = True
         Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
 
     def tearDown(self):
-        Pyro4.config.HMAC_KEY = None
         Pyro4.config.FLAME_ENABLED = False
         Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
 

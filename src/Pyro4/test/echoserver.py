@@ -120,9 +120,8 @@ def main(args=None, returnWithoutLooping=False):
     Pyro4.config.SERVERTYPE = "multiplex"
 
     hmac = (options.key or "").encode("utf-8")
-    Pyro4.config.HMAC_KEY = hmac or Pyro4.config.HMAC_KEY
-    if not options.quiet and Pyro4.config.HMAC_KEY:
-        print("HMAC_KEY set to: %s" % Pyro4.config.HMAC_KEY)
+    if not hmac and not options.quiet:
+        print("Warning: HMAC key not set. Anyone can connect to this server!")
 
     nameserver = None
     if options.nameserver:
@@ -130,6 +129,8 @@ def main(args=None, returnWithoutLooping=False):
         nameserver = startNameServer(options.host)
 
     d = Pyro4.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
+    if hmac:
+        d._pyroHmacKey = hmac
     echo = EchoServer()
     echo._verbose = options.verbose
     objectName = "test.echoserver"

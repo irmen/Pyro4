@@ -34,12 +34,6 @@ class NSLoopThread(threadutil.Thread):
 
 
 class BCSetupTests(unittest.TestCase):
-    def setUp(self):
-        Pyro4.config.HMAC_KEY = b"testsuite"
-
-    def tearDown(self):
-        Pyro4.config.HMAC_KEY = None
-
     def testBCstart(self):
         myIpAddress = Pyro4.socketutil.getIpAddress("", workaround127=True)
         nsUri, nameserver, bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=False)
@@ -56,7 +50,6 @@ class BCSetupTests(unittest.TestCase):
 class NameServerTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT = 0.1
-        Pyro4.config.HMAC_KEY = b"testsuite"
         myIpAddress = Pyro4.socketutil.getIpAddress("", workaround127=True)
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0)
         self.assertIsNotNone(self.bcserver, "expected a BC server to be running")
@@ -77,7 +70,6 @@ class NameServerTests(unittest.TestCase):
         self.nameserver.shutdown()
         self.bcserver.close()
         # self.daemonthread.join()
-        Pyro4.config.HMAC_KEY = None
         Pyro4.config.NS_HOST = self.old_nsHost
         Pyro4.config.NS_PORT = self.old_nsPort
         Pyro4.config.NS_BCPORT = self.old_bcPort
@@ -202,7 +194,6 @@ class NameServerTests(unittest.TestCase):
 class NameServerTests0000(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT = 0.1
-        Pyro4.config.HMAC_KEY = b"testsuite"
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host="", port=0, bcport=0)
         host_check = self.nsUri.host
         if host_check == "0:0:0:0:0:0:0:0":  # this happens on jython
@@ -224,7 +215,6 @@ class NameServerTests0000(unittest.TestCase):
         Pyro4.config.NS_HOST = self.old_nsHost
         Pyro4.config.NS_PORT = self.old_nsPort
         Pyro4.config.NS_BCPORT = self.old_bcPort
-        Pyro4.config.HMAC_KEY = None
 
     @unittest.skipUnless(os.name != "java", "jython does strange things with bc server on 0.0.0.0 (it hangs)")
     def testBCLookup0000(self):

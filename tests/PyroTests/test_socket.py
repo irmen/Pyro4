@@ -377,7 +377,8 @@ class ServerCallback_BrokenHandshake(ServerCallback):
 
 class TestDaemon(Daemon):
     def __init__(self):
-        pass  # avoid all regular daemon initialization
+        self._pyroHmacKey = None
+        pass  # avoid all other regular daemon initialization
 
 
 class TestSocketServer(unittest.TestCase):

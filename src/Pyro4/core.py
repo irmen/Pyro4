@@ -169,12 +169,6 @@ class _RemoteMethod(object):
         return self.__send(self.__name, args, kwargs)
 
 
-def _check_hmac():      # deprecated, HMAC_KEY will be removed in next version
-    if Pyro4.config.HMAC_KEY:
-        if sys.version_info >= (3, 0) and type(Pyro4.config.HMAC_KEY) is not bytes:
-            raise errors.PyroError("HMAC_KEY must be bytes type")
-
-
 class Proxy(object):
     """
     Pyro proxy for a remote object. Intercepts method calls and dispatches them to the remote object.
@@ -188,13 +182,12 @@ class Proxy(object):
     __pyroAttributes = frozenset(
         ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri",
          "_pyroOneway", "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq", "_pyroHmacKey",
-         "_Proxy__pyroTimeout", "_Proxy__pyroLock", "_Proxy__pyroConnLock"])
+         "_Proxy__pyroHmacKey", "_Proxy__pyroTimeout", "_Proxy__pyroLock", "_Proxy__pyroConnLock"])
 
     def __init__(self, uri):
         """
         .. autoattribute:: _pyroTimeout
         """
-        _check_hmac()  # check if hmac secret key is set
         if isinstance(uri, basestring):
             uri = URI(uri)
         elif not isinstance(uri, URI):
@@ -205,13 +198,24 @@ class Proxy(object):
         self._pyroAttrs = set()  # attributes of the remote object, gotten from meta-data
         self._pyroOneway = set()  # oneway-methods of the remote object, gotten from meta-data
         self._pyroSeq = 0  # message sequence number
-        self._pyroHmacKey = Pyro4.config.HMAC_KEY
+        self.__pyroHmacKey = None
         self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
         self.__pyroLock = threadutil.Lock()
         self.__pyroConnLock = threadutil.Lock()
         util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
         if os.name == "java" and Pyro4.config.SERIALIZER == "marshal":
             warnings.warn("marshal doesn't work correctly with Jython (issue 2077); please choose another serializer", RuntimeWarning)
+
+    @property
+    def _pyroHmacKey(self):
+        return self.__pyroHmacKey
+
+    @_pyroHmacKey.setter
+    def _pyroHmacKey(self, value):
+        # if needed, convert the hmac value to bytes first
+        if value and sys.version_info >= (3, 0) and type(value) is not bytes:
+            value = value.encode("utf-8")  # convert to bytes
+        self.__pyroHmacKey = value
 
     def __del__(self):
         if hasattr(self, "_pyroConnection"):
@@ -421,7 +425,7 @@ class Proxy(object):
                     sock = socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout)
                     conn = socketutil.SocketConnection(sock, uri.object)
                     # Do handshake. For now, no need to send anything. (message type CONNECT is not yet used)
-                    msg = message.Message.recv(conn, None)
+                    msg = message.Message.recv(conn, None, hmac_key=self._pyroHmacKey)
                     # any trailing data (dataLen>0) is an error message, if any
                 except Exception:
                     x = sys.exc_info()[1]
@@ -739,7 +743,6 @@ class Daemon(object):
     """
 
     def __init__(self, host=None, port=0, unixsocket=None, nathost=None, natport=None, interface=DaemonObject):
-        _check_hmac()  # check if hmac secret key is set
         if host is None:
             host = Pyro4.config.HOST
         if nathost is None:
@@ -783,6 +786,18 @@ class Daemon(object):
         self.__serializer_ids = set([util.get_serializer(ser_name).serializer_id for ser_name in Pyro4.config.SERIALIZERS_ACCEPTED])
         log.debug("accepted serializers: %s" % Pyro4.config.SERIALIZERS_ACCEPTED)
         log.debug("pyro protocol version: %d  pickle version: %d" % (constants.PROTOCOL_VERSION, Pyro4.config.PICKLE_PROTOCOL_VERSION))
+        self.__pyroHmacKey = None
+
+    @property
+    def _pyroHmacKey(self):
+        return self.__pyroHmacKey
+
+    @_pyroHmacKey.setter
+    def _pyroHmacKey(self, value):
+        # if needed, convert the hmac value to bytes first
+        if value and sys.version_info >= (3, 0) and type(value) is not bytes:
+            value = value.encode("utf-8")  # convert to bytes
+        self.__pyroHmacKey = value
 
     @property
     def sock(self):
@@ -869,7 +884,7 @@ class Daemon(object):
         # We default to the marshal serializer to send message payload of "ok"
         ser = util.get_serializer("marshal")
         data = ser.dumps("ok")
-        msg = message.Message(message.MSG_CONNECTOK, data, ser.serializer_id, 0, 1)
+        msg = message.Message(message.MSG_CONNECTOK, data, ser.serializer_id, 0, 1, hmac_key=self._pyroHmacKey)
         conn.send(msg.to_bytes())
         return True
 
@@ -885,7 +900,7 @@ class Daemon(object):
         wasBatched = False
         isCallback = False
         try:
-            msg = message.Message.recv(conn, [message.MSG_INVOKE, message.MSG_PING])
+            msg = message.Message.recv(conn, [message.MSG_INVOKE, message.MSG_PING], hmac_key=self._pyroHmacKey)
             request_flags = msg.flags
             request_seq = msg.seq
             request_serializer_id = msg.serializer_id
@@ -893,7 +908,7 @@ class Daemon(object):
                 log.debug("daemon wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
             if msg.type == message.MSG_PING:
                 # return same seq, but ignore any data (it's a ping, not an echo). Nothing is deserialized.
-                msg = message.Message(message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq)
+                msg = message.Message(message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq, hmac_key=self._pyroHmacKey)
                 if Pyro4.config.LOGWIRE:
                     log.debug("daemon wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
                 conn.send(msg.to_bytes())
@@ -958,7 +973,7 @@ class Daemon(object):
                     response_flags |= Pyro4.message.FLAGS_BATCH
                 if Pyro4.config.LOGWIRE:
                     log.debug("daemon wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (message.MSG_RESULT, response_flags, serializer.serializer_id, request_seq, data))
-                msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq)
+                msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq, hmac_key=self._pyroHmacKey)
                 conn.send(msg.to_bytes())
         except Exception:
             xt, xv = sys.exc_info()[0:2]
@@ -994,7 +1009,7 @@ class Daemon(object):
             flags |= Pyro4.message.FLAGS_COMPRESSED
         if Pyro4.config.LOGWIRE:
             log.debug("daemon wiredata sending (error response): msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (message.MSG_RESULT, flags, serializer.serializer_id, seq, data))
-        msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq)
+        msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq, hmac_key=self._pyroHmacKey)
         connection.send(msg.to_bytes())
 
     def register(self, obj, objectId=None, force=False):

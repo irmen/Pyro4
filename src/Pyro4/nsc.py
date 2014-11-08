@@ -84,6 +84,7 @@ def main(args=None):
     parser.add_option("-p", "--port", dest="port", type="int",
                       help="port of the NS (or bc-port if host isn't specified)")
     parser.add_option("-u", "--unixsocket", help="Unix domain socket name of the NS")
+    parser.add_option("-k", "--key", help="the HMAC key to use")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose output")
     options, args = parser.parse_args(args)
     if not args or args[0] not in ("register", "remove", "removematching", "list", "listmatching", "lookup", "ping"):
@@ -93,7 +94,7 @@ def main(args=None):
     if options.unixsocket:
         options.host = "./u:" + options.unixsocket
     try:
-        nameserver = naming.locateNS(options.host, options.port)
+        nameserver = naming.locateNS(options.host, options.port, hmac_key=options.key)
     except errors.PyroError:
         x = sys.exc_info()[1]
         print("Failed to locate the name server: %s" % x)

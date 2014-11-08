@@ -95,18 +95,18 @@ Pyro suggests using a `HMAC signature <http://docs.python.org/library/hmac.html>
 to prevent malicious requests. The idea is to only have legit clients connect to your Pyro server.
 Using the HMAC signature ensures that only clients with the correct secret key can create valid requests,
 and that it is impossible to modify valid requests (even though the network data is not encrypted).
+The hashing algorithm that is used in the HMAC is SHA-1.
 
-You need to create and configure a secure shared key.
+You need to create and configure a secure shared key yourself.
 The key is a byte string and must be cryptographically secure (there are various methods to create such a key).
 Your server needs to set this key and every client that wants to connect to it also needs to
-set it.
-You can set the shared key via the ``HMAC_KEY`` config item, but that is now deprecated and will be removed in the next version.
+set it. You can set the shared key via the ``_pyroHmacKey`` property on a proxy or a daemon::
 
-Pyro will cause a Python-level warning message if you run it without a HMAC key, but it will run just fine.
+    daemon._pyroHmacKey = b"secretkey"
+    proxy._pyroHmacKey = b"secretkey"
 
-The hashing algorithm that is used in the HMAC is SHA-1 (not MD5).
 
 .. warning::
     It is hard to keep a shared secret key actually secret!
-    People might read the source code of your clients and extract the key from it.
+    People might read the source code of your software and extract the key from it.
     Pyro itself provides no facilities to help you with this, sorry.
