@@ -173,11 +173,8 @@ class DbmStorage(object):
         item = item.encode("utf-8")
         with self.lock:
             try:
-                db = dbm.open(self.dbmfile)
-                try:
+                with closing(dbm.open(self.dbmfile)) as db:
                     return db[item].decode("utf-8")
-                finally:
-                    db.close()
             except dbm.error as e:
                 raise NamingError("dbm error in getitem: "+str(e))
 
@@ -186,22 +183,16 @@ class DbmStorage(object):
         value = value.encode("utf-8")
         with self.lock:
             try:
-                db = dbm.open(self.dbmfile, "w")
-                try:
+                with closing(dbm.open(self.dbmfile, "w")) as db:
                     db[key] = value
-                finally:
-                    db.close()
             except dbm.error as e:
                 raise NamingError("dbm error in setitem: "+str(e))
 
     def __len__(self):
         with self.lock:
             try:
-                db = dbm.open(self.dbmfile)
-                try:
+                with closing(dbm.open(self.dbmfile)) as db:
                     return len(db)
-                finally:
-                    db.close()
             except dbm.error as e:
                 raise NamingError("dbm error in len: "+str(e))
 
@@ -209,11 +200,8 @@ class DbmStorage(object):
         item = item.encode("utf-8")
         with self.lock:
             try:
-                db = dbm.open(self.dbmfile)
-                try:
+                with closing(dbm.open(self.dbmfile)) as db:
                     return item in db
-                finally:
-                    db.close()
             except dbm.error as e:
                 raise NamingError("dbm error in contains: "+str(e))
 
@@ -221,45 +209,35 @@ class DbmStorage(object):
         key = key.encode("utf-8")
         with self.lock:
             try:
-                db = dbm.open(self.dbmfile, "w")
-                try:
+                with closing(dbm.open(self.dbmfile, "w")) as db:
                     del db[key]
-                finally:
-                    db.close()
             except dbm.error as e:
                 raise NamingError("dbm error in delitem: "+str(e))
 
     def __iter__(self):
         with self.lock:
             try:
-                db = dbm.open(self.dbmfile)
-                try:
+                with closing(dbm.open(self.dbmfile)) as db:
                     return iter([key.decode("utf-8") for key in db.keys()])
-                finally:
-                    db.close()
             except dbm.error as e:
                 raise NamingError("dbm error in iter: "+str(e))
 
     def clear(self):
         with self.lock:
             try:
-                db = dbm.open(self.dbmfile, "w")
-                try:
+                with closing(dbm.open(self.dbmfile, "w")) as db:
                     if hasattr(db, "clear"):
                         db.clear()
                     else:
                         for key in db.keys():
                             del db[key]
-                finally:
-                    db.close()
             except dbm.error as e:
                 raise NamingError("dbm error in clear: "+str(e))
 
     def optimized_prefix_list(self, prefix):
         with self.lock:
             try:
-                db = dbm.open(self.dbmfile)
-                try:
+                with closing(dbm.open(self.dbmfile)) as db:
                     result = {}
                     if hasattr(db, "items"):
                         for key, value in db.items():
@@ -272,8 +250,6 @@ class DbmStorage(object):
                             if keystr.startswith(prefix):
                                 result[keystr] = db[key].decode("utf-8")
                     return result
-                finally:
-                    db.close()
             except dbm.error as e:
                 raise NamingError("dbm error in optimized_prefix_list: "+str(e))
 
@@ -285,8 +261,7 @@ class DbmStorage(object):
             raise NamingError("invalid regex: " + str(x))
         with self.lock:
             try:
-                db = dbm.open(self.dbmfile)
-                try:
+                with closing(dbm.open(self.dbmfile)) as db:
                     result = {}
                     if hasattr(db, "items"):
                         for key, value in db.items():
@@ -299,31 +274,25 @@ class DbmStorage(object):
                             if regex.match(keystr):
                                 result[keystr] = db[key].decode("utf-8")
                     return result
-                finally:
-                    db.close()
             except dbm.error as e:
                 raise NamingError("dbm error in optimized_regex_list: "+str(e))
 
     def remove_items(self, items):
         with self.lock:
             try:
-                db = dbm.open(self.dbmfile, "w")
-                try:
+                with closing(dbm.open(self.dbmfile, "w")) as db:
                     for item in items:
                         try:
                             del db[item.encode("utf-8")]
                         except KeyError:
                             pass
-                finally:
-                    db.close()
             except dbm.error as e:
                 raise NamingError("dbm error in remove_items: "+str(e))
 
     def everything(self):
         with self.lock:
             try:
-                db = dbm.open(self.dbmfile)
-                try:
+                with closing(dbm.open(self.dbmfile)) as db:
                     result = {}
                     if hasattr(db, "items"):
                         for key, value in db.items():
@@ -332,8 +301,6 @@ class DbmStorage(object):
                         for key in db.keys():
                             result[key.decode("utf-8")] = db[key].decode("utf-8")
                     return result
-                finally:
-                    db.close()
             except dbm.error as e:
                 raise NamingError("dbm error in everything: "+str(e))
 
