@@ -65,6 +65,12 @@ As you can see it prints that it started a broadcast server (and its location),
 a name server (and its location), and it also printed the URI that clients can use
 to access it directly.
 
+The nameserver uses a fast but volatile in-memory database by default. With a command line argument
+you can select a persistent storage mechanism (see below). If you're using that, your registrations
+will not be lost when the nameserver stops/restarts. The server will print the number of
+existing registrations at startup time if it discovers any.
+
+
 .. note::
     Pyro by default binds its servers on localhost which means you cannot reach them
     from another machine on the network. This behavior also applies to the name server.
@@ -112,6 +118,14 @@ There are several command line options for this tool:
 
    Specify the external port use in case of NAT
 
+.. option:: -s STORAGE, --storage=STORAGE
+
+   Specify the storage mechanism to use. You have several options:
+
+    - ``memory`` - fast, volatile in-memory database. This is the default.
+    - ``dbm:dbfile`` - dbm-style persistent database table. Provide the filename to use.
+    - ``sql:sqlfile`` - sqlite persistent database. Provide the filename to use.
+
 .. option:: -x, --nobc
 
    Don't start a broadcast responder. Clients will not be able to use the UDP-broadcast lookup
@@ -120,11 +134,23 @@ There are several command line options for this tool:
    to signal its location to clients that want to talk to the name server)
 
 
-Another way is doing it from within your own code.
-This is much more complex because you will have to integrate the name server
-into the rest of your program (perhaps you need to merge event loops).
-A helper function is available to create it in your program: :py:func:`Pyro4.naming.startNS`.
+Starting the Name Server from within your own code
+==================================================
+
+Another way to start up a name server is by doing it from within your own code.
+This is more complex than simply launching it via the command line tool,
+because you have to integrate the name server into the rest of your program (perhaps you need to merge event loops?).
+For your convenience, two helper functions are available to create a name server yourself:
+:py:func:`Pyro4.naming.startNS` and :py:func:`Pyro4.naming.startNSloop`.
 Look at the :file:`eventloop` example to see how you can use this.
+
+**Custom storage mechanism:**
+The utility functions allow you to specify a custom storage mechanism (via the ``storage`` parameter).
+By default the in memory storage :py:class:`Pyro4.naming.MemoryStorage` is used.
+In the :py:mod:`Pyro4.naming_storage` module you can find the two other implementations (for the dbm and
+for the sqlite storage). You could also build your own, as long as it has the same interface.
+
+
 
 .. index::
     double: name server; configuration items
@@ -194,6 +220,9 @@ list : list [prefix]
 
 listmatching : listmatching pattern
   List only the objects with a name matching the given regular expression pattern.
+
+lookup : lookup name
+  Looks up a single name registration and prints the uri.
 
 register : register name uri
   Registers a name to the given Pyro object :abbr:`URI (universal resource identifier)`.

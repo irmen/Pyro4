@@ -4,7 +4,9 @@ Change Log
 
 **Pyro 4.30**
 
-- Persistent name server option: -s (currently implemented: dbm datastore). Default is still the volatile in-memory storage.
+- Persistent name server option: -s (currently implemented: dbm, sqlite, and the default volatile in-memory storage)
+- Name server utility methods have new 'storage' parameter to customize storage mechanism
+- nsc got new 'lookup' command to get one single registration from the nameserver
 
 
 **Pyro 4.29**

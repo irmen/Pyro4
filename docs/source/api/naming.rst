@@ -6,3 +6,6 @@
 
 .. autoclass:: Pyro4.naming.NameServer
    :members:
+
+.. automodule:: Pyro4.naming_storage
+   :members:

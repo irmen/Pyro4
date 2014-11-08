@@ -33,6 +33,11 @@ def handleCommand(nameserver, options, args):
             raise SystemExit("requires one argument: pattern")
         printListResult(nameserver.list(regex=args[1]), "- regex '%s'" % args[1])
 
+    def cmd_lookup():
+        if len(args) != 2:
+            raise SystemExit("requires one argument: name")
+        print(nameserver.lookup(args[1]))
+
     def cmd_register():
         if len(args) != 3:
             raise SystemExit("requires two arguments: name uri")
@@ -58,6 +63,7 @@ def handleCommand(nameserver, options, args):
         "ping": cmd_ping,
         "list": cmd_listprefix,
         "listmatching": cmd_listregex,
+        "lookup": cmd_lookup,
         "register": cmd_register,
         "remove": cmd_remove,
         "removematching": cmd_removeregex
@@ -72,7 +78,7 @@ def handleCommand(nameserver, options, args):
 def main(args=None):
     from optparse import OptionParser
     usage = "usage: %prog [options] command [arguments]\nCommand is one of: " \
-            "register remove removematching list listmatching ping"
+            "register remove removematching lookup list listmatching ping"
     parser = OptionParser(usage=usage)
     parser.add_option("-n", "--host", dest="host", help="hostname of the NS")
     parser.add_option("-p", "--port", dest="port", type="int",
@@ -80,7 +86,7 @@ def main(args=None):
     parser.add_option("-u", "--unixsocket", help="Unix domain socket name of the NS")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose output")
     options, args = parser.parse_args(args)
-    if not args or args[0] not in ("register", "remove", "removematching", "list", "listmatching", "ping"):
+    if not args or args[0] not in ("register", "remove", "removematching", "list", "listmatching", "lookup", "ping"):
         parser.error("invalid or missing command")
     if options.verbose:
         print("Locating name server...")
