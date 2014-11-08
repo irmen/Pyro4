@@ -85,7 +85,7 @@ class NameServerTests(unittest.TestCase):
         self.assertEqual(self.nsUri.host, uri.host)
         self.assertEqual(Pyro4.config.NS_PORT, uri.port)
         ns._pyroRelease()
-        ns = Pyro4.naming.locateNS(self.nsUri.host, Pyro4.config.NS_PORT)
+        ns = Pyro4.naming.locateNS(self.nsUri.host, Pyro4.config.NS_PORT, hmac_key=None)
         uri = ns._pyroUri
         self.assertEqual("PYRO", uri.protocol)
         self.assertEqual(self.nsUri.host, uri.host)
@@ -99,6 +99,10 @@ class NameServerTests(unittest.TestCase):
         ns.register("unittest.object3", Pyro4.core.URI("PYRO:66666@host.com:4444"))
         self.assertEqual(Pyro4.core.URI("PYRO:66666@host.com:4444"), ns.lookup("unittest.object3"))
         ns._pyroRelease()
+
+    def testLookupInvalidHmac(self):
+        with self.assertRaises(NamingError):
+            Pyro4.naming.locateNS(self.nsUri.host, Pyro4.config.NS_PORT, hmac_key="invalidkey")
 
     def testDaemonPyroObj(self):
         uri = self.nsUri
@@ -154,8 +158,8 @@ class NameServerTests(unittest.TestCase):
         _ = Pyro4.naming.resolve(pyronameUri)
 
     def testResolve(self):
-        resolved1 = Pyro4.naming.resolve(Pyro4.core.URI("PYRO:12345@host.com:4444"))
-        resolved2 = Pyro4.naming.resolve("PYRO:12345@host.com:4444")
+        resolved1 = Pyro4.naming.resolve(Pyro4.core.URI("PYRO:12345@host.com:4444"), hmac_key=None)
+        resolved2 = Pyro4.naming.resolve("PYRO:12345@host.com:4444", hmac_key=None)
         self.assertTrue(type(resolved1) is Pyro4.core.URI)
         self.assertEqual(resolved1, resolved2)
         self.assertEqual("PYRO:12345@host.com:4444", str(resolved1))

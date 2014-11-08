@@ -207,6 +207,10 @@ synopsis: :command:`python -m Pyro4.nsc [options] command [arguments]` (or simpl
 
    Provide the Unix domain socket name of the name server, rather than a normal TCP/IP socket.
 
+.. option:: -k, --key
+
+   Specify hmac key to use.
+
 .. option:: -v, --verbose
 
    Print more output that could be useful.
@@ -286,7 +290,7 @@ locator function without any arguments.
 If you want to circumvent the broadcast lookup (because you know the location of the
 server already, somehow) you can specify the hostname.
 
-.. function:: locateNS([host=None, port=None, broadcast=True])
+.. function:: locateNS([host=None, port=None, broadcast=True, hmac_key=key])
 
     Get a proxy for a name server somewhere in the network.
     If you're not providing host or port arguments, the configured defaults are used.
@@ -304,6 +308,7 @@ server already, somehow) you can specify the hostname.
         * host parameter not given: the port now means the broadcast port.
     :param broadcast: should a broadcast be used to locate the name server, if
         no location is specified? Default is True.
+    :param hmac_key: optional hmac key to use
 
 
 .. index:: PYRONAME protocol type
@@ -371,7 +376,7 @@ So, resolving a logical name can be done in several ways:
 You can resolve a ``PYRONAME`` URI explicitly using the following utility function:
 :func:`Pyro4.naming.resolve` (also available as :func:`Pyro4.resolve`), which goes like this:
 
-.. function:: resolve(uri)
+.. function:: resolve(uri [, hmac_key=None])
 
     Finds a name server, and use that to resolve a PYRONAME uri into the direct PYRO uri pointing to the named object.
     If uri is already a PYRO uri, it is returned unmodified.
@@ -380,7 +385,7 @@ You can resolve a ``PYRONAME`` URI explicitly using the following utility functi
 
     :param uri: PYRONAME uri that you want to resolve
     :type uri: string or :class:`Pyro4.core.URI`
-
+    :param hmac_key: optional hmac key to use
 
 .. index::
     double: name server; registering objects
