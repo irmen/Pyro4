@@ -145,6 +145,9 @@ class RemoteInteractiveConsole(object):
         self.remoteconsole.terminate()
         self.remoteconsole._pyroRelease()
 
+    def terminate(self):
+        self.close()
+
     def __repr__(self):
         return "<%s.%s at 0x%x, for %s>" % (self.__class__.__module__, self.__class__.__name__,
                                             id(self), self.remoteconsole._pyroUri.location)
