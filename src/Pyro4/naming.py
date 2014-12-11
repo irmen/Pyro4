@@ -382,14 +382,16 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
                             x = sys.exc_info()[1]
                             err = getattr(x, "errno", x.args[0])
                             if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:  # yeah, windows likes to throw these...
-                                if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:  # and jython likes to throw thses...
+                                if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:  # and jython likes to throw these...
                                     raise
                     data, _ = sock.recvfrom(100)
                     sock.close()
                     if sys.version_info >= (3, 0):
                         data = data.decode("iso-8859-1")
                     log.debug("located NS: %s", data)
-                    return core.Proxy(data)
+                    proxy = core.Proxy(data)
+                    proxy._pyroHmacKey = hmac_key
+                    return proxy
                 except socket.timeout:
                     continue
             try:

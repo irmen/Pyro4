@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.31**
 
-...
+- locateNS now properly sets provided hmac key on proxy returned via broadcast lookup
 
 
 **Pyro 4.30**
