@@ -69,7 +69,7 @@ class NameServerTests(unittest.TestCase):
         time.sleep(0.01)
         self.nameserver.shutdown()
         self.bcserver.close()
-        # self.daemonthread.join()
+        self.daemonthread.join()
         Pyro4.config.NS_HOST = self.old_nsHost
         Pyro4.config.NS_PORT = self.old_nsPort
         Pyro4.config.NS_BCPORT = self.old_bcPort
@@ -250,7 +250,7 @@ class NameServerTestsHmac(unittest.TestCase):
         time.sleep(0.01)
         self.nameserver.shutdown()
         self.bcserver.close()
-        # self.daemonthread.join()
+        self.daemonthread.join()
         Pyro4.config.NS_HOST = self.old_nsHost
         Pyro4.config.NS_PORT = self.old_nsPort
         Pyro4.config.NS_BCPORT = self.old_bcPort
@@ -262,7 +262,7 @@ class NameServerTestsHmac(unittest.TestCase):
         ns._pyroRelease()
         ns = Pyro4.naming.locateNS(hmac_key=b"test_key")  # broadcast lookup providing hmac
         self.assertIsInstance(ns, Pyro4.core.Proxy)
-        self.assertEquals(b"test_key", ns._pyroHmacKey)  # ... sets the hmac on the proxy
+        self.assertEqual(b"test_key", ns._pyroHmacKey)  # ... sets the hmac on the proxy
         ns._pyroRelease()
         ns = Pyro4.naming.locateNS(self.nsUri.host, Pyro4.config.NS_PORT, hmac_key=b"test_key")
         uri = ns._pyroUri
@@ -270,6 +270,18 @@ class NameServerTestsHmac(unittest.TestCase):
         self.assertEqual(self.nsUri.host, uri.host)
         self.assertEqual(Pyro4.config.NS_PORT, uri.port)
         self.assertEqual(b"test_key", ns._pyroHmacKey)
+        ns._pyroRelease()
+
+    def testResolve(self):
+        uri = Pyro4.naming.resolve("PYRONAME:Pyro.NameServer", hmac_key=b"test_key")
+        self.assertEqual("PYRO", uri.protocol)
+        self.assertEqual(self.nsUri.host, uri.host)
+        self.assertEqual(Pyro4.config.NS_PORT, uri.port)
+
+    def testResolveWrongKey(self):
+        with self.assertRaises(CommunicationError) as ex:
+            ns = Pyro4.naming.resolve("PYRONAME:Pyro.NameServer", hmac_key=b"wrong_key")
+        self.assertEqual("cannot connect: message hmac mismatch", str(ex.exception))
 
 
 if __name__ == "__main__":
