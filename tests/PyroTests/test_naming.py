@@ -84,13 +84,14 @@ class NameServerTests(unittest.TestCase):
         self.assertEqual("PYRO", uri.protocol)
         self.assertEqual(self.nsUri.host, uri.host)
         self.assertEqual(Pyro4.config.NS_PORT, uri.port)
+        self.assertIsNone(ns._pyroHmacKey)
         ns._pyroRelease()
         ns = Pyro4.naming.locateNS(self.nsUri.host, Pyro4.config.NS_PORT, hmac_key=None)
         uri = ns._pyroUri
         self.assertEqual("PYRO", uri.protocol)
         self.assertEqual(self.nsUri.host, uri.host)
         self.assertEqual(Pyro4.config.NS_PORT, uri.port)
-
+        self.assertIsNone(ns._pyroHmacKey)
         # check that we cannot register a stupid type
         self.assertRaises(TypeError, ns.register, "unittest.object1", 5555)
         # we can register str or URI, lookup always returns URI
@@ -194,7 +195,6 @@ class NameServerTests(unittest.TestCase):
         Pyro4.config.METADATA = old_metadata
 
 
-
 class NameServerTests0000(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT = 0.1
@@ -226,6 +226,50 @@ class NameServerTests0000(unittest.TestCase):
         self.assertIsInstance(ns, Pyro4.core.Proxy)
         self.assertNotEqual("0.0.0.0", ns._pyroUri.host, "returned location must not be 0.0.0.0 when running on 0.0.0.0")
         ns._pyroRelease()
+
+
+class NameServerTestsHmac(unittest.TestCase):
+    def setUp(self):
+        Pyro4.config.POLLTIMEOUT = 0.1
+        myIpAddress = Pyro4.socketutil.getIpAddress("", workaround127=True)
+        self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0, hmac=b"test_key")
+        self.assertIsNotNone(self.bcserver, "expected a BC server to be running")
+        self.bcserver.runInThread()
+        self.daemonthread = NSLoopThread(self.nameserver)
+        self.daemonthread.start()
+        self.daemonthread.running.wait()
+        time.sleep(0.05)
+        self.old_bcPort = Pyro4.config.NS_BCPORT
+        self.old_nsPort = Pyro4.config.NS_PORT
+        self.old_nsHost = Pyro4.config.NS_HOST
+        Pyro4.config.NS_PORT = self.nsUri.port
+        Pyro4.config.NS_HOST = myIpAddress
+        Pyro4.config.NS_BCPORT = self.bcserver.getPort()
+
+    def tearDown(self):
+        time.sleep(0.01)
+        self.nameserver.shutdown()
+        self.bcserver.close()
+        # self.daemonthread.join()
+        Pyro4.config.NS_HOST = self.old_nsHost
+        Pyro4.config.NS_PORT = self.old_nsPort
+        Pyro4.config.NS_BCPORT = self.old_bcPort
+
+    def testLookupAndRegister(self):
+        ns = Pyro4.naming.locateNS()  # broadcast lookup without providing hmac still works
+        self.assertIsInstance(ns, Pyro4.core.Proxy)
+        self.assertIsNone(ns._pyroHmacKey)   #... but no hmac is set on the proxy
+        ns._pyroRelease()
+        ns = Pyro4.naming.locateNS(hmac_key=b"test_key")  # broadcast lookup providing hmac
+        self.assertIsInstance(ns, Pyro4.core.Proxy)
+        self.assertEquals(b"test_key", ns._pyroHmacKey)  # ... sets the hmac on the proxy
+        ns._pyroRelease()
+        ns = Pyro4.naming.locateNS(self.nsUri.host, Pyro4.config.NS_PORT, hmac_key=b"test_key")
+        uri = ns._pyroUri
+        self.assertEqual("PYRO", uri.protocol)
+        self.assertEqual(self.nsUri.host, uri.host)
+        self.assertEqual(Pyro4.config.NS_PORT, uri.port)
+        self.assertEqual(b"test_key", ns._pyroHmacKey)
 
 
 if __name__ == "__main__":
