@@ -11,6 +11,7 @@ import copy
 import pprint
 import pickle
 import base64
+import serpent
 import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
@@ -301,6 +302,12 @@ class SerializeTests_pickle(unittest.TestCase):
         data2 = self.ser.deserializeData(ser, compressed=False)
         self.assertEqual(data, data2)
 
+    def testSet(self):
+        data = set([111, 222, 333])
+        ser, compressed = self.ser.serializeData(data)
+        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        self.assertEqual(data, data2)
+
     def testCircular(self):
         data = [42, "hello", Pyro4.Proxy("PYRO:dummy@dummy:4444")]
         data.append(data)
@@ -410,6 +417,16 @@ class SerializeTests_serpent(SerializeTests_pickle):
         with self.assertRaises(ValueError):  # serpent doesn't support object graphs (since serpent 1.7 reports ValueError instead of crashing)
             super(SerializeTests_serpent, self).testCircular()
 
+    def testSet(self):
+        # serpent serializes a set into a tuple on older python versions, so we override this
+        data = set([111, 222, 333])
+        ser, compressed = self.ser.serializeData(data)
+        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        if serpent.can_use_set_literals:
+            self.assertEqual(data, data2)
+        else:
+            self.assertEqual(tuple(data), data2)
+
 
 class SerializeTests_json(SerializeTests_pickle):
     SERIALIZER = "json"
@@ -421,6 +438,13 @@ class SerializeTests_json(SerializeTests_pickle):
     def testCircular(self):
         with self.assertRaises(ValueError):  # json doesn't support object graphs
             super(SerializeTests_json, self).testCircular()
+
+    def testSet(self):
+        # json serializes a set into a list, so we override this
+        data = set([111, 222, 333])
+        ser, compressed = self.ser.serializeData(data)
+        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        self.assertEqual(list(data), data2)
 
 
 if os.name != "java":

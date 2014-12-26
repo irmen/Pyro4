@@ -2,6 +2,13 @@
 Change Log
 **********
 
+**Pyro 4.32**
+
+- json serializer can now deal with set() types; they will be converted to tuples/lists instead. (similar to what serpent does on older Python versions)
+- this also fixes the problem that the proxy metadata feature used to crash when using json as serializer (because it used sets to transfer the data.
+  You had to turn the metadata feature off to be able to use the json serializer at all)
+
+
 **Pyro 4.31**
 
 - locateNS now properly sets provided hmac key on proxy returned via broadcast lookup

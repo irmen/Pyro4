@@ -12,6 +12,7 @@ import Pyro4.core
 import Pyro4.constants
 import Pyro4.socketutil
 import Pyro4.message
+from Pyro4.util import get_serializer_by_id
 from Pyro4.errors import DaemonError, PyroError
 from testsupport import *
 
@@ -452,6 +453,15 @@ class MetaInfoTests(unittest.TestCase):
             self.assertTrue(len(daemon_obj.info()) > 10)
             meta = daemon_obj.get_metadata(Pyro4.constants.DAEMON_NAME)
             self.assertEqual(set(["get_metadata", "info", "ping", "registered"]), meta["methods"])
+
+    def testMetaSerialization(self):
+        with Pyro4.core.Daemon() as d:
+            daemon_obj = d.objectsById[Pyro4.constants.DAEMON_NAME]
+            meta = daemon_obj.get_metadata(Pyro4.constants.DAEMON_NAME)
+            for ser_id in [Pyro4.message.SERIALIZER_JSON, Pyro4.message.SERIALIZER_MARSHAL, Pyro4.message.SERIALIZER_PICKLE, Pyro4.message.SERIALIZER_SERPENT]:
+                serializer = get_serializer_by_id(ser_id)
+                data = serializer.dumps(meta)
+                _ = serializer.loads(data)
 
 
 if __name__ == "__main__":

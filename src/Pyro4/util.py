@@ -249,7 +249,7 @@ class SerializerBase(object):
             if isinstance(obj, clazz):
                 return cls.__custom_class_to_dict_registry[clazz](obj)
         if type(obj) in (set, dict, tuple, list):
-            raise ValueError("couldn't serialize sequence " + str(obj.__class__) + ", one of its elements is unserializable")
+            raise ValueError("can't serialize type " + str(obj.__class__) + " into a dict")
         if hasattr(obj, "_pyroDaemon"):
             obj._pyroDaemon = None
         if isinstance(obj, BaseException):
@@ -502,6 +502,8 @@ class JsonSerializer(SerializerBase):
         replacer = self.__type_replacements.get(type(obj), None)
         if replacer:
             obj = replacer(obj)
+        if isinstance(obj, set):
+            return tuple(obj)  # json module can't deal with sets so we make a tuple out of it
         return self.class_to_dict(obj)
 
     @classmethod
