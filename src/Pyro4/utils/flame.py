@@ -300,6 +300,8 @@ def start(daemon):
     Create and register a Flame server in the given daemon.
     Be *very* cautious before starting this: it allows the clients full access to everything on your system.
     """
+    if "pickle" not in Pyro4.config.SERIALIZERS_ACCEPTED:
+        raise Pyro4.errors.ProtocolError("Flame daemon requires the pickle serializer to be accepted")
     if Pyro4.config.FLAME_ENABLED:
         return daemon.register(Flame(), Pyro4.constants.FLAME_NAME)
     else:
@@ -311,6 +313,8 @@ def connect(location):
     Connect to a Flame server on the given location, for instance localhost:9999 or ./u:unixsock
     This is just a convenience function to creates an appropriate Pyro proxy.
     """
+    if Pyro4.config.SERIALIZER != "pickle":
+        raise Pyro4.errors.ProtocolError("Flame requires the pickle serializer")
     proxy = Pyro4.core.Proxy("PYRO:%s@%s" % (Pyro4.constants.FLAME_NAME, location))
     proxy._pyroBind()
     return proxy

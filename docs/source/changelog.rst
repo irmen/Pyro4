@@ -7,6 +7,7 @@ Change Log
 - json serializer can now deal with set() types; they will be converted to tuples/lists instead. (similar to what serpent does on older Python versions)
 - this also fixes the problem that the proxy metadata feature used to crash when using json as serializer (because it used sets to transfer the data.
   You had to turn the metadata feature off to be able to use the json serializer at all)
+- flame explicitly checks for pickle to be enabled instead of causing connection level errors
 
 
 **Pyro 4.31**
