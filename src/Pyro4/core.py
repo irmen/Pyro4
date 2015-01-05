@@ -413,7 +413,7 @@ class Proxy(object):
             if self._pyroConnection is not None:
                 return False  # already connected
             from Pyro4.naming import resolve  # don't import this globally because of cyclic dependency
-            uri = resolve(self._pyroUri)
+            uri = resolve(self._pyroUri, self._pyroHmacKey)
             # socket connection (normal or Unix domain socket)
             conn = None
             log.debug("connecting to %s", uri)

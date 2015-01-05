@@ -278,6 +278,11 @@ class NameServerTestsHmac(unittest.TestCase):
         self.assertEqual(self.nsUri.host, uri.host)
         self.assertEqual(Pyro4.config.NS_PORT, uri.port)
 
+    def testPyroname(self):
+        with Pyro4.Proxy("PYRONAME:Pyro.NameServer") as p:
+            p._pyroHmacKey = b"test_key"
+            p.ping()   # the resolve() that is done should also use the hmac key
+
     def testResolveWrongKey(self):
         with self.assertRaises(CommunicationError) as ex:
             ns = Pyro4.naming.resolve("PYRONAME:Pyro.NameServer", hmac_key=b"wrong_key")

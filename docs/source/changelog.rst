@@ -8,6 +8,7 @@ Change Log
 - this also fixes the problem that the proxy metadata feature used to crash when using json as serializer (because it used sets to transfer the data.
   You had to turn the metadata feature off to be able to use the json serializer at all)
 - flame explicitly checks for pickle to be enabled instead of causing connection level errors
+- PYRONAME uri resolving now also uses the _pyroHmacKey set on the proxy (if any)
 
 
 **Pyro 4.31**
