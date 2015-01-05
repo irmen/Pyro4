@@ -300,8 +300,6 @@ def start(daemon):
     Create and register a Flame server in the given daemon.
     Be *very* cautious before starting this: it allows the clients full access to everything on your system.
     """
-    if "pickle" not in Pyro4.config.SERIALIZERS_ACCEPTED:
-        raise Pyro4.errors.ProtocolError("Flame daemon requires the pickle serializer to be accepted")
     if Pyro4.config.FLAME_ENABLED:
         return daemon.register(Flame(), Pyro4.constants.FLAME_NAME)
     else:

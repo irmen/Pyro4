@@ -17,7 +17,9 @@ from testsupport import *
 class FlameDisabledTests(unittest.TestCase):
     def testFlameDisabled(self):
         with Pyro4.core.Daemon() as d:
-            self.assertRaises(Pyro4.errors.SecurityError, Pyro4.utils.flame.start, d)  # default should be disabled
+            with self.assertRaises(Pyro4.errors.SecurityError) as ex:
+                Pyro4.utils.flame.start(d)
+            self.assertIn("disabled", str(ex.exception))   # default should be disabled even when pickle is activated
 
     def testRequirePickle(self):
         with Pyro4.core.Daemon() as d:
