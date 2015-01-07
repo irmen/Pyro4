@@ -13,10 +13,7 @@ the results and prints them to the screen once everything is complete.
 
 
 *** Starting up ***
-- We're using a Name Server:
-    * configure it to allow the pickle serializer, for instance by setting
-      the environment variable: PYRO_SERIALIZERS_ACCEPTED=pickle
-    * start the name server.
+- We're using a Name Server, so start one.
 - start the dispatcher (dispatcher.py)
 - start one or more workers (worker.py). For best results, start one of
     these on every machine/CPU in your network :-)
@@ -27,5 +24,6 @@ Note: The dispatcher is pretty braindead. It only has a single work and
 result queue. Running multiple clients will probably break the system.
 Improvements are left as an exercise.
 
-Note: because custom classes are passed over the network (such as
-WorkItem and queue.Empty) the pickle serializer is used.
+Note: because the workitem is a custom class that is passed over the network,
+we use a custom class deserializer to be able to get it back from Pyro.
+(otherwise we would have to fall back to using pickle as serializer)

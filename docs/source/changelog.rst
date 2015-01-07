@@ -10,6 +10,7 @@ Change Log
 - flame explicitly checks for pickle to be enabled instead of causing connection level errors
 - PYRONAME uri resolving now also uses the _pyroHmacKey set on the proxy (if any)
 - stockquotes tutorial doesn't actually require pickle anymore, so removed that from code and docs
+- distributed-computing example now uses a custom class deserializer instead of relying on pickle
 
 
 **Pyro 4.31**

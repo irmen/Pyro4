@@ -5,9 +5,12 @@ try:
 except ImportError:
     import Queue as queue
 import Pyro4
+from Pyro4.util import SerializerBase
+from workitem import Workitem
 
-# we're using custom classes, so need to use pickle
-Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
+
+# For 'workitem.Workitem' we register a deserialization hook to be able to get these back from Pyro
+SerializerBase.register_dict_to_class("workitem.Workitem", Workitem.from_dict)
 
 
 class DispatcherQueue(object):
@@ -19,13 +22,19 @@ class DispatcherQueue(object):
         self.workqueue.put(item)
 
     def getWork(self, timeout=5):
-        return self.workqueue.get(block=True, timeout=timeout)
+        try:
+            return self.workqueue.get(block=True, timeout=timeout)
+        except queue.Empty:
+            raise ValueError("no items in queue")
 
     def putResult(self, item):
         self.resultqueue.put(item)
 
     def getResult(self, timeout=5):
-        return self.resultqueue.get(block=True, timeout=timeout)
+        try:
+            return self.resultqueue.get(block=True, timeout=timeout)
+        except queue.Empty:
+            raise ValueError("no result available")
 
     def workQueueSize(self):
         return self.workqueue.qsize()

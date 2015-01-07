@@ -3,19 +3,16 @@ import os
 import socket
 import sys
 from math import sqrt
-
-
-try:
-    import queue
-except ImportError:
-    import Queue as queue
 import Pyro4
+from Pyro4.util import SerializerBase
+from workitem import Workitem
+
+
+# For 'workitem.Workitem' we register a deserialization hook to be able to get these back from Pyro
+SerializerBase.register_dict_to_class("workitem.Workitem", Workitem.from_dict)
 
 if sys.version_info < (3, 0):
     range = xrange
-
-# we're using custom classes, so need to use pickle
-Pyro4.config.SERIALIZER = 'pickle'
 
 WORKERNAME = "Worker_%d@%s" % (os.getpid(), socket.gethostname())
 
@@ -51,7 +48,7 @@ def main():
     while True:
         try:
             item = dispatcher.getWork()
-        except queue.Empty:
+        except ValueError:
             print("no work available yet.")
         else:
             process(item)

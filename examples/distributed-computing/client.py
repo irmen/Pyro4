@@ -1,15 +1,13 @@
 from __future__ import with_statement
 
-try:
-    import queue
-except ImportError:
-    import Queue as queue
 import random
 import Pyro4
+from Pyro4.util import SerializerBase
 from workitem import Workitem
 
-# we're using custom classes, so need to use pickle
-Pyro4.config.SERIALIZER = 'pickle'
+
+# For 'workitem.Workitem' we register a deserialization hook to be able to get these back from Pyro
+SerializerBase.register_dict_to_class("workitem.Workitem", Workitem.from_dict)
 
 NUMBER_OF_ITEMS = 40
 
@@ -38,11 +36,12 @@ def collectresults(dispatcher):
     while len(numbers) < NUMBER_OF_ITEMS:
         try:
             item = dispatcher.getResult()
-            print("Got result: %s (from %s)" % (item, item.processedBy))
-            numbers[item.data] = item.result
-        except queue.Empty:
+        except ValueError:
             print("Not all results available yet (got %d out of %d). Work queue size: %d" %
                   (len(numbers), NUMBER_OF_ITEMS, dispatcher.workQueueSize()))
+        else:
+            print("Got result: %s (from %s)" % (item, item.processedBy))
+            numbers[item.data] = item.result
 
     if dispatcher.resultQueueSize() > 0:
         print("there's still stuff in the dispatcher result queue, that is odd...")
