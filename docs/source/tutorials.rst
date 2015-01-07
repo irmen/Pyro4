@@ -704,6 +704,9 @@ for an easier transition).
     tutorial running in the form presented here. Basically it enables Pyro to transfer actual Python objects
     to remote calls, instead of only simple types such as lists and strings.
     In other chapters the meaning of this setting will be explained in more detail.
+    Normally the best is to use the default setting here, but for this particular tutorial that is
+    not possible. To show some features of Pyro here, we make an exception and tell Pyro to use a different setting
+    that allows this tutorial to work in the current form.
 
 
 main
@@ -914,15 +917,14 @@ running the final program
 -------------------------
 To run the final stock quote system you need to do the following:
 
-- Open a new console window to start the name server in.
-- Set the following environment variable::
+- Open a new console window and set the following environment variable::
 
     set PYRO_SERIALIZERS_ACCEPTED=pickle      (windows)
     export PYRO_SERIALIZERS_ACCEPTED=pickle   (unix/mac/linux)
 
   Once more, ignore the exact meaning of this particular setting. It is needed to get the stock market
   tutorial running in the form presented here. In other chapters the meaning of this setting will be explained.
-- start the Pyro name server (:command:`python -m Pyro4.naming`, or simply: :command:`pyro4-ns`) in this window.
+- Next, in this console window, start the Pyro name server (:command:`python -m Pyro4.naming`, or simply: :command:`pyro4-ns`).
 
 After that, start the following, each in a separate console window (so they run in parallel):
 
