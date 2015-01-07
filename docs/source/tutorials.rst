@@ -693,21 +693,6 @@ for an easier transition).
     Instead, a daemon is created manually, we register our own objects,
     and start the request loop ourselves. This needs more code but gives you more control.
 
-.. note::
-    You will see the following lines appear in the code:
-
-    ``Pyro4.config.SERIALIZER = 'pickle'``
-    and
-    ``Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')``
-
-    For now, ignore the exact meaning of these particular settings. It is needed to get the stock market
-    tutorial running in the form presented here. Basically it enables Pyro to transfer actual Python objects
-    to remote calls, instead of only simple types such as lists and strings.
-    In other chapters the meaning of this setting will be explained in more detail.
-    Normally the best is to use the default setting here, but for this particular tutorial that is
-    not possible. To show some features of Pyro here, we make an exception and tell Pyro to use a different setting
-    that allows this tutorial to work in the current form.
-
 
 main
 ----
@@ -741,9 +726,6 @@ The complete code for :file:`stockmarket.py` is now as follows::
     import threading
     import time
     import Pyro4
-
-    Pyro4.config.SERIALIZER = 'pickle'
-    Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
 
 
     class StockMarket(object):
@@ -821,9 +803,6 @@ The complete code for :file:`aggregator.py` is now as follows::
     from __future__ import print_function
     import Pyro4
 
-    Pyro4.config.SERIALIZER = 'pickle'
-    Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
-
 
     class Aggregator(object):
         def __init__(self):
@@ -885,9 +864,6 @@ Finally start the daemon loop to wait for incoming calls. The code is as follows
     import sys
     import Pyro4
 
-    Pyro4.config.SERIALIZER = 'pickle'
-    Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
-
     if sys.version_info < (3,0):
         input = raw_input
 
@@ -917,16 +893,9 @@ running the final program
 -------------------------
 To run the final stock quote system you need to do the following:
 
-- Open a new console window and set the following environment variable::
+- Open a new console window and start the Pyro name server (:command:`python -m Pyro4.naming`, or simply: :command:`pyro4-ns`).
 
-    set PYRO_SERIALIZERS_ACCEPTED=pickle      (windows)
-    export PYRO_SERIALIZERS_ACCEPTED=pickle   (unix/mac/linux)
-
-  Once more, ignore the exact meaning of this particular setting. It is needed to get the stock market
-  tutorial running in the form presented here. In other chapters the meaning of this setting will be explained.
-- Next, in this console window, start the Pyro name server (:command:`python -m Pyro4.naming`, or simply: :command:`pyro4-ns`).
-
-After that, start the following, each in a separate console window (so they run in parallel):
+After that, start the following, each in a separate console window (so they run in parallel, and don't mix up eachother's output):
 
 - start the stock market
 - start the aggregator

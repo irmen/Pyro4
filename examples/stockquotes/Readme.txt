@@ -38,8 +38,7 @@ phase 3:
     The components are now fully distributed and we used Pyro to make them
     talk to each other. There is no main.py anymore because you have to start
     every component by itself: (in seperate console windows for instance)
-    - start a Pyro name server (python -m Pyro4.naming), make sure that
-      you've set the PYRO_SERIALIZERS_ACCEPTED=pickle environment variable first.
+    - start a Pyro name server (python -m Pyro4.naming).
     - start the stockmarket
     - start the aggregator
     - start one or more of the viewers.
@@ -55,9 +54,5 @@ quote updates, etc.
 Note that phase 3 of this example makes use of Pyro's AutoProxy feature. Sending
 pyro objects 'over the wire' will automatically convert them into proxies so
 that the other side will talk to the actual object, instead of a local copy.
-
-
-Note: ignore the exact meaning of the "PYRO_SERIALIZER=pickle" settings.
-They are needed to get the stock market tutorial running in the form presented here.
-Basically it enables Pyro to transfer actual Python objects to remote calls,
-instead of only simple types such as lists and strings.
+This is how the aggregator makes itself known to the stockmarket and the viewer
+makes itself known to the aggregator.

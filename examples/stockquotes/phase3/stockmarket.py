@@ -6,10 +6,6 @@ import time
 import Pyro4
 
 
-Pyro4.config.SERIALIZER = 'pickle'
-Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
-
-
 class StockMarket(object):
     def __init__(self, marketname, symbols):
         self.name = marketname
