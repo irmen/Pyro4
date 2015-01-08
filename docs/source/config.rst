@@ -17,7 +17,7 @@ For instance, to enable message compression and change the server type, you add 
     double: configuration; environment variables
 
 You can also set them outside of your program, using environment variables from the shell.
-To avoid conflicts, the environment variables have a ``PYRO_`` prefix. This means that if you want
+**To avoid conflicts, the environment variables have a ``PYRO_`` prefix.** This means that if you want
 to change the same two settings as above, but by using environment variables, you would do something like::
 
     $ export PYRO_COMPRESSION=true
@@ -26,6 +26,9 @@ to change the same two settings as above, but by using environment variables, yo
     (or on windows:)
     C:\> set PYRO_COMPRESSION=true
     C:\> set PYRO_SERVERTYPE=multiplex
+
+This environment defined configuration is simply used as initial values for Pyro's configuration object.
+Your code can still overwrite them by setting the items to other values, or by resetting the config as a whole.
 
 
 .. index:: reset config to default

@@ -107,6 +107,12 @@ Serialization
     data. Not all objects can be serialized, so it is possible that passing a certain object to
     Pyro won't work even though a normal method call would accept it just fine.
 
+Configuration
+    Pyro can be configured in a lot of ways. Using environment variables (they're prefixed with ``PYRO_``)
+    or by setting config items in your code. See the configuration chapter for more details.
+    The default configuration should be ok for most situations though, so you many never have to touch
+    any of these options at all!
+
 
 Starting a name server
 ^^^^^^^^^^^^^^^^^^^^^^
