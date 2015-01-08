@@ -201,7 +201,7 @@ class Proxy(object):
         self.__pyroHmacKey = None
         self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
         self.__pyroLock = threadutil.Lock()
-        self.__pyroConnLock = threadutil.Lock()
+        self.__pyroConnLock = threadutil.RLock()   # reentrant lock because pyroInvoke (or rather, pyroRelease) may lock it from within pyroCreateConnection
         util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
         if os.name == "java" and Pyro4.config.SERIALIZER == "marshal":
             warnings.warn("marshal doesn't work correctly with Jython (issue 2077); please choose another serializer", RuntimeWarning)

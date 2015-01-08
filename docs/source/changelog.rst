@@ -9,6 +9,7 @@ Change Log
   You had to turn the metadata feature off to be able to use the json serializer at all)
 - flame explicitly checks for pickle to be enabled instead of causing connection level errors
 - PYRONAME uri resolving now also uses the _pyroHmacKey set on the proxy (if any)
+- proxy no longer locks up in pyroRelease when a protocol error occurs while getting the metadata
 - stockquotes tutorial doesn't actually require pickle anymore, so removed that from code and docs
 - distributed-computing example now uses a custom class deserializer instead of relying on pickle
 - distributed-computing example no longer overflows on older python versions (<3.x)
