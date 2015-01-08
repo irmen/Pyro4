@@ -12,7 +12,7 @@ from workitem import Workitem
 SerializerBase.register_dict_to_class("workitem.Workitem", Workitem.from_dict)
 
 if sys.version_info < (3, 0):
-    range = xrange
+    range = xrange   # make sure to use the memory efficient range generator
 
 WORKERNAME = "Worker_%d@%s" % (os.getpid(), socket.gethostname())
 
@@ -21,7 +21,7 @@ def factorize(n):
     """simple algorithm to find the prime factorials of the given number n"""
 
     def isPrime(n):
-        return not [x for x in range(2, int(sqrt(n)) + 1) if n % x == 0]
+        return not any(x for x in range(2, int(sqrt(n)) + 1) if n % x == 0)
 
     primes = []
     candidates = range(2, n + 1)

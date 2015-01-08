@@ -11,6 +11,7 @@ Change Log
 - PYRONAME uri resolving now also uses the _pyroHmacKey set on the proxy (if any)
 - stockquotes tutorial doesn't actually require pickle anymore, so removed that from code and docs
 - distributed-computing example now uses a custom class deserializer instead of relying on pickle
+- distributed-computing example no longer overflows on older python versions (<3.x)
 
 
 **Pyro 4.31**

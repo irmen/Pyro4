@@ -1,6 +1,7 @@
 from __future__ import with_statement
 
 import random
+import sys
 import Pyro4
 from Pyro4.util import SerializerBase
 from workitem import Workitem
@@ -25,7 +26,12 @@ def main():
 def placework(dispatcher):
     print("placing work items into dispatcher queue.")
     for i in range(NUMBER_OF_ITEMS):
-        number = random.randint(3211, 4999999) * random.randint(3211, 999999)
+        if sys.version_info < (3, 0):
+            # python 2.x range arguments needs to be within C int range
+            number = random.randint(3211, 12000) * random.randint(3211, 11000)
+        else:
+            # python 3.x allows arbitrary size range
+            number = random.randint(3211, 4999999) * random.randint(3211, 999999)
         item = Workitem(i + 1, number)
         dispatcher.putWork(item)
 
