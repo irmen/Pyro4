@@ -13,6 +13,8 @@ Change Log
 - stockquotes tutorial doesn't actually require pickle anymore, so removed that from code and docs
 - distributed-computing example now uses a custom class deserializer instead of relying on pickle
 - distributed-computing example no longer overflows on older python versions (<3.x)
+- serpent library dependency updated to 1.8
+- setup.py no longer fails when it can't import Pyro4 (it no longer needs to do so)
 
 
 **Pyro 4.31**

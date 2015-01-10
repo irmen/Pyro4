@@ -12,17 +12,17 @@ except ImportError:
     using_setuptools = False
 
 if __name__ == '__main__':
-    sys.path.insert(0, "src")
-    import warnings
-
-    warnings.simplefilter("default", ImportWarning)  # enable ImportWarning
-    import Pyro4.constants
-
-    print('Pyro version = %s' % Pyro4.constants.VERSION)
+    with open("src/Pyro4/constants.py") as constants_file:
+        # extract the VERSION definition from the Pyro4.constants module without importing it
+        constants_module = compile(constants_file.read(), "Pyro4.constants", "exec")
+        local_dict = {}
+        eval(constants_module, {}, local_dict)
+        pyro4_version = local_dict["VERSION"]
+    print('Pyro version = %s' % pyro4_version)
 
     setupargs = {
         "name": "Pyro4",
-        "version": Pyro4.constants.VERSION,
+        "version": pyro4_version,
         "license": "MIT",
         "description": "distributed object middleware for Python (RPC)",
         "long_description": """Pyro means PYthon Remote Objects. 
@@ -46,7 +46,7 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
         "packages": ['Pyro4', 'Pyro4.socketserver', 'Pyro4.test', 'Pyro4.utils'],
         "scripts": [],
         "platforms": "any",
-        "install_requires": ["serpent>=1.7"],
+        "install_requires": ["serpent>=1.8"],
         "requires": ["serpent"],
         "classifiers": [
             "Development Status :: 5 - Production/Stable",
@@ -84,6 +84,6 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
     setup(**setupargs)
 
     if len(sys.argv) >= 2 and sys.argv[1].startswith("install"):
-        print("\nOnly the Pyro library has been installed (version %s)." % Pyro4.constants.VERSION)
+        print("\nOnly the Pyro library has been installed (version %s)." % pyro4_version)
         print("If you want to install the tests, the examples, and/or the manual,")
         print("you have to copy them manually to the desired location.")
