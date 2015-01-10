@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 
 try:
     # try setuptools first, to get access to build_sphinx and test commands
@@ -14,10 +15,8 @@ except ImportError:
 if __name__ == '__main__':
     with open("src/Pyro4/constants.py") as constants_file:
         # extract the VERSION definition from the Pyro4.constants module without importing it
-        constants_module = compile(constants_file.read(), "Pyro4.constants", "exec")
-        local_dict = {}
-        eval(constants_module, {}, local_dict)
-        pyro4_version = local_dict["VERSION"]
+        version_line = next(line for line in constants_file if line.startswith("VERSION"))
+        pyro4_version = re.match("VERSION ?= ?['\"](.+)['\"]", version_line).group(1)
     print('Pyro version = %s' % pyro4_version)
 
     setupargs = {
