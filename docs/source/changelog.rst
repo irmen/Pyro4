@@ -2,6 +2,12 @@
 Change Log
 **********
 
+**Pyro 4.33**
+
+- added connection troubleshooting checklist to tips & tricks chapter
+- fix sphinx config issues when building the docs
+
+
 **Pyro 4.32**
 
 - json serializer can now deal with set() types; they will be converted to tuples/lists instead. (similar to what serpent does on older Python versions)

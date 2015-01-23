@@ -59,6 +59,8 @@ for your Pyro interfaces that hold the data you need, rather than passing a huge
 
 .. index:: Logging
 
+.. _logging:
+
 Logging
 =======
 If you configure it (see :ref:`config-items`) Pyro will write a bit of debug information, errors, and notifications to a log file.
@@ -132,7 +134,10 @@ on version 3 pickle protocol. You'll have to tell the Python 3.4 side to step do
 The implementation independent serialization protocols (serpent or json) don't have any of these issues.
 
 
+
 .. index:: wire protocol version
+
+.. _wireprotocol:
 
 Wire protocol version
 =====================
@@ -272,6 +277,28 @@ allow you to specify a nathost and natport for it. See :ref:`nameserver-nameserv
     In some situations the NAT simply is configured to pass through any port one-to-one to another
     host behind the NAT router/firewall. Pyro facilitates this by allowing you to set the natport
     to 0, in which case Pyro will replace it by the internal port number.
+
+
+
+.. index:: failed to locate the nameserver, connection refused
+
+Failed to locate the nameserver / Connection refused, what now?
+===============================================================
+
+Usually when you get an error like "failed to locate the name server" or "connection refused" it is because
+there is a configuration problem in your network setup, such as a firewall blocking certain network connections.
+Sometimes it can be because you configured Pyro wrong. A checklist to follow to diagnose your issue can be as follows:
+
+- can you ping the server from your client machine?
+- can you telnet to the given host+port from your client machine?
+- is the server's ip address as shown one of an externally reachable network interface?
+- do you have your server behind a NAT router? See :ref:`nat-router`.
+- do you have a firewall or packetfilter running that prevents the connection?
+- do you have the same Pyro versions on both server and client?
+- what does the pyro logfiles tell you (enable it via the config items on both the server and the client, including the name server. See :ref:`logging`.
+- (if not using the default:) do you have a compatible serializer configuration?
+- (if not using the default:) do you have a symmetric hmac key configuration?
+- can you obtain a few bytes from the wire using netcat, see :ref:`wireprotocol`.
 
 
 .. index:: binary data transfer
