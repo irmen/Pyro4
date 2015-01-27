@@ -288,6 +288,7 @@ class Proxy(object):
         self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout, self._pyroHmacKey = state
         self._pyroConnection = None
         self._pyroSeq = 0
+        self._pyroRawWireResponse = False
         self.__pyroLock = threadutil.Lock()
         self.__pyroConnLock = threadutil.Lock()
 
@@ -299,6 +300,7 @@ class Proxy(object):
         p._pyroAttrs = set(self._pyroAttrs)
         p._pyroTimeout = self._pyroTimeout
         p._pyroHmacKey = self._pyroHmacKey
+        p._pyroRawWireResponse = self._pyroRawWireResponse
         return p
 
     def __enter__(self):

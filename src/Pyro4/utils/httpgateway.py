@@ -28,8 +28,6 @@ import Pyro4.message
 import Pyro4.util
 
 
-Pyro4.config.SERIALIZER = "json"     # we only talk json through the http proxy
-
 _nameserver = None
 def get_nameserver():
     global _nameserver
@@ -211,6 +209,7 @@ def process_pyro_request(environ, path, queryparams, start_response):
 
 
 def pyro_app(environ, start_response):
+    Pyro4.config.SERIALIZER = "json"     # we only talk json through the http proxy
     method = environ.get("REQUEST_METHOD")
     if method != "GET":
         return invalid_request(start_response)
@@ -236,7 +235,6 @@ def main(args=None):
     if not hmac:
         print("Warning: HMAC key not set. Anyone can connect to this server!")
 
-    assert Pyro4.config.SERIALIZER == "json"
     server = make_server(options.host, options.port, pyro_app)
     print("Pyro HTTP gateway running on {0}:{1}".format(*server.socket.getsockname()))
     server.serve_forever()
