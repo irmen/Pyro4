@@ -6,6 +6,7 @@ Change Log
 
 - added connection troubleshooting checklist to tips & tricks chapter
 - fix sphinx config issues when building the docs
+- added Pyro4.utils.httpgateway, this allows a web browser (javascript) to call Pyro methods using a REST like API
 
 
 **Pyro 4.32**

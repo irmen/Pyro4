@@ -182,6 +182,7 @@ class Proxy(object):
     __pyroAttributes = frozenset(
         ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri",
          "_pyroOneway", "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq", "_pyroHmacKey",
+         "_pyroRawWireResponse",
          "_Proxy__pyroHmacKey", "_Proxy__pyroTimeout", "_Proxy__pyroLock", "_Proxy__pyroConnLock"])
 
     def __init__(self, uri):
@@ -198,6 +199,7 @@ class Proxy(object):
         self._pyroAttrs = set()  # attributes of the remote object, gotten from meta-data
         self._pyroOneway = set()  # oneway-methods of the remote object, gotten from meta-data
         self._pyroSeq = 0  # message sequence number
+        self._pyroRawWireResponse = False  # internal switch to enable wire level responses
         self.__pyroHmacKey = None
         self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
         self.__pyroLock = threadutil.Lock()
@@ -381,6 +383,8 @@ class Proxy(object):
                         error = "invalid serializer in response: %d" % msg.serializer_id
                         log.error(error)
                         raise errors.ProtocolError(error)
+                    if self._pyroRawWireResponse:
+                        return util.SerializerBase.decompress_if_needed(msg)
                     data = serializer.deserializeData(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
                     if msg.flags & message.FLAGS_EXCEPTION:
                         if sys.platform == "cli":

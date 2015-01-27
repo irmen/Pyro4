@@ -195,6 +195,13 @@ class SerializerBase(object):
         return data, False
 
     @classmethod
+    def decompress_if_needed(cls, message):
+        if message.flags & Pyro4.message.FLAGS_COMPRESSED:
+            message.data = zlib.decompress(message.data)
+            message.flags &= ~Pyro4.message.FLAGS_COMPRESSED
+        return message
+
+    @classmethod
     def register_type_replacement(cls, object_type, replacement_function):
         raise NotImplementedError("implement in subclass")
 
