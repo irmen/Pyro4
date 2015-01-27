@@ -10,6 +10,9 @@ http gateway server running:
   :command:`python -m Pyro4.utils.httpgateway`
   or simply: :command:`pyro4-httpgateway`
 
+It is also possible to import the 'pyro_app' function and stick that into a WSGI
+server of your choice, to have more control.
+
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
@@ -29,20 +32,20 @@ import Pyro4.util
 import Pyro4.constants
 
 
-__all__ = ["pyro_app", "make_server"]
+__all__ = ["pyro_app", "main"]
 
 _nameserver = None
-def get_nameserver():
+def get_nameserver(hmac=None):
     global _nameserver
     if not _nameserver:
-        _nameserver = Pyro4.locateNS()
+        _nameserver = Pyro4.locateNS(hmac_key=hmac)
     try:
         _nameserver.ping()
         return _nameserver
     except Pyro4.errors.ConnectionClosedError:
         _nameserver = None
         print("Connection with nameserver lost, reconnecting...")
-        return get_nameserver()
+        return get_nameserver(hmac)
 
 
 def invalid_request(start_response):
@@ -63,7 +66,8 @@ def redirect(start_response, target):
     return []
 
 
-index_page_template = """<html>
+index_page_template = """<!DOCTYPE html>
+<html>
 <head>
     <title>Pyro HTTP gateway</title>
     <script>
@@ -105,6 +109,11 @@ index_page_template = """<html>
       return url;
     }}
     </script>
+    <style type="text/css">
+    table, th, td {{border: 1px solid grey; padding: 3px;}}
+    table {{border-collapse: collapse;}}
+    pre {{border: 1px dotted grey; padding: 1ex; margin: 1ex;}}
+    </style>
 </head>
 <body>
 <img src="http://pythonhosted.org/Pyro4/_static/pyro.png" align="left">
@@ -121,19 +130,19 @@ index_page_template = """<html>
 <h2>Currently exposed contents of name server (limited to 10 entries, prefix='{prefix}'):</h2>
 {name_server_contents_list}
 <h2>Pyro response data (via Ajax):</h2>
-Call: <pre id="pyro_call" style="border: dotted 1px; padding: 1ex; margin: 1ex;"> &nbsp; </pre>
-Response: <pre id="pyro_response" style="border: dotted 1px; padding: 1ex; margin: 1ex;"> &nbsp; </pre>
-<p>Pyro version: {pyro_version}</p>
+Call: <pre id="pyro_call"> &nbsp; </pre>
+Response: <pre id="pyro_response"> &nbsp; </pre>
+<p>Pyro version: {pyro_version} &mdash; &copy; Irmen de Jong</p>
 </body>
 </html>
 """
 
 
 def process_pyro_request(environ, path, queryparams, start_response):
-    nameserver = get_nameserver()
+    nameserver = get_nameserver(hmac=pyro_app.hmac_key)
     if not path:
         start_response('200 OK', [('Content-Type', 'text/html')])
-        nslist = ["<table border=\"1\"><tr><th>Name</th><th>methods</th><th>attributes (zero-param methods)</th></tr>"]
+        nslist = ["<table><tr><th>Name</th><th>methods</th><th>attributes (zero-param methods)</th></tr>"]
         names = sorted(list(nameserver.list(prefix=pyro_app.ns_prefix).keys())[:10])
         with Pyro4.batch(nameserver) as nsbatch:
             for name in names:
@@ -142,6 +151,7 @@ def process_pyro_request(environ, path, queryparams, start_response):
                 attributes = "-"
                 try:
                     with Pyro4.Proxy(uri) as proxy:
+                        proxy._pyroHmacKey = pyro_app.hmac_key
                         proxy._pyroBind()
                         methods = " &nbsp; ".join(proxy._pyroMethods) or "-"
                         attributes = ["<a href=\"{name}/{attribute}\" onclick=\"pyro_call('{name}','{attribute}'); return false;\">{attribute}</a>"
@@ -166,6 +176,7 @@ def process_pyro_request(environ, path, queryparams, start_response):
     try:
         uri = nameserver.lookup(object_name)
         with Pyro4.Proxy(uri) as proxy:
+            proxy._pyroHmacKey = pyro_app.hmac_key
             proxy._pyroGetMetadata()
             if method == "$meta":
                 result = {"methods": tuple(proxy._pyroMethods), "attributes": tuple(proxy._pyroAttrs)}
@@ -204,6 +215,11 @@ def process_pyro_request(environ, path, queryparams, start_response):
 
 
 def pyro_app(environ, start_response):
+    """
+    The WSGI app function that is used to process the requests.
+    You can stick this into a wsgi server of your choice, or use the main() method
+    to use the default wsgiref server.
+    """
     Pyro4.config.SERIALIZER = "json"     # we only talk json through the http proxy
     method = environ.get("REQUEST_METHOD")
     if method != "GET":
@@ -218,7 +234,7 @@ def pyro_app(environ, start_response):
 
 
 pyro_app.ns_prefix = "Pyro4."
-pyro_app.hmac_key = None        # XXX use this!
+pyro_app.hmac_key = None
 
 
 def main(args=None):
@@ -238,7 +254,7 @@ def main(args=None):
         print("Exposing objects with name prefix: ", pyro_app.ns_prefix)
     else:
         print("Warning: exposing all objects (no prefix set)")
-    print("Connected to name server at: ", get_nameserver()._pyroUri)
+    print("Connected to name server at: ", get_nameserver(hmac=pyro_app.hmac_key)._pyroUri)
     server = make_server(options.host, options.port, pyro_app)
     print("Pyro HTTP gateway running on {0}:{1}".format(*server.socket.getsockname()))
     server.serve_forever()
