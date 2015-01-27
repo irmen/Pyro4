@@ -103,7 +103,7 @@ def startNameServer(host):
 def main(args=None, returnWithoutLooping=False):
     from optparse import OptionParser
     parser = OptionParser()
-    parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=localhost)")
+    parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=%default)")
     parser.add_option("-p", "--port", type="int", default=0, help="port to bind server on")
     parser.add_option("-u", "--unixsocket", help="Unix domain socket name to bind server on")
     parser.add_option("-n", "--naming", action="store_true", default=False, help="register with nameserver")

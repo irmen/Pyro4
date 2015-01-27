@@ -26,7 +26,10 @@ import Pyro4
 import Pyro4.errors
 import Pyro4.message
 import Pyro4.util
+import Pyro4.constants
 
+
+__all__ = ["pyro_app", "make_server"]
 
 _nameserver = None
 def get_nameserver():
@@ -40,15 +43,6 @@ def get_nameserver():
         _nameserver = None
         print("Connection with nameserver lost, reconnecting...")
         return get_nameserver()
-
-
-prefix = "Pyro."  # XXX let user override this via a setting
-
-print("Connected to name server at: ", get_nameserver()._pyroUri)
-if prefix:
-    print("Exposing objects with name prefix: ", prefix)
-else:
-    print("Warning: exposing all objects (no prefix set)")
 
 
 def invalid_request(start_response):
@@ -87,7 +81,7 @@ index_page_template = """<html>
                 if(this.readyState==4 && this.status==200) {{
                     var json = JSON.parse(this.response);
                     console.debug(json);
-                    document.getElementById("pyro_response").innerHTML = JSON.stringify(json);
+                    document.getElementById("pyro_response").innerHTML = JSON.stringify(json, null, 4);
                 }} else {{
                     var errormessage = "ERROR: "+this.status+" "+this.statusText+" \\n "+this.responseText;
                     console.error(errormessage);
@@ -113,25 +107,23 @@ index_page_template = """<html>
     </script>
 </head>
 <body>
+<img src="http://pythonhosted.org/Pyro4/_static/pyro.png" align="left">
 <h1>Pyro HTTP gateway</h1>
-<p>
-Use REST API to talk with JSON to Pyro objects.
-
-Examples:
-</p>
+<p>Use REST API to talk with JSON to Pyro objects.</p>
+<p><em>Note: performance isn't very high; it currently uses a new Pyro proxy for each request.</em></p>
+<p>Examples: (these examples are working if you expose the Pyro.NameServer object)</p>
 <ul>
 <li><a href="Pyro.NameServer/$meta" onclick="pyro_call('Pyro.NameServer','$meta'); return false;">Pyro.NameServer/$meta</a> -- gives meta info of the name server (methods)</li>
 <li><a href="Pyro.NameServer/list" onclick="pyro_call('Pyro.NameServer','list'); return false;">Pyro.NameServer/list</a> -- lists the contents of the name server</li>
 <li><a href="Pyro.NameServer/list?prefix=test." onclick="pyro_call('Pyro.NameServer','list', {{'prefix':'test.'}}); return false;">Pyro.NameServer/list?prefix=test.</a> -- lists the contents of the name server starting with 'test.'</li>
 <li><a href="Pyro.NameServer/lookup?name=Pyro.NameServer" onclick="pyro_call('Pyro.NameServer','lookup', {{'name':'Pyro.NameServer'}}); return false;">Pyro.NameServer/lookup?name=Pyro.NameServer</a> -- perform lookup method of the name server</li>
 </ul>
-<h2>Currently exposed contents of name server (limited to 10 entries):</h2>
+<h2>Currently exposed contents of name server (limited to 10 entries, prefix='{prefix}'):</h2>
 {name_server_contents_list}
-&nbsp;
-<hr>
 <h2>Pyro response data (via Ajax):</h2>
-Call: <div id="pyro_call" style="border: dotted 1px; padding: 1ex; margin: 1ex;"> &nbsp; </div>
-Response: <div id="pyro_response" style="border: dotted 1px; padding: 1ex; margin: 1ex;"> &nbsp; </div>
+Call: <pre id="pyro_call" style="border: dotted 1px; padding: 1ex; margin: 1ex;"> &nbsp; </pre>
+Response: <pre id="pyro_response" style="border: dotted 1px; padding: 1ex; margin: 1ex;"> &nbsp; </pre>
+<p>Pyro version: {pyro_version}</p>
 </body>
 </html>
 """
@@ -142,7 +134,7 @@ def process_pyro_request(environ, path, queryparams, start_response):
     if not path:
         start_response('200 OK', [('Content-Type', 'text/html')])
         nslist = ["<table border=\"1\"><tr><th>Name</th><th>methods</th><th>attributes (zero-param methods)</th></tr>"]
-        names = sorted(list(nameserver.list(prefix=prefix).keys())[:10])
+        names = sorted(list(nameserver.list(prefix=pyro_app.ns_prefix).keys())[:10])
         with Pyro4.batch(nameserver) as nsbatch:
             for name in names:
                 nsbatch.lookup(name)
@@ -160,15 +152,15 @@ def process_pyro_request(environ, path, queryparams, start_response):
                 nslist.append("<tr><td><a href=\"{name}/$meta\" onclick=\"pyro_call('{name}','$meta'); return false;\">{name}</a></td><td>{methods}</td><td>{attributes}</td></tr>"
                               .format(name=name, methods=methods, attributes=attributes))
         nslist.append("</table>")
-        index_page = index_page_template.format(name_server_contents_list="".join(nslist))
-        #if sys.version_info < (3, 0):
-        #    index_page = index_page.encode("utf-8")
+        index_page = index_page_template.format(prefix=pyro_app.ns_prefix,
+                                                name_server_contents_list="".join(nslist),
+                                                pyro_version=Pyro4.constants.VERSION)
         return [index_page.encode("utf-8")]
     matches = re.match(r"(.+)/(.+)", path)
     if not matches:
         return not_found(start_response)
     object_name, method = matches.groups()
-    if prefix and not object_name.startswith(prefix):
+    if pyro_app.ns_prefix and not object_name.startswith(pyro_app.ns_prefix):
         start_response('401 Unauthorized', [('Content-Type', 'text/plain')])
         return [b"401 Unauthorized - access to the requested object has been denied"]
     try:
@@ -181,7 +173,7 @@ def process_pyro_request(environ, path, queryparams, start_response):
                 start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8')])
                 return [reply]
             else:
-                proxy._pyroRawWireResponse = True
+                proxy._pyroRawWireResponse = True   # we want to access the raw response json
                 if method in proxy._pyroAttrs:
                     # retrieve the attribute
                     assert not queryparams, "attribute lookup can't have query parameters"
@@ -193,18 +185,21 @@ def process_pyro_request(environ, path, queryparams, start_response):
                     # was a oneway call, no response available
                     start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8')])
                     return [json.dumps(None)]
-                if msg.flags & Pyro4.message.FLAGS_EXCEPTION:
-                    raise Pyro4.util.get_serializer("json").deserializeData(msg.data)
-                start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8')])
-                return [msg.data]
+                elif msg.flags & Pyro4.message.FLAGS_EXCEPTION:
+                    # got an exception response so send a 500 status
+                    start_response('500 Internal Server Error', [('Content-Type', 'application/json; charset=utf-8')])
+                    return [msg.data]
+                else:
+                    # normal response
+                    start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8')])
+                    return [msg.data]
     except Exception as x:
         import traceback
         stderr = environ["wsgi.errors"]
         print("ERROR handling {0} with params {1}:".format(path, queryparams), file=stderr)
         traceback.print_exc(file=stderr)
         start_response('500 Internal Server Error', [('Content-Type', 'application/json; charset=utf-8')])
-        exception_class = "{0}.{1}".format(type(x).__module__, type(x).__name__)
-        reply = json.dumps({"exception": exception_class, "message": str(x)}).encode("utf-8")
+        reply = json.dumps(Pyro4.util.SerializerBase.class_to_dict(x)).encode("utf-8")
         return [reply]
 
 
@@ -222,19 +217,28 @@ def pyro_app(environ, start_response):
     return not_found(start_response)
 
 
+pyro_app.ns_prefix = "Pyro4."
+pyro_app.hmac_key = None        # XXX use this!
+
+
 def main(args=None):
     from optparse import OptionParser
 
     parser = OptionParser()
-    parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=localhost)")
-    parser.add_option("-p", "--port", type="int", default=8080, help="port to bind server on (default=8080)")
-    parser.add_option("-k", "--key", help="the HMAC key to use")   # XXX use this!
+    parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=%default)")
+    parser.add_option("-p", "--port", type="int", default=8080, help="port to bind server on (default=%default)")
+    parser.add_option("-f", "--prefix", default="Pyro.", help="the prefix of object names to expose (default=%default)")
+    parser.add_option("-k", "--pyrokey", help="the HMAC key to use to connect with Pyro")
+    # @todo could use some form of API key/hmac for the http requests...
     options, args = parser.parse_args(args)
 
-    hmac = (options.key or "").encode("utf-8")
-    if not hmac:
-        print("Warning: HMAC key not set. Anyone can connect to this server!")
-
+    pyro_app.hmac_key = (options.pyrokey or "").encode("utf-8")
+    pyro_app.ns_prefix = options.prefix
+    if pyro_app.ns_prefix:
+        print("Exposing objects with name prefix: ", pyro_app.ns_prefix)
+    else:
+        print("Warning: exposing all objects (no prefix set)")
+    print("Connected to name server at: ", get_nameserver()._pyroUri)
     server = make_server(options.host, options.port, pyro_app)
     print("Pyro HTTP gateway running on {0}:{1}".format(*server.socket.getsockname()))
     server.serve_forever()
