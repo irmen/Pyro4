@@ -79,22 +79,23 @@ class EchoServer(object):
 
 
 class NameServer(threadutil.Thread):
-    def __init__(self, hostname):
+    def __init__(self, hostname, hmac=None):
         super(NameServer, self).__init__()
         self.setDaemon(1)
         self.hostname = hostname
+        self.hmac = hmac
         self.started = threadutil.Event()
 
     def run(self):
-        self.uri, self.ns_daemon, self.bc_server = naming.startNS(self.hostname)
+        self.uri, self.ns_daemon, self.bc_server = naming.startNS(self.hostname, hmac=self.hmac)
         self.started.set()
         if self.bc_server:
             self.bc_server.runInThread()
         self.ns_daemon.requestLoop()
 
 
-def startNameServer(host):
-    ns = NameServer(host)
+def startNameServer(host, hmac=None):
+    ns = NameServer(host, hmac=hmac)
     ns.start()
     ns.started.wait()
     return ns
@@ -126,7 +127,7 @@ def main(args=None, returnWithoutLooping=False):
     nameserver = None
     if options.nameserver:
         options.naming = True
-        nameserver = startNameServer(options.host)
+        nameserver = startNameServer(options.host, hmac=hmac)
 
     d = Pyro4.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
     if hmac:
@@ -139,7 +140,7 @@ def main(args=None, returnWithoutLooping=False):
         host, port = None, None
         if nameserver is not None:
             host, port = nameserver.uri.host, nameserver.uri.port
-        ns = naming.locateNS(host, port)
+        ns = naming.locateNS(host, port, hmac_key=hmac)
         ns.register(objectName, uri)
         if options.verbose:
             print("using name server at %s" % ns._pyroUri)
