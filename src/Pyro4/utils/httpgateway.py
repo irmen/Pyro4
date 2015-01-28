@@ -20,11 +20,8 @@ from __future__ import print_function
 import sys
 import json
 import re
+import cgi
 from wsgiref.simple_server import make_server
-try:
-    from urlparse import parse_qsl
-except ImportError:
-    from urllib.parse import parse_qsl
 import Pyro4
 import Pyro4.errors
 import Pyro4.message
@@ -33,6 +30,7 @@ import Pyro4.constants
 
 
 __all__ = ["pyro_app", "main"]
+
 
 _nameserver = None
 def get_nameserver(hmac=None):
@@ -70,65 +68,54 @@ index_page_template = """<!DOCTYPE html>
 <html>
 <head>
     <title>Pyro HTTP gateway</title>
-    <script>
-    "use strict";
-    function pyro_call(name, method, params) {{
-        console.debug("Pyro call: name="+name+" method="+method+" params="+params);
-        var url = buildUrl(name+"/"+method, params);
-        var x = new XMLHttpRequest();
-        x.onload = function () {{
-                var baseuri = document.baseURI;
-                if(!baseuri) {{
-                    baseuri = document.location.href;        // IE fallback
-                }}
-                document.getElementById("pyro_call").innerHTML = baseuri+url;
-                if(this.readyState==4 && this.status==200) {{
-                    var json = JSON.parse(this.response);
-                    console.debug(json);
-                    document.getElementById("pyro_response").innerHTML = JSON.stringify(json, null, 4);
-                }} else {{
-                    var errormessage = "ERROR: "+this.status+" "+this.statusText+" \\n "+this.responseText;
-                    console.error(errormessage);
-                    document.getElementById("pyro_response").innerHTML = errormessage;
-                }}
-            }}  ;
-        x.open("get", url, true);
-        x.send();
-    }}
-
-    function buildUrl(url, parameters) {{
-      var qs = "";
-      for(var key in parameters) {{
-        var value = parameters[key];
-        qs += encodeURIComponent(key) + "=" + encodeURIComponent(value) + "&";
-      }}
-      if (qs.length > 0) {{
-        qs = qs.substring(0, qs.length-1); //chop off last "&"
-        url = url + "?" + qs;
-      }}
-      return url;
-    }}
-    </script>
     <style type="text/css">
     table, th, td {{border: 1px solid grey; padding: 3px;}}
     table {{border-collapse: collapse;}}
-    pre {{border: 1px dotted grey; padding: 1ex; margin: 1ex;}}
+    pre {{border: 1px dotted grey; padding: 1ex; margin: 1ex; white-space: pre-wrap;}}
     </style>
 </head>
 <body>
+    <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script>
+    "use strict";
+    function pyro_call(name, method, params) {{
+        $.ajax({{
+            url: name+"/"+method,
+            type: "GET",
+            data: params,
+            dataType: "json",
+            beforeSend: function(xhr, settings) {{
+                $("#pyro_call").text(settings.type+" "+settings.url);
+            }},
+            error: function(xhr, status, error) {{
+                var errormessage = "ERROR: "+xhr.status+" "+error+" \\n"+xhr.responseText;
+                $("#pyro_response").text(errormessage);
+            }},
+            success: function(data) {{
+                $("#pyro_response").text(JSON.stringify(data, null, 4));
+            }}
+        }});
+    }}
+    </script>
 <img src="http://pythonhosted.org/Pyro4/_static/pyro.png" align="left">
 <h1>Pyro HTTP gateway</h1>
 <p>Use REST API to talk with JSON to Pyro objects.</p>
-<p><em>Note: performance isn't very high; it currently uses a new Pyro proxy for each request.</em></p>
-<p>Examples: (these examples are working if you expose the Pyro.NameServer object)</p>
+<p><em>Note: performance isn't maxed; it currently does a name lookup and uses a new Pyro proxy for each request.</em></p>
+<h2>Currently exposed contents of name server (limited to 10 entries, prefix='{prefix}'):</h2>
+{name_server_contents_list}
+<p>Name server examples: (these examples are working if you expose the Pyro.NameServer object)</p>
 <ul>
 <li><a href="Pyro.NameServer/$meta" onclick="pyro_call('Pyro.NameServer','$meta'); return false;">Pyro.NameServer/$meta</a> -- gives meta info of the name server (methods)</li>
 <li><a href="Pyro.NameServer/list" onclick="pyro_call('Pyro.NameServer','list'); return false;">Pyro.NameServer/list</a> -- lists the contents of the name server</li>
 <li><a href="Pyro.NameServer/list?prefix=test." onclick="pyro_call('Pyro.NameServer','list', {{'prefix':'test.'}}); return false;">Pyro.NameServer/list?prefix=test.</a> -- lists the contents of the name server starting with 'test.'</li>
 <li><a href="Pyro.NameServer/lookup?name=Pyro.NameServer" onclick="pyro_call('Pyro.NameServer','lookup', {{'name':'Pyro.NameServer'}}); return false;">Pyro.NameServer/lookup?name=Pyro.NameServer</a> -- perform lookup method of the name server</li>
+<li><a href="Pyro.NameServer/lookup?name=test.echoserver" onclick="pyro_call('Pyro.NameServer','lookup', {{'name':'test.echoserver'}}); return false;">Pyro.NameServer/lookup?name=test.echoserver</a> -- perform lookup method of the echo server</li>
 </ul>
-<h2>Currently exposed contents of name server (limited to 10 entries, prefix='{prefix}'):</h2>
-{name_server_contents_list}
+<p>Echoserver examples: (these examples are working if you expose the test.echoserver object)</p>
+<ul>
+<li><a href="test.echoserver/error" onclick="pyro_call('test.echoserver','error'); return false;">test.echoserver/error</a> -- perform error call on echoserver</li>
+<li><a href="test.echoserver/echo?message=Hi there, browser script!" onclick="pyro_call('test.echoserver','echo', {{'message':'Hi there, browser script!'}}); return false;">test.echoserver/echo?message=Hi there, browser script!</a> -- perform echo call on echoserver</li>
+</ul>
 <h2>Pyro response data (via Ajax):</h2>
 Call: <pre id="pyro_call"> &nbsp; </pre>
 Response: <pre id="pyro_response"> &nbsp; </pre>
@@ -138,7 +125,7 @@ Response: <pre id="pyro_response"> &nbsp; </pre>
 """
 
 
-def process_pyro_request(environ, path, queryparams, start_response):
+def process_pyro_request(environ, path, parameters, start_response):
     nameserver = get_nameserver(hmac=pyro_app.hmac_key)
     if not path:
         start_response('200 OK', [('Content-Type', 'text/html')])
@@ -187,11 +174,11 @@ def process_pyro_request(environ, path, queryparams, start_response):
                 proxy._pyroRawWireResponse = True   # we want to access the raw response json
                 if method in proxy._pyroAttrs:
                     # retrieve the attribute
-                    assert not queryparams, "attribute lookup can't have query parameters"
+                    assert not parameters, "attribute lookup can't have query parameters"
                     msg = getattr(proxy, method)
                 else:
                     # call the remote method
-                    msg = getattr(proxy, method)(**queryparams)
+                    msg = getattr(proxy, method)(**parameters)
                 if msg is None:
                     # was a oneway call, no response available
                     start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8')])
@@ -207,7 +194,7 @@ def process_pyro_request(environ, path, queryparams, start_response):
     except Exception as x:
         import traceback
         stderr = environ["wsgi.errors"]
-        print("ERROR handling {0} with params {1}:".format(path, queryparams), file=stderr)
+        print("ERROR handling {0} with params {1}:".format(path, parameters), file=stderr)
         traceback.print_exc(file=stderr)
         start_response('500 Internal Server Error', [('Content-Type', 'application/json; charset=utf-8')])
         reply = json.dumps(Pyro4.util.SerializerBase.class_to_dict(x)).encode("utf-8")
@@ -222,15 +209,27 @@ def pyro_app(environ, start_response):
     """
     Pyro4.config.SERIALIZER = "json"     # we only talk json through the http proxy
     method = environ.get("REQUEST_METHOD")
-    if method != "GET":
-        return invalid_request(start_response)
     path = environ.get('PATH_INFO', '').lstrip('/')
     if not path:
         return redirect(start_response, "/pyro/")
     if path.startswith("pyro/"):
-        qs = dict(parse_qsl(environ["QUERY_STRING"]))
-        return process_pyro_request(environ, path[5:], qs, start_response)
+        if method in ("GET", "POST"):
+            parameters = singlyfy_parameters(cgi.parse(environ['wsgi.input'], environ))
+            return process_pyro_request(environ, path[5:], parameters, start_response)
+        else:
+            return invalid_request(start_response)
     return not_found(start_response)
+
+
+def singlyfy_parameters(parameters):
+    """
+    Makes a cgi-parsed parameter dictionary into a dict where the values that
+    are just a list of a single value, are convered to just that single value.
+    """
+    for key, value in parameters.items():
+        if len(value) == 1:
+            parameters[key] = value[0]
+    return parameters
 
 
 pyro_app.ns_prefix = "Pyro4."
