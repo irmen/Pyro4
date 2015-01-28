@@ -4,9 +4,9 @@ Change Log
 
 **Pyro 4.33**
 
+- added Pyro4.utils.httpgateway, this allows a web browser (javascript) to call Pyro methods using a REST like API
 - test.echoserver now correctly deals with a specified hmac key in combination with name server usage
 - added connection troubleshooting checklist to tips & tricks chapter
-- added Pyro4.utils.httpgateway, this allows a web browser (javascript) to call Pyro methods using a REST like API
 - fix sphinx config issues when building the docs
 
 
