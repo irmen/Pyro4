@@ -14,48 +14,18 @@ generated and installed when you install Pyro.
 - :command:`pyro4-test-echoserver` (test echo server)
 - :command:`pyro4-check-config` (prints configuration)
 - :command:`pyro4-flameserver` (flame server)
+- :command:`pyro4-httpgateway` (http gateway server)
 
 If you prefer, you can also invoke the various "executable modules" inside Pyro directly,
 by using Python's "-m" command line argument.
 
-.. index::
-    double: name server; command line
+Some of these tools are described in detail in their respective sections of the manual:
 
-Name server
-===========
-synopsys: :command:`python -m Pyro4.naming [options]` (or simply: :command:`pyro4-ns [options]`)
+Name server tools:
+    See :ref:`nameserver-nameserver` and :ref:`nameserver-nsc` for detailed information.
 
-Starts the Pyro Name Server. It can run without any arguments but there are several that you
-can use, for instance to control the hostname and port that the server is listening on.
-A short explanation of the available options can be printed with the help option:
-
-.. program:: Pyro4.naming
-
-.. option:: -h, --help
-
-   Print a short help message and exit.
-
-.. seealso:: :ref:`nameserver-nameserver` for detailed information
-
-.. index::
-    double: name server control; command line
-
-Name server control
-===================
-synopsys: :command:`python -m Pyro4.nsc [options] command [arguments]`  (or simply: :command:`pyro4-nsc [options] command [arguments]`)
-
-The name server control tool (or 'nsc') is used to talk to a running name server and perform
-diagnostic or maintenance actions such as querying the registered objects, adding or removing
-a name registration manually, etc.
-A short explanation of the available options can be printed with the help option:
-
-.. program:: Pyro4.nsc
-
-.. option:: -h, --help
-
-   Print a short help message and exit.
-
-.. seealso:: :ref:`nameserver-nsc` for detailed information
+HTTP gateway server:
+    See :ref:`http-gateway` for detailed information.
 
 
 .. index::

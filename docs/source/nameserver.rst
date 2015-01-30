@@ -40,6 +40,7 @@ name server, all clients won't notice anything and can keep on running without m
 
 
 .. index:: starting the name server
+    double: name server; command line
 
 .. _nameserver-nameserver:
 

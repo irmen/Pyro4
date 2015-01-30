@@ -424,3 +424,48 @@ So if you want to use them with Pyro, and pass them over the wire, you'll have t
     See :doc:`security`. If you choose to use pickle anyway, also be aware that you must tell your name server
     about it as well, see :ref:`nameserver-pickle`.
 
+
+.. index::
+    double: HTTP gateway server; command line
+.. _http-gateway:
+
+Pyro via HTTP and JSON
+======================
+There is an easy way to talk to Pyro objects from a web based client such as a web browser.
+Namely, Pyro provides a HTTP gateway server that translates HTTP requests into Pyro calls.
+It uses Pyro's JSON serialization format so it simply passes the JSON response messages back to the caller.
+The server provides a simple web page that shows how stuff works, but basically it is as simple as this:
+
+You request the url ``http://localhost:8080/pyro/<<objectname>>/<<method>>`` to invoke a method on the
+object with the given name (yes, every call goes through a naming server lookup).
+Parameters are passed via a regular query string parameter list (in case of a GET request) or via form post parameters
+(in case of a POST request). The response is a JSON document.
+In case of an exception, a JSON encoded exception object is returned.
+You can easily call this from your web page scripts using ``XMLHttpRequest`` or something like JQuery's ``$.ajax()``.
+Have a look at the page source of the gateway's web page to see how this could be done.
+
+Http response status codes:
+
+- 200 OK: all went well, response is the Pyro response message in JSON serialized format
+- 401 Unauthorized: you're trying to access an object that is not exposed by configuration
+- 404 Not Found: you're requesting a non existing object
+- 500 Internal server error: something went wrong during request processing, response is serialized exception object (if available)
+
+
+You can launch the HTTP gateway server without further ado via the command line tool.
+This will create a web server using Python's :py:mod:`wsgiref` server module.
+Because the gateway is written as a wsgi app, you can also stick it into a wsgi server of your own choice.
+Import ``pyro_app`` from ``Pyro4.utils.httpgateway`` to do that (that's the app you need to use).
+
+
+synopsys: :command:`python -m Pyro4.utils.httpgateway [options]` (or simply: :command:`pyro4-httpgateway [options]`)
+
+A short explanation of the available options can be printed with the help option:
+
+.. program:: Pyro4.utils.httpgateway
+
+.. option:: -h, --help
+
+   Print a short help message and exit.
+
+Most other options should be self explanatory; you can set the listening host and portname etc.

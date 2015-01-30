@@ -255,7 +255,7 @@ def main(args=None):
         print("Warning: exposing all objects (no prefix set)")
     print("Connected to name server at: ", get_nameserver(hmac=pyro_app.hmac_key)._pyroUri)
     server = make_server(options.host, options.port, pyro_app)
-    print("Pyro HTTP gateway running on {0}:{1}".format(*server.socket.getsockname()))
+    print("Pyro HTTP gateway running on http://{0}:{1}/pyro/".format(*server.socket.getsockname()))
     server.serve_forever()
     server.server_close()
     return 0
