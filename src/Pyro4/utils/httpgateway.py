@@ -13,6 +13,12 @@ http gateway server running:
 It is also possible to import the 'pyro_app' function and stick that into a WSGI
 server of your choice, to have more control.
 
+The javascript code in the web page of the gateway server works with the same-origin
+browser policy because it is served by the gateway itself. If you want to access it
+from scripts in different sites, you have to work around this or embed the gateway app
+in your site. Non-browser clients that access the http api have no problems ofcourse.
+See the `http` example for two of such clients (node.js and python).
+
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
@@ -224,7 +230,7 @@ def pyro_app(environ, start_response):
 def singlyfy_parameters(parameters):
     """
     Makes a cgi-parsed parameter dictionary into a dict where the values that
-    are just a list of a single value, are convered to just that single value.
+    are just a list of a single value, are converted to just that single value.
     """
     for key, value in parameters.items():
         if isinstance(value, (list, tuple)) and len(value) == 1:
