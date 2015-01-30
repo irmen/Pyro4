@@ -4,12 +4,12 @@ Change Log
 
 **Pyro 4.33**
 
-- added Pyro4.utils.httpgateway, this allows a web browser (javascript) to call Pyro methods using a REST like API
+- added Pyro4.utils.httpgateway, this allows clients (such as a web browser) to use a simple http interface to call Pyro objects
 - test.echoserver now correctly deals with a specified hmac key in combination with name server usage
 - added connection troubleshooting checklist to tips & tricks chapter
-- fix sphinx config issues when building the docs
 - some raised exceptions had a __cause__ added on Python 2.x as well, this has been corrected (it could cause unwanted serialization errors)
 - added http example that shows simple use of the http gateway
+- fixed sphinx config issues when building the docs
 
 
 **Pyro 4.32**

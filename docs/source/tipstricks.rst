@@ -431,10 +431,10 @@ So if you want to use them with Pyro, and pass them over the wire, you'll have t
 
 Pyro via HTTP and JSON
 ======================
-There is an easy way to talk to Pyro objects from a web based client such as a web browser.
-Namely, Pyro provides a HTTP gateway server that translates HTTP requests into Pyro calls.
-It uses Pyro's JSON serialization format so it simply passes the JSON response messages back to the caller.
-The server provides a simple web page that shows how stuff works, but basically it is as simple as this:
+Pyro provides a HTTP gateway server that translates HTTP requests into Pyro calls. It responds with JSON messages.
+This allows clients (including web browsers) to use a simple http interface to call Pyro objects.
+Pyro's JSON serialization format is used so the gateway simply passes the JSON response messages back to the caller.
+It also provides a simple web page that shows how stuff works. Basically it is as simple as this:
 
 You request the url ``http://localhost:8080/pyro/<<objectname>>/<<method>>`` to invoke a method on the
 object with the given name (yes, every call goes through a naming server lookup).
@@ -443,6 +443,8 @@ Parameters are passed via a regular query string parameter list (in case of a GE
 In case of an exception, a JSON encoded exception object is returned.
 You can easily call this from your web page scripts using ``XMLHttpRequest`` or something like JQuery's ``$.ajax()``.
 Have a look at the page source of the gateway's web page to see how this could be done.
+Note that you have to comply with the browser's same-origin policy: if you want to allow your own scripts
+to access the gateway, you'll have to make sure they are loaded from the same website.
 
 Http response status codes:
 

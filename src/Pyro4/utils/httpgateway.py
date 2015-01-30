@@ -1,7 +1,7 @@
 """
 HTTP gateway: connects the web browser's world of javascript+http and Pyro.
 Creates a HTTP server that essentially is a proxy for the Pyro objects behind it.
-It exposes the Pyro objects through a HTTP REST interface and uses the JSON serializer,
+It exposes the Pyro objects through a HTTP interface and uses the JSON serializer,
 so that you can immediately process the response data in the browser.
 
 You can start this module as a script from the command line, to easily get a
@@ -75,9 +75,11 @@ index_page_template = """<!DOCTYPE html>
 <head>
     <title>Pyro HTTP gateway</title>
     <style type="text/css">
-    table, th, td {{border: 1px solid grey; padding: 3px;}}
+    body {{ margin: 1em; }}
+    table, th, td {{border: 1px solid #bbf; padding: 4px;}}
     table {{border-collapse: collapse;}}
-    pre {{border: 1px dotted grey; padding: 1ex; margin: 1ex; white-space: pre-wrap;}}
+    pre {{border: 1px solid #bbf; padding: 1ex; margin: 1ex; white-space: pre-wrap;}}
+    #title-logo {{ float: left; margin: 0 1em 0 0; }}
     </style>
 </head>
 <body>
@@ -103,11 +105,14 @@ index_page_template = """<!DOCTYPE html>
         }});
     }}
     </script>
-<img src="http://pythonhosted.org/Pyro4/_static/pyro.png" align="left">
+<div id="title-logo"><img src="http://pythonhosted.org/Pyro4/_static/pyro.png"></div>
+<div id="title-text">
 <h1>Pyro HTTP gateway</h1>
-<p>Use REST API to talk with JSON to Pyro objects.</p>
+<p>Use http+json to talk to Pyro objects.</p>
+</div>
 <p><em>Note: performance isn't maxed; it currently does a name lookup and uses a new Pyro proxy for each request.</em></p>
-<h2>Currently exposed contents of name server (limited to 10 entries, prefix='{prefix}'):</h2>
+<h2>Currently exposed contents of name server:</h2>
+<p>(Limited to 10 entries, prefix = '{prefix}')</p>
 {name_server_contents_list}
 <p>Name server examples: (these examples are working if you expose the Pyro.NameServer object)</p>
 <ul>
