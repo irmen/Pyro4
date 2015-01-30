@@ -443,7 +443,8 @@ class Proxy(object):
                         raise
                     else:
                         ce = errors.CommunicationError(err)
-                        ce.__cause__ = x
+                        if sys.version_info >= (3, 0):
+                            ce.__cause__ = x
                         raise ce
                 else:
                     if msg.type == message.MSG_CONNECTFAIL:

@@ -227,7 +227,7 @@ def singlyfy_parameters(parameters):
     are just a list of a single value, are convered to just that single value.
     """
     for key, value in parameters.items():
-        if len(value) == 1:
+        if isinstance(value, (list, tuple)) and len(value) == 1:
             parameters[key] = value[0]
     return parameters
 

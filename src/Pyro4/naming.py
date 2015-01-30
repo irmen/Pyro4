@@ -424,7 +424,8 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
         return proxy
     except PyroError as x:
         e = NamingError("Failed to locate the nameserver")
-        e.__cause__ = x
+        if sys.version_info >= (3, 0):
+            e.__cause__ = x
         raise e
 
 
