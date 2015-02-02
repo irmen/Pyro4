@@ -27,7 +27,7 @@ Here's a quick overview of Pyro's features:
 - written in 100% Python so extremely portable.
 - defaults to a safe serializer (`serpent <https://pypi.python.org/pypi/serpent>`_) that supports many Python data types.
 - supports different serializers (serpent, json, marshal, pickle).
-- support for all Python data types that are pickleable when using the 'pickle' serializer.
+- support for all Python data types that are pickleable when using the 'pickle' serializer [1]_.
 - runs on normal Python 2.x, Python **3.x**, IronPython, Jython 2.7, Pypy.
 - works between systems on different architectures and operating systems (64-bit, 32-bit, Intel, PowerPC...)
 - designed to be very easy to use and get out of your way as much as possible.
@@ -43,22 +43,10 @@ Here's a quick overview of Pyro's features:
 - possibility to use Pyro's own event loop, or integrate it into your own (or third party) event loop.
 - many simple examples included to show various features and techniques.
 - large amount of unit tests and high test coverage.
-- built upon more than 10 years of existing Pyro history.
-- can use IPv4, IPv6 and Unix domain sockets
-
-.. warning::
-    When configured to use the :py:mod:`pickle` serializer, your system may be vulnerable
-    because of the sercurity risks of the pickle protocol (possibility of arbitrary
-    code execution).
-    Pyro does have some security measures in place to mitigate this risk somewhat.
-    They are described in the :doc:`security` chapter. It is strongly advised to read it.
-    By default, Pyro is configured to use a different serializer, so you won't have
-    to deal with this unless you change it explicitly.
-
-.. note::
-    Pyro will send the whole object graph you're passing over the wire, even when only a tiny fraction
-    of it is used on the receiving end. Be aware of this: it may be necessary to define special objects
-    for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
+- lightweight native client library available for .NET and Java (provided separately, called Pyrolite).
+- http gateway available for clients wanting to use http+json (such as browser scripts).
+- can use IPv4, IPv6 and Unix domain sockets.
+- reliable and established: built upon more than 15 years of existing Pyro history, with ongoing support and development.
 
 
 .. index:: history
@@ -300,5 +288,13 @@ using the marshal serializer:
     | oneway batched calls were 23.6 times faster than normal remote calls
 
 
-Other serialization protocols (serpent, json, marshal) will usually be slower than pickle.
-But because of the security risks of the pickle protocol, a slower but safer protocol is used by default.
+
+*Footnotes:*
+
+.. [1] When configured to use the :py:mod:`pickle` serializer, your system may be vulnerable
+    because of the sercurity risks of the pickle protocol (possibility of arbitrary
+    code execution).
+    Pyro does have some security measures in place to mitigate this risk somewhat.
+    They are described in the :doc:`security` chapter. It is strongly advised to read it.
+    By default, Pyro is configured to use the safe `serpent` serializer, so you won't have
+    to deal with these issues unless you configure it explicitly to use pickle.

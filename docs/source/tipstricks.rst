@@ -446,6 +446,14 @@ Have a look at the page source of the gateway's web page to see how this could b
 Note that you have to comply with the browser's same-origin policy: if you want to allow your own scripts
 to access the gateway, you'll have to make sure they are loaded from the same website.
 
+The http gateway server is *stateless* at the moment. This means every call you do will end be processed by
+a new Pyro proxy in the gateway server. This is not impacting your client code though, because every call that it
+does is also just a stateless http call. It only impacts performance: doing large amounts of calls through
+the http gateway will perform much slower as the same calls processed by a native Pyro proxy (which you can instruct
+to operate in batch mode as well). However because Pyro is quite efficient, a call through
+the gateway is still processed in just a few milliseconds, naming lookup and json serialization all included.
+
+
 Http response status codes:
 
 - 200 OK: all went well, response is the Pyro response message in JSON serialized format
