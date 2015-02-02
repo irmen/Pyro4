@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.34**
+
+- added JSON_MODULE config item to be able to set a 3rd party json library (such as simplejson) to use instead of the default json that comes in the stdlib.
+
+
 **Pyro 4.33**
 
 - added Pyro4.utils.httpgateway, this allows clients (such as a web browser) to use a simple http interface to call Pyro objects

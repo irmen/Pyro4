@@ -23,7 +23,7 @@ class Configuration(object):
                  "THREADPOOL_SIZE", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
                  "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
                  "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
-                 "METADATA", "REQUIRE_EXPOSE", "USE_MSG_WAITALL")
+                 "METADATA", "REQUIRE_EXPOSE", "USE_MSG_WAITALL", "JSON_MODULE")
 
     def __init__(self):
         self.reset()
@@ -61,6 +61,7 @@ class Configuration(object):
         self.METADATA = True  # get metadata from server on proxy connect
         self.REQUIRE_EXPOSE = False  # require @expose to make members remotely accessible (if False, everything is accessible)
         self.USE_MSG_WAITALL = hasattr(socket, "MSG_WAITALL") and platform.system() != "Windows"      # not reliable on windows even though it is defined
+        self.JSON_MODULE = "json"
 
         if useenvironment:
             # process environment variables

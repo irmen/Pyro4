@@ -1,6 +1,6 @@
 """
 HTTP gateway: connects the web browser's world of javascript+http and Pyro.
-Creates a HTTP server that essentially is a proxy for the Pyro objects behind it.
+Creates a stateless HTTP server that essentially is a proxy for the Pyro objects behind it.
 It exposes the Pyro objects through a HTTP interface and uses the JSON serializer,
 so that you can immediately process the response data in the browser.
 
@@ -24,7 +24,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import print_function
 import sys
-import json
 import re
 import cgi
 from wsgiref.simple_server import make_server
@@ -33,6 +32,7 @@ import Pyro4.errors
 import Pyro4.message
 import Pyro4.util
 import Pyro4.constants
+from Pyro4.util import json     # don't import directly, we want to use the JSON_MODULE config item
 
 
 __all__ = ["pyro_app", "main"]
@@ -110,7 +110,7 @@ index_page_template = """<!DOCTYPE html>
 <h1>Pyro HTTP gateway</h1>
 <p>Use http+json to talk to Pyro objects.</p>
 </div>
-<p><em>Note: performance isn't maxed; it currently does a name lookup and uses a new Pyro proxy for each request.</em></p>
+<p><em>Note: performance isn't maxed; it is stateless. Does a name lookup and uses a new Pyro proxy for each request.</em></p>
 <h2>Currently exposed contents of name server:</h2>
 <p>(Limited to 10 entries, prefix = '{prefix}')</p>
 {name_server_contents_list}

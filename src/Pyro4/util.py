@@ -550,7 +550,11 @@ _ser = MarshalSerializer()
 _serializers["marshal"] = _ser
 _serializers_by_id[_ser.serializer_id] = _ser
 try:
-    import json
+    try:
+        import importlib
+        json = importlib.import_module(Pyro4.config.JSON_MODULE)
+    except ImportError:
+        json = __import__(Pyro4.config.JSON_MODULE)
     _ser = JsonSerializer()
     _serializers["json"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser

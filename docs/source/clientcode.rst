@@ -140,7 +140,10 @@ on what objects you can use.
   on the receiving end if so desired, because most custom classes aren't dealt with automatically.
   Requires third party library module, but it will be installed automatically as a dependency of Pyro.
   This serializer is the default choice.
-* json: more restricted as serpent, less types supported. Part of the standard library.
+* json: more restricted as serpent, less types supported. Part of the standard library. Not particularly fast,
+  so you might want to look for a faster 3rd party implementation (such as simplejson). Be sure to benchmark before switching!
+  Use the `JSON_MODULE` config item to tell Pyro to use the other module instead. Note that it has to support
+  the advanced parameters such as `default`, not all 3rd party implementations do that.
 * marshal: a very limited but fast serializer. Can deal with a small range of builtin types only,
   no custom classes can be serialized. Part of the standard library.
   *note: marshal doesn't work correctly in Jython, so you can't use it there* (see `issue 2077 <http://bugs.jython.org/issue2077>`_)
