@@ -20,7 +20,7 @@ def get_nameserver_dummy(hmac=None):
     class NameServerDummyProxy(NameServer):
         def __init__(self):
             super(NameServerDummyProxy, self).__init__()
-            self.register("Pyro4.ObjectName", "PYRO:dummy12345@localhost:59999")
+            self.register("http.ObjectName", "PYRO:dummy12345@localhost:59999")
         def _pyroBatch(self):
             return self
         def __enter__(self):
@@ -139,20 +139,36 @@ class TestHttpGateway(WSGITestBase):
         self.assertTrue(len(result) > 1000)
 
     def testMethodCallGET(self):
-        result = self.request(Pyro4.utils.httpgateway.pyro_app, "/pyro/Pyro4.ObjectName/method", query_string="param=42&param2=hello")
-        # the call will result in a communication error because the dummy uri points to something that doesn't exist
+        result = self.request(Pyro4.utils.httpgateway.pyro_app, "/pyro/http.ObjectName/method", query_string="param=42&param2=hello")
+        # the call will result in a communication error because the dummy uri points to something that is not available
         self.assertEqual("500 Internal Server Error", self.status)
         j = json.loads(result.decode("utf-8"))
         self.assertTrue(j["__exception__"])
         self.assertEqual("Pyro4.errors.CommunicationError", j["__class__"])
 
     def testMethodCallPOST(self):
-        result = self.request(Pyro4.utils.httpgateway.pyro_app, "/pyro/Pyro4.ObjectName/method", post_data=b"param=42&param2=hello")
-        # the call will result in a communication error because the dummy uri points to something that doesn't exist
+        result = self.request(Pyro4.utils.httpgateway.pyro_app, "/pyro/http.ObjectName/method", post_data=b"param=42&param2=hello")
+        # the call will result in a communication error because the dummy uri points to something that is not available
         self.assertEqual("500 Internal Server Error", self.status)
         j = json.loads(result.decode("utf-8"))
         self.assertTrue(j["__exception__"])
         self.assertEqual("Pyro4.errors.CommunicationError", j["__class__"])
+
+    def testNameDeniedPattern(self):
+        result = self.request(Pyro4.utils.httpgateway.pyro_app, "/pyro/Pyro4.NameServer/method")
+        # the call will result in a access denied error because the uri points to a non-exposed name
+        self.assertEqual("401 Unauthorized", self.status)
+
+    def testNameDeniedNotRegistered(self):
+        result = self.request(Pyro4.utils.httpgateway.pyro_app, "/pyro/http.NotRegisteredName/method")
+        # the call will result in a communication error because the dummy uri points to something that is not registered
+        self.assertEqual("500 Internal Server Error", self.status)
+        j = json.loads(result.decode("utf-8"))
+        self.assertTrue(j["__exception__"])
+        self.assertEqual("Pyro4.errors.NamingError", j["__class__"])
+
+    def testExposedPattern(self):
+        self.assertEqual("http.", Pyro4.utils.httpgateway.pyro_app.ns_regex)
 
 
 if __name__ == "__main__":

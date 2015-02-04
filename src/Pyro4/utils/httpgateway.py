@@ -252,6 +252,7 @@ def singlyfy_parameters(parameters):
 
 pyro_app.ns_regex = "http."
 pyro_app.hmac_key = None
+pyro_app.comm_timeout = Pyro4.config.COMMTIMEOUT
 
 
 def main(args=None):
@@ -262,7 +263,7 @@ def main(args=None):
     parser.add_option("-p", "--port", type="int", default=8080, help="port to bind server on (default=%default)")
     parser.add_option("-e", "--expose", default=pyro_app.ns_regex, help="a regex of object names to expose (default=%default)")
     parser.add_option("-k", "--pyrokey", help="the HMAC key to use to connect with Pyro")
-    parser.add_option("-t", "--timeout", type="float", default=Pyro4.config.COMMTIMEOUT, help="Pyro timeout value to use (COMMTIMEOUT setting, default=%default)")
+    parser.add_option("-t", "--timeout", type="float", default=pyro_app.comm_timeout, help="Pyro timeout value to use (COMMTIMEOUT setting, default=%default)")
 
     # @todo could use some form of API key/hmac for the http requests...
     options, args = parser.parse_args(args)
