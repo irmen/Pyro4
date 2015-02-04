@@ -5,6 +5,8 @@ Change Log
 **Pyro 4.34**
 
 - added JSON_MODULE config item to be able to set a 3rd party json library (such as simplejson) to use instead of the default json that comes in the stdlib.
+- added X-Pyro-Options http header to the httpgateway request to set certain Pyro options for the call (such as 'oneway')
+- fixed http example code when handling oneway methods (empty response)
 
 
 **Pyro 4.33**

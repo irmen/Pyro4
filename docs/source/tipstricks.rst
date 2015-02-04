@@ -453,6 +453,13 @@ the http gateway will perform much slower as the same calls processed by a nativ
 to operate in batch mode as well). However because Pyro is quite efficient, a call through
 the gateway is still processed in just a few milliseconds, naming lookup and json serialization all included.
 
+Special ``X-Pyro-Options`` http request header:
+add this header to the request to set certain pyro options for the call. Possible options (comma-separated):
+
+- ``oneway``: force the Pyro call to be a oneway call and return immediately.
+  The gateway server still returns a 200 OK http response as usual, but the response data is empty.
+  This option is to override the semantics for non-oneway method calls if you so desire.
+
 
 Http response status codes:
 

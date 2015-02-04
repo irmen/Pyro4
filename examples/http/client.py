@@ -3,7 +3,8 @@ assert sys.version_info > (3, 0), "requires python 3.x"   # sorry, too lazy to p
 import json
 import re
 import pprint
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
+from urllib.error import HTTPError
 
 
 def get_charset(req):
@@ -15,23 +16,50 @@ def get_charset(req):
 
 
 def pyro_call(object_name, method, callback):
-    with urlopen("http://127.0.0.1:8080/pyro/{0}/{1}".format(object_name, method)) as req:
+    request = Request("http://127.0.0.1:8080/pyro/{0}/{1}".format(object_name, method),
+                      # headers={"x-pyro-options": "oneway"}
+                      )
+    with urlopen(request) as req:
         charset = get_charset(req)
         data = req.read().decode(charset)
-    callback(json.loads(data))
+    if data:
+        callback(json.loads(data))
+    else:
+        callback(None)
 
 
 def write_result(result):
     pprint.pprint(result, width=40)
 
-print("\nLIST--->")
-pyro_call("Pyro.NameServer", "list", write_result)
+try:
+    print("\nLIST--->")
+    pyro_call("Pyro.NameServer", "list", write_result)
+except HTTPError as x:
+    print("Error:", x)
 
-print("\nMETA--->")
-pyro_call("Pyro.NameServer", "$meta", write_result)
+try:
+    print("\nMETA--->")
+    pyro_call("Pyro.NameServer", "$meta", write_result)
+except HTTPError as x:
+    print("Error:", x)
 
-print("\nLOOKUP--->")
-pyro_call("Pyro.NameServer", "lookup?name=Pyro.NameServer", write_result)
+try:
+    print("\nLOOKUP--->")
+    pyro_call("Pyro.NameServer", "lookup?name=Pyro.NameServer", write_result)
+except HTTPError as x:
+    print("Error:", x)
+
+try:
+    print("\nONEWAY_SLOW--->")
+    pyro_call("test.echoserver", "oneway_slow", write_result)
+except HTTPError as x:
+    print("Error:", x)
+
+try:
+    print("\nSLOW--->")
+    pyro_call("test.echoserver", "slow", write_result)
+except HTTPError as x:
+    print("Error:", x)
 
 # Note that there is a nicer way to pass the parameters, you can probably
 # grab them from a function's vargs and/or kwargs and convert those to

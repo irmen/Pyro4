@@ -137,6 +137,7 @@ Response: <pre id="pyro_response"> &nbsp; </pre>
 
 
 def process_pyro_request(environ, path, parameters, start_response):
+    pyro_options = environ.get("HTTP_X_PYRO_OPTIONS", "").split(",")
     nameserver = get_nameserver(hmac=pyro_app.hmac_key)
     if not path:
         start_response('200 OK', [('Content-Type', 'text/html')])
@@ -176,6 +177,8 @@ def process_pyro_request(environ, path, parameters, start_response):
         with Pyro4.Proxy(uri) as proxy:
             proxy._pyroHmacKey = pyro_app.hmac_key
             proxy._pyroGetMetadata()
+            if "oneway" in pyro_options:
+                proxy._pyroOneway.add(method)
             if method == "$meta":
                 result = {"methods": tuple(proxy._pyroMethods), "attributes": tuple(proxy._pyroAttrs)}
                 reply = json.dumps(result).encode("utf-8")
@@ -190,10 +193,10 @@ def process_pyro_request(environ, path, parameters, start_response):
                 else:
                     # call the remote method
                     msg = getattr(proxy, method)(**parameters)
-                if msg is None:
+                if msg is None or "oneway" in pyro_options:
                     # was a oneway call, no response available
                     start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8')])
-                    return [json.dumps(None)]
+                    return []
                 elif msg.flags & Pyro4.message.FLAGS_EXCEPTION:
                     # got an exception response so send a 500 status
                     start_response('500 Internal Server Error', [('Content-Type', 'application/json; charset=utf-8')])

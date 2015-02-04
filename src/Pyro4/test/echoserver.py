@@ -51,6 +51,25 @@ class EchoServer(object):
             print("%s - oneway_echo: %s" % (time.asctime(), message_str))
         return "bogus return value"
 
+    def slow(self):
+        """returns (and prints) a message after a certain delay"""
+        if self._verbose:
+            print("%s - slow: waiting a bit..." % time.asctime())
+        time.sleep(5)
+        if self._verbose:
+            print("%s - slow: returning result" % time.asctime())
+        return "Finally, an answer!"
+
+    @Pyro4.oneway
+    def oneway_slow(self):
+        """prints a message after a certain delay, and returns; but the client won't wait for it"""
+        if self._verbose:
+            print("%s - oneway_slow: waiting a bit..." % time.asctime())
+        time.sleep(5)
+        if self._verbose:
+            print("%s - oneway_slow: returning result" % time.asctime())
+        return "bogus return value"
+
     def _private(self):
         """a 'private' method that should not be accessible"""
         return "should not be allowed"
