@@ -486,3 +486,8 @@ A short explanation of the available options can be printed with the help option
    Print a short help message and exit.
 
 Most other options should be self explanatory; you can set the listening host and portname etc.
+An important option is the exposed names regex option: this controls what objects are
+accessible from the http gateway interface. It defaults to something that won't just expose every
+internal object in your system. If you want to toy a bit with the examples provided in the gateway's
+web page, you'll have to change the option to something like: ``'Pyro.|test.'`` so that those objects
+are exposed.

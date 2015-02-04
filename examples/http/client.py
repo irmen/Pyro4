@@ -36,30 +36,35 @@ try:
     pyro_call("Pyro.NameServer", "list", write_result)
 except HTTPError as x:
     print("Error:", x)
+    print("Error response data:", x.read())
 
 try:
     print("\nMETA--->")
     pyro_call("Pyro.NameServer", "$meta", write_result)
 except HTTPError as x:
     print("Error:", x)
+    print("Error response data:", x.read())
 
 try:
     print("\nLOOKUP--->")
     pyro_call("Pyro.NameServer", "lookup?name=Pyro.NameServer", write_result)
 except HTTPError as x:
     print("Error:", x)
+    print("Error response data:", x.read())
 
 try:
     print("\nONEWAY_SLOW--->")
     pyro_call("test.echoserver", "oneway_slow", write_result)
 except HTTPError as x:
     print("Error:", x)
+    print("Error response data:", x.read())
 
 try:
     print("\nSLOW--->")
     pyro_call("test.echoserver", "slow", write_result)
 except HTTPError as x:
     print("Error:", x)
+    print("Error response data:", x.read())
 
 # Note that there is a nicer way to pass the parameters, you can probably
 # grab them from a function's vargs and/or kwargs and convert those to

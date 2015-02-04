@@ -27,6 +27,7 @@ import sys
 import re
 import cgi
 from wsgiref.simple_server import make_server
+import traceback
 import Pyro4
 import Pyro4.errors
 import Pyro4.message
@@ -112,7 +113,7 @@ index_page_template = """<!DOCTYPE html>
 </div>
 <p><em>Note: performance isn't maxed; it is stateless. Does a name lookup and uses a new Pyro proxy for each request.</em></p>
 <h2>Currently exposed contents of name server:</h2>
-<p>(Limited to 10 entries, prefix = '{prefix}')</p>
+<p>(Limited to 10 entries, exposed name pattern = '{ns_regex}')</p>
 {name_server_contents_list}
 <p>Name server examples: (these examples are working if you expose the Pyro.NameServer object)</p>
 <ul>
@@ -142,7 +143,7 @@ def process_pyro_request(environ, path, parameters, start_response):
     if not path:
         start_response('200 OK', [('Content-Type', 'text/html')])
         nslist = ["<table><tr><th>Name</th><th>methods</th><th>attributes (zero-param methods)</th></tr>"]
-        names = sorted(list(nameserver.list(prefix=pyro_app.ns_prefix).keys())[:10])
+        names = sorted(list(nameserver.list(regex=pyro_app.ns_regex).keys())[:10])
         with Pyro4.batch(nameserver) as nsbatch:
             for name in names:
                 nsbatch.lookup(name)
@@ -157,11 +158,14 @@ def process_pyro_request(environ, path, parameters, start_response):
                                       .format(name=name, attribute=attribute) for attribute in proxy._pyroAttrs]
                         attributes = " &nbsp; ".join(attributes) or "-"
                 except Pyro4.errors.PyroError as x:
+                    stderr = environ["wsgi.errors"]
+                    print("ERROR getting metadata for {0}:".format(uri), file=stderr)
+                    traceback.print_exc(file=stderr)
                     methods = "??error:%s??" % str(x)
                 nslist.append("<tr><td><a href=\"{name}/$meta\" onclick=\"pyro_call('{name}','$meta'); return false;\">{name}</a></td><td>{methods}</td><td>{attributes}</td></tr>"
                               .format(name=name, methods=methods, attributes=attributes))
         nslist.append("</table>")
-        index_page = index_page_template.format(prefix=pyro_app.ns_prefix,
+        index_page = index_page_template.format(ns_regex=pyro_app.ns_regex,
                                                 name_server_contents_list="".join(nslist),
                                                 pyro_version=Pyro4.constants.VERSION)
         return [index_page.encode("utf-8")]
@@ -169,7 +173,7 @@ def process_pyro_request(environ, path, parameters, start_response):
     if not matches:
         return not_found(start_response)
     object_name, method = matches.groups()
-    if pyro_app.ns_prefix and not object_name.startswith(pyro_app.ns_prefix):
+    if pyro_app.ns_regex and not re.match(pyro_app.ns_regex, object_name):
         start_response('401 Unauthorized', [('Content-Type', 'text/plain')])
         return [b"401 Unauthorized - access to the requested object has been denied"]
     try:
@@ -206,7 +210,6 @@ def process_pyro_request(environ, path, parameters, start_response):
                     start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8')])
                     return [msg.data]
     except Exception as x:
-        import traceback
         stderr = environ["wsgi.errors"]
         print("ERROR handling {0} with params {1}:".format(path, parameters), file=stderr)
         traceback.print_exc(file=stderr)
@@ -222,6 +225,7 @@ def pyro_app(environ, start_response):
     to use the default wsgiref server.
     """
     Pyro4.config.SERIALIZER = "json"     # we only talk json through the http proxy
+    Pyro4.config.COMMTIMEOUT = pyro_app.comm_timeout
     method = environ.get("REQUEST_METHOD")
     path = environ.get('PATH_INFO', '').lstrip('/')
     if not path:
@@ -246,7 +250,7 @@ def singlyfy_parameters(parameters):
     return parameters
 
 
-pyro_app.ns_prefix = "Pyro4."
+pyro_app.ns_regex = "http."
 pyro_app.hmac_key = None
 
 
@@ -256,17 +260,20 @@ def main(args=None):
     parser = OptionParser()
     parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=%default)")
     parser.add_option("-p", "--port", type="int", default=8080, help="port to bind server on (default=%default)")
-    parser.add_option("-f", "--prefix", default="Pyro.", help="the prefix of object names to expose (default=%default)")
+    parser.add_option("-e", "--expose", default=pyro_app.ns_regex, help="a regex of object names to expose (default=%default)")
     parser.add_option("-k", "--pyrokey", help="the HMAC key to use to connect with Pyro")
+    parser.add_option("-t", "--timeout", type="float", default=Pyro4.config.COMMTIMEOUT, help="Pyro timeout value to use (COMMTIMEOUT setting, default=%default)")
+
     # @todo could use some form of API key/hmac for the http requests...
     options, args = parser.parse_args(args)
 
     pyro_app.hmac_key = (options.pyrokey or "").encode("utf-8")
-    pyro_app.ns_prefix = options.prefix
-    if pyro_app.ns_prefix:
-        print("Exposing objects with name prefix: ", pyro_app.ns_prefix)
+    pyro_app.ns_regex = options.expose
+    pyro_app.comm_timeout = Pyro4.config.COMMTIMEOUT = options.timeout
+    if pyro_app.ns_regex:
+        print("Exposing objects with names matching: ", pyro_app.ns_regex)
     else:
-        print("Warning: exposing all objects (no prefix set)")
+        print("Warning: exposing all objects (no expose regex set)")
     print("Connected to name server at: ", get_nameserver(hmac=pyro_app.hmac_key)._pyroUri)
     server = make_server(options.host, options.port, pyro_app)
     print("Pyro HTTP gateway running on http://{0}:{1}/pyro/".format(*server.socket.getsockname()))

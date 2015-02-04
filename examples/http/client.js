@@ -21,7 +21,7 @@ function pyro_call(object, method, callback) {
             port: 8080,
             path: "/pyro/"+object+"/"+method,
             headers: {
-                    // "X-Pyro-Options": "oneway"
+                    // "X-Pyro-Options": "options,here"
                 }
             },
         function(res) {
@@ -56,25 +56,25 @@ function pyro_call(object, method, callback) {
 /*--------- do some pyro calls: ----------*/
 pyro_call("Pyro.NameServer", "list", function(response) { 
     console.log("\nLIST--->");
-    console.log(JSON.stringify(response, null, 4)); 
+    console.log(JSON.stringify(response, null, 4));
 });
 
-pyro_call("Pyro.NameServer", "$meta", function(response) { 
+pyro_call("Pyro.NameServer", "$meta", function(response) {
     console.log("\nMETA--->");
-    console.log(JSON.stringify(response, null, 4)); 
+    console.log(JSON.stringify(response, null, 4));
 });
 
-pyro_call("Pyro.NameServer", "lookup?name=Pyro.NameServer", function(response) { 
+pyro_call("Pyro.NameServer", "lookup?name=Pyro.NameServer", function(response) {
     console.log("\nLOOKUP--->");
-    console.log(JSON.stringify(response, null, 4)); 
+    console.log(JSON.stringify(response, null, 4));
 });
 
-pyro_call("test.echoserver", "oneway_slow", function(response) { 
+pyro_call("test.echoserver", "oneway_slow", function(response) {
     console.log("\nONEWAY_SLOW--->");
-    console.log(JSON.stringify(response, null, 4)); 
+    console.log(JSON.stringify(response, null, 4));
 });
 
-pyro_call("test.echoserver", "slow", function(response) { 
+pyro_call("test.echoserver", "slow", function(response) {
     console.log("\nSLOW--->");
-    console.log(JSON.stringify(response, null, 4)); 
+    console.log(JSON.stringify(response, null, 4));
 });

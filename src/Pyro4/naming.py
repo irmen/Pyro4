@@ -130,7 +130,7 @@ class NameServer(object):
                     return result
                 result = {}
                 try:
-                    regex = re.compile(regex + "$")  # add end of string marker
+                    regex = re.compile(regex)
                 except re.error:
                     x = sys.exc_info()[1]
                     raise NamingError("invalid regex: " + str(x))

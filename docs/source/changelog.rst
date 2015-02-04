@@ -6,7 +6,10 @@ Change Log
 
 - added JSON_MODULE config item to be able to set a 3rd party json library (such as simplejson) to use instead of the default json that comes in the stdlib.
 - added X-Pyro-Options http header to the httpgateway request to set certain Pyro options for the call (such as 'oneway')
+- http gateway name prefix option changed, you now specify an export name regex pattern instead (allows you to export multiple name patterns)
+- http gateway gained a pyro timeout option as shortcut for Pyro's commtimeout config item that should be used
 - fixed http example code when handling oneway methods (empty response)
+- the nameserver's list function no longer internally appends a '$' (end of string marker) to a given regex pattern
 
 
 **Pyro 4.33**
