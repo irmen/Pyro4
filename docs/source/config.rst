@@ -85,14 +85,14 @@ COMPRESSION             bool    False          Enable to make Pyro compress the 
 DETAILED_TRACEBACK      bool    False          Enable to get detailed exception tracebacks (including the value of local variables per stack frame)
 HOST                    str     localhost      Hostname where Pyro daemons will bind on
 MAX_MESSAGE_SIZE        int     0              Maximum size in bytes of the messages sent or received on the wire. If a message exceeds this size, a ProtocolError is raised.
-NS_HOST                 str     *equal to      Hostname for the name server
+NS_HOST                 str     *equal to      Hostname for the name server. Used for locating in clients only (use the normal HOST config item in the name server itself)
                                 HOST*
-NS_PORT                 int     9090           TCP port of the name server
-NS_BCPORT               int     9091           UDP port of the broadcast responder from the name server
-NS_BCHOST               str     None           Hostname for the broadcast responder of the name sever
-NATHOST                 str     None           External hostname in case of NAT
-NATPORT                 int     None           External port in case of NAT
-BROADCAST_ADDRS         str     <broadcast>,   List of comma separated addresses that Pyro should send broadcasts to (for NS lookup)
+NS_PORT                 int     9090           TCP port of the name server. Used by the server and for locating in clients.
+NS_BCPORT               int     9091           UDP port of the broadcast responder from the name server. Used by the server and for locating in clients.
+NS_BCHOST               str     None           Hostname for the broadcast responder of the name sever. Used by the server only.
+NATHOST                 str     None           External hostname in case of NAT (used by the server)
+NATPORT                 int     None           External port in case of NAT (used by the server)
+BROADCAST_ADDRS         str     <broadcast>,   List of comma separated addresses that Pyro should send broadcasts to (for NS locating in clients)
                                 0.0.0.0
 ONEWAY_THREADED         bool    True           Enable to make oneway calls be processed in their own separate thread
 POLLTIMEOUT             float   2.0            For the multiplexing server only: the timeout of the select or poll calls
