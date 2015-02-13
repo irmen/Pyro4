@@ -4,12 +4,21 @@ Change Log
 
 **Pyro 4.34**
 
+- NOTE: intending to drop support for Python 2.6 and Jython.
+  This will probably be the last version that officially supports Python version 2.6 and Jython 2.7.
+  Future versions will only be compatible with and tested with Python 2.7 and 3.2+, IronPython, and Pypy.
+  The explicit Jython compatibility will be dropped. Until Jython 2.7 itself becomes up to par with official Python 2.7 you will probably no longer
+  be able to use Pyro from within Jython. PyroLite will ofcourse still be supported for Java clients.
+  If you're stuck with Python 2.6 (or Jython), plan on either committing to this last Pyro version that supports it, or plan on cloning the Pyro4
+  source repository and applying compatibility patches yourself.
+  This decision is made to remove the development and support burden that now exists for these old or problematic Python implementations.
 - added JSON_MODULE config item to be able to set a 3rd party json library (such as simplejson) to use instead of the default json that comes in the stdlib.
 - added X-Pyro-Options http header to the httpgateway request to set certain Pyro options for the call (such as 'oneway')
 - http gateway name prefix option changed, you now specify an export name regex pattern instead (allows you to export multiple name patterns)
 - http gateway gained a pyro timeout option as shortcut for Pyro's commtimeout config item that should be used
 - fixed http example code when handling oneway methods (empty response)
 - the nameserver's list function no longer internally appends a '$' (end of string marker) to a given regex pattern
+- removed paragraph in docs about choosing between pyro4 and pyro3 (there's only one sensible choice nowadays)
 
 
 **Pyro 4.33**

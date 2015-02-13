@@ -36,11 +36,10 @@ IronPython
 
   `IronPython <http://ironpython.net>`_ is a Python implementation running on the .NET virtual machine.
 
-- Pyro requires the :kbd:`zlib` module, which is not included in older IronPython versions. IronPython 2.7 includes it by default.
-  If you need to install it manually, get it `from the developer <https://bitbucket.org/jdhardy/ironpythonzlib/downloads/>`_.
+- Pyro runs with IronPython 2.7. Older versions may or may not work, and lack required modules such as zlib.
 
 - IronPython cannot properly serialize exception objects, which could lead to problems when dealing with
-  Pyro's enhanced tracebacks. For now, Pyro contains a workaround for this IronPython `bug <http://ironpython.codeplex.com/workitem/30805>`_.
+  Pyro's enhanced tracebacks. For now, Pyro contains a workaround for this IronPython `bug <https://github.com/IronLanguages/main/issues/943>`_.
 
 
 .. index:: Pypy
@@ -52,6 +51,4 @@ Pypy
   `Pypy <http://pypy.org>`_ is a Python implementation written in Python itself, and it usually
   is quite a lot faster than the default implementation because it has a :abbr:`JIT (Just in time)`-compiler.
 
-I haven't used Pypy much let alone with Pyro, but it seems that at least the recent builds (1.9 and newer)
-of Pypy work fine with Pyro.
-
+Pyro runs happily on recent versions of Pypy.

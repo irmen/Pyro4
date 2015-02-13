@@ -11,10 +11,8 @@ This chapter will show how to obtain and install Pyro.
 
 Requirements
 ------------
-You need Python 2.6 or newer for Pyro4.
-Also see :ref:`should-i-choose-pyro4`.
-
-Pyro is written in 100% pure Python. It works on any recent operating system.
+Pyro4 works on the following Python versions: 2.6, 2.7, 3.2 and newer. It also works with Pypy, Jython, and IronPython.
+Pyro is written in 100% pure Python. It works on any recent operating system where Python is available.
 
 It will default to using the `serpent <https://pypi.python.org/pypi/serpent>`_ serializer so you
 will need to install Serpent as well, unless you configure Pyro to use one of the other serializers.

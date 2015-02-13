@@ -332,8 +332,7 @@ is very simple::
 where "some_logical_object_name" is the name of a registered Pyro object in the name server.
 When you also provide the ``nshostname`` and perhaps even ``nsport`` parts in the uri, you tell Pyro to look
 for the name server on that specific location (instead of relying on a broadcast lookup mechanism).
-(You can achieve more or less the same by setting the ``NS_HOST`` and ``NS_PORT`` config items,
-but Pyro still does a broadcast lookup first in that case.)
+(You can achieve more or less the same by setting the ``NS_HOST`` and ``NS_PORT`` config items)
 
 All this means that instead of manually resolving objects like this::
 
@@ -460,7 +459,7 @@ You can control its behavior by setting certain Pyro config items before startin
 
 Using the name server with pickle serializer
 ============================================
-If you find yourself in the situation where you have to use the pickle serializer, you have to
+If you find yourself in the unfortunate situation where you absolutely have to use the pickle serializer, you have to
 pay attention when also using the name server.
 Because pickle is disabled by default, the name server will not reply to messages from clients
 that are using the pickle serializer, unless you enable pickle in the name server as well.
