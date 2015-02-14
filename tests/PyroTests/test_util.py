@@ -206,7 +206,8 @@ class TestUtils(unittest.TestCase):
         self.assertEqual("<a>", str(Pyro4.util.getAttribute(obj, "a")))
         self.assertEqual("hello", str(Pyro4.util.getAttribute(obj, "__value__")))  # dunder is not private
         dunder = str(Pyro4.util.getAttribute(obj, "__p__"))
-        self.assertTrue(dunder.startswith("<bound method Test.__p__ of"))  # dunder is not private
+        self.assertTrue(dunder.startswith("<bound method "))  # dunder is not private, part 1 of the check
+        self.assertTrue("Test.__p__ of" in dunder)  # dunder is not private, part 2 of the check
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "_p")  # private
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "__p")  # private
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a.b")
