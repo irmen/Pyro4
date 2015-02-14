@@ -87,6 +87,7 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertIn(Pyro4.constants.NAMESERVER_NAME, ns.list())
         ns.storage.close()
 
+    @unittest.skipIf(sys.platform == "cli", "ironpython has a bug in anydbm/whichdb when inserting unicode keys")   # see https://github.com/IronLanguages/main/issues/1165
     def testUnicodeNames(self):
         ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
         self.storageProvider.clear()
@@ -260,6 +261,9 @@ class OfflineNameServerTests(unittest.TestCase):
 class OfflineNameServerTestsDbmStorage(OfflineNameServerTests):
     def setUp(self):
         super(OfflineNameServerTestsDbmStorage, self).setUp()
+        import glob
+        for file in glob.glob("pyro-test.dbm*"):
+            os.remove(file)
         self.storageProvider = Pyro4.naming_storage.DbmStorage("pyro-test.dbm")
 
     def tearDown(self):

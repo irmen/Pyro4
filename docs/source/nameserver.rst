@@ -291,6 +291,9 @@ Normally, all name server lookups are done this way. In code, it is simply calli
 locator function without any arguments.
 If you want to circumvent the broadcast lookup (because you know the location of the
 server already, somehow) you can specify the hostname.
+As soon as you provide a specific hostname to the name server locator (by using a host argument
+to the ``locateNS`` call, or by setting the ``NS_HOST`` config item, etc) it will no longer use
+a broadcast too try to find the name server.
 
 .. function:: locateNS([host=None, port=None, broadcast=True, hmac_key=key])
 

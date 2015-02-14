@@ -91,7 +91,7 @@ See :doc:`config` for the proper way to do this.
 
 Preventing arbitrary connections: HMAC signature
 ================================================
-Pyro suggests using a `HMAC signature <http://docs.python.org/library/hmac.html>`_ on every network transfer
+You can use a `HMAC signature <http://docs.python.org/library/hmac.html>`_ on every network transfer
 to prevent malicious requests. The idea is to only have legit clients connect to your Pyro server.
 Using the HMAC signature ensures that only clients with the correct secret key can create valid requests,
 and that it is impossible to modify valid requests (even though the network data is not encrypted).
