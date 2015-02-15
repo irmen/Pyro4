@@ -134,6 +134,10 @@ There are several command line options for this tool:
    (The broadcast responder listens to UDP broadcast packets on the local network subnet,
    to signal its location to clients that want to talk to the name server)
 
+.. option:: -k, --key
+
+   Specify hmac key to use.
+
 
 Starting the Name Server from within your own code
 ==================================================

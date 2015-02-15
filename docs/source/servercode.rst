@@ -495,7 +495,7 @@ appropriate. If in doubt, go with the default setting.
 .. index::
     double: server type; threaded
 
-#. threaded server (servertype ``"threaded"``, this is the default)
+#. threaded server (servertype ``"thread"``, this is the default)
     This server uses a thread pool to handle incoming proxy connections.
     The size of the pool is configurable via various config items.
     Every proxy on a client that connects to the daemon will be assigned to a thread to handle
