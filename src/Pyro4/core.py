@@ -241,6 +241,10 @@ class Proxy(object):
     def __setattr__(self, name, value):
         if name in Proxy.__pyroAttributes:
             return super(Proxy, self).__setattr__(name, value)  # one of the special pyro attributes
+        if Pyro4.config.METADATA:
+            # get metadata if it's not there yet
+            if not self._pyroMethods and not self._pyroAttrs:
+                self._pyroGetMetadata()
         if name in self._pyroAttrs:
             return self._pyroInvoke("__setattr__", (name, value), None)  # remote attribute
         if Pyro4.config.METADATA:
