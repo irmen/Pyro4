@@ -279,9 +279,10 @@ class ServerTestsOnce(unittest.TestCase):
                                   'multiply', 'oneway_multiply', 'getDictAttr']), p._pyroMethods)
             self.assertEqual(set(['oneway_multiply', 'oneway_delay']), p._pyroOneway)
 
-    def testProxyMetadataAttrs(self):
+    def testProxyAttrsMetadataOff(self):
         try:
             Pyro4.config.METADATA = False
+            # read attributes
             with Pyro4.core.Proxy(self.objectUri) as p:
                 a = p.multiply
                 self.assertIsInstance(a, Pyro4.core._RemoteMethod)
@@ -289,7 +290,17 @@ class ServerTestsOnce(unittest.TestCase):
                 self.assertIsInstance(a, Pyro4.core._RemoteMethod)
                 a = p.non_existing_attribute
                 self.assertIsInstance(a, Pyro4.core._RemoteMethod)
+            # set attributes
+            with Pyro4.core.Proxy(self.objectUri) as p:
+                p.some_weird_attribute = 42
+                self.assertEqual(42, p.some_weird_attribute)
+        finally:
             Pyro4.config.METADATA = True
+
+    def testProxyAttrsMetadataOn(self):
+        try:
+            Pyro4.config.METADATA = True
+            # read attributes
             with Pyro4.core.Proxy(self.objectUri) as p:
                 # unconnected proxy still has empty metadata.
                 # but, as soon as an attribute is used, the metadata is obtained (as long as METADATA is true)
@@ -299,6 +310,11 @@ class ServerTestsOnce(unittest.TestCase):
                 self.assertIsInstance(a, Pyro4.core._RemoteMethod)  # multiply is still a regular method
                 with self.assertRaises(AttributeError):
                     _ = p.non_existing_attribute
+            # set attributes, should also trigger getting metadata
+            with Pyro4.core.Proxy(self.objectUri) as p:
+                p.value = 42
+                self.assertEqual(42, p.value)
+                self.assertTrue("value" in p._pyroAttrs)
         finally:
             Pyro4.config.METADATA = True
 

@@ -12,6 +12,7 @@ Change Log
   If you're stuck with Python 2.6 (or Jython), plan on either committing to this last Pyro version that supports it, or plan on cloning the Pyro4
   source repository and applying compatibility patches yourself.
   This decision is made to remove the development and support burden that now exists for these old or problematic Python implementations.
+- setting an attribute on a proxy as first operation no longer crashes with an AttributeError, it now correctly obtains the metadata first
 - added JSON_MODULE config item to be able to set a 3rd party json library (such as simplejson) to use instead of the default json that comes in the stdlib.
 - added X-Pyro-Options http header to the httpgateway request to set certain Pyro options for the call (such as 'oneway')
 - http gateway name prefix option changed, you now specify an export name regex pattern instead (allows you to export multiple name patterns)
