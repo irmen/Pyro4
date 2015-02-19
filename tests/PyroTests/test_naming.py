@@ -200,8 +200,6 @@ class NameServerTests0000(unittest.TestCase):
         Pyro4.config.POLLTIMEOUT = 0.1
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host="", port=0, bcport=0)
         host_check = self.nsUri.host
-        if host_check == "0:0:0:0:0:0:0:0":  # this happens on jython
-            host_check = "0.0.0.0"
         self.assertEqual("0.0.0.0", host_check, "for hostname \"\" the resulting ip must be 0.0.0.0 (or ipv6 equivalent)")
         self.assertIsNotNone(self.bcserver, "expected a BC server to be running")
         self.bcserver.runInThread()
@@ -220,7 +218,6 @@ class NameServerTests0000(unittest.TestCase):
         Pyro4.config.NS_PORT = self.old_nsPort
         Pyro4.config.NS_BCPORT = self.old_bcPort
 
-    @unittest.skipUnless(os.name != "java", "jython does strange things with bc server on 0.0.0.0 (it hangs)")
     def testBCLookup0000(self):
         ns = Pyro4.naming.locateNS()  # broadcast lookup
         self.assertIsInstance(ns, Pyro4.core.Proxy)

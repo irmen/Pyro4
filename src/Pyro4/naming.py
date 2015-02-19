@@ -252,8 +252,7 @@ class BroadcastServer(object):
         return self.sock.fileno()
 
     def runInThread(self):
-        """Run the broadcast server loop in its own thread. This is mainly for Jython,
-        which has problems with multiplexing it using select() with the Name server itself."""
+        """Run the broadcast server loop in its own thread."""
         thread = Thread(target=self.__requestLoop)
         thread.setDaemon(True)
         thread.start()
@@ -387,9 +386,9 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
                         except socket.error:
                             x = sys.exc_info()[1]
                             err = getattr(x, "errno", x.args[0])
-                            if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:  # yeah, windows likes to throw these...
-                                if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:  # and jython likes to throw these...
-                                    raise
+                            # handle some errno's that some platforms like to throw:
+                            if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL and err not in Pyro4.socketutil.ERRNO_EADDRINUSE:
+                                raise
                     data, _ = sock.recvfrom(100)
                     sock.close()
                     if sys.version_info >= (3, 0):

@@ -954,7 +954,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         else:
             # thread based server does execute calls in parallel,
             # so 6 threads taking 0.5 seconds =~ 0.5 seconds passed
-            self.assertTrue(0.4 < duration < 0.9)  # loose upper bound for slow jython
+            self.assertTrue(0.4 < duration < 0.9)
 
 
 class ServerTestsMultiplexNoTimeout(ServerTestsThreadNoTimeout):

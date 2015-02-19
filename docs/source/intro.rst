@@ -28,7 +28,7 @@ Here's a quick overview of Pyro's features:
 - defaults to a safe serializer (`serpent <https://pypi.python.org/pypi/serpent>`_) that supports many Python data types.
 - supports different serializers (serpent, json, marshal, pickle).
 - support for all Python data types that are pickleable when using the 'pickle' serializer [1]_.
-- runs on normal Python 2.x, Python **3.x**, IronPython, Jython 2.7, Pypy.
+- runs on normal Python 2.x, Python **3.x**, IronPython, Pypy.
 - works between systems on different architectures and operating systems (64-bit, 32-bit, Intel, PowerPC...)
 - designed to be very easy to use and get out of your way as much as possible.
 - name server that keeps track of your object's actual locations so you can move them around transparently.

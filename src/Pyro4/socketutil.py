@@ -5,7 +5,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import socket
-import os
 import errno
 import time
 import sys
@@ -13,18 +12,6 @@ import select
 import Pyro4.constants
 from Pyro4.errors import CommunicationError, TimeoutError, ConnectionClosedError
 
-
-if os.name == "java":
-    # jython workaround for 'socket must be in nonblocking mode' error
-    from java.nio.channels import ClosedChannelException
-
-    def selectfunction(rlist, wlist, xlist, timeout=None):
-        try:
-            return select.cpython_compatible_select(rlist, wlist, xlist, timeout)
-        except ClosedChannelException:
-            return [], [], []
-else:
-    selectfunction = select.select
 
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.
@@ -309,7 +296,7 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
         try:
             sock.listen(100)
         except Exception:
-            pass  # jython sometimes raises errors here
+            pass
     if connect:
         try:
             sock.connect(connect)
@@ -325,7 +312,7 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
                     timeout = None
                 timeout = max(0.1, timeout)  # avoid polling behavior with timeout=0
                 while True:
-                    sr, sw, se = selectfunction([], [sock], [sock], timeout)
+                    sr, sw, se = select.select([], [sock], [sock], timeout)
                     if sock in sw:
                         break  # yay, writable now, connect() completed
                     elif sock in se:
@@ -496,9 +483,8 @@ def findProbablyUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
 def bindOnUnusedPort(sock, host='localhost'):
     """Bind the socket to a free port and return the port number.
     This code is based on the code in the stdlib's test.test_support module."""
-    if os.name != "java" and sock.family in (socket.AF_INET, socket.AF_INET6) and sock.type == socket.SOCK_STREAM:
+    if sock.family in (socket.AF_INET, socket.AF_INET6) and sock.type == socket.SOCK_STREAM:
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
-            # even though Jython has this socket option, it doesn't support it. Hence the check in the if statement above.
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
     if sock.family == socket.AF_INET:
         if host == 'localhost':
@@ -512,13 +498,7 @@ def bindOnUnusedPort(sock, host='localhost'):
             sock.bind((host, 0, 0, 0))
     else:
         raise CommunicationError("unsupported socket family: " + sock.family)
-    if os.name == "java":
-        try:
-            sock.listen(100)  # otherwise jython always just returns 0 for the port
-        except Exception:
-            pass  # jython sometimes throws errors here
-    port = sock.getsockname()[1]
-    return port
+    return sock.getsockname()[1]
 
 
 """is select() available?"""
@@ -535,5 +515,5 @@ def triggerSocket(sock):
         if sys.platform == "cli":
             data = "!" * 16
         sock.sendall(data)
-    except (socket.error, AttributeError):  # attributeerror can occur here in jython
+    except (socket.error, AttributeError):
         pass

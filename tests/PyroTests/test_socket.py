@@ -22,7 +22,7 @@ from testsupport import *
 
 
 # determine ipv6 capability
-has_ipv6 = socket.has_ipv6 and not os.name == "java"  # jython's ipv6 support isn't really working in Pyro
+has_ipv6 = socket.has_ipv6
 if has_ipv6:
     s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
     try:
@@ -40,11 +40,7 @@ class TestSocketStuff(unittest.TestCase):
         s.listen(5)
         host, port = s.getsockname()
         self.assertNotEqual(0, port)
-        if os.name != "java":
-            self.assertEqual("0.0.0.0", host)  # ipv4 support only at this time
-        else:
-            # jython somehow seems to return ipv6 sockname on ipv4 sockets
-            self.assertIn(host, ("0.0.0.0", "0:0:0:0:0:0:0:0"))
+        self.assertEqual("0.0.0.0", host)  # ipv4 support only at this time
         s.close()
 
 
@@ -282,9 +278,9 @@ class TestSocketutil(unittest.TestCase):
             except socket.error:
                 x = sys.exc_info()[1]
                 err = getattr(x, "errno", x.args[0])
-                if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL:  # yeah, windows likes to throw these...
-                    if err not in Pyro4.socketutil.ERRNO_EADDRINUSE:  # and jython likes to throw thses...
-                        raise
+                # handle some errno that some platforms like to throw
+                if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL and err not in Pyro4.socketutil.ERRNO_EADDRINUSE:
+                    raise
         data, _ = ss.recvfrom(500)
         self.assertEqual(tobytes("monkey"), data)
         cs.close()
@@ -538,7 +534,6 @@ class TestServerDOS_select(unittest.TestCase):
 
 
 @unittest.skipUnless(SU.hasPoll, "requires poll()")
-@unittest.skipUnless(os.name != "java", "poll-server not yet supported in jython")
 class TestServerDOS_poll(TestServerDOS_select):
     def setUp(self):
         super(TestServerDOS_poll, self).setUp()

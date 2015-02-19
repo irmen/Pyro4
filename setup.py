@@ -33,7 +33,7 @@ computer to execute the method. It is designed to be very easy to use, and to
 generally stay out of your way. But it also provides a set of powerful features that
 enables you to build distributed applications rapidly and effortlessly.
 Pyro is written in 100% pure Python and therefore runs on many platforms and Python versions,
-including Python 2.x, Python 3.x, IronPython, Jython 2.7+ and Pypy.
+including Python 2.x, Python 3.x, IronPython, and Pypy.
 
 The source code repository is on Github: https://github.com/irmen/Pyro4
 """,
@@ -74,12 +74,9 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
                 'pyro4-flameserver = Pyro4.utils.flameserver:main',
                 'pyro4-httpgateway = Pyro4.utils.httpgateway:main'
             ]
-        }
+        },
+        "options": {"XXXderpaderp_install": {"derpaderp_optimize": 1}}   # XXX
     }
-
-    if os.name != "java":
-        # only add '-O' optimized bytecode compile if not using jython
-        setupargs["options"] = {"install": {"optimize": 1}}
 
     setup(**setupargs)
 

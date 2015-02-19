@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.35**
+
+- removed Jython compatibility support and kludges. Use 4.34 or older if you need to run this in Jython.
+
+
 **Pyro 4.34**
 
 - NOTE: intending to drop support for Python 2.6 and Jython.

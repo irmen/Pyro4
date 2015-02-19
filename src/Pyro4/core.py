@@ -12,7 +12,6 @@ import sys
 import time
 import os
 import uuid
-import warnings
 import base64
 import Pyro4.futures
 from Pyro4 import errors, threadutil, socketutil, util, constants, message
@@ -205,8 +204,6 @@ class Proxy(object):
         self.__pyroLock = threadutil.Lock()
         self.__pyroConnLock = threadutil.RLock()   # reentrant lock because pyroInvoke (or rather, pyroRelease) may lock it from within pyroCreateConnection
         util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
-        if os.name == "java" and Pyro4.config.SERIALIZER == "marshal":
-            warnings.warn("marshal doesn't work correctly with Jython (issue 2077); please choose another serializer", RuntimeWarning)
 
     @property
     def _pyroHmacKey(self):
@@ -768,10 +765,7 @@ class Daemon(object):
             self.transportServer = SocketServer_Threadpool()
         elif Pyro4.config.SERVERTYPE == "multiplex":
             # choose the 'best' multiplexing implementation
-            if os.name == "java":
-                self.transportServer = SocketServer_Select()  # poll doesn't work as given in jython ('socket must be in nonblocking mode')
-            else:
-                self.transportServer = SocketServer_Poll() if socketutil.hasPoll else SocketServer_Select()
+            self.transportServer = SocketServer_Poll() if socketutil.hasPoll else SocketServer_Select()
         else:
             raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
         self.transportServer.init(self, host, port, unixsocket)
@@ -931,7 +925,7 @@ class Daemon(object):
             del msg  # invite GC to collect the object, don't wait for out-of-scope
             obj = self.objectsById.get(objId)
             if obj is not None:
-                if kwargs and sys.version_info < (2, 6, 5) and os.name != "java":
+                if kwargs and sys.version_info < (2, 6, 5):
                     # Python before 2.6.5 doesn't accept unicode keyword arguments
                     kwargs = dict((str(k), kwargs[k]) for k in kwargs)
                 if request_flags & Pyro4.message.FLAGS_BATCH:

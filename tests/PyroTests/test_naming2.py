@@ -172,10 +172,6 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertTrue(bc1.fileno() > 0)
         if Pyro4.socketutil.hasPoll:
             p = select.poll()
-            if os.name == "java":
-                # jython requires nonblocking sockets for poll
-                ns1.sock.setblocking(False)
-                bc1.sock.setblocking(False)
             for s in ns1.sockets:
                 p.register(s, select.POLLIN)
             p.register(bc1.fileno(), select.POLLIN)
@@ -185,7 +181,7 @@ class OfflineNameServerTests(unittest.TestCase):
         else:
             rs = [bc1]
             rs.extend(ns1.sockets)
-            _, _, _ = Pyro4.socketutil.selectfunction(rs, [], [], 0.1)
+            _, _, _ = select.select(rs, [], [], 0.1)
         ns1.close()
         bc1.close()
 

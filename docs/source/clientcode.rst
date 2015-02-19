@@ -146,7 +146,6 @@ on what objects you can use.
   the advanced parameters such as `default`, not all 3rd party implementations do that.
 * marshal: a very limited but fast serializer. Can deal with a small range of builtin types only,
   no custom classes can be serialized. Part of the standard library.
-  *note: marshal doesn't work correctly in Jython, so you can't use it there* (see `issue 2077 <http://bugs.jython.org/issue2077>`_)
 * pickle: the legacy serializer. Fast and supports almost all types. Has security problems though. Part
   of the standard library. No longer used by default.
 

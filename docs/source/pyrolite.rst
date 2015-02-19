@@ -10,9 +10,7 @@ objects. It also supports convenient access to a Pyro Flame server including the
 interactive console.
 
 Pyrolite is a tiny library that implements a part of the client side Pyro library,
-hence its name 'lite'.  Because Pyrolite has no dependencies,
-it is a much lighter way to use Pyro from Java/.NET than a solution with
-jython+pyro or IronPython+pyro would provide.
+hence its name 'lite'.  Pyrolite has no additional dependencies.
 So if you don't need Pyro's full feature set, and don't require your
 Java/.NET code to host Pyro objects itself, Pyrolite may be
 a good choice to connect java or .NET and python.

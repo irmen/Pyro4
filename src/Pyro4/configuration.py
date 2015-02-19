@@ -113,7 +113,7 @@ class Configuration(object):
         if hasattr(platform, "python_implementation"):
             implementation = platform.python_implementation()
         else:
-            implementation = "Jython" if os.name == "java" else "???"
+            implementation = "???"
         config = self.asDict()
         config["LOGFILE"] = os.environ.get("PYRO_LOGFILE")
         config["LOGLEVEL"] = os.environ.get("PYRO_LOGLEVEL")

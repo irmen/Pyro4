@@ -447,16 +447,12 @@ class SerializeTests_json(SerializeTests_pickle):
         self.assertEqual(list(data), data2)
 
 
-if os.name != "java":
-    # The marshal serializer is not working correctly under jython,
-    # see http://bugs.jython.org/issue2077
-    # So we only include this when not running jython
-    class SerializeTests_marshal(SerializeTests_pickle):
-        SERIALIZER = "marshal"
+class SerializeTests_marshal(SerializeTests_pickle):
+    SERIALIZER = "marshal"
 
-        def testCircular(self):
-            with self.assertRaises(ValueError):  # marshal doesn't support object graphs
-                super(SerializeTests_marshal, self).testCircular()
+    def testCircular(self):
+        with self.assertRaises(ValueError):  # marshal doesn't support object graphs
+            super(SerializeTests_marshal, self).testCircular()
 
 
 class GenericTests(unittest.TestCase):
