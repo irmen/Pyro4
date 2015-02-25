@@ -109,10 +109,10 @@ index_page_template = """<!DOCTYPE html>
 <div id="title-logo"><img src="http://pythonhosted.org/Pyro4/_static/pyro.png"></div>
 <div id="title-text">
 <h1>Pyro HTTP gateway</h1>
-<p>Use http+json to talk to Pyro objects.</p>
+<p>Use http+json to talk to Pyro objects. <a href="https://pythonhosted.org/Pyro4/tipstricks.html#pyro-via-http-and-json">Docs.</a></p>
 </div>
 <p><em>Note: performance isn't maxed; it is stateless. Does a name lookup and uses a new Pyro proxy for each request.</em></p>
-<h2>Currently exposed contents of name server:</h2>
+<h2>Currently exposed contents of name server on {hostname}:</h2>
 <p>(Limited to 10 entries, exposed name pattern = '{ns_regex}')</p>
 {name_server_contents_list}
 <p>Name server examples: (these examples are working if you expose the Pyro.NameServer object)</p>
@@ -171,7 +171,8 @@ def return_homepage(environ, start_response):
     nslist.append("</table>")
     index_page = index_page_template.format(ns_regex=pyro_app.ns_regex,
                                             name_server_contents_list="".join(nslist),
-                                            pyro_version=Pyro4.constants.VERSION)
+                                            pyro_version=Pyro4.constants.VERSION,
+                                            hostname=environ["SERVER_NAME"])
     return [index_page.encode("utf-8")]
 
 
