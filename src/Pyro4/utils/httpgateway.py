@@ -137,38 +137,48 @@ Response: <pre id="pyro_response"> &nbsp; </pre>
 """
 
 
+def return_homepage(environ, start_response):
+    try:
+        nameserver = get_nameserver(hmac=pyro_app.hmac_key)
+    except Pyro4.errors.NamingError as x:
+        print("Name server error:", x)
+        start_response('500 Internal Server Error', [('Content-Type', 'text/plain')])
+        return [b"Cannot connect to the Pyro name server. Is it running? Refresh page to retry."]
+    start_response('200 OK', [('Content-Type', 'text/html')])
+    nslist = ["<table><tr><th>Name</th><th>methods</th><th>attributes (zero-param methods)</th></tr>"]
+    names = sorted(list(nameserver.list(regex=pyro_app.ns_regex).keys())[:10])
+    with Pyro4.batch(nameserver) as nsbatch:
+        for name in names:
+            nsbatch.lookup(name)
+        for name, uri in zip(names, nsbatch()):
+            attributes = "-"
+            try:
+                with Pyro4.Proxy(uri) as proxy:
+                    proxy._pyroHmacKey = pyro_app.hmac_key
+                    proxy._pyroBind()
+                    methods = " &nbsp; ".join(proxy._pyroMethods) or "-"
+                    attributes = ["<a href=\"{name}/{attribute}\" onclick=\"pyro_call('{name}','{attribute}'); return false;\">{attribute}</a>"
+                                      .format(name=name, attribute=attribute) for attribute in proxy._pyroAttrs]
+                    attributes = " &nbsp; ".join(attributes) or "-"
+            except Pyro4.errors.PyroError as x:
+                stderr = environ["wsgi.errors"]
+                print("ERROR getting metadata for {0}:".format(uri), file=stderr)
+                traceback.print_exc(file=stderr)
+                methods = "??error:%s??" % str(x)
+            nslist.append(
+                "<tr><td><a href=\"{name}/$meta\" onclick=\"pyro_call('{name}','$meta'); return false;\">{name}</a></td><td>{methods}</td><td>{attributes}</td></tr>"
+                .format(name=name, methods=methods, attributes=attributes))
+    nslist.append("</table>")
+    index_page = index_page_template.format(ns_regex=pyro_app.ns_regex,
+                                            name_server_contents_list="".join(nslist),
+                                            pyro_version=Pyro4.constants.VERSION)
+    return [index_page.encode("utf-8")]
+
+
 def process_pyro_request(environ, path, parameters, start_response):
     pyro_options = environ.get("HTTP_X_PYRO_OPTIONS", "").split(",")
-    nameserver = get_nameserver(hmac=pyro_app.hmac_key)
     if not path:
-        start_response('200 OK', [('Content-Type', 'text/html')])
-        nslist = ["<table><tr><th>Name</th><th>methods</th><th>attributes (zero-param methods)</th></tr>"]
-        names = sorted(list(nameserver.list(regex=pyro_app.ns_regex).keys())[:10])
-        with Pyro4.batch(nameserver) as nsbatch:
-            for name in names:
-                nsbatch.lookup(name)
-            for name, uri in zip(names, nsbatch()):
-                attributes = "-"
-                try:
-                    with Pyro4.Proxy(uri) as proxy:
-                        proxy._pyroHmacKey = pyro_app.hmac_key
-                        proxy._pyroBind()
-                        methods = " &nbsp; ".join(proxy._pyroMethods) or "-"
-                        attributes = ["<a href=\"{name}/{attribute}\" onclick=\"pyro_call('{name}','{attribute}'); return false;\">{attribute}</a>"
-                                      .format(name=name, attribute=attribute) for attribute in proxy._pyroAttrs]
-                        attributes = " &nbsp; ".join(attributes) or "-"
-                except Pyro4.errors.PyroError as x:
-                    stderr = environ["wsgi.errors"]
-                    print("ERROR getting metadata for {0}:".format(uri), file=stderr)
-                    traceback.print_exc(file=stderr)
-                    methods = "??error:%s??" % str(x)
-                nslist.append("<tr><td><a href=\"{name}/$meta\" onclick=\"pyro_call('{name}','$meta'); return false;\">{name}</a></td><td>{methods}</td><td>{attributes}</td></tr>"
-                              .format(name=name, methods=methods, attributes=attributes))
-        nslist.append("</table>")
-        index_page = index_page_template.format(ns_regex=pyro_app.ns_regex,
-                                                name_server_contents_list="".join(nslist),
-                                                pyro_version=Pyro4.constants.VERSION)
-        return [index_page.encode("utf-8")]
+        return return_homepage(environ, start_response)
     matches = re.match(r"(.+)/(.+)", path)
     if not matches:
         return not_found(start_response)
@@ -177,6 +187,7 @@ def process_pyro_request(environ, path, parameters, start_response):
         start_response('401 Unauthorized', [('Content-Type', 'text/plain')])
         return [b"401 Unauthorized - access to the requested object has been denied"]
     try:
+        nameserver = get_nameserver(hmac=pyro_app.hmac_key)
         uri = nameserver.lookup(object_name)
         with Pyro4.Proxy(uri) as proxy:
             proxy._pyroHmacKey = pyro_app.hmac_key
@@ -275,7 +286,12 @@ def main(args=None):
         print("Exposing objects with names matching: ", pyro_app.ns_regex)
     else:
         print("Warning: exposing all objects (no expose regex set)")
-    print("Connected to name server at: ", get_nameserver(hmac=pyro_app.hmac_key)._pyroUri)
+    try:
+        ns = get_nameserver(hmac=pyro_app.hmac_key)
+    except Pyro4.errors.PyroError:
+        print("Not yet connected to a name server.")
+    else:
+        print("Connected to name server at: ", ns._pyroUri)
     server = make_server(options.host, options.port, pyro_app)
     print("Pyro HTTP gateway running on http://{0}:{1}/pyro/".format(*server.socket.getsockname()))
     server.serve_forever()
