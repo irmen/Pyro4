@@ -46,3 +46,8 @@ class DaemonError(PyroError):
 class SecurityError(PyroError):
     """A security related error occurred."""
     pass
+
+
+class SerializeError(ProtocolError):
+    """Something went wrong while (de)serializing data."""
+    pass

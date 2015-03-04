@@ -6,7 +6,8 @@ Change Log
 
 - removed Jython compatibility support and kludges. Use 4.34 or older if you need to run this in Jython.
 - httpgateway is more forgiving when a name server is not (yet) found
-- serpent library dependency updated to 1.9
+- serpent library dependency updated to 1.9, this adds support for serializing the container datatypes from the collections stdlib module
+- introduced Pyro4.errors.SerializeError (subclass of ProtocolError) to be more precise in reporting errors related to (de)serializing objects.
 
 
 **Pyro 4.34**

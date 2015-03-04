@@ -385,7 +385,7 @@ class Proxy(object):
                     if msg.serializer_id != serializer.serializer_id:
                         error = "invalid serializer in response: %d" % msg.serializer_id
                         log.error(error)
-                        raise errors.ProtocolError(error)
+                        raise errors.SerializeError(error)
                     if self._pyroRawWireResponse:
                         return util.SerializerBase.decompress_if_needed(msg)
                     data = serializer.deserializeData(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
@@ -919,7 +919,7 @@ class Daemon(object):
                 conn.send(msg.to_bytes())
                 return
             if msg.serializer_id not in self.__serializer_ids:
-                raise errors.ProtocolError("message used serializer that is not accepted: %d" % msg.serializer_id)
+                raise errors.SerializeError("message used serializer that is not accepted: %d" % msg.serializer_id)
             serializer = util.get_serializer_by_id(msg.serializer_id)
             objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
             del msg  # invite GC to collect the object, don't wait for out-of-scope

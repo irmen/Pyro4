@@ -407,7 +407,7 @@ people try to use numpy arrays with Pyro. Errors such as::
 
     TypeError: array([1, 2, 3]) is not JSON serializable
       or
-    TypeError: don't know how to serialize class <type 'numpy.ndarray'>
+    SerializeError: don't know how to serialize class <type 'numpy.ndarray'>
 
 These errors are caused by Numpy datatypes not being serializable by serpent or json serializers.
 So if you want to use them with Pyro, and pass them over the wire, you'll have to chose one of the following options:

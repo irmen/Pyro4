@@ -6,7 +6,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement
 import sys
-import os
+import collections
 import copy
 import pprint
 import pickle
@@ -288,7 +288,7 @@ class SerializeTests_pickle(unittest.TestCase):
         try:
             self.ser.deserializeData(s, c)
             self.fail("must fail")
-        except Pyro4.errors.ProtocolError as x:
+        except Pyro4.errors.SerializeError as x:
             msg = str(x)
             self.assertIn(msg, ["unsupported serialized class: testsupport.MyThing",
                                 "unsupported serialized class: PyroTests.testsupport.MyThing"])
@@ -426,6 +426,29 @@ class SerializeTests_serpent(SerializeTests_pickle):
             self.assertEqual(data, data2)
         else:
             self.assertEqual(tuple(data), data2)
+
+    def testDeque(self):
+        # serpent converts a deque into a primitive list
+        deq = collections.deque([1, 2, 3, 4])
+        ser, compressed = self.ser.serializeData(deq)
+        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        self.assertEqual([1, 2, 3, 4], data2)
+
+    @unittest.skipIf(sys.version_info < (2, 7), "ordereddict is in Python 2.7+")
+    def testOrderedDict(self):
+        od = collections.OrderedDict()
+        od["a"] = 1
+        od["b"] = 2
+        od["c"] = 3
+        def recreate_OrderedDict(name, values):
+            self.assertEqual("collections.OrderedDict", name)
+            return collections.OrderedDict(values["items"])
+        Pyro4.util.SerializerBase.register_dict_to_class("collections.OrderedDict", recreate_OrderedDict)
+        ser, compressed = self.ser.serializeData(od)
+        self.assertIn(b"collections.OrderedDict", ser)
+        self.assertIn(b"[('a',1),('b',2),('c',3)]", ser)
+        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        self.assertEqual(od, data2)
 
 
 class SerializeTests_json(SerializeTests_pickle):
@@ -569,7 +592,7 @@ class GenericTests(unittest.TestCase):
         data = {'__class__': 'builtins.ZeroDivisionError',
                 'args': ('hello', 42),
                 'attributes': {}}
-        with self.assertRaises(Pyro4.errors.ProtocolError) as cm:
+        with self.assertRaises(Pyro4.errors.SerializeError) as cm:
             _ = Pyro4.util.SerializerBase.dict_to_class(data)
         self.assertEqual("unsupported serialized class: builtins.ZeroDivisionError", str(cm.exception))
 

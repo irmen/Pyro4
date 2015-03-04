@@ -251,11 +251,12 @@ class SerializerBase(object):
 
     @classmethod
     def class_to_dict(cls, obj):
-        """Convert a non-serializable object to a dict. Mostly borrowed from serpent."""
+        """Convert a non-serializable object to a dict. Partly borrowed from serpent."""
         for clazz in cls.__custom_class_to_dict_registry:
             if isinstance(obj, clazz):
                 return cls.__custom_class_to_dict_registry[clazz](obj)
         if type(obj) in (set, dict, tuple, list):
+            # we use a ValueError to mirror the exception type returned by serpent and other serializers
             raise ValueError("can't serialize type " + str(obj.__class__) + " into a dict")
         if hasattr(obj, "_pyroDaemon"):
             obj._pyroDaemon = None
@@ -287,7 +288,7 @@ class SerializerBase(object):
                 value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
                 return value
             else:
-                raise Pyro4.errors.ProtocolError("don't know how to serialize class " + str(obj.__class__) + ". Give it vars() or an appropriate __getstate__")
+                raise Pyro4.errors.SerializeError("don't know how to serialize class " + str(obj.__class__) + " using serializer " + str(cls.__name__) + ". Give it vars() or an appropriate __getstate__")
 
     @classmethod
     def dict_to_class(cls, data):
@@ -353,7 +354,7 @@ class SerializerBase(object):
         for serializer in _serializers.values():
             if classname == serializer.__class__.__name__:
                 return serializer
-        raise Pyro4.errors.ProtocolError("unsupported serialized class: " + classname)
+        raise Pyro4.errors.SerializeError("unsupported serialized class: " + classname)
 
     @staticmethod
     def make_exception(exceptiontype, data):
@@ -527,14 +528,14 @@ def get_serializer(name):
     try:
         return _serializers[name]
     except KeyError:
-        raise Pyro4.errors.ProtocolError("serializer '%s' is unknown or not available" % name)
+        raise Pyro4.errors.SerializeError("serializer '%s' is unknown or not available" % name)
 
 
 def get_serializer_by_id(sid):
     try:
         return _serializers_by_id[sid]
     except KeyError:
-        raise Pyro4.errors.ProtocolError("no serializer available for id %d" % sid)
+        raise Pyro4.errors.SerializeError("no serializer available for id %d" % sid)
 
 # determine the serializers that are supported
 try:

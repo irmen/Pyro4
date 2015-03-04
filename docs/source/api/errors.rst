@@ -13,8 +13,11 @@ The exception hierarchy is as follows::
             +-- CommunicationError
                   |
                   +-- ConnectionClosedError
-                  +-- ProtocolError
                   +-- TimeoutError
+                  +-- ProtocolError
+                          |
+                          +-- SerializeError
+
 
 .. automodule:: Pyro4.errors
    :members:

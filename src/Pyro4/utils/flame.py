@@ -312,7 +312,7 @@ def connect(location):
     This is just a convenience function to creates an appropriate Pyro proxy.
     """
     if Pyro4.config.SERIALIZER != "pickle":
-        raise Pyro4.errors.ProtocolError("Flame requires the pickle serializer")
+        raise Pyro4.errors.SerializeError("Flame requires the pickle serializer")
     proxy = Pyro4.core.Proxy("PYRO:%s@%s" % (Pyro4.constants.FLAME_NAME, location))
     proxy._pyroBind()
     return proxy
