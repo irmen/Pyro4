@@ -984,11 +984,12 @@ class Daemon(object):
             xt, xv = sys.exc_info()[0:2]
             if xt is not errors.ConnectionClosedError:
                 log.debug("Exception occurred while handling request: %r", xv)
-                if not request_flags & Pyro4.message.FLAGS_ONEWAY and not isinstance(xv, errors.CommunicationError):
-                    # only return the error to the client if it wasn't a oneway call, and not a communication error
-                    # (in these cases, it makes no sense to try to report the error back to the client...)
-                    tblines = util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
-                    self._sendExceptionResponse(conn, request_seq, request_serializer_id, xv, tblines)
+                if not request_flags & Pyro4.message.FLAGS_ONEWAY:
+                    if isinstance(xv, errors.SerializeError) or not isinstance(xv, errors.CommunicationError):
+                        # only return the error to the client if it wasn't a oneway call, and not a communication error
+                        # (in these cases, it makes no sense to try to report the error back to the client...)
+                        tblines = util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
+                        self._sendExceptionResponse(conn, request_seq, request_serializer_id, xv, tblines)
             if isCallback or isinstance(xv, (errors.CommunicationError, errors.SecurityError)):
                 raise  # re-raise if flagged as callback, communication or security error.
 
