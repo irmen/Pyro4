@@ -11,6 +11,7 @@ Change Log
 - added X-Pyro-Gateway-Key http header to the httpgateway request as an alternative way to set the gateway key for the call
 - serpent library dependency updated to 1.9, this adds support for serializing the container datatypes from the collections stdlib module
 - introduced Pyro4.errors.SerializeError (subclass of ProtocolError) to be more precise in reporting errors related to (de)serializing objects.
+- client gets a proper serialization error instead of getting a forced connection abort, if something goes wrong in a serializer.
 
 
 **Pyro 4.34**
