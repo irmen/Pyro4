@@ -74,7 +74,8 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
                 'pyro4-flameserver = Pyro4.utils.flameserver:main',
                 'pyro4-httpgateway = Pyro4.utils.httpgateway:main'
             ]
-        }
+        },
+        "options": {"install": {"optimize": 1}}
     }
 
     setup(**setupargs)
