@@ -184,9 +184,17 @@ def process_pyro_request(environ, path, parameters, start_response):
     if not matches:
         return not_found(start_response)
     object_name, method = matches.groups()
+    if pyro_app.gateway_key:
+        gateway_key = environ.get("HTTP_X_PYRO_GATEWAY_KEY", "") or parameters.get("$key", "")
+        gateway_key = gateway_key.encode("utf-8")
+        if gateway_key != pyro_app.gateway_key:
+            start_response('403 Forbidden', [('Content-Type', 'text/plain')])
+            return [b"403 Forbidden - incorrect gateway api key"]
+        if "$key" in parameters:
+            del parameters["$key"]
     if pyro_app.ns_regex and not re.match(pyro_app.ns_regex, object_name):
-        start_response('401 Unauthorized', [('Content-Type', 'text/plain')])
-        return [b"401 Unauthorized - access to the requested object has been denied"]
+        start_response('403 Forbidden', [('Content-Type', 'text/plain')])
+        return [b"403 Forbidden - access to the requested object has been denied"]
     try:
         nameserver = get_nameserver(hmac=pyro_app.hmac_key)
         uri = nameserver.lookup(object_name)
@@ -264,6 +272,7 @@ def singlyfy_parameters(parameters):
 
 pyro_app.ns_regex = "http."
 pyro_app.hmac_key = None
+pyro_app.gateway_key = None
 pyro_app.comm_timeout = Pyro4.config.COMMTIMEOUT
 
 
@@ -275,12 +284,12 @@ def main(args=None):
     parser.add_option("-p", "--port", type="int", default=8080, help="port to bind server on (default=%default)")
     parser.add_option("-e", "--expose", default=pyro_app.ns_regex, help="a regex of object names to expose (default=%default)")
     parser.add_option("-k", "--pyrokey", help="the HMAC key to use to connect with Pyro")
+    parser.add_option("-g", "--gatewaykey", help="the api key to use to connect to the gateway itself")
     parser.add_option("-t", "--timeout", type="float", default=pyro_app.comm_timeout, help="Pyro timeout value to use (COMMTIMEOUT setting, default=%default)")
 
-    # @todo could use some form of API key/hmac for the http requests...
     options, args = parser.parse_args(args)
-
     pyro_app.hmac_key = (options.pyrokey or "").encode("utf-8")
+    pyro_app.gateway_key = (options.gatewaykey or "").encode("utf-8")
     pyro_app.ns_regex = options.expose
     pyro_app.comm_timeout = Pyro4.config.COMMTIMEOUT = options.timeout
     if pyro_app.ns_regex:

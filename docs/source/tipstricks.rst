@@ -434,42 +434,11 @@ Pyro via HTTP and JSON
 Pyro provides a HTTP gateway server that translates HTTP requests into Pyro calls. It responds with JSON messages.
 This allows clients (including web browsers) to use a simple http interface to call Pyro objects.
 Pyro's JSON serialization format is used so the gateway simply passes the JSON response messages back to the caller.
-It also provides a simple web page that shows how stuff works. Basically it is as simple as this:
+It also provides a simple web page that shows how stuff works.
 
-You request the url ``http://localhost:8080/pyro/<<objectname>>/<<method>>`` to invoke a method on the
-object with the given name (yes, every call goes through a naming server lookup).
-Parameters are passed via a regular query string parameter list (in case of a GET request) or via form post parameters
-(in case of a POST request). The response is a JSON document.
-In case of an exception, a JSON encoded exception object is returned.
-You can easily call this from your web page scripts using ``XMLHttpRequest`` or something like JQuery's ``$.ajax()``.
-Have a look at the page source of the gateway's web page to see how this could be done.
-Note that you have to comply with the browser's same-origin policy: if you want to allow your own scripts
-to access the gateway, you'll have to make sure they are loaded from the same website.
+*Starting the gateway:*
 
-The http gateway server is *stateless* at the moment. This means every call you do will end be processed by
-a new Pyro proxy in the gateway server. This is not impacting your client code though, because every call that it
-does is also just a stateless http call. It only impacts performance: doing large amounts of calls through
-the http gateway will perform much slower as the same calls processed by a native Pyro proxy (which you can instruct
-to operate in batch mode as well). However because Pyro is quite efficient, a call through
-the gateway is still processed in just a few milliseconds, naming lookup and json serialization all included.
-
-Special ``X-Pyro-Options`` http request header:
-add this header to the request to set certain pyro options for the call. Possible options (comma-separated):
-
-- ``oneway``: force the Pyro call to be a oneway call and return immediately.
-  The gateway server still returns a 200 OK http response as usual, but the response data is empty.
-  This option is to override the semantics for non-oneway method calls if you so desire.
-
-
-Http response status codes:
-
-- 200 OK: all went well, response is the Pyro response message in JSON serialized format
-- 401 Unauthorized: you're trying to access an object that is not exposed by configuration
-- 404 Not Found: you're requesting a non existing object
-- 500 Internal server error: something went wrong during request processing, response is serialized exception object (if available)
-
-
-You can launch the HTTP gateway server without further ado via the command line tool.
+You can launch the HTTP gateway server via the command line tool.
 This will create a web server using Python's :py:mod:`wsgiref` server module.
 Because the gateway is written as a wsgi app, you can also stick it into a wsgi server of your own choice.
 Import ``pyro_app`` from ``Pyro4.utils.httpgateway`` to do that (that's the app you need to use).
@@ -491,3 +460,42 @@ accessible from the http gateway interface. It defaults to something that won't 
 internal object in your system. If you want to toy a bit with the examples provided in the gateway's
 web page, you'll have to change the option to something like: ``'Pyro.|test.'`` so that those objects
 are exposed.
+
+*Using the gateway:*
+
+You request the url ``http://localhost:8080/pyro/<<objectname>>/<<method>>`` to invoke a method on the
+object with the given name (yes, every call goes through a naming server lookup).
+Parameters are passed via a regular query string parameter list (in case of a GET request) or via form post parameters
+(in case of a POST request). The response is a JSON document.
+In case of an exception, a JSON encoded exception object is returned.
+You can easily call this from your web page scripts using ``XMLHttpRequest`` or something like JQuery's ``$.ajax()``.
+Have a look at the page source of the gateway's web page to see how this could be done.
+Note that you have to comply with the browser's same-origin policy: if you want to allow your own scripts
+to access the gateway, you'll have to make sure they are loaded from the same website.
+
+The http gateway server is *stateless* at the moment. This means every call you do will end be processed by
+a new Pyro proxy in the gateway server. This is not impacting your client code though, because every call that it
+does is also just a stateless http call. It only impacts performance: doing large amounts of calls through
+the http gateway will perform much slower as the same calls processed by a native Pyro proxy (which you can instruct
+to operate in batch mode as well). However because Pyro is quite efficient, a call through
+the gateway is still processed in just a few milliseconds, naming lookup and json serialization all included.
+
+Special http request headers:
+
+- ``X-Pyro-Options``: add this header to the request to set certain pyro options for the call. Possible values (comma-separated):
+
+  - ``oneway``: force the Pyro call to be a oneway call and return immediately.
+    The gateway server still returns a 200 OK http response as usual, but the response data is empty.
+    This option is to override the semantics for non-oneway method calls if you so desire.
+
+- ``X-Pyro-Gateway-Key``: add this header to the request to set the http gateway key. You can also set it on the request
+  with a ``$key=....`` querystring parameter.
+
+
+Http response status codes:
+
+- 200 OK: all went well, response is the Pyro response message in JSON serialized format
+- 403 Forbidden: you're trying to access an object that is not exposed by configuration
+- 404 Not Found: you're requesting a non existing object
+- 500 Internal server error: something went wrong during request processing, response is serialized exception object (if available)
+

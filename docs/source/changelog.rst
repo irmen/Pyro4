@@ -6,6 +6,9 @@ Change Log
 
 - removed Jython compatibility support and kludges. Use 4.34 or older if you need to run this in Jython.
 - httpgateway is more forgiving when a name server is not (yet) found
+- httpgateway now returns 403 forbidden instead of 401 unauthorized when accessing a resource without proper rights
+- httpgateway gained -g option to set a key to use to access the gateway (like the hmac key to access pyro). Set $key querystring param to specify the key for a request.
+- added X-Pyro-Gateway-Key http header to the httpgateway request as an alternative way to set the gateway key for the call
 - serpent library dependency updated to 1.9, this adds support for serializing the container datatypes from the collections stdlib module
 - introduced Pyro4.errors.SerializeError (subclass of ProtocolError) to be more precise in reporting errors related to (de)serializing objects.
 

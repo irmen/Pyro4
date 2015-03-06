@@ -17,7 +17,7 @@ def get_charset(req):
 
 def pyro_call(object_name, method, callback):
     request = Request("http://127.0.0.1:8080/pyro/{0}/{1}".format(object_name, method),
-                      # headers={"x-pyro-options": "oneway"}
+                      # headers={"x-pyro-options": "oneway", "x-pyro-gateway-key": "secretgatewaykey"}
                       )
     with urlopen(request) as req:
         charset = get_charset(req)
