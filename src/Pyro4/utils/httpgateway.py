@@ -270,7 +270,7 @@ def singlyfy_parameters(parameters):
     return parameters
 
 
-pyro_app.ns_regex = "http."
+pyro_app.ns_regex = r"http\."
 pyro_app.hmac_key = None
 pyro_app.gateway_key = None
 pyro_app.comm_timeout = Pyro4.config.COMMTIMEOUT

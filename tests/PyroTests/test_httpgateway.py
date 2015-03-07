@@ -168,7 +168,7 @@ class TestHttpGateway(WSGITestBase):
         self.assertEqual("Pyro4.errors.NamingError", j["__class__"])
 
     def testExposedPattern(self):
-        self.assertEqual("http.", Pyro4.utils.httpgateway.pyro_app.ns_regex)
+        self.assertEqual(r"http\.", Pyro4.utils.httpgateway.pyro_app.ns_regex)
 
 
 if __name__ == "__main__":

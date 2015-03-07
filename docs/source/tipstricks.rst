@@ -458,8 +458,10 @@ Most other options should be self explanatory; you can set the listening host an
 An important option is the exposed names regex option: this controls what objects are
 accessible from the http gateway interface. It defaults to something that won't just expose every
 internal object in your system. If you want to toy a bit with the examples provided in the gateway's
-web page, you'll have to change the option to something like: ``'Pyro.|test.'`` so that those objects
-are exposed.
+web page, you'll have to change the option to something like: ``r'Pyro\.|test\.'`` so that those objects
+are exposed. This regex is the same as used when listing objects from the name server, so you can use the
+``nsc`` tool to check it (with the listmatching command).
+
 
 *Using the gateway:*
 
