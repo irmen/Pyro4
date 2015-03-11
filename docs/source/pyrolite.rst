@@ -43,6 +43,11 @@ Small code example in Java:
     remoteobject.close();
     ns.close();
 
+You can also read `a more elaborate example <https://gist.github.com/anonymous/e8c40c10dfabd5bfab31>`_.
+That writeup is an elaboration of the Pyro simple example greeting.py appearing in the introduction chapter,
+but with a Java (rather than Python) client.
+
+
 The same example in C#:
 
 .. code-block:: csharp
