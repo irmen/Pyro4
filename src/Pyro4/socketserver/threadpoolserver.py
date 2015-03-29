@@ -92,7 +92,7 @@ class SocketServer_Threadpool(object):
         self.daemon = daemon
         self.sock = None
         bind_location = unixsocket if unixsocket else (host, port)
-        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
+        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True, nodelay=Pyro4.config.SOCK_NODELAY)
         self._socketaddr = self.sock.getsockname()
         if not unixsocket and self._socketaddr[0].startswith("127."):
             if host is None or host.lower() != "localhost" and not host.startswith("127."):

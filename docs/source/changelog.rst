@@ -4,7 +4,8 @@ Change Log
 
 **Pyro 4.36**
 
-- ...
+- added SOCK_NODELAY config item to be able to turn the TCP_NODELAY socket option on (default is off).
+- little cleanup of the benchmark example
 
 
 **Pyro 4.35**

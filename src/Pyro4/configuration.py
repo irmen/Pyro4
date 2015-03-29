@@ -19,7 +19,7 @@ class Configuration(object):
     __slots__ = ("HOST", "NS_HOST", "NS_PORT", "NS_BCPORT", "NS_BCHOST",
                  "COMPRESSION", "SERVERTYPE", "COMMTIMEOUT",
                  "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
-                 "DETAILED_TRACEBACK", "SOCK_REUSE", "PREFER_IP_VERSION",
+                 "DETAILED_TRACEBACK", "SOCK_REUSE", "SOCK_NODELAY", "PREFER_IP_VERSION",
                  "THREADPOOL_SIZE", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
                  "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
                  "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
@@ -45,6 +45,7 @@ class Configuration(object):
         self.COMMTIMEOUT = 0.0
         self.POLLTIMEOUT = 2.0  # seconds
         self.SOCK_REUSE = False  # so_reuseaddr on server sockets?
+        self.SOCK_NODELAY = False  # tcp_nodelay on socket?
         self.THREADING2 = False  # use threading2 if available?
         self.ONEWAY_THREADED = True  # oneway calls run in their own thread
         self.DETAILED_TRACEBACK = False
@@ -55,7 +56,7 @@ class Configuration(object):
         self.FLAME_ENABLED = False
         self.PREFER_IP_VERSION = 4  # 4, 6 or 0 (let OS choose according to RFC 3484)
         self.SERIALIZER = "serpent"
-        self.SERIALIZERS_ACCEPTED = "serpent,marshal,json"
+        self.SERIALIZERS_ACCEPTED = "serpent,marshal,json"   # these are the 'safe' serializers
         self.LOGWIRE = False  # log wire-level messages
         self.PICKLE_PROTOCOL_VERSION = pickle.HIGHEST_PROTOCOL
         self.METADATA = True  # get metadata from server on proxy connect

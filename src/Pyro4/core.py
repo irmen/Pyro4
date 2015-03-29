@@ -429,7 +429,7 @@ class Proxy(object):
                 try:
                     if self._pyroConnection is not None:
                         return False  # already connected
-                    sock = socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout)
+                    sock = socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout, nodelay=Pyro4.config.SOCK_NODELAY)
                     conn = socketutil.SocketConnection(sock, uri.object)
                     # Do handshake. For now, no need to send anything. (message type CONNECT is not yet used)
                     msg = message.Message.recv(conn, None, hmac_key=self._pyroHmacKey)

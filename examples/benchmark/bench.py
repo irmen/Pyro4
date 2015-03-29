@@ -1,30 +1,7 @@
 import Pyro4
 
 
-class sub1(object):
-    def meth1(s, arg):
-        return 'This is sub1.meth1'
-
-
-class sub2(sub1):
-    def meth2(s, arg):
-        return 'This is sub2.meth2'
-
-
-class sub3(sub2):
-    def meth3(s, arg):
-        return 'This is sub3.meth3'
-
-
-class sub4(sub3, sub2):
-    def meth4(s, arg):
-        return 'This is sub4.meth4'
-
-
-class bench(sub4):
-    def ping(self):
-        pass
-
+class bench(object):
     def length(self, string):
         return len(string)
 
@@ -56,6 +33,3 @@ class bench(sub4):
     def oneway(self, *args):
         # oneway doesn't return anything
         pass
-
-    def mapping(self, mapping):
-        return mapping

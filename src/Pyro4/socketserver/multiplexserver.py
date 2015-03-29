@@ -27,7 +27,7 @@ class MultiplexedSocketServerBase(object):
         log.info("starting multiplexed socketserver")
         self.sock = None
         bind_location = unixsocket if unixsocket else (host, port)
-        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
+        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True, nodelay=Pyro4.config.SOCK_NODELAY)
         self.clients = set()
         self.daemon = daemon
         sockaddr = self.sock.getsockname()
