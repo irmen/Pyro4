@@ -157,19 +157,19 @@ If you're using pickle, and need to control the pickle protocol version that is 
 ``PICKLE_PROTOCOL_VERSION`` config item. By default Pyro will use the highest one available.
 
 .. note::
-    Since Pyro 4.20 the default serializer is "``serpent``".
-    Before that, it used to be "``pickle``".
-    Serpent is less expressive (not all types can be serialized, some types are serialized
-    in a different form such as strings) but doesn't have pickle's security issues.
+    Since Pyro 4.20 the default serializer is "``serpent``". Serpent is secure but cannot
+    serialize all types (by design). Some types are serialized into a different form such as
+    a string or a dict. Strings are serialized/deserialized into unicode at all times -- be aware
+    of this if you're using Python 2.x (strings in Python 3.x are always unicode already).
 
 .. note::
     The serializer(s) that a Pyro server/daemon accepts, is controlled by a different
     config item (``SERIALIZERS_ACCEPTED``). This can be a set of one or more serializers.
-    By default it accepts the set of 'safe' serializers, so not "``pickle``".
+    By default it accepts the set of 'safe' serializers, so "``pickle``" is excluded.
     If the server doesn't accept the serializer that you configured
     for your client, it will refuse the requests and respond with an exception that tells
     you about the unsupported serializer choice. If it *does* accept your requests,
-    the server will respond using the same serializer as was used for the request.
+    the server response will use the same serializer that was used for the request.
 
 .. note::
     Because the name server is just a regular Pyro server as well, you will have to tell
