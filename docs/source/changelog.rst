@@ -7,6 +7,7 @@ Change Log
 - added SOCK_NODELAY config item to be able to turn the TCP_NODELAY socket option on (default is off).
 - little cleanup of the benchmark example
 - added timezones example
+- serpent library dependency updated to 1.10, to profit from the performance improvements
 
 
 **Pyro 4.35**
