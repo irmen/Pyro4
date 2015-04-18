@@ -12,7 +12,6 @@ Pyro4.config.SERIALIZERS_ACCEPTED = {"pickle", "marshal", "json", "serpent"}
 
 class Server(object):
     def echo(self, date):
-        print("echo: {0}\n  {1} ({2})\n    {3}".format(date, date.tzinfo, type(date.tzinfo), date.strftime(fmt)))
         return date
 
     def pytz(self):
