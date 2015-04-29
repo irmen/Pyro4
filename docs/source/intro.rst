@@ -114,37 +114,10 @@ Simple Example
 
 This example will show you in a nutshell what it's like to use Pyro in your programs.
 A much more extensive introduction is found in the :doc:`tutorials`.
+Here, we're making a simple greeting service that will return a personalized greeting message to its callers.
+First let's see the server code::
 
-We're going to write a simple greeting service that will return a personalized greeting message to its callers.
-
-Let's start by just writing it in normal Python first (create two files)::
-
-    # save this as greeting.py
-    class GreetingMaker(object):
-        def get_fortune(self, name):
-            return "Hello, {0}. Here is your fortune message:\n" \
-                   "Behold the warranty -- the bold print giveth and the fine print taketh away.".format(name)
-
-::
-
-    # save this as client.py
-    import greeting
-    name=raw_input("What is your name? ")
-    greeting_maker=greeting.GreetingMaker()
-    print greeting_maker.get_fortune(name)
-
-If you then run it with :command:`python client.py` a session looks like this::
-
-    $ python client.py
-    What is your name? Irmen
-    Hello, Irmen. Here is your fortune message:
-    Behold the warranty -- the bold print giveth and the fine print taketh away.
-
-Right that works like a charm but we are now going to use Pyro to make this into a greeting server that you
-can access easily from anywhere. The :file:`greeting.py` is going to be our server. We'll need to import the
-Pyro package, start up a Pyro daemon (server) and connect a GreetingMaker object to it::
-
-    # saved as greeting.py
+    # saved as greeting-server.py
     import Pyro4
 
     class GreetingMaker(object):
@@ -160,9 +133,14 @@ Pyro package, start up a Pyro daemon (server) and connect a GreetingMaker object
     print "Ready. Object uri =", uri      # print the uri so we can use it in the client later
     daemon.requestLoop()                  # start the event loop of the server to wait for calls
 
-And now all that is left is a tiny piece of code that invokes the server from somewhere::
+Open a console window and start the greeting server::
 
-    # saved as client.py
+    $ python greeting-server.py
+    Ready. Object uri = PYRO:obj_edb9e53007ce4713b371d0dc6a177955@localhost:51681
+
+Great, our server is running. Let's see the client code that invokes the server::
+
+    # saved as greeting-client.py
     import Pyro4
 
     uri=raw_input("What is the Pyro uri of the greeting object? ").strip()
@@ -171,22 +149,16 @@ And now all that is left is a tiny piece of code that invokes the server from so
     greeting_maker=Pyro4.Proxy(uri)          # get a Pyro proxy to the greeting object
     print greeting_maker.get_fortune(name)   # call method normally
 
-Open a console window and start the greeting server::
+Start this client program (from a different console window)::
 
-    $ python greeting.py
-    Ready. Object uri = PYRO:obj_edb9e53007ce4713b371d0dc6a177955@localhost:51681
-
-(The uri is randomly generated) Open another console window and start the client program::
-
-    $ python client.py
-    What is the Pyro uri of the greeting object?  <<paste the printed uri from the server>>
-    What is your name?  <<type your name, Irmen in this example>>
+    $ python greeting-client.py
+    What is the Pyro uri of the greeting object?  <<paste the uri that the server printed earlier>>
+    What is your name?  <<type your name; in my case: Irmen>>
     Hello, Irmen. Here is your fortune message:
     Behold the warranty -- the bold print giveth and the fine print taketh away.
 
-This covers the most basic use of Pyro! As you can see, all there is to it is starting a daemon,
-registering one or more objects with it, and getting a proxy to these objects to call methods on
-as if it was the actual object itself.
+As you can see the client code called the greeting maker that was running in the server elsewhere,
+and printed the resulting greeting string.
 
 With a name server
 ^^^^^^^^^^^^^^^^^^
@@ -196,9 +168,9 @@ Thankfully Pyro provides a *name server* that works like an automatic phone book
 You can name your objects using logical names and use the name server to search for the
 corresponding uri.
 
-We'll have to modify a few lines in :file:`greeting.py` to make it register the object in the name server::
+We'll have to modify a few lines in :file:`greeting-server.py` to make it register the object in the name server::
 
-    # saved as greeting.py
+    # saved as greeting-server.py
     import Pyro4
 
     class GreetingMaker(object):
@@ -216,9 +188,9 @@ We'll have to modify a few lines in :file:`greeting.py` to make it register the 
     print "Ready."
     daemon.requestLoop()                  # start the event loop of the server to wait for calls
 
-The :file:`client.py` is actually simpler now because we can use the name server to find the object::
+The :file:`greeting-client.py` is actually simpler now because we can use the name server to find the object::
 
-    # saved as client.py
+    # saved as greeting-client.py
     import Pyro4
 
     name=raw_input("What is your name? ").strip()

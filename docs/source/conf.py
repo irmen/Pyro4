@@ -13,6 +13,9 @@
 
 import sys, os
 
+if sys.version_info >= (3, 0):
+    raise RuntimeError("Use python 2.x to format the docs. It contains Python 2.x code blocks that won't be syntaxhighlighted otherwise.")
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -92,7 +95,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'classic'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
