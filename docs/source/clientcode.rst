@@ -180,7 +180,11 @@ If you're using pickle, and need to control the pickle protocol version that is 
 
 Changing the way your custom classes are (de)serialized
 -------------------------------------------------------
-By default (when not using the pickle serialization protocol), custom classes are serialized into a dict.
+
+.. note::
+    The information in this paragraph applies only when you're not using the pickle serialization protocol.
+
+By default, custom classes are serialized into a dict.
 They are not deserialized back into instances of your custom class. This avoids possible security issues.
 An exception to this however are certain classes in the Pyro4 package itself (such as the URI and Proxy classes).
 They *are* deserialized back into objects of that certain class, because they are critical for Pyro to function correctly.
@@ -198,8 +202,6 @@ and their unregister-counterparts:
 Click on the method link to see its apidoc, or have a look at the :file:`ser_custom` example and the :file:`test_serialize` unit tests for more information.
 It is recommended to avoid using these hooks if possible, there's a security risk
 to create arbitrary objects from serialized data that is received from untrusted sources.
-When you configure Pyro to use the pickle protocol these hooks are useless because pickle
-already supports serialization of custom classes. Be aware once more that using pickle is a security risk.
 
 
 Upgrading older code that relies on pickle

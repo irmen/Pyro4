@@ -75,7 +75,7 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
                 'pyro4-httpgateway = Pyro4.utils.httpgateway:main'
             ]
         },
-        "options": {"install": {"optimize": 1}}
+        "options": {"install": {"optimize": 0}}
     }
 
     setup(**setupargs)

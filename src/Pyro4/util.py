@@ -238,20 +238,31 @@ class SerializerBase(object):
 
     @classmethod
     def register_dict_to_class(cls, classname, converter):
-        """Registers a custom converter function that creates objects from a dict with the given classname tag in it.
-        The function is called with two parameters: the classname and the dictionary to convert to an instance of the class."""
+        """
+        Registers a custom converter function that creates objects from a dict with the given classname tag in it.
+        The function is called with two parameters: the classname and the dictionary to convert to an instance of the class.
+
+        This mechanism is not used for the pickle serializer.
+        """
         cls.__custom_dict_to_class_registry[classname] = converter
 
     @classmethod
     def unregister_dict_to_class(cls, classname):
-        """Removes the converter registered for the given classname. Dicts with that classname tag
-        will be deserialized by the default mechanism again."""
+        """
+        Removes the converter registered for the given classname. Dicts with that classname tag
+        will be deserialized by the default mechanism again.
+
+        This mechanism is not used for the pickle serializer.
+        """
         if classname in cls.__custom_dict_to_class_registry:
             del cls.__custom_dict_to_class_registry[classname]
 
     @classmethod
     def class_to_dict(cls, obj):
-        """Convert a non-serializable object to a dict. Partly borrowed from serpent."""
+        """
+        Convert a non-serializable object to a dict. Partly borrowed from serpent.
+        Not used for the pickle serializer.
+        """
         for clazz in cls.__custom_class_to_dict_registry:
             if isinstance(obj, clazz):
                 return cls.__custom_class_to_dict_registry[clazz](obj)
@@ -295,6 +306,7 @@ class SerializerBase(object):
         """
         Recreate an object out of a dict containing the class name and the attributes.
         Only a fixed set of classes are recognized.
+        Not used for the pickle serializer.
         """
         classname = data.get("__class__", "<unknown>")
         if isinstance(classname, bytes):
