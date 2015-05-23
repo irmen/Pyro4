@@ -21,7 +21,12 @@ and a small part of Pyro's client network protocol and proxy logic. It can  use
 the Serpent serialization format as well.
 
 
-Get it from here: http://irmen.home.xs4all.nl/pyrolite/
+*Getting the .NET version:*
+The .NET version is available using the nuget package manager, package name is ``Razorvine.Pyrolite``
+(and ``Razorvine.Serpent``, which is a dependency).  `Package info <https://www.nuget.org/packages/Razorvine.Pyrolite/>`_.
+
+*Getting the Java version:*
+The Java library can be obtained from `Maven <http://search.maven.org/#search|ga|1|razorvine>`_, groupid ``net.razorvine`` artifactid ``pyrolite``.
 
 Readme: http://irmen.home.xs4all.nl/pyrolite/README.txt
 

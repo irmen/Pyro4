@@ -8,6 +8,7 @@ Change Log
 - little cleanup of the benchmark example
 - added timezones example
 - serpent library dependency updated to 1.11, to profit from the performance improvements and float Inf/NaN support.
+- pyrolite .net library now points to Nuget.org packages for download, and the java one to Maven.
 
 
 **Pyro 4.35**
