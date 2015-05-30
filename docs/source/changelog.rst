@@ -5,10 +5,12 @@ Change Log
 **Pyro 4.36**
 
 - added SOCK_NODELAY config item to be able to turn the TCP_NODELAY socket option on (default is off).
-- little cleanup of the benchmark example
+- little cleanup of the intro example in the manual, and benchmark example
 - added timezones example
+- some clarifications added to the manual about serialization peculiarities
 - serpent library dependency updated to 1.11, to profit from the performance improvements and float Inf/NaN support.
 - pyrolite .net library now points to Nuget.org packages for download, and the java one to Maven.
+- code blocks in manual updated to python 3 syntax
 
 
 **Pyro 4.35**
