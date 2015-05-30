@@ -17,9 +17,7 @@ If possible please use the most recent version available of your Python implemen
 
 IronPython
 ----------
-.. sidebar:: IronPython
-
-  `IronPython <http://ironpython.net>`_ is a Python implementation running on the .NET virtual machine.
+`IronPython <http://ironpython.net>`_ is a Python implementation running on the .NET virtual machine.
 
 - Pyro runs with IronPython 2.7. Older versions may or may not work, and lack required modules such as zlib.
 
@@ -31,9 +29,7 @@ IronPython
 
 Pypy
 ----
-.. sidebar:: Pypy
-
-  `Pypy <http://pypy.org>`_ is a Python implementation written in Python itself, and it usually
-  is quite a lot faster than the default implementation because it has a :abbr:`JIT (Just in time)`-compiler.
+`Pypy <http://pypy.org>`_ is a Python implementation written in Python itself, and it usually
+is quite a lot faster than the default implementation because it has a :abbr:`JIT (Just in time)`-compiler.
 
 Pyro runs happily on recent versions of Pypy.

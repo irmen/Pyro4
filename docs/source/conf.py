@@ -13,8 +13,8 @@
 
 import sys, os
 
-if sys.version_info >= (3, 0):
-    raise RuntimeError("Use python 2.x to format the docs. It contains Python 2.x code blocks that won't be syntaxhighlighted otherwise.")
+if sys.version_info < (3, 0):
+    raise RuntimeError("Use python 3.x to format the docs. It contains Python 3.x code blocks that won't be syntaxhighlighted otherwise.")
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

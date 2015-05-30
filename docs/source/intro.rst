@@ -125,13 +125,13 @@ First let's see the server code::
             return "Hello, {0}. Here is your fortune message:\n" \
                    "Behold the warranty -- the bold print giveth and the fine print taketh away.".format(name)
 
-    greeting_maker=GreetingMaker()
+    greeting_maker = GreetingMaker()
 
-    daemon=Pyro4.Daemon()                 # make a Pyro daemon
-    uri=daemon.register(greeting_maker)   # register the greeting object as a Pyro object
+    daemon = Pyro4.Daemon()                # make a Pyro daemon
+    uri = daemon.register(greeting_maker)  # register the greeting object as a Pyro object
 
-    print "Ready. Object uri =", uri      # print the uri so we can use it in the client later
-    daemon.requestLoop()                  # start the event loop of the server to wait for calls
+    print("Ready. Object uri =", uri)      # print the uri so we can use it in the client later
+    daemon.requestLoop()                   # start the event loop of the server to wait for calls
 
 Open a console window and start the greeting server::
 
@@ -143,11 +143,11 @@ Great, our server is running. Let's see the client code that invokes the server:
     # saved as greeting-client.py
     import Pyro4
 
-    uri=raw_input("What is the Pyro uri of the greeting object? ").strip()
-    name=raw_input("What is your name? ").strip()
+    uri = input("What is the Pyro uri of the greeting object? ").strip()
+    name = input("What is your name? ").strip()
 
-    greeting_maker=Pyro4.Proxy(uri)          # get a Pyro proxy to the greeting object
-    print greeting_maker.get_fortune(name)   # call method normally
+    greeting_maker = Pyro4.Proxy(uri)         # get a Pyro proxy to the greeting object
+    print(greeting_maker.get_fortune(name))   # call method normally
 
 Start this client program (from a different console window)::
 
@@ -178,25 +178,25 @@ We'll have to modify a few lines in :file:`greeting-server.py` to make it regist
             return "Hello, {0}. Here is your fortune message:\n" \
                    "Tomorrow's lucky number is 12345678.".format(name)
 
-    greeting_maker=GreetingMaker()
+    greeting_maker = GreetingMaker()
 
-    daemon=Pyro4.Daemon()                 # make a Pyro daemon
-    ns=Pyro4.locateNS()                   # find the name server
-    uri=daemon.register(greeting_maker)   # register the greeting object as a Pyro object
-    ns.register("example.greeting", uri)  # register the object with a name in the name server
+    daemon = Pyro4.Daemon()                # make a Pyro daemon
+    ns = Pyro4.locateNS()                  # find the name server
+    uri = daemon.register(greeting_maker)  # register the greeting object as a Pyro object
+    ns.register("example.greeting", uri)   # register the object with a name in the name server
 
-    print "Ready."
-    daemon.requestLoop()                  # start the event loop of the server to wait for calls
+    print("Ready.")
+    daemon.requestLoop()                   # start the event loop of the server to wait for calls
 
 The :file:`greeting-client.py` is actually simpler now because we can use the name server to find the object::
 
     # saved as greeting-client.py
     import Pyro4
 
-    name=raw_input("What is your name? ").strip()
+    name = input("What is your name? ").strip()
 
-    greeting_maker=Pyro4.Proxy("PYRONAME:example.greeting")    # use name server object lookup uri shortcut
-    print greeting_maker.get_fortune(name)
+    greeting_maker = Pyro4.Proxy("PYRONAME:example.greeting")    # use name server object lookup uri shortcut
+    print(greeting_maker.get_fortune(name))
 
 The program now needs a Pyro name server that is running. You can start one by typing the
 following command: :command:`python -m Pyro4.naming` (or simply: :command:`pyro4-ns`) in a separate console window

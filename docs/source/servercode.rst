@@ -139,7 +139,7 @@ you create a daemon, register the object(s) with the daemon, and then enter the 
     thing=MyPyroThing()
     daemon=Pyro4.Daemon()
     uri=daemon.register(thing)
-    print uri
+    print(uri)
     daemon.requestLoop()
 
 After printing the uri, the server sits waiting for requests.
@@ -330,7 +330,7 @@ Server code::
     # ------ normal code ------
     daemon = Pyro4.Daemon()
     uri = daemon.register(Thing())
-    print "uri=",uri
+    print("uri=",uri)
     daemon.requestLoop()
 
     # ------ alternatively, using serveSimple -----
@@ -346,7 +346,7 @@ Client code example to connect to this object::
     # use the URI that the server printed:
     uri = "PYRO:obj_b2459c80671b4d76ac78839ea2b0fb1f@localhost:49383"
     thing = Pyro4.Proxy(uri)
-    print thing.method(42)   # prints 84
+    print(thing.method(42))   # prints 84
 
 With correct additional parameters --described elsewhere in this chapter-- you can control on which port the daemon is listening,
 on what network interface (ip address/hostname), what the object id is, etc.
@@ -381,7 +381,7 @@ Client code example to connect to this object::
 
     import Pyro4
     thing = Pyro4.Proxy("PYRONAME:mythingy")
-    print thing.method(42)   # prints 84
+    print(thing.method(42))   # prints 84
 
 
 .. index::

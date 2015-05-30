@@ -87,13 +87,13 @@ A little example follows. You have to have running flame server, and then you ca
 
     socketmodule = flame.module("socket")
     osmodule = flame.module("os")
-    print "remote host name=", socketmodule.gethostname()
-    print "remote server directory contents=", osmodule.listdir(".")
+    print("remote host name=", socketmodule.gethostname())
+    print("remote server directory contents=", osmodule.listdir("."))
 
     flame.execute("import math")
     root = flame.evaluate("math.sqrt(500)")
-    print "calculated square root=", root
-    print "remote exceptions also work", flame.evaluate("1//0")
+    print("calculated square root=", root)
+    print("remote exceptions also work", flame.evaluate("1//0"))
 
     # print something on the remote std output
     flame.builtin("print")("Hello there, remote server stdout!")

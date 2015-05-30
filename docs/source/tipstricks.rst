@@ -252,7 +252,7 @@ using the internal addresses::
     # running on server1.lan
     d = Pyro4.Daemon(port=9999, nathost="pyro.server.com", natport=5555)
     uri = d.register(Something(), "thing")
-    print uri     # "PYRO:thing@pyro.server.com:5555"
+    print(uri)     # "PYRO:thing@pyro.server.com:5555"
 
 As you see, the URI now contains the external address.
 
@@ -260,8 +260,8 @@ As you see, the URI now contains the external address.
 and ``natport`` were used). You can override this by setting ``nat=False``::
 
     # d = Pyro4.Daemon(...)
-    print d.uriFor("thing")                 # "PYRO:thing@pyro.server.com:5555"
-    print d.uriFor("thing", nat=False)      # "PYRO:thing@localhost:36124"
+    print(d.uriFor("thing"))                # "PYRO:thing@pyro.server.com:5555"
+    print(d.uriFor("thing", nat=False))     # "PYRO:thing@localhost:36124"
     uri2 = d.uriFor(uri.object, nat=False)  # get non-natted uri
 
 The Name server can also be started behind a NAT: it has a couple of command line options that

@@ -73,6 +73,6 @@ Configuration check
 This is the equivalent of::
 
   >>> import Pyro4
-  >>> print Pyro4.config.dump()
+  >>> print(Pyro4.config.dump())
 
 It prints the Pyro version, the location it is imported from, and a dump of the active configuration items.

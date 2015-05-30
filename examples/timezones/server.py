@@ -12,6 +12,8 @@ Pyro4.config.SERIALIZERS_ACCEPTED = {"pickle", "marshal", "json", "serpent"}
 
 class Server(object):
     def echo(self, date):
+        print("ECHO: ", date.isoformat())
+        print("      ", repr(date))
         return date
 
     def pytz(self):

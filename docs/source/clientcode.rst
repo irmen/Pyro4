@@ -90,9 +90,9 @@ to call the remote methods and deal with the return values, or even exceptions::
     try:
         musicserver.load_playlist("90s rock")
         musicserver.play()
-        print "Currently playing:", musicserver.current_song()
+        print("Currently playing:", musicserver.current_song())
     except MediaServerException:
-        print "Couldn't select playlist or start playing"
+        print("Couldn't select playlist or start playing")
 
 For normal usage, there's not a single line of Pyro specific code once you have a proxy!
 
@@ -336,7 +336,7 @@ The signature of the batch proxy call is as follows:
     batch.methodN()
     results = batch()   # execute the batch
     for result in results:
-        print result   # process result in order of calls...
+        print(result)   # process result in order of calls...
 
 **Oneway batch**::
 
@@ -351,7 +351,7 @@ This is some simple code doing an asynchronous batch::
     results = batch(async=True)
     # do some stuff... until you're ready and require the results of the async batch:
     for result in results.value:
-        print result    # process the results
+        print(result)    # process the results
 
 
 See the :file:`batchedcalls` example for more details.
@@ -411,9 +411,9 @@ A simple piece of code showing an asynchronous method call::
 
     async = Pyro4.async(proxy)
     asyncresult = async.remotemethod()
-    print "value available?", asyncresult.ready
+    print("value available?", asyncresult.ready)
     # ...do some other stuff...
-    print "resultvalue=", asyncresult.value
+    print("resultvalue=", asyncresult.value)
 
 .. note::
 

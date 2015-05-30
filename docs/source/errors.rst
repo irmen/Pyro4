@@ -32,7 +32,7 @@ This can be dealt with as follows::
     try:
         result = divider.div(999,0)
     except ZeroDivisionError:
-        print "yup, it crashed"
+        print("yup, it crashed")
 
 Just catch the exception as if you were writing code that deals with normal objects.
 
@@ -52,8 +52,8 @@ You use it like this::
     try:
         result = proxy.method()
     except Exception:
-        print "Pyro traceback:"
-        print "".join(Pyro4.util.getPyroTraceback())
+        print("Pyro traceback:")
+        print("".join(Pyro4.util.getPyroTraceback()))
 
 
 .. index:: exception hook
