@@ -1,31 +1,32 @@
 .PHONY: all sdist wheel docs install upload upload_docs clean test
+PYTHON=python3
 
 all:
 	@echo "targets include sdist, wheel, docs, upload, upload_docs, install, clean"
 
 sdist: 
-	python setup.py sdist
+	$(PYTHON) setup.py sdist
 	@echo "Look in the dist/ directory"
 
 wheel: 
-	python setup.py bdist_wheel
+	$(PYTHON) setup.py bdist_wheel
 	@echo "Look in the dist/ directory"
 
 docs:
-	python setup.py build_sphinx
+	$(PYTHON) setup.py build_sphinx
 
 upload: upload_docs
-	python setup.py sdist upload
-	python setup.py bdist_wheel upload
+	$(PYTHON) setup.py sdist upload
+	$(PYTHON) setup.py bdist_wheel upload
 	
-upload_docs:
-	python setup.py build_sphinx upload_sphinx
+upload_docs: docs
+	$(PYTHON) setup.py upload_docs --upload-dir=build/sphinx/html
 
 install:
-	python setup.py install
+	$(PYTHON) setup.py install
 
 test:
-	python tests/run_testsuite.py
+	$(PYTHON) tests/run_testsuite.py
 
 clean:
 	@echo "Removing tox dirs, logfiles, Pyro URI dumps, .pyo/.pyc files..."
