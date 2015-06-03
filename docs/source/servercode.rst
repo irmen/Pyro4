@@ -54,7 +54,7 @@ The ``@Pyro4.expose`` decorator is provided that lets you mark the following ite
 
 Remember that you must set the ``REQUIRE_EXPOSE`` config item to ``True`` to let all this have any effect!
 Also because it is not possible to decorate attributes on a class, it is required to provide a @property for them
-and decorate that with @exposed, if you want to provide a remotely accessible attribute.
+and decorate that with ``@expose``, if you want to provide a remotely accessible attribute.
 
 Here's a piece of example code that shows how a partially exposed Pyro class may look like::
 
