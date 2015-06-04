@@ -2,6 +2,16 @@
 Change Log
 **********
 
+**Pyro 4.37**
+
+- added Pyro4.current_context global (thread-local) that contains various information about the client and the request
+- added correlation id via the current_context so you can track what requests/responses belong together
+- fixed hmac calculation on messages with more than one annotation
+- proxy and daemon can now add custom annotations to messages
+- httpgateway also sets correlation id and returns it to the browser via X-Pyro-Correlation-Id http header
+- added callcontext example
+
+
 **Pyro 4.36**
 
 - added SOCK_NODELAY config item to be able to turn the TCP_NODELAY socket option on (default is off).

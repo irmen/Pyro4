@@ -38,7 +38,7 @@ __all__ = ["connect", "start", "createModule", "Flame"]
 if sys.version_info > (3, 0):
     def exec_function(source, filename, global_map):
         source = fixExecSourceNewlines(source)
-        exec (compile(source, filename, "exec"), global_map)
+        exec(compile(source, filename, "exec"), global_map)
 else:
     # OK, this is pretty gross.  In Py2, exec was a statement, but that will
     # be a syntax error if we try to put it in a Py3 file, even if it isn't

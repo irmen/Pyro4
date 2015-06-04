@@ -26,6 +26,7 @@ from __future__ import print_function
 import sys
 import re
 import cgi
+import uuid
 from wsgiref.simple_server import make_server
 import traceback
 import Pyro4
@@ -37,9 +38,9 @@ from Pyro4.util import json     # don't import directly, we want to use the JSON
 
 
 __all__ = ["pyro_app", "main"]
-
-
 _nameserver = None
+
+
 def get_nameserver(hmac=None):
     global _nameserver
     if not _nameserver:
@@ -158,7 +159,7 @@ def return_homepage(environ, start_response):
                     proxy._pyroBind()
                     methods = " &nbsp; ".join(proxy._pyroMethods) or "-"
                     attributes = ["<a href=\"{name}/{attribute}\" onclick=\"pyro_call('{name}','{attribute}'); return false;\">{attribute}</a>"
-                                      .format(name=name, attribute=attribute) for attribute in proxy._pyroAttrs]
+                                  .format(name=name, attribute=attribute) for attribute in proxy._pyroAttrs]
                     attributes = " &nbsp; ".join(attributes) or "-"
             except Pyro4.errors.PyroError as x:
                 stderr = environ["wsgi.errors"]
@@ -199,6 +200,7 @@ def process_pyro_request(environ, path, parameters, start_response):
         nameserver = get_nameserver(hmac=pyro_app.hmac_key)
         uri = nameserver.lookup(object_name)
         with Pyro4.Proxy(uri) as proxy:
+            Pyro4.current_context.correlation_id = uuid.uuid1()  # set new correlation id
             proxy._pyroHmacKey = pyro_app.hmac_key
             proxy._pyroGetMetadata()
             if "oneway" in pyro_options:
@@ -206,7 +208,8 @@ def process_pyro_request(environ, path, parameters, start_response):
             if method == "$meta":
                 result = {"methods": tuple(proxy._pyroMethods), "attributes": tuple(proxy._pyroAttrs)}
                 reply = json.dumps(result).encode("utf-8")
-                start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8')])
+                start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8'),
+                                          ('X-Pyro-Correlation-Id', str(Pyro4.current_context.correlation_id))])
                 return [reply]
             else:
                 proxy._pyroRawWireResponse = True   # we want to access the raw response json
@@ -219,7 +222,8 @@ def process_pyro_request(environ, path, parameters, start_response):
                     msg = getattr(proxy, method)(**parameters)
                 if msg is None or "oneway" in pyro_options:
                     # was a oneway call, no response available
-                    start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8')])
+                    start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8'),
+                                              ('X-Pyro-Correlation-Id', str(Pyro4.current_context.correlation_id))])
                     return []
                 elif msg.flags & Pyro4.message.FLAGS_EXCEPTION:
                     # got an exception response so send a 500 status
@@ -227,7 +231,8 @@ def process_pyro_request(environ, path, parameters, start_response):
                     return [msg.data]
                 else:
                     # normal response
-                    start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8')])
+                    start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8'),
+                                              ('X-Pyro-Correlation-Id', str(Pyro4.current_context.correlation_id))])
                     return [msg.data]
     except Exception as x:
         stderr = environ["wsgi.errors"]

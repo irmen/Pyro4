@@ -10,7 +10,7 @@ import re
 import logging
 import sys
 import time
-import os
+import threading
 import uuid
 import base64
 import Pyro4.futures
@@ -19,7 +19,7 @@ from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Poll, SocketServer_Select
 
 
-__all__ = ["URI", "Proxy", "Daemon", "callback", "batch", "async", "expose", "oneway"]
+__all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "oneway"]
 
 if sys.version_info >= (3, 0):
     basestring = str
@@ -234,7 +234,7 @@ class Proxy(object):
             # client side check if the requested attr actually exists
             raise AttributeError("remote object '%s' has no exposed attribute or method '%s'" % (self._pyroUri, name))
         return _RemoteMethod(self._pyroInvoke, name)
-    
+
     def __setattr__(self, name, value):
         if name in Proxy.__pyroAttributes:
             return super(Proxy, self).__setattr__(name, value)  # one of the special pyro attributes
@@ -368,10 +368,9 @@ class Proxy(object):
             flags |= Pyro4.message.FLAGS_ONEWAY
         with self.__pyroLock:
             self._pyroSeq = (self._pyroSeq + 1) & 0xffff
+            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
             if Pyro4.config.LOGWIRE:
-                log.debug("proxy wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" %
-                          (message.MSG_INVOKE, flags, serializer.serializer_id, self._pyroSeq, data))
-            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, hmac_key=self._pyroHmacKey)
+                _log_wiredata(log, "proxy wiredata sending", msg)
             try:
                 self._pyroConnection.send(msg.to_bytes())
                 del msg  # invite GC to collect the object, don't wait for out-of-scope
@@ -380,7 +379,7 @@ class Proxy(object):
                 else:
                     msg = message.Message.recv(self._pyroConnection, [message.MSG_RESULT], hmac_key=self._pyroHmacKey)
                     if Pyro4.config.LOGWIRE:
-                        log.debug("proxy wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
+                        _log_wiredata(log, "proxy wiredata received", msg)
                     self.__pyroCheckSequence(msg.seq)
                     if msg.serializer_id != serializer.serializer_id:
                         error = "invalid serializer in response: %d" % msg.serializer_id
@@ -534,6 +533,15 @@ class Proxy(object):
         if oneway:
             flags |= Pyro4.message.FLAGS_ONEWAY
         return self._pyroInvoke("<batch>", calls, None, flags)
+
+    def _pyroAnnotations(self):
+        """
+        Returns a dict with annotations to be sent with each message.
+        Default behavior is to include the correlation id from the current context (if it is set).
+        """
+        if current_context.correlation_id:
+            return {"CORR": current_context.correlation_id.bytes}
+        return {}
 
 
 class _BatchedRemoteMethod(object):
@@ -889,7 +897,7 @@ class Daemon(object):
         # We default to the marshal serializer to send message payload of "ok"
         ser = util.get_serializer("marshal")
         data = ser.dumps("ok")
-        msg = message.Message(message.MSG_CONNECTOK, data, ser.serializer_id, 0, 1, hmac_key=self._pyroHmacKey)
+        msg = message.Message(message.MSG_CONNECTOK, data, ser.serializer_id, 0, 1, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
         conn.send(msg.to_bytes())
         return True
 
@@ -909,19 +917,28 @@ class Daemon(object):
             request_flags = msg.flags
             request_seq = msg.seq
             request_serializer_id = msg.serializer_id
+            if "CORR" in msg.annotations:
+                current_context.correlation_id = uuid.UUID(bytes=msg.annotations["CORR"])
+            else:
+                current_context.correlation_id = uuid.uuid1()
             if Pyro4.config.LOGWIRE:
-                log.debug("daemon wiredata received: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
+                _log_wiredata(log, "daemon wiredata received", msg)
             if msg.type == message.MSG_PING:
                 # return same seq, but ignore any data (it's a ping, not an echo). Nothing is deserialized.
-                msg = message.Message(message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq, hmac_key=self._pyroHmacKey)
+                msg = message.Message(message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
                 if Pyro4.config.LOGWIRE:
-                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (msg.type, msg.flags, msg.serializer_id, msg.seq, msg.data))
+                    _log_wiredata(log, "daemon wiredata sending", msg)
                 conn.send(msg.to_bytes())
                 return
             if msg.serializer_id not in self.__serializer_ids:
                 raise errors.SerializeError("message used serializer that is not accepted: %d" % msg.serializer_id)
             serializer = util.get_serializer_by_id(msg.serializer_id)
             objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
+            current_context.client = conn
+            current_context.seq = msg.seq
+            current_context.annotations = msg.annotations
+            current_context.msg_flags = msg.flags
+            current_context.serializer_id = msg.serializer_id
             del msg  # invite GC to collect the object, don't wait for out-of-scope
             obj = self.objectsById.get(objId)
             if obj is not None:
@@ -960,7 +977,7 @@ class Daemon(object):
                             # oneway call to be run inside its own thread
                             thread = threadutil.Thread(target=method, args=vargs, kwargs=kwargs)
                             thread.setDaemon(True)
-                            thread.start()
+                            thread.start()   # this is the actual method call to the Pyro object (in its own thread)
                         else:
                             isCallback = getattr(method, "_pyroCallback", False)
                             data = method(*vargs, **kwargs)  # this is the actual method call to the Pyro object
@@ -976,9 +993,9 @@ class Daemon(object):
                     response_flags |= Pyro4.message.FLAGS_COMPRESSED
                 if wasBatched:
                     response_flags |= Pyro4.message.FLAGS_BATCH
+                msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
                 if Pyro4.config.LOGWIRE:
-                    log.debug("daemon wiredata sending: msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (message.MSG_RESULT, response_flags, serializer.serializer_id, request_seq, data))
-                msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq, hmac_key=self._pyroHmacKey)
+                    _log_wiredata(log, "daemon wiredata sending", msg)
                 conn.send(msg.to_bytes())
         except Exception:
             xt, xv = sys.exc_info()[0:2]
@@ -989,7 +1006,7 @@ class Daemon(object):
                         # only return the error to the client if it wasn't a oneway call, and not a communication error
                         # (in these cases, it makes no sense to try to report the error back to the client...)
                         tblines = util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
-                        self._sendExceptionResponse(conn, request_seq, request_serializer_id, xv, tblines)
+                        self._sendExceptionResponse(conn, request_seq, request_serializer_id, xv, tblines)   # @todo request_seq is 0 if msg could not be parsed (f.e. with hmac mismatch)
             if isCallback or isinstance(xv, (errors.CommunicationError, errors.SecurityError)):
                 raise  # re-raise if flagged as callback, communication or security error.
 
@@ -1013,9 +1030,9 @@ class Daemon(object):
         flags = Pyro4.message.FLAGS_EXCEPTION
         if compressed:
             flags |= Pyro4.message.FLAGS_COMPRESSED
+        msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
         if Pyro4.config.LOGWIRE:
-            log.debug("daemon wiredata sending (error response): msgtype=%d flags=0x%x ser=%d seq=%d data=%r" % (message.MSG_RESULT, flags, serializer.serializer_id, seq, data))
-        msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq, hmac_key=self._pyroHmacKey)
+            _log_wiredata(log, "daemon wiredata sending (error response)", msg)
         connection.send(msg.to_bytes())
 
     def register(self, obj, objectId=None, force=False):
@@ -1111,6 +1128,15 @@ class Daemon(object):
             self.transportServer.close()
             self.transportServer = None
 
+    def annotations(self):
+        """
+        Returns a dict with annotations to be sent with each message.
+        Default behavior is to include the correlation id from the current context (if it is set).
+        """
+        if current_context.correlation_id:
+            return {"CORR": current_context.correlation_id.bytes}
+        return {}
+
     def __repr__(self):
         return "<%s.%s at 0x%x, %s, %d objects>" % (self.__class__.__module__, self.__class__.__name__,
                                                     id(self), self.locationStr, len(self.objectsById))
@@ -1165,3 +1191,25 @@ util.SerializerBase.register_class_to_dict(URI, serialize_core_object_to_dict, s
 util.SerializerBase.register_class_to_dict(Proxy, serialize_core_object_to_dict, serpent_too=False)
 util.SerializerBase.register_class_to_dict(Daemon, serialize_core_object_to_dict, serpent_too=False)
 util.SerializerBase.register_class_to_dict(Pyro4.futures._ExceptionWrapper, Pyro4.futures._ExceptionWrapper.__serialized_dict__, serpent_too=False)
+
+
+def _log_wiredata(logger, text, msg):
+    """logs all the given properties of the wire message in the given logger"""
+    corr = str(uuid.UUID(bytes=msg.annotations["CORR"])) if "CORR" in msg.annotations else "?"
+    logger.debug("%s: msgtype=%d flags=0x%x ser=%d seq=%d corr=%s\nannotations=%r\ndata=%r" %
+                 (text, msg.type, msg.flags, msg.serializer_id, msg.seq, corr, msg.annotations, msg.data))
+
+
+class _CallContext(threading.local):
+    def __init__(self):
+        # per-thread initialization
+        self.client = None
+        self.seq = 0
+        self.msg_flags = 0
+        self.serializer_id = 0
+        self.annotations = {}
+        self.correlation_id = None   # @todo also add correlation id/ctx/custom annotations to pyrolite
+
+
+"""the context object for the current call. (thread-local)"""
+current_context = _CallContext()

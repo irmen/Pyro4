@@ -63,7 +63,7 @@ config = Configuration()
 del Configuration
 
 # import the required Pyro symbols into this package
-from Pyro4.core import URI, Proxy, Daemon, callback, batch, async, oneway, expose
+from Pyro4.core import URI, Proxy, Daemon, callback, batch, async, oneway, expose, current_context
 from Pyro4.naming import locateNS, resolve
 from Pyro4.futures import Future
 from Pyro4.constants import VERSION as __version__

@@ -75,8 +75,12 @@ class Message(object):
     that we are dealing with an actual correct PYRO protocol header and not some random
     data that happens to start with the 'PYRO' protocol identifier.
 
-    An 'HMAC' annotation chunk contains the hmac digest of the message data bytes and
+    Pyro now uses two annotation chunks that you should not touch yourself:
+    'HMAC'  contains the hmac digest of the message data bytes and
     all of the annotation chunk data bytes (except those of the HMAC chunk itself).
+    'CORR'  contains the correlation id (guid bytes)
+    Other chunk names are free to use for custom purposes, but Pyro has the right
+    to reserve more of them for internal use in the future.
     """
     __slots__ = ["type", "flags", "seq", "data", "data_size", "serializer_id", "annotations", "annotations_size", "hmac_key"]
     header_format = '!4sHHHHiHHHH'
@@ -93,7 +97,7 @@ class Message(object):
         self.annotations = annotations or {}
         self.hmac_key = hmac_key
         if self.hmac_key:
-            self.annotations["HMAC"] = self.hmac()
+            self.annotations["HMAC"] = self.hmac()   # should be done last because it calculates hmac over other annotations
         self.annotations_size = sum([6 + len(v) for v in self.annotations.values()])
         if 0 < Pyro4.config.MAX_MESSAGE_SIZE < (self.data_size + self.annotations_size):
             raise errors.ProtocolError("max message size exceeded (%d where max=%d)" % (self.data_size + self.annotations_size, Pyro4.config.MAX_MESSAGE_SIZE))
@@ -195,7 +199,7 @@ class Message(object):
     def hmac(self):
         """returns the hmac of the data and the annotation chunk values (except HMAC chunk itself)"""
         mac = hmac.new(self.hmac_key, self.data, digestmod=hashlib.sha1)
-        for k, v in self.annotations.items():
+        for k, v in sorted(self.annotations.items()):    # note: sorted because we need fixed order to get the same hmac
             if k != "HMAC":
                 mac.update(v)
         return mac.digest()
