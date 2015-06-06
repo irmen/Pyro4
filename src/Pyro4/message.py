@@ -168,11 +168,15 @@ class Message(object):
             errorMsg = "max message size exceeded (%d where max=%d)" % (msg.data_size + msg.annotations_size, Pyro4.config.MAX_MESSAGE_SIZE)
             log.error("connection " + str(connection) + ": " + errorMsg)
             connection.close()  # close the socket because at this point we can't return the correct sequence number for returning an error message
-            raise errors.ProtocolError(errorMsg)
+            exc = errors.ProtocolError(errorMsg)
+            exc.pyroMsg = msg
+            raise exc
         if requiredMsgTypes and msg.type not in requiredMsgTypes:
             err = "invalid msg type %d received" % msg.type
             log.error(err)
-            raise errors.ProtocolError(err)
+            exc = errors.ProtocolError(err)
+            exc.pyroMsg = msg
+            raise exc
         if msg.annotations_size:
             # read annotation chunks
             annotations_data = connection.recv(msg.annotations_size)
@@ -188,12 +192,16 @@ class Message(object):
         msg.data = connection.recv(msg.data_size)
         if "HMAC" in msg.annotations and hmac_key:
             if msg.annotations["HMAC"] != msg.hmac():
-                raise errors.SecurityError("message hmac mismatch")
+                exc = errors.SecurityError("message hmac mismatch")
+                exc.pyroMsg = msg
+                raise exc
         elif ("HMAC" in msg.annotations) != bool(hmac_key):
             # Not allowed: message contains hmac but hmac_key is not set, or vice versa.
             err = "hmac key config not symmetric"
             log.warning(err)
-            raise errors.SecurityError(err)
+            exc = errors.SecurityError(err)
+            exc.pyroMsg = msg
+            raise exc
         return msg
 
     def hmac(self):

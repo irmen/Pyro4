@@ -10,6 +10,7 @@ Change Log
 - proxy and daemon can now add custom annotations to messages
 - httpgateway also sets correlation id and returns it to the browser via X-Pyro-Correlation-Id http header
 - added callcontext example
+- fixed error response seq nr and serializer id in case of error during the parsing of a message, previously they were bogus values
 
 
 **Pyro 4.36**
