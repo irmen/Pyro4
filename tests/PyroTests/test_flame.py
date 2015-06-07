@@ -21,24 +21,29 @@ class FlameDisabledTests(unittest.TestCase):
                 Pyro4.utils.flame.start(d)
             self.assertIn("disabled", str(ex.exception))   # default should be disabled even when pickle is activated
 
-    def testRequirePickle(self):
+    def testRequirePickleExclusively(self):
         with Pyro4.core.Daemon() as d:
             Pyro4.config.FLAME_ENABLED = True
-            Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
-            self.assertRaises(RuntimeError, Pyro4.utils.flame.start, d)  # require pickle
+            sers = Pyro4.config.SERIALIZERS_ACCEPTED
+            Pyro4.config.SERIALIZERS_ACCEPTED = set(["json", "serpent", "marshal"])
+            self.assertRaises(Pyro4.errors.SerializeError, Pyro4.utils.flame.start, d)  # require pickle
             Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
+            self.assertRaises(Pyro4.errors.SerializeError, Pyro4.utils.flame.start, d)  # require pickle exclusively
+            Pyro4.config.SERIALIZERS_ACCEPTED = set(["pickle"])
             Pyro4.utils.flame.start(d)
-            Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
+            Pyro4.config.SERIALIZERS_ACCEPTED = sers
+            Pyro4.config.FLAME_ENABLED = False
 
 
 class FlameTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.FLAME_ENABLED = True
-        Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
+        self._serializers = Pyro4.config.SERIALIZERS_ACCEPTED
+        Pyro4.config.SERIALIZERS_ACCEPTED = set(["pickle"])
 
     def tearDown(self):
         Pyro4.config.FLAME_ENABLED = False
-        Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
+        Pyro4.config.SERIALIZERS_ACCEPTED = self._serializers
 
     def testExposed(self):
         e = Pyro4.utils.flame.Flame()

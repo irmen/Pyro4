@@ -8,7 +8,7 @@ Change Log
 - added correlation id via the current_context so you can track what requests/responses belong together
 - fixed hmac calculation on messages with more than one annotation
 - proxy and daemon can now add custom annotations to messages
-- httpgateway also sets correlation id and returns it to the browser via X-Pyro-Correlation-Id http header
+- httpgateway also sets correlation id and returns it to the browser via ``X-Pyro-Correlation-Id`` http header
 - added callcontext example
 - fixed error response seq nr and serializer id in case of error during the parsing of a message, previously they were bogus values
 

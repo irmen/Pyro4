@@ -194,8 +194,8 @@ class Flame(object):
     """
 
     def __init__(self):
-        if "pickle" not in Pyro4.config.SERIALIZERS_ACCEPTED:
-            raise RuntimeError("flame requires the pickle serializer to be enabled")
+        if set(Pyro4.config.SERIALIZERS_ACCEPTED) != set(["pickle"]):
+            raise RuntimeError("flame requires the pickle serializer exclusively")
 
     def module(self, name):
         """import a module on the server given by the module name and returns a proxy to it"""
@@ -301,6 +301,8 @@ def start(daemon):
     Be *very* cautious before starting this: it allows the clients full access to everything on your system.
     """
     if Pyro4.config.FLAME_ENABLED:
+        if set(Pyro4.config.SERIALIZERS_ACCEPTED) != set(["pickle"]):
+            raise Pyro4.errors.SerializeError("Flame requires the pickle serializer exclusively")
         return daemon.register(Flame(), Pyro4.constants.FLAME_NAME)
     else:
         raise Pyro4.errors.SecurityError("Flame is disabled in the server configuration")

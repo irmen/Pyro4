@@ -57,6 +57,17 @@ of it is used on the receiving end. Be aware of this: it may be necessary to def
 for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
 
 
+Consider using basic data types instead of custom classes.
+----------------------------------------------------------
+Because Pyro serializes the objects you're passing, it needs to know how to serialize custom types.
+While you can teach Pyro about these (see :ref:`customizing-serialization`) it may sometimes be easier to just use a builtin datatype instead.
+For instance if you have a custom class whose state essentially is a set of numbers, consider then
+that it may be easier to just transfer a ``set`` or a ``list`` of those numbers rather than an instance of your
+custom class.  It depends on your class and data ofcourse, and whether the receiving code expects
+just the list of numbers or really needs an instance of your custom class.
+
+
+
 .. index:: Logging
 
 .. _logging:
@@ -494,6 +505,11 @@ Special http request headers:
   with a ``$key=....`` querystring parameter.
 
 
+Special Http response headers:
+
+-  ``X-Pyro-Correlation-Id``: contains the correlation id Guid that was used for this request/response.
+
+
 Http response status codes:
 
 - 200 OK: all went well, response is the Pyro response message in JSON serialized format
@@ -501,3 +517,54 @@ Http response status codes:
 - 404 Not Found: you're requesting a non existing object
 - 500 Internal server error: something went wrong during request processing, response is serialized exception object (if available)
 
+
+.. index:: current_context, correlation_id
+.. _current_context:
+
+Client information on the current_context
+=========================================
+Pyro provides a *thread-local* object with some information about the current Pyro method call,
+such as the client that's performing the call. It is available as :py:data:`Pyro4.current_context`
+(shortcut to :py:data:`Pyro4.core.current_context`).
+When accessed in a Pyro server it contains various attributes:
+
+.. py:attribute:: Pyro4.current_context.client
+
+    (:py:class:`Pyro4.socketutil.SocketConnection`)
+    this is the socket connection with the client that's doing the request.
+
+.. py:attribute:: Pyro4.current_context.seq
+
+    (*int*) request sequence number
+
+.. py:attribute:: Pyro4.current_context.msg_flags
+
+    (*int*) message flags
+
+.. py:attribute:: Pyro4.current_context.serializer_id
+
+    (*int*) numerical id of the serializer used for this communication
+
+.. py:attribute:: Pyro4.current_context.annotations
+
+    (*dict*) message annotations, key is a 4-letter string and the value is a byte sequence.
+    Pyro uses this for the few internal annotations such as 'HMAC' and 'CORR', which are reserved.
+    But you can send your own annotations along with these if you so desire.
+    You do this by overriding the :py:meth:`Pyro4.core.Proxy._pyroAnnotations` method in your client code,
+    or the :py:meth:`Pyro4.core.Daemon.annotations` method in the server code.
+
+.. py:attribute:: Pyro4.current_context.correlation_id
+
+    (:py:class:`uuid.UUID`, optional)  correlation id of the current request / response.
+    If you set this before calling a method on a Pyro proxy, Pyro will transfer the
+    correlation id to the server context. If the server on their behalf invokes another
+    Pyro method, the same correlation id will be passed along. This way it is possible
+    to relate all remote method calls that originate from a single call.
+    To make this work you'll have to set this to a new :py:class:`uuid.UUID` in your client
+    code right before you call a Pyro method.
+    Note that the HTTP gateway (see :ref:`http-gateway`) also creates a correlation id for
+    every request, and will return it via the ``X-Pyro-Correlation-Id`` HTTP-header in the response.
+
+
+For an example of how this information can be retrieved, and how to set the ``correlation_id``,
+see the :py:mod:`callcontext` example.

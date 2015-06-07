@@ -177,6 +177,9 @@ class Proxy(object):
     .. automethod:: _pyroReconnect
     .. automethod:: _pyroBatch
     .. automethod:: _pyroAsync
+    .. automethod:: _pyroAnnotations
+    .. autoattribute:: _pyroTimeout
+    .. autoattribute:: _pyroHmacKey
     """
     __pyroAttributes = frozenset(
         ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri",
@@ -207,6 +210,7 @@ class Proxy(object):
 
     @property
     def _pyroHmacKey(self):
+        """the HMAC key (bytes) that this proxy uses"""
         return self.__pyroHmacKey
 
     @_pyroHmacKey.setter
@@ -351,7 +355,10 @@ class Proxy(object):
         if self._pyroConnection is not None:
             self._pyroConnection.timeout = timeout
 
-    _pyroTimeout = property(__pyroGetTimeout, __pyroSetTimeout)
+    _pyroTimeout = property(__pyroGetTimeout, __pyroSetTimeout, doc="""
+        The timeout in seconds for calls on this proxy. Defaults to ``None``.
+        If the timeout expires before the remote method call returns,
+        Pyro will raise a :exc:`Pyro4.errors.TimeoutError`""")
 
     def _pyroInvoke(self, methodname, vargs, kwargs, flags=0, objectId=None):
         """perform the remote method call communication"""
@@ -538,6 +545,8 @@ class Proxy(object):
         """
         Returns a dict with annotations to be sent with each message.
         Default behavior is to include the correlation id from the current context (if it is set).
+        If you override this, don't forget to call the original method and add to the dictionary returned from it,
+        rather than simply returning a new dictionary.
         """
         if current_context.correlation_id:
             return {"CORR": current_context.correlation_id.bytes}
@@ -1136,6 +1145,8 @@ class Daemon(object):
         """
         Returns a dict with annotations to be sent with each message.
         Default behavior is to include the correlation id from the current context (if it is set).
+        If you override this, don't forget to call the original method and add to the dictionary returned from it,
+        rather than simply returning a new dictionary.
         """
         if current_context.correlation_id:
             return {"CORR": current_context.correlation_id.bytes}
@@ -1212,8 +1223,8 @@ class _CallContext(threading.local):
         self.msg_flags = 0
         self.serializer_id = 0
         self.annotations = {}
-        self.correlation_id = None   # @todo also add correlation id/ctx/custom annotations to pyrolite
+        self.correlation_id = None
 
 
-"""the context object for the current call. (thread-local)"""
 current_context = _CallContext()
+"""the context object for the current call. (thread-local)"""

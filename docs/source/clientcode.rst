@@ -178,6 +178,8 @@ If you're using pickle, and need to control the pickle protocol version that is 
 
 .. index:: deserialization, serializing custom classes, deserializing custom classes
 
+.. _customizing-serialization:
+
 Changing the way your custom classes are (de)serialized
 -------------------------------------------------------
 
