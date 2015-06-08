@@ -26,12 +26,14 @@ Avoid circularity, or use *oneway* method calls on at least one of the links in 
 
 .. index:: releasing a proxy
 
-Release your proxies if you can.
---------------------------------
+'After X simultaneous proxy connections, Pyro seems to freeze!' So: Release your proxies when you can.
+------------------------------------------------------------------------------------------------------
 A connected proxy that is unused takes up resources on the server. In the case of the threadpool server type,
 it locks up a single thread. If you have too many connected proxies at the same time, the server may run out
-of threads and stops responding. (The multiplex server doesn't have this particular issue).
-It is a good thing to think about when you can release a proxy in your code.
+of threads and stops responding.
+You can use the ``THREADPOOL_SIZE`` config item to increase the number of threads Pyro uses in its thread pool in the daemon.
+Or you could consider using the multiplex server instead, which doesn't have this particular issue.
+Still, it is a good thing to think about when you can release a proxy in your code.
 Don't worry about reconnecting, that's done automatically once it is used again.
 You can use explicit ``_pyroRelease`` calls or use the proxy from within a context manager.
 It's not a good idea to release it after every single remote method call though, because then the cost
@@ -532,6 +534,9 @@ When accessed in a Pyro server it contains various attributes:
 
     (:py:class:`Pyro4.socketutil.SocketConnection`)
     this is the socket connection with the client that's doing the request.
+    You can check the source to see what this is all about, but perhaps the single most useful
+    attribute exposed here is ``sock``, which is the socket connection.
+    So the client's IP address can for instance be obtained via :code:`Pyro4.current_context.client.sock.getpeername()[0]` .
 
 .. py:attribute:: Pyro4.current_context.seq
 
@@ -539,11 +544,11 @@ When accessed in a Pyro server it contains various attributes:
 
 .. py:attribute:: Pyro4.current_context.msg_flags
 
-    (*int*) message flags
+    (*int*) message flags, see :py:class:`Pyro4.message.Message`
 
 .. py:attribute:: Pyro4.current_context.serializer_id
 
-    (*int*) numerical id of the serializer used for this communication
+    (*int*) numerical id of the serializer used for this communication, see :py:class:`Pyro4.message.Message` .
 
 .. py:attribute:: Pyro4.current_context.annotations
 

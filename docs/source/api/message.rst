@@ -6,8 +6,12 @@
 
 .. attribute:: MSG_*
 
-   The various message types
+   (*int*) The various message type identifiers
 
 .. attribute:: FLAGS_*
 
-   Various flags that modify the characteristics of the message
+   (*int*) Various bitflags that specify the characteristics of the message, can be bitwise or-ed together
+
+.. attribute:: SERIALIZER_*
+
+   (*int*) The numerical ids for the given serialization formats (such as serpent, json, ...)
