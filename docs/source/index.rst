@@ -18,7 +18,7 @@ Pyro is written in **100% pure Python** and therefore runs on many platforms and
 
 Pyro is copyright © Irmen de Jong (irmen@razorvine.net | http://www.razorvine.net).  Please read :doc:`license`.
 
-Join the `Pyro mailing list <http://lists.sourceforge.net/lists/listinfo/pyro-core>`_ for questions and discussion.
+Join the `Pyro mailing list <http://www.freelists.org/list/pyro>`_ for questions and discussion.
 Pyro can be found on Pypi as `Pyro4 <http://pypi.python.org/pypi/Pyro4/>`_.  Source on Github: https://github.com/irmen/Pyro4
 
 

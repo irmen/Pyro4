@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.38**
+
+- new mailing list address (pyro@freelists.org)
+
+
 **Pyro 4.37**
 
 - added Pyro4.current_context global (thread-local) that contains various information about the client and the request
