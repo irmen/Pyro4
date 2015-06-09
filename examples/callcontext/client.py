@@ -20,7 +20,7 @@ class CustomAnnotationProxy(Pyro4.Proxy):
     # but be sure to call the base class method.
     def _pyroAnnotations(self):
         annotations = super(CustomAnnotationProxy, self)._pyroAnnotations()
-        annotations["XYZZ"] = b"Hello, I am a custom annotation!"
+        annotations["XYZZ"] = b"Hello, I am a custom annotation from the proxy!"
         return annotations
 
 

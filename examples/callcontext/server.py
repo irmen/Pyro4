@@ -24,13 +24,13 @@ class EchoServer(object):
 class CustomDaemon(Pyro4.Daemon):
     def annotations(self):
         annotations = super(CustomDaemon, self).annotations()
-        annotations["ZZQQ"] = b"custom annotation set by the daemon"
+        annotations["ZZQQ"] = b"custom response annotation set by the daemon"
         return annotations
 
 
-daemon = Pyro4.Daemon()
+daemon = CustomDaemon()
 daemon._pyroHmacKey = b"secr3t_k3y"
 uri = daemon.register(EchoServer(), "example.context")  # provide a logical name ourselves
-print("Server is ready. You can use the following two URIs to connect to me:")
+print("Server is ready. You can use the following URI to connect:")
 print(uri)
 daemon.requestLoop()
