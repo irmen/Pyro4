@@ -89,6 +89,7 @@ class MultiplexedSocketServerBase(object):
             conn = socketutil.SocketConnection(csock)
             if self.daemon._handshake(conn):
                 return conn
+            conn.close()
         except:  # catch all errors, otherwise the event loop could terminate
             ex_t, ex_v, ex_tb = sys.exc_info()
             tb = util.formatTraceback(ex_t, ex_v, ex_tb)

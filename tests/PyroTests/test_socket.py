@@ -346,13 +346,7 @@ class TestSocketutil(unittest.TestCase):
 
 class ServerCallback(object):
     def _handshake(self, connection):
-        if not isinstance(connection, SU.SocketConnection):
-            raise TypeError("handshake expected SocketConnection parameter")
-        serializer = Pyro4.util.get_serializer("marshal")
-        data, _ = serializer.serializeData("ok", compress=False)
-        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTOK, data, serializer.serializer_id, 0, 1)
-        connection.send(msg.to_bytes())
-        return True
+        raise RuntimeError("this handshake method should never be called")
 
     def handleRequest(self, connection):
         if not isinstance(connection, SU.SocketConnection):
@@ -373,8 +367,7 @@ class ServerCallback_BrokenHandshake(ServerCallback):
 
 class TestDaemon(Daemon):
     def __init__(self):
-        self._pyroHmacKey = None
-        pass  # avoid all other regular daemon initialization
+        super(TestDaemon, self).__init__()
 
 
 class TestSocketServer(unittest.TestCase):
@@ -493,10 +486,16 @@ class TestServerDOS_select(unittest.TestCase):
             # connect to the server
             csock = SU.createSocket(connect=(host, port))
             conn = SU.SocketConnection(csock, "uri")
+            # send the handshake/connect data
+            ser = Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
+            data, _ = ser.serializeData("hello", False)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECT, data, Pyro4.message.SERIALIZER_MARSHAL, 0, 0)
+            conn.send(msg.to_bytes())
             # get the handshake/connect response
             Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_CONNECTOK])
             return conn
 
+        conn = None
         try:
             host, port = serv_thread.locationStr.split(':')
             port = int(port)
@@ -516,7 +515,7 @@ class TestServerDOS_select(unittest.TestCase):
                 self.assertIn("ProtocolError", data)
                 self.assertIn("version", data)
             except errors.ConnectionClosedError:
-                # invalid message can have caused the connection to be closed, this is fine
+                # invalid message can cause the connection to be closed, this is fine
                 pass
             # invoke something again, this should still work (server must still be running, but our client connection was terminated)
             conn.close()
@@ -528,7 +527,8 @@ class TestServerDOS_select(unittest.TestCase):
             self.assertEqual(999, msg.seq)
             self.assertEqual(b"pong", msg.data)
         finally:
-            conn.close()
+            if conn:
+                conn.close()
             serv_thread.stop_loop.set()
             serv_thread.join()
 

@@ -17,14 +17,12 @@ class EchoServerThread(Thread):
         super(EchoServerThread, self).__init__()
         self.setDaemon(True)
         self.started = Event()
-        self.terminated = Event()
         self.echodaemon = self.echoserver = self.uri = None
 
     def run(self):
         self.echodaemon, self.echoserver, self.uri = echoserver.main(args=["-q"], returnWithoutLooping=True)
         self.started.set()
         self.echodaemon.requestLoop(loopCondition=lambda: not self.echoserver._must_shutdown)
-        self.terminated.set()
 
 
 class TestEchoserver(unittest.TestCase):
@@ -36,8 +34,8 @@ class TestEchoserver(unittest.TestCase):
 
     def tearDown(self):
         self.echoserverthread.echodaemon.shutdown()
-        time.sleep(0.01)
-        self.echoserverthread.terminated.wait()
+        time.sleep(0.02)
+        self.echoserverthread.join()
 
     def testExposed(self):
         e = Pyro4.test.echoserver.EchoServer()

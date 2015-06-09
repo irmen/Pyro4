@@ -35,6 +35,19 @@ class CustomDaemonInterface(Pyro4.core.DaemonObject):
         return 42
 
 
+class ConnectionMock(object):
+    def __init__(self, initial_msg=None):
+        self.received = initial_msg.to_bytes() if initial_msg else b""
+
+    def send(self, data):
+        self.received += data
+
+    def recv(self, datasize):
+        chunk = self.received[:datasize]
+        self.received = self.received[datasize:]
+        return chunk
+
+
 class DaemonTests(unittest.TestCase):
     # We create a daemon, but notice that we are not actually running the requestloop.
     # 'on-line' tests are all taking place in another test, to keep this one simple.
@@ -42,24 +55,18 @@ class DaemonTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT = 0.1
 
+    def sendHandshakeMessage(self, conn):
+        ser = get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
+        data, _ = ser.serializeData("hello", False)
+        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECT, data, Pyro4.message.SERIALIZER_MARSHAL, 0, 99)
+        msg.send(conn)
+
     def testSerializerConfig(self):
         self.assertIsInstance(Pyro4.config.SERIALIZERS_ACCEPTED, set)
         self.assertIsInstance(Pyro4.config.SERIALIZER, basestring)
         self.assertGreater(len(Pyro4.config.SERIALIZERS_ACCEPTED), 1)
 
     def testSerializerAccepted(self):
-        class ConnectionMock(object):
-            def __init__(self, msg):
-                self.data = msg.to_bytes()
-
-            def recv(self, datasize):
-                chunk = self.data[:datasize]
-                self.data = self.data[datasize:]
-                return chunk
-
-            def send(self, data):
-                pass
-
         self.assertIn("marshal", Pyro4.config.SERIALIZERS_ACCEPTED)
         self.assertNotIn("pickle", Pyro4.config.SERIALIZERS_ACCEPTED)
         with Pyro4.core.Daemon(port=0) as d:
@@ -360,26 +367,45 @@ class DaemonTests(unittest.TestCase):
             duration = time.time() - start
             self.assertAlmostEqual(0.0, duration, places=1)
 
-    def testHandshake(self):
-        class ConnectionMock(object):
-            def __init__(self):
-                self.received = b""
-
-            def send(self, data):
-                self.received += data
-
-            def recv(self, datasize):
-                chunk = self.received[:datasize]
-                self.received = self.received[datasize:]
-                return chunk
-
+    def testSimpleHandshake(self):
         conn = ConnectionMock()
         with Pyro4.core.Daemon(port=0) as d:
+            self.sendHandshakeMessage(conn)
             success = d._handshake(conn)
             self.assertTrue(success)
             msg = Pyro4.message.Message.recv(conn, hmac_key=d._pyroHmacKey)
             self.assertEqual(Pyro4.message.MSG_CONNECTOK, msg.type)
-            self.assertEqual(1, msg.seq)
+            self.assertEqual(99, msg.seq)
+
+    def testHandshakeDenied(self):
+        class HandshakeFailDaemon(Pyro4.core.Daemon):
+            def validate_handshake(self, conn, data):
+                raise ValueError("handshake fail")
+        conn = ConnectionMock()
+        with HandshakeFailDaemon(port=0) as d:
+            self.sendHandshakeMessage(conn)
+            success = d._handshake(conn)
+            self.assertFalse(success)
+            msg = Pyro4.message.Message.recv(conn, hmac_key=d._pyroHmacKey)
+            self.assertEqual(Pyro4.message.MSG_CONNECTFAIL, msg.type)
+            self.assertEqual(99, msg.seq)
+            self.assertTrue(b"handshake fail" in msg.data)
+
+    def testCustomHandshake(self):
+        conn = ConnectionMock()
+        class CustomHandshakeDaemon(Pyro4.core.Daemon):
+            def validate_handshake(self, conn, data):
+                return ["sure", "have", "fun"]
+        with CustomHandshakeDaemon(port=0) as d:
+            self.sendHandshakeMessage(conn)
+            success = d._handshake(conn)
+            self.assertTrue(success)
+            msg = Pyro4.message.Message.recv(conn, hmac_key=d._pyroHmacKey)
+            self.assertEqual(Pyro4.message.MSG_CONNECTOK, msg.type)
+            self.assertEqual(99, msg.seq)
+            ser = get_serializer_by_id(msg.serializer_id)
+            data = ser.deserializeData(msg.data, msg.flags & Pyro4.message.FLAGS_COMPRESSED)
+            self.assertEqual(["sure", "have", "fun"], data)
 
     def testNAT(self):
         with Pyro4.core.Daemon() as d:

@@ -58,6 +58,7 @@ class ClientConnectionJob(object):
         try:
             if self.daemon._handshake(self.csock):
                 return True
+            self.csock.close()
         except:
             ex_t, ex_v, ex_tb = sys.exc_info()
             tb = Pyro4.util.formatTraceback(ex_t, ex_v, ex_tb)

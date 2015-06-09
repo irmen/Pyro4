@@ -4,7 +4,11 @@ Change Log
 
 **Pyro 4.38**
 
-- new mailing list address (pyro@freelists.org)
+- new mailing list address (``pyro@freelists.org``)
+- wire protocol version changed to 48 (new connection logic). You have to update all your pyro libraries on clients and servers.
+- changed the initial connection handshake protocol. Proxy and daemon now perform a handshake by exchanging data and
+  you can override methods on the proxy (``_pyroHandshake`` and ``_pyroHandshakeResponse``) and the daemon (``validate_handshake``)
+  to customize this and add a handshake/connection validator in the daemon.
 
 
 **Pyro 4.37**

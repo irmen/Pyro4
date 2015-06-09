@@ -17,4 +17,4 @@ NAMESERVER_NAME = "Pyro.NameServer"
 FLAME_NAME = "Pyro.Flame"
 
 # wire protocol version. Note that if this gets updated, Pyrolite might need an update too.
-PROTOCOL_VERSION = 47
+PROTOCOL_VERSION = 48

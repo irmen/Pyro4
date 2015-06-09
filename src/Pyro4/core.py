@@ -178,6 +178,8 @@ class Proxy(object):
     .. automethod:: _pyroBatch
     .. automethod:: _pyroAsync
     .. automethod:: _pyroAnnotations
+    .. automethod:: _pyroHandshake
+    .. automethod:: _pyroHandshakeResponse
     .. autoattribute:: _pyroTimeout
     .. autoattribute:: _pyroHmacKey
     """
@@ -437,9 +439,18 @@ class Proxy(object):
                         return False  # already connected
                     sock = socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout, nodelay=Pyro4.config.SOCK_NODELAY)
                     conn = socketutil.SocketConnection(sock, uri.object)
-                    # Do handshake. For now, no need to send anything. (message type CONNECT is not yet used)
-                    msg = message.Message.recv(conn, None, hmac_key=self._pyroHmacKey)
-                    # any trailing data (dataLen>0) is an error message, if any
+                    # Do handshake.
+                    serializer = util.get_serializer(Pyro4.config.SERIALIZER)
+                    data, compressed = serializer.serializeData(self._pyroHandshake(), Pyro4.config.COMPRESSION)
+                    flags = Pyro4.message.FLAGS_COMPRESSED if compressed else 0
+                    msg = message.Message(message.MSG_CONNECT, data, serializer.serializer_id, flags, self._pyroSeq,
+                                          annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
+                    if Pyro4.config.LOGWIRE:
+                        _log_wiredata(log, "proxy connect sending", msg)
+                    conn.send(msg.to_bytes())
+                    msg = message.Message.recv(conn, [message.MSG_CONNECTOK, message.MSG_CONNECTFAIL], hmac_key=self._pyroHmacKey)
+                    if Pyro4.config.LOGWIRE:
+                        _log_wiredata(log, "proxy connect response received", msg)
                 except Exception:
                     x = sys.exc_info()[1]
                     if conn:
@@ -454,12 +465,12 @@ class Proxy(object):
                             ce.__cause__ = x
                         raise ce
                 else:
+                    handshake_response = "?"
+                    if msg.data:
+                        serializer = util.get_serializer_by_id(msg.serializer_id)
+                        handshake_response = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
                     if msg.type == message.MSG_CONNECTFAIL:
-                        error = "connection rejected"
-                        if msg.data:
-                            serializer = util.get_serializer_by_id(msg.serializer_id)
-                            data = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
-                            error += ", reason: " + data
+                        error = "connection rejected, reason: " + handshake_response
                         conn.close()
                         log.error(error)
                         raise errors.CommunicationError(error)
@@ -471,6 +482,7 @@ class Proxy(object):
                     self._pyroConnection = conn
                     if replaceUri:
                         self._pyroUri = uri
+                    self._pyroHandshakeResponse(handshake_response)
                     log.debug("connected to %s", self._pyroUri)
             if Pyro4.config.METADATA:
                 # obtain metadata if this feature is enabled, and the metadata is not known yet
@@ -551,6 +563,20 @@ class Proxy(object):
         if current_context.correlation_id:
             return {"CORR": current_context.correlation_id.bytes}
         return {}
+
+    def _pyroHandshake(self):
+        """
+        Returns the data object that should be passed as part of the
+        initial connection handshake message. It can be any serializable object.
+        """
+        return "hello"
+
+    def _pyroHandshakeResponse(self, response):
+        """
+        Process the initial connection handshake response data received from the daemon.
+        """
+        # @todo possible optimization: return metadata in CONNECTOK message to avoid extra call to get_metadata
+        return
 
 
 class _BatchedRemoteMethod(object):
@@ -898,17 +924,51 @@ class Daemon(object):
         thread.start()
 
     def _handshake(self, conn):
-        """Perform connection handshake with new clients"""
-        # For now, client is not sending anything. Just respond with a CONNECT_OK.
-        # We need a minimal amount of data or the socket will remain blocked
+        """
+        Perform connection handshake with new clients.
+        Client sends a MSG_CONNECT message with a serialized data payload.
+        If all is well, return with a CONNECT_OK message.
+        The reason we're not doing this with a MSG_INVOKE method call on the daemon
+        (like when retrieving the metadata) is because we need to force the clients
+        to get past an initial connect handshake before letting them invoke any method.
+        Return True for successful handshake, False if something was wrong.
+        """
+        serializer_id = message.SERIALIZER_MARSHAL
+        msg_seq = 0
+        try:
+            msg = message.Message.recv(conn, [message.MSG_CONNECT], hmac_key=self._pyroHmacKey)
+            if Pyro4.config.LOGWIRE:
+                _log_wiredata(log, "daemon handshake received", msg)
+            if msg.serializer_id not in self.__serializer_ids:
+                raise errors.SerializeError("message used serializer that is not accepted: %d" % msg.serializer_id)
+            serializer_id = msg.serializer_id
+            msg_seq = msg.seq
+            serializer = util.get_serializer_by_id(serializer_id)
+            data = serializer.deserializeData(msg.data, msg.flags & Pyro4.message.FLAGS_COMPRESSED)
+            handshake_response = self.validate_handshake(conn, data)
+            data, compressed = serializer.serializeData(handshake_response, Pyro4.config.COMPRESSION)
+            msgtype = message.MSG_CONNECTOK
+        except Exception as x:
+            log.debug("handshake failed, reason: (%s) %s" % (x.__class__.__name__, x))
+            serializer = util.get_serializer_by_id(serializer_id)
+            data, compressed = serializer.serializeData(str(x), False)
+            msgtype = message.MSG_CONNECTFAIL
+        # We need a minimal amount of response data or the socket will remain blocked
         # on some systems... (messages smaller than 40 bytes)
-        # Return True for successful handshake, False if something was wrong.
-        # We default to the marshal serializer to send message payload of "ok"
-        ser = util.get_serializer("marshal")
-        data = ser.dumps("ok")
-        msg = message.Message(message.MSG_CONNECTOK, data, ser.serializer_id, 0, 1, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
+        flags = message.FLAGS_COMPRESSED if compressed else 0
+        msg = message.Message(msgtype, data, serializer_id, flags, msg_seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
+        if Pyro4.config.LOGWIRE:
+            _log_wiredata(log, "daemon handshake response", msg)
         conn.send(msg.to_bytes())
-        return True
+        return msg.type == message.MSG_CONNECTOK
+
+    def validate_handshake(self, conn, data):
+        """
+        Override this to create a connection validator.
+        It should return a response data object normally if the connection is okay,
+        or should raise an exception if the connection should be denied.
+        """
+        return "hello"
 
     def handleRequest(self, conn):
         """

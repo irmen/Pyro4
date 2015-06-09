@@ -109,8 +109,10 @@ class DaemonLoopThread(threadutil.Thread):
 
 class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
     def _handshake(self, conn):
-        # a bit of a hack, overriding this internal method to return a CONNECTFAIL...
-        serializer = Pyro4.util.get_serializer("marshal")
+        # receive the client's handshake data
+        msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_CONNECT], self._pyroHmacKey)
+        # return a CONNECTFAIL
+        serializer = Pyro4.util.get_serializer_by_id(msg.serializer_id)
         data, _ = serializer.serializeData("rigged connection failure", compress=False)
         msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTFAIL, data, serializer.serializer_id, 0, 1, hmac_key=self._pyroHmacKey)
         conn.send(msg.to_bytes())
