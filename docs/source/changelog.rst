@@ -9,7 +9,10 @@ Change Log
 - changed the initial connection handshake protocol. Proxy and daemon now perform a handshake by exchanging data and
   you can override methods on the proxy (``_pyroHandshake`` and ``_pyroHandshakeResponse``) and the daemon (``validate_handshake``)
   to customize this and add a handshake/connection validator in the daemon.
+- added handshake example
 - fixed callcontext example daemon to actually return a custom annotation
+- ``Proxy._pyroStuff`` added to store custom data on a proxy without risk of triggering remote attribute access
+
 
 
 **Pyro 4.37**
