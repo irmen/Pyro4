@@ -13,11 +13,13 @@ Change Log
 - changed the initial connection handshake protocol. Proxy and daemon now perform a handshake by exchanging data and
   you can override methods on the proxy (``_pyroHandshake`` and ``_pyroHandshakeResponse``) and the daemon (``validate_handshake``)
   to customize this and add a handshake/connection validator in the daemon.
+- drastically reduced the overhead of creating a new proxy connection by piggybacking the metadata on the
+  connection response (this avoids a separate remote call to get_metadata). New proxy connections are ~50% faster.
 - added handshake example
 - fixed callcontext example daemon to actually return a custom annotation
+- fixed benchmark/connections example
 - ``Proxy._pyroStuff`` added to store custom data on a proxy without risk of triggering remote attribute access
-- new mailing list address (``pyro@freelists.org``)
-
+- new mailing list address (``pyro@freelists.org``).  Bye bye Sourceforge.
 
 
 **Pyro 4.37**

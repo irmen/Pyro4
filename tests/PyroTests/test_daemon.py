@@ -57,7 +57,7 @@ class DaemonTests(unittest.TestCase):
 
     def sendHandshakeMessage(self, conn):
         ser = get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
-        data, _ = ser.serializeData("hello", False)
+        data, _ = ser.serializeData({"handshake": "hello", "object": Pyro4.constants.DAEMON_NAME}, False)
         msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECT, data, Pyro4.message.SERIALIZER_MARSHAL, 0, 99)
         msg.send(conn)
 
@@ -379,7 +379,7 @@ class DaemonTests(unittest.TestCase):
 
     def testHandshakeDenied(self):
         class HandshakeFailDaemon(Pyro4.core.Daemon):
-            def validate_handshake(self, conn, data):
+            def validate_handshake(self, conn, obj, data):
                 raise ValueError("handshake fail")
         conn = ConnectionMock()
         with HandshakeFailDaemon(port=0) as d:
@@ -394,7 +394,7 @@ class DaemonTests(unittest.TestCase):
     def testCustomHandshake(self):
         conn = ConnectionMock()
         class CustomHandshakeDaemon(Pyro4.core.Daemon):
-            def validate_handshake(self, conn, data):
+            def validate_handshake(self, conn, obj, data):
                 return ["sure", "have", "fun"]
         with CustomHandshakeDaemon(port=0) as d:
             self.sendHandshakeMessage(conn)

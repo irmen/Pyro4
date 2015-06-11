@@ -488,7 +488,7 @@ class TestServerDOS_select(unittest.TestCase):
             conn = SU.SocketConnection(csock, "uri")
             # send the handshake/connect data
             ser = Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
-            data, _ = ser.serializeData("hello", False)
+            data, _ = ser.serializeData({"handshake": "hello", "object": Pyro4.constants.DAEMON_NAME}, False)
             msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECT, data, Pyro4.message.SERIALIZER_MARSHAL, 0, 0)
             conn.send(msg.to_bytes())
             # get the handshake/connect response

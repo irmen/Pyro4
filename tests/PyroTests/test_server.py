@@ -192,7 +192,7 @@ class ServerTestsOnce(unittest.TestCase):
             p.echo(1)
             p.echo(2)
             p.echo(3)
-            self.assertEqual(4, p._pyroSeq, "should have 3 method calls + 1 get meta call")
+            self.assertEqual(3, p._pyroSeq, "should have 3 method calls")
             p._pyroSeq = 999   # hacking the seq nr won't have any effect because it is the reply from the server that is checked
             self.assertEqual(42, p.echo(42))
 
@@ -392,12 +392,13 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual(set(), p._pyroAttrs)
             self.assertEqual(set(), p._pyroMethods)
             self.assertEqual(set(), p._pyroOneway)
-            # set some metadata manually, this should be kept
+            # set some metadata manually, they should be overwritten at connection time
             p._pyroMethods = set("abc")
+            p._pyroAttrs = set("xyz")
             p._pyroBind()
-            self.assertEqual(set(), p._pyroAttrs)
-            self.assertEqual(set("abc"), p._pyroMethods)
-            self.assertEqual(set(), p._pyroOneway)
+            self.assertNotEqual(set("xyz"), p._pyroAttrs)
+            self.assertNotEqual(set("abc"), p._pyroMethods)
+            self.assertNotEqual(set(), p._pyroOneway)
 
     def testNonserializableException_other(self):
         with Pyro4.core.Proxy(self.objectUri) as p:

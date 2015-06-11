@@ -12,7 +12,7 @@ uri = input("Uri of benchmark server? ").strip()
 
 print("Timing raw connect speed (no method call)...")
 p = Pyro4.core.Proxy(uri)
-p.ping()
+p.oneway()
 ITERATIONS = 2000
 begin = time.time()
 for loop in range(ITERATIONS):
@@ -31,19 +31,19 @@ for loop in range(ITERATIONS):
     if loop % 500 == 0:
         print(loop)
     with Pyro4.core.Proxy(uri) as p:
-        p.ping()
+        p.oneway()
 duration = time.time() - begin
 print("%d new proxy calls in %.3f sec = %.0f calls/sec" % (ITERATIONS, duration, ITERATIONS / duration))
 
 print("Timing proxy methodcall speed...")
 p = Pyro4.core.Proxy(uri)
-p.ping()
+p.oneway()
 ITERATIONS = 10000
 begin = time.time()
 for loop in range(ITERATIONS):
     if loop % 1000 == 0:
         print(loop)
-    p.ping()
+    p.oneway()
 duration = time.time() - begin
 print("%d calls in %.3f sec = %.0f calls/sec" % (ITERATIONS, duration, ITERATIONS / duration))
 print("Serializer used:", Pyro4.config.SERIALIZER)

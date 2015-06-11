@@ -444,8 +444,14 @@ class Proxy(object):
                     conn = socketutil.SocketConnection(sock, uri.object)
                     # Do handshake.
                     serializer = util.get_serializer(Pyro4.config.SERIALIZER)
-                    data, compressed = serializer.serializeData(self._pyroHandshake(), Pyro4.config.COMPRESSION)
+                    data = {
+                        "handshake": self._pyroHandshake(),
+                        "object": self._pyroUri.object
+                    }
+                    data, compressed = serializer.serializeData(data, Pyro4.config.COMPRESSION)
                     flags = Pyro4.message.FLAGS_COMPRESSED if compressed else 0
+                    if Pyro4.config.METADATA:
+                        flags |= Pyro4.message.FLAGS_META_ON_CONNECT
                     msg = message.Message(message.MSG_CONNECT, data, serializer.serializer_id, flags, self._pyroSeq,
                                           annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
                     if Pyro4.config.LOGWIRE:
@@ -477,16 +483,20 @@ class Proxy(object):
                         conn.close()
                         log.error(error)
                         raise errors.CommunicationError(error)
-                    if msg.type != message.MSG_CONNECTOK:
+                    elif msg.type == message.MSG_CONNECTOK:
+                        if msg.flags & message.FLAGS_META_ON_CONNECT:
+                            self.__processMetadata(handshake_response["meta"])
+                            handshake_response = handshake_response["handshake"]
+                        self._pyroConnection = conn
+                        if replaceUri:
+                            self._pyroUri = uri
+                        self._pyroHandshakeResponse(handshake_response)
+                        log.debug("connected to %s", self._pyroUri)
+                    else:
                         conn.close()
                         err = "connect: invalid msg type %d received" % msg.type
                         log.error(err)
                         raise errors.ProtocolError(err)
-                    self._pyroConnection = conn
-                    if replaceUri:
-                        self._pyroUri = uri
-                    self._pyroHandshakeResponse(handshake_response)
-                    log.debug("connected to %s", self._pyroUri)
             if Pyro4.config.METADATA:
                 # obtain metadata if this feature is enabled, and the metadata is not known yet
                 if self._pyroMethods or self._pyroAttrs:
@@ -496,7 +506,11 @@ class Proxy(object):
             return True
 
     def _pyroGetMetadata(self, objectId=None, known_metadata=None):
-        """get metadata from server (methods, attrs, oneway, ...) and remember them in some attributes of the proxy"""
+        """
+        Get metadata from server (methods, attrs, oneway, ...) and remember them in some attributes of the proxy.
+        Usually this will already be known due to the default behavior of the connect handshake, where the
+        connect response also includes the metadata.
+        """
         objectId = objectId or self._pyroUri.object
         log.debug("getting metadata for object %s", objectId)
         if self._pyroConnection is None and not known_metadata:
@@ -510,18 +524,23 @@ class Proxy(object):
         try:
             # invoke the get_metadata method on the daemon
             result = known_metadata or self._pyroInvoke("get_metadata", [objectId], {}, objectId=constants.DAEMON_NAME)
-            self._pyroOneway = set(result["oneway"])
-            self._pyroMethods = set(result["methods"])
-            self._pyroAttrs = set(result["attrs"])
-            if log.isEnabledFor(logging.DEBUG):
-                log.debug("from meta: oneway methods=%s", sorted(self._pyroOneway))
-                log.debug("from meta: methods=%s", sorted(self._pyroMethods))
-                log.debug("from meta: attributes=%s", sorted(self._pyroAttrs))
-            if not self._pyroMethods and not self._pyroAttrs:
-                raise errors.PyroError("remote object doesn't expose any methods or attributes")
+            self.__processMetadata(result)
         except errors.PyroError as x:
             log.error("problem getting metadata: %r", x)
             raise
+
+    def __processMetadata(self, metadata):
+        if not metadata:
+            return
+        self._pyroOneway = set(metadata["oneway"])
+        self._pyroMethods = set(metadata["methods"])
+        self._pyroAttrs = set(metadata["attrs"])
+        if log.isEnabledFor(logging.DEBUG):
+            log.debug("from meta: oneway methods=%s", sorted(self._pyroOneway))
+            log.debug("from meta: methods=%s", sorted(self._pyroMethods))
+            log.debug("from meta: attributes=%s", sorted(self._pyroAttrs))
+        if not self._pyroMethods and not self._pyroAttrs:
+            raise errors.PyroError("remote object doesn't expose any methods or attributes")
 
     def _pyroReconnect(self, tries=100000000):
         """
@@ -578,7 +597,6 @@ class Proxy(object):
         """
         Process the initial connection handshake response data received from the daemon.
         """
-        # @todo possible optimization: return metadata in CONNECTOK message to avoid extra call to get_metadata
         return
 
 
@@ -948,24 +966,35 @@ class Daemon(object):
             msg_seq = msg.seq
             serializer = util.get_serializer_by_id(serializer_id)
             data = serializer.deserializeData(msg.data, msg.flags & Pyro4.message.FLAGS_COMPRESSED)
-            handshake_response = self.validate_handshake(conn, data)
+            object_id = data["object"]
+            handshake_response = self.validate_handshake(conn, self.objectsById[object_id], data["handshake"])
+            if msg.flags & message.FLAGS_META_ON_CONNECT:
+                # Usually this flag will be enabled, which results in including the object metadata
+                # in the handshake response. This avoids a separate remote call to get_metadata.
+                handshake_response = {
+                    "handshake": handshake_response,
+                    "meta": self.objectsById[constants.DAEMON_NAME].get_metadata(object_id)
+                }
             data, compressed = serializer.serializeData(handshake_response, Pyro4.config.COMPRESSION)
             msgtype = message.MSG_CONNECTOK
+            flags = message.FLAGS_META_ON_CONNECT if Pyro4.config.METADATA else 0
+            if compressed:
+                flags |= message.FLAGS_COMPRESSED
         except Exception as x:
             log.debug("handshake failed, reason: (%s) %s" % (x.__class__.__name__, x))
             serializer = util.get_serializer_by_id(serializer_id)
             data, compressed = serializer.serializeData(str(x), False)
             msgtype = message.MSG_CONNECTFAIL
+            flags = message.FLAGS_COMPRESSED if compressed else 0
         # We need a minimal amount of response data or the socket will remain blocked
         # on some systems... (messages smaller than 40 bytes)
-        flags = message.FLAGS_COMPRESSED if compressed else 0
         msg = message.Message(msgtype, data, serializer_id, flags, msg_seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
         if Pyro4.config.LOGWIRE:
             _log_wiredata(log, "daemon handshake response", msg)
         conn.send(msg.to_bytes())
         return msg.type == message.MSG_CONNECTOK
 
-    def validate_handshake(self, conn, data):
+    def validate_handshake(self, conn, obj, data):
         """
         Override this to create a connection validator.
         It should return a response data object normally if the connection is okay,
