@@ -280,6 +280,16 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual(set(['echo', 'getDict', 'divide', 'nonserializableException', 'ping', 'oneway_delay', 'delayAndId', 'delay', 'testargs',
                                   'multiply', 'oneway_multiply', 'getDictAttr']), p._pyroMethods)
             self.assertEqual(set(['oneway_multiply', 'oneway_delay']), p._pyroOneway)
+            p._pyroAttrs = None
+            p._pyroGetMetadata()
+            self.assertEqual(set(['value', 'dictionary']), p._pyroAttrs)
+            p._pyroAttrs = None
+            p._pyroGetMetadata(self.objectUri.object)
+            self.assertEqual(set(['value', 'dictionary']), p._pyroAttrs)
+            p._pyroAttrs = None
+            p._pyroGetMetadata(known_metadata={"attrs": set(), "oneway": set(), "methods": set(["ping"])})
+            self.assertEqual(set(), p._pyroAttrs)
+
 
     def testProxyAttrsMetadataOff(self):
         try:
