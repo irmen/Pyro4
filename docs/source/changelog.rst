@@ -18,6 +18,7 @@ Change Log
 - added handshake example
 - fixed callcontext example daemon to actually return a custom annotation
 - fixed benchmark/connections example
+- httpgateway recognises ``X-Pyro-Correlation-Id`` http header on requests
 - ``Proxy._pyroStuff`` added to store custom data on a proxy without risk of triggering remote attribute access
 - new mailing list address (``pyro@freelists.org``).  Bye bye Sourceforge.
 
