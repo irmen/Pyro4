@@ -995,11 +995,18 @@ class Daemon(object):
 
     def validate_handshake(self, conn, data):
         """
-        Override this to create a connection validator.
+        Override this to create a connection validator for new client connections.
         It should return a response data object normally if the connection is okay,
         or should raise an exception if the connection should be denied.
         """
         return "hello"
+
+    def client_disconnect(self, conn):
+        """
+        Override this to handle a client disconnect.
+        Conn is the SocketConnection object that was disconnected.
+        """
+        pass
 
     def handleRequest(self, conn):
         """

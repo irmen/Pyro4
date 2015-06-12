@@ -64,6 +64,10 @@ class MultiplexedSocketServerBase(object):
                 # must be client socket, means remote call
                 active = self.handleRequest(s)
                 if not active:
+                    try:
+                        self.daemon.client_disconnect(s)
+                    except Exception as x:
+                        log.warn("Error in client_disconnect: " + str(x))
                     s.close()
                     self.clients.discard(s)
 
@@ -180,6 +184,10 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
                             except socket.error:
                                 pass
                             else:
+                                try:
+                                    self.daemon.client_disconnect(conn)
+                                except Exception as x:
+                                    log.warn("Error in client_disconnect: " + str(x))
                                 conn.close()
                                 self.clients.discard(conn)
                                 if fn in fileno2connection:
@@ -225,6 +233,10 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                     if conn in self.clients:
                         active = self.handleRequest(conn)
                         if not active:
+                            try:
+                                self.daemon.client_disconnect(conn)
+                            except Exception as x:
+                                log.warn("Error in client_disconnect: " + str(x))
                             conn.close()
                             self.clients.discard(conn)
             except socket.timeout:

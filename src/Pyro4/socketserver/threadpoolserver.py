@@ -15,8 +15,10 @@ import struct
 import Pyro4.util
 from Pyro4 import socketutil, errors
 from .threadpool import Pool
+from ..threadutil import Lock
 
 log = logging.getLogger("Pyro4.threadpoolserver")
+_client_disconnect_lock = Lock()
 
 
 class ClientConnectionJob(object):
@@ -51,6 +53,11 @@ class ClientConnectionJob(object):
                         log.warning(msg)
                         break
             finally:
+                with _client_disconnect_lock:
+                    try:
+                        self.daemon.client_disconnect(self.csock)
+                    except Exception as x:
+                        log.warn("Error in client_disconnect: " + str(x))
                 self.csock.close()
 
     def handleConnection(self):
