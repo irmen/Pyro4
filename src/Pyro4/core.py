@@ -966,14 +966,13 @@ class Daemon(object):
             msg_seq = msg.seq
             serializer = util.get_serializer_by_id(serializer_id)
             data = serializer.deserializeData(msg.data, msg.flags & Pyro4.message.FLAGS_COMPRESSED)
-            object_id = data["object"]
-            handshake_response = self.validate_handshake(conn, self.objectsById[object_id], data["handshake"])
+            handshake_response = self.validate_handshake(conn, data["handshake"])
             if msg.flags & message.FLAGS_META_ON_CONNECT:
                 # Usually this flag will be enabled, which results in including the object metadata
                 # in the handshake response. This avoids a separate remote call to get_metadata.
                 handshake_response = {
                     "handshake": handshake_response,
-                    "meta": self.objectsById[constants.DAEMON_NAME].get_metadata(object_id)
+                    "meta": self.objectsById[constants.DAEMON_NAME].get_metadata(data["object"])
                 }
             data, compressed = serializer.serializeData(handshake_response, Pyro4.config.COMPRESSION)
             msgtype = message.MSG_CONNECTOK
@@ -994,7 +993,7 @@ class Daemon(object):
         conn.send(msg.to_bytes())
         return msg.type == message.MSG_CONNECTOK
 
-    def validate_handshake(self, conn, obj, data):
+    def validate_handshake(self, conn, data):
         """
         Override this to create a connection validator.
         It should return a response data object normally if the connection is okay,

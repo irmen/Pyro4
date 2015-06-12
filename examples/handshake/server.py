@@ -7,10 +7,9 @@ secret_code = "pancakes"
 
 
 class CustomDaemon(Pyro4.Daemon):
-    def validate_handshake(self, conn, obj, data):
+    def validate_handshake(self, conn, data):
         print("Daemon received handshake reqest from:", conn.sock.getpeername())
         print("Handshake data:", data)
-        print("Requested object:", obj)
         # if needed, you can inspect Pyro4.current_context
         if data == secret_code:
             print("Secret code okay! Connection accepted.")
