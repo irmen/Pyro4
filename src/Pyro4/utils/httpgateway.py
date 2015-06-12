@@ -94,6 +94,9 @@ index_page_template = """<!DOCTYPE html>
             type: "GET",
             data: params,
             dataType: "json",
+            // headers: {{ "X-Pyro-Correlation-Id": "11112222-1111-2222-3333-222244449999" }},
+            // headers: {{ "X-Pyro-Gateway-Key": "secret-key" }},
+            // headers: {{ "X-Pyro-Options": "oneway" }},
             beforeSend: function(xhr, settings) {{
                 $("#pyro_call").text(settings.type+" "+settings.url);
             }},
@@ -200,7 +203,11 @@ def process_pyro_request(environ, path, parameters, start_response):
         nameserver = get_nameserver(hmac=pyro_app.hmac_key)
         uri = nameserver.lookup(object_name)
         with Pyro4.Proxy(uri) as proxy:
-            Pyro4.current_context.correlation_id = uuid.uuid1()  # set new correlation id
+            header_corr_id = environ.get("HTTP_X_PYRO_CORRELATION_ID", "")
+            if header_corr_id:
+                Pyro4.current_context.correlation_id = uuid.UUID(header_corr_id)  # use the correlation id from the request header
+            else:
+                Pyro4.current_context.correlation_id = uuid.uuid1()  # set new correlation id
             proxy._pyroHmacKey = pyro_app.hmac_key
             proxy._pyroGetMetadata()
             if "oneway" in pyro_options:

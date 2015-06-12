@@ -22,7 +22,8 @@ function pyro_call(object, method, callback) {
             path: "/pyro/"+object+"/"+method,
             headers: {
                     // "X-Pyro-Options": "options,here"
-                    // "X-Pyro-Gateway-Key: "secretgatewaykey"
+                    // "X-Pyro-Gateway-Key": "secretgatewaykey"
+                    // "X-Pyro-Correlation-Id": "03e5899c-1117-11e5-b1fa-001e8c7827a6"
                 }
             },
         function(res) {
