@@ -10,9 +10,9 @@ Change Log
     (And Pyrolite libraries if you use them too)
 
 - wire protocol version changed to 48 (new connection logic).
-- changed the initial connection handshake protocol. Proxy and daemon now perform a handshake by exchanging data and
-  you can override methods on the proxy (``_pyroHandshake`` and ``_pyroHandshakeResponse``) and the daemon (``validate_handshake``)
-  to customize this and add a handshake/connection validator in the daemon.
+- changed the initial connection handshake protocol. Proxy and daemon now perform a handshake by exchanging data.
+  You can set your own data on the proxy attribute ``_pyroHandshake``. You can override a proxy method ``_pyroValidateHandshake``
+  and a daemon method ``validate_handshake`` to customize/validate the connection setup.
 - drastically reduced the overhead of creating a new proxy connection by piggybacking the metadata on the
   connection response (this avoids a separate remote call to get_metadata). New proxy connections are ~50% faster.
 - added ``Daemon.client_disconnect()`` as a hook for when clients disconnect (``Daemon.validate_handshake`` can

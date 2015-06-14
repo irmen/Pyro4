@@ -178,18 +178,21 @@ class Proxy(object):
     .. automethod:: _pyroBatch
     .. automethod:: _pyroAsync
     .. automethod:: _pyroAnnotations
-    .. automethod:: _pyroHandshake
-    .. automethod:: _pyroHandshakeResponse
+    .. automethod:: _pyroValidateHandshake
     .. autoattribute:: _pyroTimeout
     .. autoattribute:: _pyroHmacKey
     .. attribute:: _pyroStuff
 
         You can put custom data here without risking the problem of triggering remote attribute access. Pyro itself doesn't use this.
+
+    .. attribute:: _pyroHandshake
+
+        The data object that should be sent in the initial connection handshake message. Can be any serializable object.
     """
     __pyroAttributes = frozenset(
         ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri",
          "_pyroOneway", "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq", "_pyroHmacKey",
-         "_pyroRawWireResponse", "_pyroStuff",
+         "_pyroRawWireResponse", "_pyroStuff", "_pyroHandshake",
          "_Proxy__pyroHmacKey", "_Proxy__pyroTimeout", "_Proxy__pyroLock", "_Proxy__pyroConnLock"])
 
     def __init__(self, uri):
@@ -205,6 +208,7 @@ class Proxy(object):
         self._pyroSeq = 0  # message sequence number
         self._pyroRawWireResponse = False  # internal switch to enable wire level responses
         self._pyroStuff = None  # you can put custom data here without risking the problem of triggering remote attribute access. Not used by Pyro itself.
+        self._pyroHandshake = "hello"  # the data object that should be sent in the initial connection handshake message (can be any serializable object)
         self.__pyroHmacKey = None
         self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
         self.__pyroLock = threadutil.Lock()
@@ -273,7 +277,7 @@ class Proxy(object):
                 self._pyroHmacKey = str(self._pyroHmacKey)
             encodedHmac = "b64:"+(base64.b64encode(self._pyroHmacKey).decode("ascii"))
         return self._pyroUri.asString(), tuple(self._pyroOneway), tuple(self._pyroMethods), tuple(self._pyroAttrs),\
-            self.__pyroTimeout, encodedHmac, self._pyroStuff
+            self.__pyroTimeout, encodedHmac, self._pyroHandshake, self._pyroStuff
 
     def __setstate_from_dict__(self, state):
         uri = URI(state[0])
@@ -282,19 +286,20 @@ class Proxy(object):
         attrs = set(state[3])
         timeout = state[4]
         hmac_key = state[5]
-        stuff = state[6]
+        handshake = state[6]
+        stuff = state[7]
         if hmac_key:
             if hmac_key.startswith("b64:"):
                 hmac_key = base64.b64decode(hmac_key[4:].encode("ascii"))
             else:
                 raise errors.ProtocolError("hmac encoding error")
-        self.__setstate__((uri, oneway, methods, attrs, timeout, hmac_key, stuff))
+        self.__setstate__((uri, oneway, methods, attrs, timeout, hmac_key, handshake, stuff))
 
     def __getstate__(self):
-        return self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout, self._pyroHmacKey, self._pyroStuff  # skip the connection
+        return self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout, self._pyroHmacKey, self._pyroHandshake, self._pyroStuff  # skip the connection
 
     def __setstate__(self, state):
-        self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout, self._pyroHmacKey, self._pyroStuff = state
+        self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout, self._pyroHmacKey, self._pyroHandshake, self._pyroStuff = state
         self._pyroConnection = None
         self._pyroSeq = 0
         self._pyroRawWireResponse = False
@@ -308,6 +313,7 @@ class Proxy(object):
         p._pyroMethods = set(self._pyroMethods)
         p._pyroAttrs = set(self._pyroAttrs)
         p._pyroTimeout = self._pyroTimeout
+        p._pyroHandshake = self._pyroHandshake
         p._pyroHmacKey = self._pyroHmacKey
         p._pyroRawWireResponse = self._pyroRawWireResponse
         p._pyroStuff = self._pyroStuff
@@ -444,14 +450,15 @@ class Proxy(object):
                     conn = socketutil.SocketConnection(sock, uri.object)
                     # Do handshake.
                     serializer = util.get_serializer(Pyro4.config.SERIALIZER)
-                    data = {
-                        "handshake": self._pyroHandshake(),
-                        "object": self._pyroUri.object
-                    }
-                    data, compressed = serializer.serializeData(data, Pyro4.config.COMPRESSION)
-                    flags = Pyro4.message.FLAGS_COMPRESSED if compressed else 0
+                    data = {"handshake": self._pyroHandshake}
                     if Pyro4.config.METADATA:
-                        flags |= Pyro4.message.FLAGS_META_ON_CONNECT
+                        data["object"] = self._pyroUri.object   # this is only used/needed when piggybacking the metadata on the connection response
+                        flags = Pyro4.message.FLAGS_META_ON_CONNECT
+                    else:
+                        flags = 0
+                    data, compressed = serializer.serializeData(data, Pyro4.config.COMPRESSION)
+                    if compressed:
+                        flags |= Pyro4.message.FLAGS_COMPRESSED
                     msg = message.Message(message.MSG_CONNECT, data, serializer.serializer_id, flags, self._pyroSeq,
                                           annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
                     if Pyro4.config.LOGWIRE:
@@ -490,7 +497,7 @@ class Proxy(object):
                         self._pyroConnection = conn
                         if replaceUri:
                             self._pyroUri = uri
-                        self._pyroHandshakeResponse(handshake_response)
+                        self._pyroValidateHandshake(handshake_response)
                         log.debug("connected to %s", self._pyroUri)
                     else:
                         conn.close()
@@ -586,16 +593,11 @@ class Proxy(object):
             return {"CORR": current_context.correlation_id.bytes}
         return {}
 
-    def _pyroHandshake(self):
+    def _pyroValidateHandshake(self, response):
         """
-        Returns the data object that should be passed as part of the
-        initial connection handshake message. It can be any serializable object.
-        """
-        return "hello"
-
-    def _pyroHandshakeResponse(self, response):
-        """
-        Process the initial connection handshake response data received from the daemon.
+        Process and validate the initial connection handshake response data received from the daemon.
+        Simply return without error if everything is in order.
+        Raise an exception if something is wrong and the connection should not be made.
         """
         return
 
