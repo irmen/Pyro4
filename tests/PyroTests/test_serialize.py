@@ -178,7 +178,6 @@ class SerializeTests_pickle(unittest.TestCase):
         proxy._pyroOneway = set("ghi")
         proxy._pyroTimeout = 42
         proxy._pyroHmacKey = b"secret"
-        proxy._pyroStuff = [1, 2, 3]
         proxy._pyroHandshake = "apples"
         s, c = self.ser.serializeData(proxy)
         x = self.ser.deserializeData(s, c)
@@ -189,7 +188,6 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(set("def"), x._pyroMethods)
         self.assertEqual(set("ghi"), x._pyroOneway)
         self.assertEqual(b"secret", x._pyroHmacKey)
-        self.assertEqual([1, 2, 3], x._pyroStuff)
         self.assertEqual("apples", x._pyroHandshake)
         daemon = Pyro4.core.Daemon()
         s, c = self.ser.serializeData(daemon)
@@ -214,14 +212,13 @@ class SerializeTests_pickle(unittest.TestCase):
         proxy._pyroOneway = set("ghi")
         proxy._pyroTimeout = 42
         proxy._pyroHmacKey = b"secret"
-        proxy._pyroStuff = [1, 2, 3]
         proxy._pyroHandshake = "apples"
         state = proxy.__getstate_for_dict__()
         if sys.platform == 'cli':
             b64_secret = "b64:"+base64.b64encode("secret").decode("utf-8")
         else:
             b64_secret = "b64:"+base64.b64encode(b"secret").decode("utf-8")
-        self.assertEqual(('PYRO:object@host:4444', tuple(set("ghi")), tuple(set("def")), tuple(set("abc")), 42, b64_secret, "apples", [1, 2, 3]), state)
+        self.assertEqual(('PYRO:object@host:4444', tuple(set("ghi")), tuple(set("def")), tuple(set("abc")), 42, b64_secret, "apples"), state)
         proxy2 = Pyro4.core.Proxy("PYRONAME:xxx")
         proxy2.__setstate_from_dict__(state)
         self.assertEqual(proxy, proxy2)
@@ -231,7 +228,6 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(proxy._pyroOneway, proxy2._pyroOneway)
         self.assertEqual(proxy._pyroTimeout, proxy2._pyroTimeout)
         self.assertEqual(proxy._pyroHmacKey, proxy2._pyroHmacKey)
-        self.assertEqual(proxy._pyroStuff, proxy2._pyroStuff)
         self.assertEqual(proxy._pyroHandshake, proxy2._pyroHandshake)
         daemon = Pyro4.core.Daemon()
         state = daemon.__getstate_for_dict__()

@@ -296,7 +296,6 @@ class CoreTests(unittest.TestCase):
         p1._pyroMethods = set("ghi")
         p1._pyroHmacKey = b"secret"
         p1._pyroHandshake = "apples"
-        p1._pyroStuff = [1, 2, 3]
         p2 = copy.copy(p1)
         self.assertEqual(p1, p2)
         self.assertEqual(p1._pyroUri, p2._pyroUri)
@@ -306,7 +305,6 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(p1._pyroTimeout, p2._pyroTimeout)
         self.assertEqual(p1._pyroHmacKey, p2._pyroHmacKey)
         self.assertEqual(p1._pyroHandshake, p2._pyroHandshake)
-        self.assertEqual(p1._pyroStuff, p2._pyroStuff)
 
     def testProxyOffline(self):
         # only offline stuff here.
