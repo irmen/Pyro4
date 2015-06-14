@@ -581,6 +581,7 @@ class Proxy(object):
         Default behavior is to include the correlation id from the current context (if it is set).
         If you override this, don't forget to call the original method and add to the dictionary returned from it,
         rather than simply returning a new dictionary.
+        (note that the Message may include an additional hmac annotation at the moment the message is sent)
         """
         if current_context.correlation_id:
             return {"CORR": current_context.correlation_id.bytes}
