@@ -590,7 +590,7 @@ class Proxy(object):
     def _pyroValidateHandshake(self, response):
         """
         Process and validate the initial connection handshake response data received from the daemon.
-        Simply return without error if everything is in order.
+        Simply return without error if everything is ok.
         Raise an exception if something is wrong and the connection should not be made.
         """
         return
@@ -962,7 +962,7 @@ class Daemon(object):
             msg_seq = msg.seq
             serializer = util.get_serializer_by_id(serializer_id)
             data = serializer.deserializeData(msg.data, msg.flags & Pyro4.message.FLAGS_COMPRESSED)
-            handshake_response = self.validate_handshake(conn, data["handshake"])
+            handshake_response = self.validateHandshake(conn, data["handshake"])
             if msg.flags & message.FLAGS_META_ON_CONNECT:
                 # Usually this flag will be enabled, which results in including the object metadata
                 # in the handshake response. This avoids a separate remote call to get_metadata.
@@ -989,7 +989,7 @@ class Daemon(object):
         conn.send(msg.to_bytes())
         return msg.type == message.MSG_CONNECTOK
 
-    def validate_handshake(self, conn, data):
+    def validateHandshake(self, conn, data):
         """
         Override this to create a connection validator for new client connections.
         It should return a response data object normally if the connection is okay,
@@ -997,7 +997,7 @@ class Daemon(object):
         """
         return "hello"
 
-    def client_disconnect(self, conn):
+    def clientDisconnect(self, conn):
         """
         Override this to handle a client disconnect.
         Conn is the SocketConnection object that was disconnected.

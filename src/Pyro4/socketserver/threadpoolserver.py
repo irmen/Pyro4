@@ -55,9 +55,9 @@ class ClientConnectionJob(object):
             finally:
                 with _client_disconnect_lock:
                     try:
-                        self.daemon.client_disconnect(self.csock)
+                        self.daemon.clientDisconnect(self.csock)
                     except Exception as x:
-                        log.warn("Error in client_disconnect: " + str(x))
+                        log.warn("Error in clientDisconnect: " + str(x))
                 self.csock.close()
 
     def handleConnection(self):

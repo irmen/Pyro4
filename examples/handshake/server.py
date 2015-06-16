@@ -7,7 +7,7 @@ secret_code = "pancakes"
 
 
 class CustomDaemon(Pyro4.Daemon):
-    def validate_handshake(self, conn, data):
+    def validateHandshake(self, conn, data):
         print("Daemon received handshake request from:", conn.sock.getpeername())
         print("Handshake data:", data)
         # if needed, you can inspect Pyro4.current_context
@@ -19,7 +19,7 @@ class CustomDaemon(Pyro4.Daemon):
             print("Secret code wrong! Connection refused.")
             raise ValueError("wrong secret code, connection refused")
 
-    def client_disconnect(self, conn):
+    def clientDisconnect(self, conn):
         print("Daemon client disconnects:", conn.sock.getpeername())
 
 
