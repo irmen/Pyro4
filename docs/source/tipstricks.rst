@@ -444,6 +444,11 @@ So if you want to use them with Pyro, and pass them over the wire, you'll have t
 
 Pyro via HTTP and JSON
 ======================
+
+.. sidebar:: advanced topic
+
+    This is an advanced/low-level Pyro topic.
+
 Pyro provides a HTTP gateway server that translates HTTP requests into Pyro calls. It responds with JSON messages.
 This allows clients (including web browsers) to use a simple http interface to call Pyro objects.
 Pyro's JSON serialization format is used so the gateway simply passes the JSON response messages back to the caller.
@@ -523,8 +528,13 @@ Http response status codes:
 .. index:: current_context, correlation_id
 .. _current_context:
 
-Client information on the current_context
-=========================================
+Client information on the current_context, correlation id
+=========================================================
+
+.. sidebar:: advanced topic
+
+    This is a very advanced/low-level Pyro topic.
+
 Pyro provides a *thread-local* object with some information about the current Pyro method call,
 such as the client that's performing the call. It is available as :py:data:`Pyro4.current_context`
 (shortcut to :py:data:`Pyro4.core.current_context`).
@@ -553,10 +563,9 @@ When accessed in a Pyro server it contains various attributes:
 .. py:attribute:: Pyro4.current_context.annotations
 
     (*dict*) message annotations, key is a 4-letter string and the value is a byte sequence.
-    Pyro uses this for the few internal annotations such as 'HMAC' and 'CORR', which are reserved.
+    Pyro uses this for the few internal annotations such as ``HMAC`` and ``CORR``, which are reserved.
     But you can send your own annotations along with these if you so desire.
-    You do this by overriding the :py:meth:`Pyro4.core.Proxy._pyroAnnotations` method in your client code,
-    or the :py:meth:`Pyro4.core.Daemon.annotations` method in the server code.
+    See :ref:`msg_annotations` for more information about that.
 
 .. py:attribute:: Pyro4.current_context.correlation_id
 
@@ -576,3 +585,74 @@ When accessed in a Pyro server it contains various attributes:
 
 For an example of how this information can be retrieved, and how to set the ``correlation_id``,
 see the :py:mod:`callcontext` example.
+
+
+.. index:: annotations
+.. _msg_annotations:
+
+Message annotations
+===================
+
+.. sidebar:: advanced topic
+
+    This is a very advanced/low-level Pyro topic.
+
+Pyro's wire protocol allows for a very flexible messaging format by means of *annotations*.
+Annotations are extra information chunks that are added to the pyro messages traveling
+over the network. Pyro internally uses a couple of chunks to exchange extra data between a proxy
+and a daemon: correlation ids (annotation ``CORR``) and hmac signatures
+(annotation ``HMAC``). These chunk types are reserved and you should not touch them.
+All other annotation types are free to use in your own code (and will be ignored
+by Pyro itself). There's no limit on the number of annotations you can add to a message.
+
+An annotation is a low level datastructure (to optimize the generation of network messages):
+a chunk identifier string of exactly 4 characters (such as "CODE"), and its value, a byte sequence.
+If you want to put specific data structures into an annotation chunk value, you have to
+encode them to a byte sequence yourself (ofcourse, you could utilize a Pyro serializer for this).
+When processing a custom annotation, you have to decode it yourself as well.
+Communicating annotations with Pyro is done via a normal dictionary of chunk id -> data bytes.
+Pyro will take care of encoding this dictionary into the wire message and extracting it out of a response message.
+
+*Customizing annotations:*
+
+Adding your own annotations to messages is done by overriding the :py:meth:`Pyro4.core.Proxy._pyroAnnotations` method in your client code (proxy),
+and/or the :py:meth:`Pyro4.core.Daemon.annotations` method in the server code (daemon).
+If you override any of these methods, don't forget to call the original method and add to the dictionary returned from that,
+rather than simply returning a new dictionary. Otherwise you will sabotage Pyro's internal annotations.
+
+*Reacting on annotations:*
+
+In the Daemon, you can use the :py:data:`Pyro4.current_context` to access the annotations of the message that was received.
+See :ref:`current_context`.
+In the client code you have to create a proxy subclass and override the method :py:meth:`Pyro4.core.Proxy._pyroResponseAnnotations`.
+Pyro will call this method with the dictionary of any annotations received in a response message from the daemon,
+and the message type identifier of the response message.
+
+For an example of how you can work with custom message annotations, see the :py:mod:`callcontext` example.
+
+
+.. index:: handshake
+
+Connection handshake
+====================
+
+.. sidebar:: advanced topic
+
+    This is a very advanced/low-level Pyro topic.
+
+When a proxy is first connecting to a Pyro daemon, it exchanges a few messages to set up and validate the connection.
+This is called the connection *handshake*. Part of it is the daemon returning the object's metadata (see :ref:`metadata`).
+You can hook into this mechanism and influence the data that is initially exchanged during the connection setup,
+and you can act on this data. You can disallow the connection based on this, for example.
+
+You can set your own data on the proxy attribute :py:attr:`Pyro4.core.Proxy._pyroHandshake`. You can set any serializable object.
+Pyro will send this as the handshake message to the daemon when the proxy tries to connect.
+In the daemon, override the method :py:meth:`Pyro4.core.Daemon.validateHandshake` to customize/validate the connection setup.
+This method receives the data from the proxy and you can either raise an exception if you don't want to allow the connection,
+or return a result value if you are okay with the new connection. The result value again can be any serializable object.
+This result value will be received back in the Proxy where you can act on it
+if you subclass the proxy and override :py:meth:`Pyro4.core.Proxy._pyroValidateHandshake`.
+
+
+For an example of how you can work with connections handshake validation, see the :py:mod:`handshake` example.
+It implements a (bad!) security mechanism that requires the client to supply a "secret" password to be able to connect to the daemon.

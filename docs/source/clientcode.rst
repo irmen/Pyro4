@@ -572,12 +572,13 @@ See the :file:`proxysharing` example for more details.
 
 
 .. index:: metadata
+.. _metadata:
 
 Metadata from the daemon
 ------------------------
 A proxy will obtain some meta-data from the daemon about the object it connects to.
 It does that by calling the (public) :py:meth:`Pyro4.core.DaemonObject.get_metadata` daemon-method as soon as
-it connects to the daemon. A bunch of information about the object (or rather, its class) is returned:
+it connects to the daemon [1]_. A bunch of information about the object (or rather, its class) is returned:
 what methods and attributes are defined, and which of the methods are to be called as one-way.
 This information is used to properly execute one-way calls, and to do client-side validation of calls on the proxy
 (for instance to see if a method or attribute is actually available, without having to do a round-trip to the server).
@@ -592,3 +593,10 @@ but your proxy will not know about the features of the Pyro object as mentioned 
 Disabling it also allows you to connect to older Pyro versions that don't implement the metadata protocol yet (4.26 and older).
 You can tell if you need to do this if you're getting errors in your proxy saying that 'DaemonObject' has no attribute 'get_metdata'.
 Either upgrade the Pyro version of the server, or set the ``METDATA`` config item to False in your client code.
+
+
+.. rubric:: Footnotes
+
+.. [1] Actually this is optimized in recent Pyro versions. Pyro will now immediately
+    return the object metadata as part of the response message from the initial connection handshake.
+    This avoids a separate remote call to get_metadata.

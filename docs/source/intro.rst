@@ -260,8 +260,7 @@ using the marshal serializer:
     | oneway batched calls were 23.6 times faster than normal remote calls
 
 
-
-*Footnotes:*
+.. rubric:: Footnotes
 
 .. [1] When configured to use the :py:mod:`pickle` serializer, your system may be vulnerable
     because of the sercurity risks of the pickle protocol (possibility of arbitrary
