@@ -8,12 +8,14 @@ from __future__ import with_statement
 import sys
 import time
 import socket
+import uuid
 import Pyro4.core
 import Pyro4.constants
 import Pyro4.socketutil
 import Pyro4.message
 from Pyro4.util import get_serializer_by_id
 from Pyro4.errors import DaemonError, PyroError
+from Pyro4 import current_context
 from testsupport import *
 
 
@@ -55,10 +57,11 @@ class DaemonTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.POLLTIMEOUT = 0.1
 
-    def sendHandshakeMessage(self, conn):
+    def sendHandshakeMessage(self, conn, correlation_id=None):
         ser = get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
         data, _ = ser.serializeData({"handshake": "hello", "object": Pyro4.constants.DAEMON_NAME}, False)
-        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECT, data, Pyro4.message.SERIALIZER_MARSHAL, 0, 99)
+        annotations = {"CORR": correlation_id.bytes} if correlation_id else None
+        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECT, data, Pyro4.message.SERIALIZER_MARSHAL, 0, 99, annotations=annotations)
         msg.send(conn)
 
     def testSerializerConfig(self):
@@ -396,13 +399,23 @@ class DaemonTests(unittest.TestCase):
         class CustomHandshakeDaemon(Pyro4.core.Daemon):
             def validateHandshake(self, conn, data):
                 return ["sure", "have", "fun"]
+            def annotations(self):
+                ann = super(CustomHandshakeDaemon, self).annotations()
+                ann["XYZZ"] = b"custom annotation set by daemon"
+                return ann
         with CustomHandshakeDaemon(port=0) as d:
-            self.sendHandshakeMessage(conn)
+            corr_id = uuid.uuid4()
+            self.sendHandshakeMessage(conn, correlation_id=corr_id)
+            self.assertNotEqual(corr_id, current_context.correlation_id)
             success = d._handshake(conn)
             self.assertTrue(success)
+            self.assertEqual(corr_id, current_context.correlation_id)
             msg = Pyro4.message.Message.recv(conn, hmac_key=d._pyroHmacKey)
             self.assertEqual(Pyro4.message.MSG_CONNECTOK, msg.type)
             self.assertEqual(99, msg.seq)
+            self.assertEqual(2, len(msg.annotations))
+            self.assertEqual(corr_id.bytes, msg.annotations["CORR"])
+            self.assertEqual(b"custom annotation set by daemon", msg.annotations["XYZZ"])
             ser = get_serializer_by_id(msg.serializer_id)
             data = ser.deserializeData(msg.data, msg.flags & Pyro4.message.FLAGS_COMPRESSED)
             self.assertEqual(["sure", "have", "fun"], data)

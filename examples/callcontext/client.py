@@ -23,6 +23,17 @@ class CustomAnnotationProxy(Pyro4.Proxy):
         annotations["XYZZ"] = b"Hello, I am a custom annotation from the proxy!"
         return annotations
 
+    def _pyroResponseAnnotations(self, annotations, msgtype):
+        print("    Got response (type=%d). Annotations:" % msgtype)
+        for key in annotations:
+            if key == "CORR":
+                value = uuid.UUID(bytes=annotations[key])
+            elif key == "HMAC":
+                value = "[...]"
+            else:
+                value = annotations[key]
+            print("      {0} -> {1}".format(key, value))
+
 
 uri = input("Enter the URI of the server object: ")
 with CustomAnnotationProxy(uri) as proxy:

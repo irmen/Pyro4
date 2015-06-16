@@ -178,6 +178,7 @@ class Proxy(object):
     .. automethod:: _pyroBatch
     .. automethod:: _pyroAsync
     .. automethod:: _pyroAnnotations
+    .. automethod:: _pyroResponseAnnotations
     .. automethod:: _pyroValidateHandshake
     .. autoattribute:: _pyroTimeout
     .. autoattribute:: _pyroHmacKey
@@ -396,6 +397,8 @@ class Proxy(object):
                         error = "invalid serializer in response: %d" % msg.serializer_id
                         log.error(error)
                         raise errors.SerializeError(error)
+                    if msg.annotations:
+                        self._pyroResponseAnnotations(msg.annotations, msg.type)
                     if self._pyroRawWireResponse:
                         return util.SerializerBase.decompress_if_needed(msg)
                     data = serializer.deserializeData(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
@@ -492,6 +495,8 @@ class Proxy(object):
                             self._pyroUri = uri
                         self._pyroValidateHandshake(handshake_response)
                         log.debug("connected to %s", self._pyroUri)
+                        if msg.annotations:
+                            self._pyroResponseAnnotations(msg.annotations, msg.type)
                     else:
                         conn.close()
                         err = "connect: invalid msg type %d received" % msg.type
@@ -586,6 +591,14 @@ class Proxy(object):
         if current_context.correlation_id:
             return {"CORR": current_context.correlation_id.bytes}
         return {}
+
+    def _pyroResponseAnnotations(self, annotations, msgtype):
+        """
+        Process any response annotations (dictionary set by the daemon).
+        Usually this contains the internal Pyro annotations such as hmac and correlation id,
+        and if you override the annotations method in the daemon, can contain your own annotations as well.
+        """
+        pass
 
     def _pyroValidateHandshake(self, response):
         """
@@ -958,6 +971,10 @@ class Daemon(object):
                 _log_wiredata(log, "daemon handshake received", msg)
             if msg.serializer_id not in self.__serializer_ids:
                 raise errors.SerializeError("message used serializer that is not accepted: %d" % msg.serializer_id)
+            if "CORR" in msg.annotations:
+                current_context.correlation_id = uuid.UUID(bytes=msg.annotations["CORR"])
+            else:
+                current_context.correlation_id = uuid.uuid1()
             serializer_id = msg.serializer_id
             msg_seq = msg.seq
             serializer = util.get_serializer_by_id(serializer_id)
