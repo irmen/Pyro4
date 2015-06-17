@@ -11,7 +11,8 @@ import Pyro4.util
 import Pyro4.message
 import time
 import sys
-from Pyro4 import threadutil
+import uuid
+from Pyro4 import threadutil, current_context
 import Pyro4
 from testsupport import *
 
@@ -290,7 +291,6 @@ class ServerTestsOnce(unittest.TestCase):
             p._pyroGetMetadata(known_metadata={"attrs": set(), "oneway": set(), "methods": set(["ping"])})
             self.assertEqual(set(), p._pyroAttrs)
 
-
     def testProxyAttrsMetadataOff(self):
         try:
             Pyro4.config.METADATA = False
@@ -329,6 +329,27 @@ class ServerTestsOnce(unittest.TestCase):
                 self.assertTrue("value" in p._pyroAttrs)
         finally:
             Pyro4.config.METADATA = True
+
+    def testProxyAnnotations(self):
+        class CustomAnnotationsProxy(Pyro4.core.Proxy):
+            def __init__(self, uri, response):
+                self.__dict__["response"] = response
+                super(CustomAnnotationsProxy, self).__init__(uri)
+            def _pyroAnnotations(self):
+                ann = super(CustomAnnotationsProxy, self)._pyroAnnotations()
+                ann["XYZZ"] = b"some data"
+                self.__dict__["response"]["annotations_sent"] = ann
+                return ann
+            def _pyroResponseAnnotations(self, annotations, msgtype):
+                self.__dict__["response"]["annotations"] = annotations
+                self.__dict__["response"]["msgtype"] = msgtype
+        response = {}
+        corr_id = current_context.correlation_id = uuid.uuid4()
+        with CustomAnnotationsProxy(self.objectUri, response) as p:
+            p.ping()
+        self.assertDictEqual({"CORR": corr_id.bytes, "XYZZ": b"some data"}, p.__dict__["response"]["annotations_sent"])
+        self.assertEqual(Pyro4.message.MSG_RESULT, p.__dict__["response"]["msgtype"])
+        self.assertDictEqual({"CORR": corr_id.bytes}, p.__dict__["response"]["annotations"])
 
     def testExposedNotRequired(self):
         try:
