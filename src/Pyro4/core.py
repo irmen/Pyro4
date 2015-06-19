@@ -448,7 +448,9 @@ class Proxy(object):
                     serializer = util.get_serializer(Pyro4.config.SERIALIZER)
                     data = {"handshake": self._pyroHandshake}
                     if Pyro4.config.METADATA:
-                        data["object"] = self._pyroUri.object   # this is only used/needed when piggybacking the metadata on the connection response
+                        # the object id is only used/needed when piggybacking the metadata on the connection response
+                        # make sure to pass the resolved object id instead of the logical id
+                        data["object"] = uri.object
                         flags = Pyro4.message.FLAGS_META_ON_CONNECT
                     else:
                         flags = 0
@@ -748,37 +750,67 @@ def oneway(method):
     return method
 
 
-def expose(method_or_class):
+def expose(instance_mode="session", instance_creator=None):
     """
-    decorator to mark a method or class to be exposed for remote calls (relevant if REQUIRE_EXPOSE=True)
+    Decorator to mark a method or class to be exposed for remote calls (relevant if REQUIRE_EXPOSE=True)
+    It can be used in to ways:
+
+    The normal style where you (optionally) provide some parameters such as instance_mode::
+
+        @expose( instance_mode="...", instance_creator=... )
+        def method(self,...)   or   class X()...
+
+    And the older style where you directly apply it without parameters on a method or class::
+
+        @expose
+        def method(self, ...)  or  class X()...
+
     """
-    if inspect.isdatadescriptor(method_or_class):
-        func = method_or_class.fget or method_or_class.fset or method_or_class.fdel
-        if util.is_private_attribute(func.__name__):
+    def _expose(method_or_class, instance_mode, instance_creator):
+        if instance_mode not in ("single", "session", "percall"):
+            raise ValueError("invalid instance mode: "+instance_mode)
+        if instance_creator and not callable(instance_creator):
+            raise TypeError("instance_creator must be a callable")
+        if inspect.isdatadescriptor(method_or_class):
+            func = method_or_class.fget or method_or_class.fset or method_or_class.fdel
+            if util.is_private_attribute(func.__name__):
+                raise AttributeError("exposing private names (starting with _) is not allowed")
+            func._pyroExposed = True
+            return method_or_class
+        if util.is_private_attribute(method_or_class.__name__):
             raise AttributeError("exposing private names (starting with _) is not allowed")
-        func._pyroExposed = True
+        if inspect.isclass(method_or_class):
+            clazz = method_or_class
+            log.debug("exposing all members of %r, instancemode %s, instancecreator %r.", clazz, instance_mode, instance_creator)
+            clazz._pyroInstancing = (instance_mode, instance_creator)
+            for name in clazz.__dict__:
+                if util.is_private_attribute(name):
+                    continue
+                thing = getattr(clazz, name)
+                if inspect.isfunction(thing):
+                    thing._pyroExposed = True
+                elif inspect.ismethod(thing):
+                    thing.__func__._pyroExposed = True
+                elif inspect.isdatadescriptor(thing):
+                    if getattr(thing, "fset", None):
+                        thing.fset._pyroExposed = True
+                    if getattr(thing, "fget", None):
+                        thing.fget._pyroExposed = True
+                    if getattr(thing, "fdel", None):
+                        thing.fdel._pyroExposed = True
+            clazz._pyroExposed = True
+            return clazz
+        if instance_creator is not None:
+            raise ValueError("instance_creator only allowed when exposing a class")
+        method_or_class._pyroExposed = True
         return method_or_class
-    if util.is_private_attribute(method_or_class.__name__):
-        raise AttributeError("exposing private names (starting with _) is not allowed")
-    if inspect.isclass(method_or_class):
-        log.debug("exposing all members of %r", method_or_class)
-        for name in method_or_class.__dict__:
-            if util.is_private_attribute(name):
-                continue
-            thing = getattr(method_or_class, name)
-            if inspect.isfunction(thing):
-                thing._pyroExposed = True
-            elif inspect.ismethod(thing):
-                thing.__func__._pyroExposed = True
-            elif inspect.isdatadescriptor(thing):
-                if getattr(thing, "fset", None):
-                    thing.fset._pyroExposed = True
-                if getattr(thing, "fget", None):
-                    thing.fget._pyroExposed = True
-                if getattr(thing, "fdel", None):
-                    thing.fdel._pyroExposed = True
-    method_or_class._pyroExposed = True
-    return method_or_class
+    if isinstance(instance_mode, basestring):
+        # new style expose with instance_mode argument etc.
+        def _expose_new(method_or_class):
+            return _expose(method_or_class, instance_mode, instance_creator)
+        return _expose_new
+    # old-style expose decorator where it is directly applied to a method or class without using parameters
+    return _expose(method_or_class=instance_mode, instance_mode="single", instance_creator=None)
 
 
 @expose
@@ -865,6 +897,7 @@ class Daemon(object):
         log.debug("accepted serializers: %s" % Pyro4.config.SERIALIZERS_ACCEPTED)
         log.debug("pyro protocol version: %d  pickle version: %d" % (constants.PROTOCOL_VERSION, Pyro4.config.PICKLE_PROTOCOL_VERSION))
         self.__pyroHmacKey = None
+        self._pyroInstances = {}   # pyro objects for instance_mode=single (singletons, just one per daemon)
 
     @property
     def _pyroHmacKey(self):
@@ -1062,6 +1095,8 @@ class Daemon(object):
             del msg  # invite GC to collect the object, don't wait for out-of-scope
             obj = self.objectsById.get(objId)
             if obj is not None:
+                if inspect.isclass(obj):
+                    obj = self._getInstance(obj, conn)
                 if kwargs and sys.version_info < (2, 6, 5):
                     # Python before 2.6.5 doesn't accept unicode keyword arguments
                     kwargs = dict((str(k), kwargs[k]) for k in kwargs)
@@ -1134,6 +1169,43 @@ class Daemon(object):
             if isCallback or isinstance(xv, (errors.CommunicationError, errors.SecurityError)):
                 raise  # re-raise if flagged as callback, communication or security error.
 
+    def _getInstance(self, clazz, conn):
+        """
+        Find or create a new instance of the class
+        """
+        def createInstance(clazz, creator):
+            if creator:
+                obj = creator()
+                if isinstance(obj, clazz):
+                    return obj
+                raise TypeError("instance creator returned object of different type")
+            return clazz()
+        instance_mode, instance_creator = clazz._pyroInstancing
+        if instance_mode == "single":
+            # create and use one singleton instance of this class (not a global singleton, just exactly one per daemon)
+            instance = self._pyroInstances.get(clazz)
+            if not instance:
+                log.debug("instancemode %s: creating new pyro object for %s", instance_mode, clazz)
+                instance = createInstance(clazz, instance_creator)
+                self._pyroInstances[clazz] = instance
+            return instance
+        elif instance_mode == "session":
+            # Create and use one instance for this proxy connection
+            # the instances are kept on the connection object.
+            # (this is the default instance mode when using new style @expose)
+            instance = conn.pyroInstances.get(clazz)
+            if not instance:
+                log.debug("instancemode %s: creating new pyro object for %s", instance_mode, clazz)
+                instance = createInstance(clazz, instance_creator)
+                conn.pyroInstances[clazz] = instance
+            return instance
+        elif instance_mode == "percall":
+            # create and use a new instance just for this call
+            log.debug("instancemode %s: creating new pyro object for %s", instance_mode, clazz)
+            return createInstance(clazz, instance_creator)
+        else:
+            raise errors.DaemonError("invalid instancemode in registered class")
+
     def _sendExceptionResponse(self, connection, seq, serializer_id, exc_value, tbinfo):
         """send an exception back including the local traceback info"""
         exc_value._pyroTraceback = tbinfo
@@ -1159,7 +1231,7 @@ class Daemon(object):
             _log_wiredata(log, "daemon wiredata sending (error response)", msg)
         connection.send(msg.to_bytes())
 
-    def register(self, obj, objectId=None, force=False):
+    def register(self, obj_or_class, objectId=None, force=False):
         """
         Register a Pyro object under the given id. Note that this object is now only
         known inside this daemon, it is not automatically available in a name server.
@@ -1171,21 +1243,24 @@ class Daemon(object):
                 raise TypeError("objectId must be a string or None")
         else:
             objectId = "obj_" + uuid.uuid4().hex  # generate a new objectId
+        if inspect.isclass(obj_or_class):
+            if not hasattr(obj_or_class, "_pyroInstancing"):
+                obj_or_class._pyroInstancing = ("session", None)
         if not force:
-            if hasattr(obj, "_pyroId") and obj._pyroId != "":  # check for empty string is needed for Cython
+            if hasattr(obj_or_class, "_pyroId") and obj_or_class._pyroId != "":  # check for empty string is needed for Cython
                 raise errors.DaemonError("object already has a Pyro id")
             if objectId in self.objectsById:
                 raise errors.DaemonError("an object was already registered with that id")
         # set some pyro attributes
-        obj._pyroId = objectId
-        obj._pyroDaemon = self
+        obj_or_class._pyroId = objectId
+        obj_or_class._pyroDaemon = self
         if Pyro4.config.AUTOPROXY:
             # register a custom serializer for the type to automatically return proxies
             # we need to do this for all known serializers
             for ser in util._serializers.values():
-                ser.register_type_replacement(type(obj), pyroObjectToAutoProxy)
-        # register the object in the mapping
-        self.objectsById[obj._pyroId] = obj
+                ser.register_type_replacement(type(obj_or_class), pyroObjectToAutoProxy)
+        # register the object/class in the mapping
+        self.objectsById[obj_or_class._pyroId] = obj_or_class
         return self.uriFor(objectId)
 
     def unregister(self, objectOrId):
@@ -1236,13 +1311,17 @@ class Daemon(object):
         """
         Get a fully initialized Pyro Proxy for the given object (or object id) for this daemon.
         If nat is False, the configured NAT address (if any) is ignored.
+        The object or id must be registered in this daemon, or you'll get an exception.
+        (you can't get a proxy for an unknown object)
         """
         uri = self.uriFor(objectOrId, nat)
         proxy = Proxy(uri)
-        registered_object = self.objectsById.get(uri.object)
-        if registered_object:
-            meta = util.get_exposed_members(registered_object, only_exposed=Pyro4.config.REQUIRE_EXPOSE)
-            proxy._pyroGetMetadata(known_metadata=meta)
+        try:
+            registered_object = self.objectsById[uri.object]
+        except KeyError:
+            raise errors.DaemonError("object isn't registered in this daemon")
+        meta = util.get_exposed_members(registered_object, only_exposed=Pyro4.config.REQUIRE_EXPOSE)
+        proxy._pyroGetMetadata(known_metadata=meta)
         return proxy
 
     def close(self):

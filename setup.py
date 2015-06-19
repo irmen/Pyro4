@@ -61,6 +61,7 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
             "Programming Language :: Python :: 3.2",
             "Programming Language :: Python :: 3.3",
             "Programming Language :: Python :: 3.4",
+            "Programming Language :: Python :: 3.5",
             "Topic :: Software Development :: Object Brokering",
             "Topic :: System :: Distributed Computing",
             "Topic :: System :: Networking"

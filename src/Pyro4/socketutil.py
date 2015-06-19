@@ -431,11 +431,12 @@ except ImportError:
 
 class SocketConnection(object):
     """A wrapper class for plain sockets, containing various methods such as :meth:`send` and :meth:`recv`"""
-    __slots__ = ["sock", "objectId"]
+    __slots__ = ["sock", "objectId", "pyroInstances"]
 
     def __init__(self, sock, objectId=None):
         self.sock = sock
         self.objectId = objectId
+        self.pyroInstances = {}    # pyro objects for instance_mode=session
 
     def __del__(self):
         self.close()
