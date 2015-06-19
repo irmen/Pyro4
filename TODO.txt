@@ -2,11 +2,10 @@ Ideas / TODO
 
 The most pressing issues can be found in the issue tracker on Github.
 
+* register class instead of object and define instancing strategy: singleton, session, per_call
+* provide optional factory method / otherwise default parameterless constructor is used
 * Make Pyro support listening to multiple network interfaces at the same time (and returning the correct URI from the daemon. Name server is harder...)
 * add multiprocess server (forking?) based on multiprocessing?
-* object activation / object registration strategies: instance_per_call, instance_per_connection, shared_instance
-* this requires that the daemon can instantiate your object's class instead of user code, so you register a class and not an object
-* what about initialization methods?
 * concurrency strategies in the daemon? (reentrant, single)
 * Pyro-over-SSH (not SSL/TLS) using Paramiko?
 
