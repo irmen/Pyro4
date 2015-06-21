@@ -1016,13 +1016,15 @@ class Daemon(object):
             if msg.flags & message.FLAGS_META_ON_CONNECT:
                 # Usually this flag will be enabled, which results in including the object metadata
                 # in the handshake response. This avoids a separate remote call to get_metadata.
+                flags = message.FLAGS_META_ON_CONNECT
                 handshake_response = {
                     "handshake": handshake_response,
                     "meta": self.objectsById[constants.DAEMON_NAME].get_metadata(data["object"])
                 }
+            else:
+                flags = 0
             data, compressed = serializer.serializeData(handshake_response, Pyro4.config.COMPRESSION)
             msgtype = message.MSG_CONNECTOK
-            flags = message.FLAGS_META_ON_CONNECT if Pyro4.config.METADATA else 0
             if compressed:
                 flags |= message.FLAGS_COMPRESSED
         except Exception as x:
