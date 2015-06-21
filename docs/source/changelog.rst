@@ -19,7 +19,7 @@ Change Log
   be used as the hook to handle new connections)
 - you can now register a class on the Daemon instead of an object, and define instancing strategy: singleton, session, percall
 - you can provide an optional factory method to create instances of your pyro server class when needed according to the instancing_strategy
-- added handshake and instancemode examples
+- added handshake, instancemode and usersession examples
 - fixed callcontext example daemon to actually return a custom annotation
 - fixed benchmark/connections example
 - httpgateway recognises ``X-Pyro-Correlation-Id`` http header on requests

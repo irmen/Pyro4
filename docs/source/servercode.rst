@@ -181,11 +181,12 @@ Normally Pyro will simply use a default parameterless constructor call to create
 If you need special initialization or the class's init method requires parameters, you have to specify
 a ``instance_creator`` callable as well. Pyro will then use that to create an instance of your class.
 
-See the :file:`instancemode` example to learn about various ways to use this.
-
 Anyway, when you run this, the uri will be printed and the server sits waiting for requests.
 The uri that is being printed looks a bit like this: ``PYRO:obj_dcf713ac20ce4fb2a6e72acaeba57dfd@localhost:51850``
 It can be used in a *client* program to create a proxy and access your Pyro object with.
+
+See the :file:`instancemode` example to learn about various ways to use this.
+See the :file:`usersession` example to learn how you could use it to build user-bound resource access without concurrency problems.
 
 .. index:: private methods
 

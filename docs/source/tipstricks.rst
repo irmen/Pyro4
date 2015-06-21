@@ -570,7 +570,7 @@ When accessed in a Pyro server it contains various attributes:
 .. py:attribute:: Pyro4.current_context.correlation_id
 
     (:py:class:`uuid.UUID`, optional)  correlation id of the current request / response.
-    If you set this before calling a method on a Pyro proxy, Pyro will transfer the
+    If you set this (in your client code) before calling a method on a Pyro proxy, Pyro will transfer the
     correlation id to the server context. If the server on their behalf invokes another
     Pyro method, the same correlation id will be passed along. This way it is possible
     to relate all remote method calls that originate from a single call.
@@ -584,7 +584,8 @@ When accessed in a Pyro server it contains various attributes:
 
 
 For an example of how this information can be retrieved, and how to set the ``correlation_id``,
-see the :py:mod:`callcontext` example.
+see the :file:`callcontext` example.
+See the :file:`usersession` example to learn how you could use it to build user-bound resource access without concurrency problems.
 
 
 .. index:: annotations
