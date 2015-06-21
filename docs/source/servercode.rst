@@ -44,13 +44,13 @@ you can tell Pyro to *require* the explicit use of the ``@expose`` decorator (de
 available for remote access. If something doesn't have the decorator, it is not remotely accessible.
 This behavior can be chosen by setting the ``REQUIRE_EXPOSE`` config item to ``True``. It is set to ``False`` by default.
 
-**Exposing methods and attributes for remote access: the @expose decorator**
+**the @expose decorator: exposing classes, methods and attributes for remote access**
 
-The ``@Pyro4.expose`` decorator is provided that lets you mark the following items to be available for remote access:
+The ``@Pyro4.expose`` decorator lets you mark the following items to be available for remote access:
 
-- classes (exposing a class has the effect of exposing every method and property of the class automatically)
 - methods (including classmethod and staticmethod. You cannot expose a private method, i.e. name starting with underscore). You *can* expose a 'dunder' method with double underscore such as ``__len__``. There is a list of dunder methods that will never be remoted though (because they are essential to let the Pyro proxy function correctly).
 - properties (will be available as remote attributes on the proxy)
+- classes (exposing a class has the effect of exposing every method and property of the class automatically)
 
 Remember that you must set the ``REQUIRE_EXPOSE`` config item to ``True`` to let all this have any effect!
 Also because it is not possible to decorate attributes on a class, it is required to provide a @property for them
@@ -90,6 +90,48 @@ Here's a piece of example code that shows how a partially exposed Pyro class may
             self.value = value
 
 
+.. index:: instance mode, instance creator
+
+**Exposing a class: instance_mode and instance_creator**
+
+When publising objects as Pyro objects you have the choice of either publishing one specific
+object itself, or a Python class. If you choose an object itself, Pyro will use that single
+object to handle *all* remote method calls.
+
+If you choose to expose and register a class instead, Pyro will create instances of it to
+handle the remote calls according to the "instance mode" setting.
+You set this via the ``instance_mode`` parameter of the ``@expose`` decorator. There are three choices:
+
+- ``single``: a single instance will be created and used for all method calls. This is the same as
+  creating and registering a single object yourself.
+- ``session``: a new instance is created for every new proxy connection. This is the default.
+- ``percall``: a new instance is creaded for every single method call.
+
+Normally Pyro will simply use a default parameterless constructor call to create the instance.
+If you need special initialization or the class's init method requires parameters, you have to specify
+a ``instance_creator`` callable as well. Pyro will then use that to create an instance of your class.
+
+As an example, the following code will make the class ``Thingy`` into a Pyro object, accessible via the name
+"example.thingy".  It will have one fresh instance per method call and Pyro uses the ``creator`` function
+to create these new instances (it knows about how to pass the three arguments to the init method)::
+
+    import Pyro4
+
+    def creator():
+        obj = Thingy(1,2,3)
+        return obj
+
+    @Pyro4.expose(instance_mode="percall",  instance_creator=creator)
+    class Thingy(object):
+        def __init__(self, p1, p2, p3):
+            pass
+
+    d = Pyro4.Daemon()
+    d.register(Thingy, "example.thingy")
+
+See the :file:`instancemode` example to learn about various ways to use this.
+
+.. index:: oneway decorator
 
 **Specifying one-way methods using the @Pyro4.oneway decorator:**
 

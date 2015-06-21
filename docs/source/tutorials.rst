@@ -89,6 +89,8 @@ Pyro object
     This is a normal Python object but it is registered with Pyro so that you can access it remotely.
     Pyro objects are written just as any other object but the fact that Pyro knows something about
     them makes them special, in the way that you can call methods on them from other programs.
+    A class can also be a Pyro object, but then you will also have to tell Pyro about how it
+    should create actual objects from that class when handling remote calls.
 
 Pyro daemon (server)
     This is the part of Pyro that listens for remote method calls, dispatches them
