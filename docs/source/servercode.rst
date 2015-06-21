@@ -111,8 +111,8 @@ Normally Pyro will simply use a default parameterless constructor call to create
 If you need special initialization or the class's init method requires parameters, you have to specify
 a ``instance_creator`` callable as well. Pyro will then use that to create an instance of your class.
 
-As an example, the following code will make the class ``Thingy`` into a Pyro object, accessible via the name
-"example.thingy".  It will have one fresh instance per method call and Pyro uses the ``creator`` function
+As an example, the following code will make the class ``Thingy`` into a Pyro object.
+It will have one fresh instance per method call and Pyro uses the ``creator`` function
 to create these new instances (it knows about how to pass the three arguments to the init method)::
 
     import Pyro4
@@ -125,9 +125,6 @@ to create these new instances (it knows about how to pass the three arguments to
     class Thingy(object):
         def __init__(self, p1, p2, p3):
             pass
-
-    d = Pyro4.Daemon()
-    d.register(Thingy, "example.thingy")
 
 See the :file:`instancemode` example to learn about various ways to use this.
 
@@ -184,6 +181,24 @@ you create a daemon, register the object(s) with the daemon, and then enter the 
     print(uri)
     daemon.requestLoop()
 
+You can also let Pyro create instances for you and just register the *class* that you want to expose.
+Unless you tell Pyro otherwise (see :ref:`decorating-pyro-class`), Pyro creates an instance of your class
+per *session* (=proxy connection) via a parameterless constructor. By registering the class instead of
+an instance object directly, you have some flexibility in controlling what instances are used for a remote
+method call. An example of registering a class that will have one new instance for every method call::
+
+    import Pyro4
+
+    @Pyro4.expose(instance_mode="percall")
+    class MyPyroThing(object):
+        pass
+
+    daemon=Pyro4.Daemon()
+    uri=daemon.register(MyPyroThing)
+    print(uri)
+    daemon.requestLoop()
+
+
 After printing the uri, the server sits waiting for requests.
 The uri that is being printed looks a bit like this: ``PYRO:obj_dcf713ac20ce4fb2a6e72acaeba57dfd@localhost:51850``
 It can be used in a *client* program to create a proxy and access your Pyro object with.
@@ -215,7 +230,7 @@ It can be used in a *client* program to create a proxy and access your Pyro obje
 
 Oneliner Pyro object publishing: serveSimple()
 ----------------------------------------------
-Ok not really a one-liner, but one statement: use :py:meth:`serveSimple` to publish a dict of objects and start Pyro's request loop.
+Ok not really a one-liner, but one statement: use :py:meth:`serveSimple` to publish a dict of objects/classes and start Pyro's request loop.
 The code above could also be written as::
 
     import Pyro4
@@ -223,9 +238,11 @@ The code above could also be written as::
     class MyPyroThing(object):
         pass
 
+    obj = MyPyroThing()
     Pyro4.Daemon.serveSimple(
         {
-            MyPyroThing(): None
+            MyPyroThing: None,    # register the class
+            obj: None             # register one specific instance
         },
         ns=False)
 
@@ -237,7 +254,7 @@ You can perform some limited customization:
     The objects will be registered automatically in the name server if you specify this.
     API reference: :py:func:`Pyro4.core.Daemon.serveSimple`
 
-    :param objects: mapping of objects to names, these are the Pyro objects that will be hosted by the daemon, using the names you provide as values in the mapping.
+    :param objects: mapping of objects/classes to names, these are the Pyro objects that will be hosted by the daemon, using the names you provide as values in the mapping.
         Normally you'll provide a name yourself but in certain situations it may be useful to set it to ``None``. Read below for the exact behavior there.
     :type objects: dict
     :param host: optional hostname where the daemon should be accessible on. Necessary if you want to access the daemon from other machines.
@@ -319,18 +336,18 @@ It has a few optional arguments when you create it:
 
 
 .. index::
-    double: Pyro daemon; registering objects
+    double: Pyro daemon; registering objects/classes
 
-Registering objects
--------------------
+Registering objects/classes
+---------------------------
 Every object you want to publish as a Pyro object needs to be registered with the daemon.
 You can let Pyro choose a unique object id for you, or provide a more readable one yourself.
 
-.. method:: Daemon.register(obj [, objectId=None, force=False])
+.. method:: Daemon.register(obj_or_class [, objectId=None, force=False])
 
     Registers an object with the daemon to turn it into a Pyro object.
 
-    :param obj: the object to register
+    :param obj_or_class: the instance or class to register
     :param objectId: optional custom object id (must be unique). Default is to let Pyro create one for you.
     :type objectId: str or None
     :param force: optional flag to force registration, normally Pyro checks if an object had already been registered.
@@ -537,34 +554,35 @@ appropriate. If in doubt, go with the default setting.
 .. index::
     double: server type; threaded
 
-#. threaded server (servertype ``"thread"``, this is the default)
+1. threaded server (servertype ``"thread"``, this is the default)
     This server uses a thread pool to handle incoming proxy connections.
     The size of the pool is configurable via various config items.
     Every proxy on a client that connects to the daemon will be assigned to a thread to handle
     the remote method calls. This way multiple calls can potentially be processed concurrently.
-    This means your Pyro object must be *thread-safe*! If you access a shared resource from
-    your Pyro object you may need to take thread locking measures such as using Queues.
+    This means your Pyro object may have to be made *thread-safe*!
+    If you registered the pyro object's class with instance mode ``single``, that single instance
+    will be called concurrently from different threads. If you used instance mode ``session`` or ``percall``,
+    the instance will not be called from different threads because a new one is made per connection or even per call.
+    But in every case, if you access a shared resource from your Pyro object,
+    you may need to take thread locking measures such as using Queues.
     If the thread pool is too small for the number of proxy connections, new proxy connections will
     be put to wait until another proxy disconnects from the server.
 
 .. index::
     double: server type; multiplex
 
-#. multiplexed server (servertype ``"multiplex"``)
+2. multiplexed server (servertype ``"multiplex"``)
     This server uses a select (or poll, if available) based connection multiplexer to process
     all remote method calls sequentially. No threads are used in this server. It means
     only one method call is running at a time, so if it takes a while to complete, all other
     calls are waiting for their turn (even when they are from different proxies).
+    The instance mode with which you registered the pyro object's class, won't change the way
+    the concurrent access to the instance is done: in all cases, there is only one call active at all times.
+    Your objects will never be called concurrently from different threads (because there are no threads).
 
 .. note::
     If the ``ONEWAY_THREADED`` config item is enabled (it is by default), *oneway* method calls will
     be executed in a separate worker thread, regardless of the server type you're using.
-
-.. note::
-    It must be pretty obvious but the following is a very important concept so it is repeated
-    once more to be 100% clear:
-    Currently, you register *objects* with Pyro, not *classes*. This means remote method calls
-    to a certain Pyro object always run on the single instance that you registered with Pyro.
 
 .. index::
     double: server type; what to choose?
