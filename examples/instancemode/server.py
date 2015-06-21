@@ -8,6 +8,7 @@ class OldStyle(object):
         print("[%s] %s.msg: %s" % (id(self), self.__class__.__name__, message))
         return id(self)
 
+
 @Pyro4.expose(instance_mode="single")
 class SingleInstance(object):
     def msg(self, message):

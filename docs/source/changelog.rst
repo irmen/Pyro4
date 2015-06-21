@@ -17,7 +17,7 @@ Change Log
   connection response (this avoids a separate remote call to get_metadata). New proxy connections are ~50% faster.
 - added ``Daemon.clientDisconnect()`` as a hook for when clients disconnect (``Daemon.validateHandshake`` can
   be used as the hook to handle new connections)
-- you can now register a class on the Daemon instead of an object, and define instancing strategy: singleton, session, per_call
+- you can now register a class on the Daemon instead of an object, and define instancing strategy: singleton, session, percall
 - you can provide an optional factory method to create instances of your pyro server class when needed according to the instancing_strategy
 - added handshake and instancemode examples
 - fixed callcontext example daemon to actually return a custom annotation

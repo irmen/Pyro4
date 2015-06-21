@@ -311,7 +311,7 @@ listens for and processes incoming remote method calls)::
                 },
                 ns = False)
 
-For now, ignore de details of what exactly the :py:meth:`serveSimple` method call does.
+For now, ignore the details of what exactly the :py:meth:`serveSimple` method call does.
 Next up is addding a little ``main`` function so it will be started correctly, which should
 make the code now look like this (:file:`warehouse.py`)::
 

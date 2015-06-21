@@ -1239,6 +1239,11 @@ class Daemon(object):
         known inside this daemon, it is not automatically available in a name server.
         This method returns a URI for the registered object.
         Pyro checks if an object is already registered, unless you set force=True.
+        You can register a class or an object (instance) directly.
+        For a class, Pyro will create instances of it to handle the remote calls according
+        to the instance_mode (set via @expose on the class). The default there is one object
+        per session (=proxy connection). If you register an object directly, Pyro will use
+        that single object for *all* remote calls.
         """
         if objectId:
             if not isinstance(objectId, basestring):
@@ -1267,8 +1272,8 @@ class Daemon(object):
 
     def unregister(self, objectOrId):
         """
-        Remove an object from the known objects inside this daemon.
-        You can unregister an object directly or with its id.
+        Remove a class or object from the known objects inside this daemon.
+        You can unregister the class/object directly, or with its id.
         """
         if objectOrId is None:
             raise ValueError("object or objectid argument expected")

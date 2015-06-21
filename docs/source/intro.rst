@@ -29,8 +29,8 @@ Here's a quick overview of Pyro's features:
 - supports different serializers (serpent, json, marshal, pickle).
 - support for all Python data types that are pickleable when using the 'pickle' serializer [1]_.
 - runs on normal Python 2.x, Python **3.x**, IronPython, Pypy.
-- works between systems on different architectures and operating systems (64-bit, 32-bit, Intel, PowerPC...)
-- designed to be very easy to use and get out of your way as much as possible.
+- works between systems on different architectures and operating systems (64-bit, 32-bit, Intel, PowerPC, Windows, Linux, OSX...)
+- designed to be very easy to use and get out of your way as much as possible, but still provide a lot of flexibility when you do need it
 - name server that keeps track of your object's actual locations so you can move them around transparently.
 - support for automatic reconnection to servers in case of interruptions.
 - automatic proxy-ing of Pyro objects which means you can return references to remote objects just as if it were normal objects.
@@ -41,6 +41,7 @@ Here's a quick overview of Pyro's features:
 - remote exceptions will be raised in the caller, as if they were local. You can extract detailed remote traceback information.
 - stable network communication code that works reliably on many platforms.
 - possibility to use Pyro's own event loop, or integrate it into your own (or third party) event loop.
+- three different possible instance modes for your remote objects (singleton, one per session, one per call)
 - many simple examples included to show various features and techniques.
 - large amount of unit tests and high test coverage.
 - lightweight native client library available for .NET and Java (provided separately, called Pyrolite).
@@ -125,10 +126,8 @@ First let's see the server code::
             return "Hello, {0}. Here is your fortune message:\n" \
                    "Behold the warranty -- the bold print giveth and the fine print taketh away.".format(name)
 
-    greeting_maker = GreetingMaker()
-
     daemon = Pyro4.Daemon()                # make a Pyro daemon
-    uri = daemon.register(greeting_maker)  # register the greeting object as a Pyro object
+    uri = daemon.register(GreetingMaker)   # register the greeting maker as a Pyro object
 
     print("Ready. Object uri =", uri)      # print the uri so we can use it in the client later
     daemon.requestLoop()                   # start the event loop of the server to wait for calls
@@ -178,11 +177,9 @@ We'll have to modify a few lines in :file:`greeting-server.py` to make it regist
             return "Hello, {0}. Here is your fortune message:\n" \
                    "Tomorrow's lucky number is 12345678.".format(name)
 
-    greeting_maker = GreetingMaker()
-
     daemon = Pyro4.Daemon()                # make a Pyro daemon
     ns = Pyro4.locateNS()                  # find the name server
-    uri = daemon.register(greeting_maker)  # register the greeting object as a Pyro object
+    uri = daemon.register(GreetingMaker)   # register the greeting maker as a Pyro object
     ns.register("example.greeting", uri)   # register the object with a name in the name server
 
     print("Ready.")
@@ -234,30 +231,24 @@ and the server code details: :ref:`publish-objects`. The use of the name server 
 
 Performance
 ===========
-Pyro4 is pretty fast at what it does.
-Here are some measurements done between two processes running on a Core 2 Quad 3Ghz, Windows 7 machine,
-using the marshal serializer:
+Pyro4 is pretty fast. On a typical networked system you can expect:
 
-:benchmark/connections.py:
-    | 2000 connections in 2.165 sec = 924 conn/sec
-    | 2000 new proxy calls in 2.628 sec = 761 calls/sec
-    | 10000 calls in 1.146 sec = 8726 calls/sec
-:benchmark/client.py:
-    | total time 1.859 seconds
-    | total method calls: 15000
-    | avg. time per method call: 0.124 msec (8068/sec) (serializer: marshal)
-:hugetransfer/client.py:
-    | It took 0.49 seconds to transfer 50 mb.
-    | That is 104690 kb/sec. = 102.2 mb/sec. (serializer: marshal)
-:batchedcalls/client.py:
-    | (using pickle serializer)
-    | Batched remote calls...:
-    | total time taken 0.28 seconds (142300 calls/sec)
-    | batched calls were 14.3 times faster than normal remote calls
+- a few hundred new proxy connections per second to one sever
+- similarly, a few hundred initial remote calls per second to one server
+- a few thousand remote method calls per second on a single proxy
+- tens of thousands batched or oneway remote calls per second
+- 10-100 Mb/sec data transfer
 
-    | Oneway batched remote calls...:
-    | total time taken 0.17 seconds (235200 calls/sec)
-    | oneway batched calls were 23.6 times faster than normal remote calls
+Results do vary depending on many factors such as:
+
+- network speed
+- machine and operating system
+- I/O or CPU bound workload
+- contents and size of the pyro call request and response messages
+- the serializer being used
+- python version being used
+
+Experiment with the ``benchmark``, ``batchedcalls`` and ``hugetransfer`` examples to see what results you get on your own setup.
 
 
 .. rubric:: Footnotes
