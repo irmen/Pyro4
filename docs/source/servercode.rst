@@ -90,44 +90,6 @@ Here's a piece of example code that shows how a partially exposed Pyro class may
             self.value = value
 
 
-.. index:: instance mode, instance creator
-
-**Exposing a class: instance_mode and instance_creator**
-
-When publising objects as Pyro objects you have the choice of either publishing one specific
-object itself, or a Python class. If you choose an object itself, Pyro will use that single
-object to handle *all* remote method calls.
-
-If you choose to expose and register a class instead, Pyro will create instances of it to
-handle the remote calls according to the "instance mode" setting.
-You set this via the ``instance_mode`` parameter of the ``@expose`` decorator. There are three choices:
-
-- ``single``: a single instance will be created and used for all method calls. This is the same as
-  creating and registering a single object yourself.
-- ``session``: a new instance is created for every new proxy connection. This is the default.
-- ``percall``: a new instance is creaded for every single method call.
-
-Normally Pyro will simply use a default parameterless constructor call to create the instance.
-If you need special initialization or the class's init method requires parameters, you have to specify
-a ``instance_creator`` callable as well. Pyro will then use that to create an instance of your class.
-
-As an example, the following code will make the class ``Thingy`` into a Pyro object.
-It will have one fresh instance per method call and Pyro uses the ``creator`` function
-to create these new instances (it knows about how to pass the three arguments to the init method)::
-
-    import Pyro4
-
-    def creator():
-        obj = Thingy(1,2,3)
-        return obj
-
-    @Pyro4.expose(instance_mode="percall",  instance_creator=creator)
-    class Thingy(object):
-        def __init__(self, p1, p2, p3):
-            pass
-
-See the :file:`instancemode` example to learn about various ways to use this.
-
 .. index:: oneway decorator
 
 **Specifying one-way methods using the @Pyro4.oneway decorator:**
@@ -156,7 +118,7 @@ See :ref:`oneway-calls-client` for the documentation about how client code handl
 See the :file:`oneway` example for some code that demonstrates the use of oneway methods.
 
 
-.. index:: publishing objects
+.. index:: publishing objects, instance mode, instance creator
 
 .. _publish-objects:
 
@@ -181,6 +143,13 @@ you create a daemon, register the object(s) with the daemon, and then enter the 
     print(uri)
     daemon.requestLoop()
 
+When publising objects directly like this,  Pyro will use that single
+object to handle *all* remote method calls. This has some concurrency ramifications,
+see :ref:`object_concurrency`.
+
+
+**registering a class: instance_mode and instance_creator**
+
 You can also let Pyro create instances for you and just register the *class* that you want to expose.
 Unless you tell Pyro otherwise (see :ref:`decorating-pyro-class`), Pyro creates an instance of your class
 per *session* (=proxy connection) via a parameterless constructor. By registering the class instead of
@@ -198,8 +167,23 @@ method call. An example of registering a class that will have one new instance f
     print(uri)
     daemon.requestLoop()
 
+If you choose to expose and register a class like this, Pyro will create instances of it to
+handle the remote calls according to the "instance mode" setting.
+You set this via the ``instance_mode`` parameter of the ``@expose`` decorator. There are three choices:
 
-After printing the uri, the server sits waiting for requests.
+- ``single``: a single instance will be created and used for all method calls. This is the same as
+  creating and registering a single object yourself. Be aware that its methods can be called
+  from separate threads concurrently.
+- ``session``: a new instance is created for every new proxy connection. This is the default.
+- ``percall``: a new instance is creaded for every single method call.
+
+Normally Pyro will simply use a default parameterless constructor call to create the instance.
+If you need special initialization or the class's init method requires parameters, you have to specify
+a ``instance_creator`` callable as well. Pyro will then use that to create an instance of your class.
+
+See the :file:`instancemode` example to learn about various ways to use this.
+
+Anyway, when you run this, the uri will be printed and the server sits waiting for requests.
 The uri that is being printed looks a bit like this: ``PYRO:obj_dcf713ac20ce4fb2a6e72acaeba57dfd@localhost:51850``
 It can be used in a *client* program to create a proxy and access your Pyro object with.
 
@@ -541,6 +525,8 @@ not be using these anyway).
 
 
 .. index:: object concurrency model, server types, SERVERTYPE
+
+.. _object_concurrency:
 
 Server types and Object concurrency model
 =========================================
