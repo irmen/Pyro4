@@ -1,8 +1,5 @@
 # travis CI config
 language: python
-sudo: false
-cache:
-  pip: true
 python:
   - 2.6
   - 2.7
