@@ -21,6 +21,7 @@ Change Log
 - you can provide an optional factory method to create instances of your pyro server class when needed according to the instancing_strategy
 - added handshake, instancemode and usersession examples
 - added distributed-computing2 example
+- added messagebus example
 - fixed callcontext example daemon to actually return a custom annotation
 - fixed benchmark/connections example
 - httpgateway recognises ``X-Pyro-Correlation-Id`` http header on requests
