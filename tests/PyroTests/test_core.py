@@ -572,7 +572,7 @@ class RemoteMethodTests(unittest.TestCase):
                     return "INVOKED name=%s args=%s kwargs=%s" % (name, args, kwargs)
 
                 def __getattr__(self, name):
-                    return Pyro4.core._RemoteMethod(self.invoke, name)
+                    return Pyro4.core._RemoteMethod(self.invoke, name, max_retries=0)
 
             o = ProxyMock()
             self.assertEqual("INVOKED name=foo args=(1,) kwargs={}", o.foo(1))  # normal
