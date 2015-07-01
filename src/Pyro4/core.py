@@ -171,9 +171,9 @@ class _RemoteMethod(object):
                 return self.__send(self.__name, args, kwargs)
             except (errors.ConnectionClosedError, errors.TimeoutError):
                 # only retry for recoverable network errors
-                pass
-        else:
-            raise  # raise the last exception
+                if attempt >= self.__max_retries:
+                    # last attempt, raise the exception
+                    raise
 
 
 class Proxy(object):
