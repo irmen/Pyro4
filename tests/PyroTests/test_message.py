@@ -195,6 +195,20 @@ class MessageTestsNoHmac(unittest.TestCase):
         self.assertEqual(0, msg.annotations_size)
         self.assertEqual(0, len(msg.annotations))
 
+    def testMaxDataSize(self):
+        msg = Message(Pyro4.message.MSG_CONNECT, b"hello", 42, 0, 0)
+        msg.data_size = 0x7fffffff  # still within 32 bits signed limits
+        msg.to_bytes()
+        msg.data_size = 0x80000000  # overflow, Pyro has a 2 gigabyte message size limitation
+        with self.assertRaises(ValueError) as ex:
+            msg.to_bytes()
+        self.assertEqual("invalid message size (outside range 0..2Gb)", str(ex.exception))
+        msg.data_size = -42
+        with self.assertRaises(ValueError) as ex:
+            msg.to_bytes()
+        self.assertEqual("invalid message size (outside range 0..2Gb)", str(ex.exception))
+
+
 
 if __name__ == "__main__":
     unittest.main()

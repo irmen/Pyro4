@@ -52,7 +52,7 @@ class Message(object):
        2   message type
        2   message flags
        2   sequence number
-       4   data length
+       4   data length   (i.e. 2 Gb data size limitation)
        2   data serialization format (serializer id)
        2   annotations length (total of all chunks, 0 if no annotation chunks present)
        2   (reserved)
@@ -111,6 +111,8 @@ class Message(object):
         return self.__header_bytes() + self.__annotations_bytes() + self.data
 
     def __header_bytes(self):
+        if not (0 <= self.data_size <= 0x7fffffff):
+            raise ValueError("invalid message size (outside range 0..2Gb)")
         checksum = (self.type + constants.PROTOCOL_VERSION + self.data_size + self.annotations_size + self.serializer_id + self.flags + self.seq + self.checksum_magic) & 0xffff
         return struct.pack(self.header_format, b"PYRO", constants.PROTOCOL_VERSION, self.type, self.flags, self.seq, self.data_size, self.serializer_id, self.annotations_size, 0, checksum)
 

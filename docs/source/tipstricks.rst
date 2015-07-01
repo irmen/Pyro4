@@ -49,6 +49,8 @@ Pyro is not designed to efficiently transfer large amounts of binary data over t
 Try to find another protocol that better suits this requirement.
 Read :ref:`binarytransfer` for some more details about this.
 
+Note that Pyro has a 2 gigabyte message size limitation at this time.
+
 
 .. index:: object graphs
 
@@ -325,6 +327,7 @@ Its wire protocol is not optimized for these kinds of data. The occasional trans
 is fine (:doc:`flame` even provides a convenience method for that, if you like:
 :meth:`Pyro4.utils.flame.Flame.sendfile`) but usually it is better to use something else to do
 the actual data transfer (file share+file copy, ftp, scp, rsync).
+Also, Pyro has a 2 gigabyte message size limitation at this time.
 
 .. note:: Serpent and binary data:
     If you do transfer binary data using the serpent serializer, you have to be aware of the following.
