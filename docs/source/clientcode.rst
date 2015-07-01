@@ -529,7 +529,7 @@ in order to use this automatically retry::
 
     Pyro4.config.MAX_RETRIES = 3      # attempt to retry 3 times before raise the exception
 
-You can also do this on a pre-proxy basis bt setting the max retries property on the proxy::
+You can also do this on a pre-proxy basis by setting the max retries property on the proxy::
 
     proxy._pyroMaxRetries = 3      # attempt to retry 3 times before raise the exception
 
