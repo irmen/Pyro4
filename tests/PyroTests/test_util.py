@@ -217,10 +217,8 @@ class TestUtils(unittest.TestCase):
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a._p.q")
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a.__p.q")
 
-    @unittest.skipUnless(sys.version_info >= (2, 6, 5), "unicode kwargs needs 2.6.5 or newer")
     def testUnicodeKwargs(self):
         # test the way the interpreter deals with unicode function kwargs
-        # those are supported by Python after 2.6.5
         def function(*args, **kwargs):
             return args, kwargs
 

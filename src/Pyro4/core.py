@@ -1099,9 +1099,6 @@ class Daemon(object):
             if obj is not None:
                 if inspect.isclass(obj):
                     obj = self._getInstance(obj, conn)
-                if kwargs and sys.version_info < (2, 6, 5):
-                    # Python before 2.6.5 doesn't accept unicode keyword arguments
-                    kwargs = dict((str(k), kwargs[k]) for k in kwargs)
                 if request_flags & Pyro4.message.FLAGS_BATCH:
                     # batched method calls, loop over them all and collect all results
                     data = []

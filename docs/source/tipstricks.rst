@@ -138,7 +138,7 @@ Same major Python version required when using pickle or marshal
 When Pyro is configured to use pickle or marshal as its serialization format, it is required to have the same *major* Python versions
 on your clients and your servers. Otherwise the different parties cannot decipher each others serialized data.
 This means you cannot let Python 2.x talk to Python 3.x with Pyro when using pickle or marshal as serialization protocols. However
-it should be fine to have Python 2.6.2 talk to Python 2.7.3 for instance.
+it should be fine to have Python 3.3 talk to Python 3.4 for instance.
 It may still be required to specify the pickle protocol version though, because that needs to be the same on both ends as well.
 For instance, Python 3.4 introduced version 4 of the pickle protocol and as such won't be able to talk to Python 3.3 which is stuck
 on version 3 pickle protocol. You'll have to tell the Python 3.4 side to step down to protocol 3. There is a config item for that.
@@ -360,7 +360,7 @@ wire protocol overhead for the possible binary types:
     *Python 3.x:* inefficient; encoded in UTF-8 on the wire, because it is a unicode string.
 
 ``bytes``
-    *Python 2.x:* same as ``str`` (available in Python 2.6 and 2.7)
+    *Python 2.x:* same as ``str`` (Python 2.7)
     *Python 3.x:* efficient; directly encoded as a byte sequence.
 
 ``bytearray``

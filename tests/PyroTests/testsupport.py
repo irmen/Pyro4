@@ -11,7 +11,7 @@ import threading
 import pickle
 import Pyro4
 
-__all__ = ["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO", "next",
+__all__ = ["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO",
            "AtomicCounter", "NonserializableError", "MyThing", "MyThingExposed",
            "MyThingExposedSub", "MyThingSub", "unittest"]
 
@@ -40,12 +40,6 @@ else:
     unicode = str
     unichr = chr
     basestring = str
-
-if sys.version_info < (2, 6):
-    def next(iterable):
-        return iterable.next()
-else:
-    next = next
 
 if ((2, 7) <= sys.version_info < (3, 0)) or (sys.version_info >= (3, 1)):
     import unittest

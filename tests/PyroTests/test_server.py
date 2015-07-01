@@ -242,7 +242,6 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual([1, [2, 3], {'a': 4}], p.testargs(1, 2, 3, a=4))
             self.assertEqual([1, [], {'a': 2}], p.testargs(1, **{'a': 2}))
 
-    @unittest.skipUnless(sys.version_info >= (2, 6, 5), "unicode kwargs needs 2.6.5 or newer")
     def testUnicodeKwargs(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
             self.assertEqual([1, [], {unichr(65): 2}], p.testargs(1, **{unichr(65): 2}))

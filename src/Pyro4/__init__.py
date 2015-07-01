@@ -6,9 +6,9 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import sys
 
-if sys.version_info < (2, 6):
+if sys.version_info < (2, 7):
     import warnings
-    warnings.warn("This Pyro version is unsupported on Python versions older than 2.6", ImportWarning)
+    warnings.warn("This Pyro version is unsupported on Python versions older than 2.7", ImportWarning)
 
 
 def _configLogging():

@@ -12,8 +12,8 @@ This chapter will show how to obtain and install Pyro.
 Requirements
 ------------
 Pyro is written in 100% pure Python. It works on any recent operating system where a suitable Python implementation is available.
-Pyro4 works on the following Python versions: 2.6, 2.7, 3.2 and newer. It also works with Pypy and IronPython.
-It may or may not work with Jython: there's no explicit compatibility and it's not tested with it.
+Pyro4 works on the following Python versions: 2.7, 3.3 and newer. It also works with Pypy and IronPython.
+It may or may not work with Jython 2.7, or other Python versions: there's no explicit compatibility and it's not tested with it.
 If you need to use it with Jython, try Pyro version 4.34 or older if you run into issues.
 (if you only need to write client code in Jython/Java, consider using :doc:`pyrolite` instead)
 
@@ -25,7 +25,7 @@ will need to install Serpent as well, unless you configure Pyro to use one of th
     When Pyro is configured to use pickle or marshal as its serialization format, it is required to have the same *major* Python versions
     on your clients and your servers. Otherwise the different parties cannot decipher each others serialized data.
     This means you cannot let Python 2.x talk to Python 3.x with Pyro. However
-    it should be fine to have Python 2.6.2 talk to Python 2.7.3 for instance.
+    it should be fine to have Python 3.3 talk to Python 3.4 for instance.
     Using one of the implementation independent protocols (serpent or json) will avoid this limitation.
 
 
