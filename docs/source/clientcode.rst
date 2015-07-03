@@ -524,6 +524,17 @@ they will execute in
 
 See the :file:`timeout` example for more details.
 
+Also, there is a automatic retry mechanism for timeout or connection closed (by server side),
+in order to use this automatically retry::
+
+    Pyro4.config.MAX_RETRIES = 3      # attempt to retry 3 times before raise the exception
+
+You can also do this on a pre-proxy basis by setting the max retries property on the proxy::
+
+    proxy._pyroMaxRetries = 3      # attempt to retry 3 times before raise the exception
+
+See the :file:`autoretry` example for more details.
+
 .. index::
     double: reconnecting; automatic
 
@@ -531,7 +542,8 @@ Automatic reconnecting
 ----------------------
 If your client program becomes disconnected to the server (because the server crashed for instance),
 Pyro will raise a :py:exc:`Pyro4.errors.ConnectionClosedError`.
-It is possible to catch this and tell Pyro to attempt to reconnect to the server by calling
+You can use the automatic retry mechanism to handle this exception, see the :file:`autoretry` example for more details.
+Alternatively, it is also possible to catch this and tell Pyro to attempt to reconnect to the server by calling
 ``_pyroReconnect()`` on the proxy (it takes an optional argument: the number of attempts
 to reconnect to the daemon. By default this is almost infinite). Once successful, you can resume operations
 on the proxy::

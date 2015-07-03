@@ -112,6 +112,7 @@ METADATA                bool    True           Client: Get remote object metadat
 REQUIRE_EXPOSE          bool    False          Server: Is @expose required to make members remotely accessible. If False, everything is accessible (this is the default for now).
 USE_MSG_WAITALL         bool    True (False if Some systems have broken socket MSG_WAITALL support. Set this item to False if your system is one of these. Pyro will then use another (but slower) piece of code to receive network data.
                                 on Windows)
+MAX_RETRIES             int     0              Automatically retry network operations for some exceptions (timeout / connection closed), careful to use when remote functions have side effect (e.g.: calling twice results in error)
 ======================= ======= ============== =======
 
 .. index::
