@@ -26,6 +26,7 @@ log = logging.getLogger("Pyro4.naming")
 class MemoryStorage(dict):
     """
     Storage implementation that is just an in-memory dict.
+    (because it inherits from dict it is automatically a collections.MutableMapping)
     Stopping the nameserver will make the server instantly forget about everything.
     """
     def __init__(self, **kwargs):

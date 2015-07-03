@@ -8,6 +8,7 @@ from __future__ import with_statement
 import re
 import logging
 import sys
+from collections import MutableMapping
 from contextlib import closing
 from Pyro4.threadutil import Lock
 from Pyro4.errors import NamingError
@@ -34,7 +35,7 @@ __all__ = ["SqlStorage", "DbmStorage"]
 log = logging.getLogger("Pyro4.naming_storage")
 
 
-class SqlStorage(object):
+class SqlStorage(MutableMapping):
     """
     Sqlite-based storage, in just a single (name,uri) table.
     Sqlite db connection objects aren't thread-safe, so a new connection is created in every method.
@@ -152,7 +153,7 @@ class SqlStorage(object):
         pass
 
 
-class DbmStorage(object):
+class DbmStorage(MutableMapping):
     """
     Storage implementation that uses a persistent dbm file.
     Because dbm only supports strings as key/value, we encode/decode them in utf-8.

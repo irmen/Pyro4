@@ -1,5 +1,9 @@
 import Pyro4
 from messagebus import Subscriber
+from Pyro4.util import excepthook
+import sys
+
+sys.excepthook = excepthook
 
 Pyro4.config.AUTOPROXY = True
 

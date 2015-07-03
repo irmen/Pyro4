@@ -4,6 +4,12 @@ import copy
 import uuid
 import datetime
 import logging
+from collections import MutableMapping
+from contextlib import closing
+try:
+    import sqlite3
+except ImportError:
+    sqlite3 = None
 import Pyro4
 import Pyro4.errors
 
@@ -17,11 +23,138 @@ class MsgbusError(Pyro4.errors.PyroError):
     pass
 
 
-@Pyro4.expose(instance_mode="single")
+class MemoryStorage(dict):
+    """
+    Storage implementation that is just an in-memory dict.
+    (because it inherits from dict it is automatically a collections.MutableMapping)
+    Stopping the message bus server will make it instantly forget about every topic and pending messages.
+    """
+    def add_message(self, topic, message):
+        self.__getitem__(topic).append(message)
+
+    def get_all_pending_messages(self):
+        return copy.deepcopy(self)
+
+    def remove_messages(self, topics_messages):
+        for topic in topics_messages:
+            if topic in self:
+                msg_list = self[topic]
+                for message in topics_messages[topic]:
+                    try:
+                        msg_list.remove(message)
+                    except KeyError:
+                        pass
+
+
+class SqliteStorage(MutableMapping):
+    def __init__(self, dblocation):
+        super(SqliteStorage, self).__init__()
+        if dblocation == ":memory:":
+            raise ValueError("We don't support the sqlite :memory: database type. Just use the default volatile in-memory store.")
+        self.dblocation = dblocation
+        conn = self.get_db_conn()
+        conn.execute("PRAGMA foreign_keys = ON;")
+        conn.execute("""
+CREATE TABLE IF NOT EXISTS Topic (
+  id  INTEGER PRIMARY KEY NOT NULL,
+  topic  NVARCHAR(500) UNIQUE NOT NULL
+); """)
+        conn.execute("""
+CREATE TABLE IF NOT EXISTS Message(
+  id  CHAR(36) PRIMARY KEY NOT NULL,
+  created  DATETIME NOT NULL,
+  seq  INTEGER NOT NULL,
+  topic  INTEGER NOT NULL,
+  msgdata  BLOB NOT NULL,
+  FOREIGN KEY(topic) REFERENCES Topic(id)
+); """)
+        conn.commit()
+
+    def get_db_conn(self):
+        return sqlite3.connect(self.dblocation, detect_types=sqlite3.PARSE_DECLTYPES, check_same_thread=False)
+
+    def __delitem__(self, topic):
+        with self.get_db_conn() as conn:
+            with closing(conn.cursor()) as cursor:
+                cursor.execute("DELETE FROM Topic WHERE topic=?", [topic])
+            conn.commit()
+
+    def __len__(self):
+        with self.get_db_conn() as conn:
+            with closing(conn.cursor()) as cursor:
+                return cursor.execute("SELECT COUNT(*) FROM Topic").fetchone()[0]
+
+    def __setitem__(self, topic, messages):
+        if messages:
+            raise ValueError("only supports creating a new topic with 0 pending messages")
+        with self.get_db_conn() as conn:
+            with closing(conn.cursor()) as cursor:
+                cursor.execute("INSERT INTO Topic(topic) VALUES(?)", [topic])
+            conn.commit()
+
+    def __getitem__(self, topic):
+        with self.get_db_conn() as conn:
+            with closing(conn.cursor()) as cursor:
+                results = SqliteStorage._fetch_messages(cursor, topic)
+        return (SqliteStorage._map_message(r) for r in results)
+
+    @staticmethod
+    def _fetch_messages(cursor, topic):
+        return cursor.execute("SELECT m.id, m.created, m.seq, m.msgdata FROM Message AS m, Topic as t WHERE m.topic=t.id AND t.topic=?", [topic]).fetchall()
+
+    @staticmethod
+    def _map_message(dbcolums):
+        return {"msgid": uuid.UUID(dbcolums[0]),
+                "created": datetime.datetime.strptime(dbcolums[1], "%Y-%m-%d %H:%M:%S.%f"),
+                "seq": dbcolums[2],
+                "data": dbcolums[3]}
+
+    def __iter__(self):
+        with self.get_db_conn() as conn:
+            with closing(conn.cursor()) as cursor:
+                results = cursor.execute("SELECT topic FROM Topic").fetchall()
+        return (r[0] for r in results)
+
+    def __contains__(self, topic):
+        with self.get_db_conn() as conn:
+            with closing(conn.cursor()) as cursor:
+                return bool(cursor.execute("SELECT EXISTS (SELECT 1 FROM Topic WHERE topic=?)", [topic]).fetchone()[0])
+
+    def add_message(self, topic, message):
+        with self.get_db_conn() as conn:
+            with closing(conn.cursor()) as cursor:
+                cursor.execute("INSERT INTO Message(id, created, seq, topic, msgdata) VALUES (?,?,?, (SELECT id FROM Topic WHERE topic=?), ?)",
+                               [str(message["msgid"]), message["created"], message["seq"], topic, message["data"]])
+            conn.commit()
+
+    def get_all_pending_messages(self):
+        with self.get_db_conn() as conn:
+            with closing(conn.cursor()) as cursor:
+                topics = (r[0] for r in cursor.execute("SELECT topic FROM Topic").fetchall())
+                result = {topic: [SqliteStorage._map_message(r) for r in SqliteStorage._fetch_messages(cursor, topic)] for topic in topics}
+                return result
+
+    def remove_messages(self, topics_messages):
+        all_guids = [[str(message["msgid"])] for msglist in topics_messages.values() for message in msglist]
+        with self.get_db_conn() as conn:
+            with closing(conn.cursor()) as cursor:
+                cursor.executemany("DELETE FROM Message WHERE id = ?", all_guids)
+
+
+
+def make_messagebus():
+    storage = SqliteStorage("messages.sqlite")
+    return MessageBus(storage=storage)
+
+
+@Pyro4.expose(instance_mode="single", instance_creator=make_messagebus)
 class MessageBus(object):
-    def __init__(self):
-        self.topics = {}        # topic -> list of pending messages
-        self.subscribers = {}   # topic -> set of handlers
+    def __init__(self, storage=None):
+        if storage is None:
+            storage = MemoryStorage()
+        self.messages_for_topics = storage     # topic -> list of pending messages
+        log.info("using storage: %s", self.messages_for_topics.__class__.__name__)
+        self.subscribers = {topic: set() for topic in self.messages_for_topics}   # topic -> set of handlers
         self.msg_sema = threading.Semaphore(value=0)
         self.sender = threading.Thread(target=self.__sender, name="messagebus.sender")
         self.sender.daemon = True
@@ -31,27 +164,27 @@ class MessageBus(object):
         log.info("started")
 
     def add_topic(self, topic):
-        if topic in self.topics:
+        if topic in self.messages_for_topics:
             return
         if not isinstance(topic, str):
             raise MsgbusError("topic must be str")
         with self.msg_lock:
-            self.topics[topic] = []
+            self.messages_for_topics[topic] = []
             self.subscribers[topic] = set()
         log.debug("topic added: " + topic)
 
     def remove_topic(self, topic):
-        if topic in self.topics:
-            if self.topics[topic]:
+        if topic in self.messages_for_topics:
+            if self.messages_for_topics[topic]:
                 raise MsgbusError("topic still has unprocessed messages")
             with self.msg_lock:
-                del self.topics[topic]
+                del self.messages_for_topics[topic]
                 del self.subscribers[topic]
             log.debug("topic removed: " + topic)
 
     def list_topics(self):
         with self.msg_lock:
-            return set(self.topics.keys())
+            return set(self.messages_for_topics.keys())
 
     def send_with_ack(self, topic, message):
         message = {
@@ -60,12 +193,12 @@ class MessageBus(object):
             "seq": -1,
             "data": message,
         }
-        if topic not in self.topics:
+        if topic not in self.messages_for_topics:
             self.add_topic(topic)
         with self.msg_lock:
             self.seq += 1
             message["seq"] = self.seq
-            self.topics[topic].append(message)
+            self.messages_for_topics.add_message(topic, message)
             self.msg_sema.release()
 
     @Pyro4.oneway
@@ -80,7 +213,7 @@ class MessageBus(object):
             # make sure that if handler is a pyro proxy, the handle message is a oneway call
             # so that this event processing loop won't block on slow subscribers
             handler._pyroOneway.add("handle_message")
-        if topic not in self.topics:
+        if topic not in self.messages_for_topics:
             self.add_topic(topic)
         with self.msg_lock:
             self.subscribers[topic].add(handler)
@@ -99,7 +232,7 @@ class MessageBus(object):
             count_fail = 0
             count_ok = 0
             with self.msg_lock:
-                topics = copy.deepcopy(self.topics)
+                topics = self.messages_for_topics.get_all_pending_messages()
                 subs = copy.copy(self.subscribers)
             subs_to_remove = []
             for topic, messages in topics.items():
@@ -124,14 +257,7 @@ class MessageBus(object):
                                 count_fail += 1
             # remove processed messages
             with self.msg_lock:
-                for topic in topics:
-                    if topic in self.topics:
-                        msg_list = self.topics[topic]
-                        for message in topics[topic]:
-                            try:
-                                msg_list.remove(message)
-                            except KeyError:
-                                pass
+                self.messages_for_topics.remove_messages(topics)
             # remove broken subbers
             for topic, handler in subs_to_remove:
                 self.unsubscribe(topic, handler)
