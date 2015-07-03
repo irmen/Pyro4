@@ -533,6 +533,7 @@ You can also do this on a pre-proxy basis by setting the max retries property on
 
     proxy._pyroMaxRetries = 3      # attempt to retry 3 times before raise the exception
 
+Be careful to use when remote functions have a side effect (e.g.: calling twice results in error)!
 See the :file:`autoretry` example for more details.
 
 .. index::
