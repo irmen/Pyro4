@@ -17,7 +17,7 @@ while True:
         obj.method(42)
         print("Sleeping 1 second")
         time.sleep(1)
-    except Pyro4.errors.ConnectionClosedError:  # or possibly even ProtocolError
+    except Pyro4.errors.ConnectionClosedError:  # or possibly CommunicationError
         print("Connection lost. REBINDING...")
         print("(restart the server now)")
         obj._pyroReconnect()

@@ -10,6 +10,7 @@ Change Log
 - added auto retry mechanism, MAX_RETRIES config item, and autoretry example.
 - API CHANGE: the instance_creator function passed to @expose now get the class as a single parameter when invoked by Pyro
 - removed test suite dependencies on unittest2 (was used for Python 2.6)
+- greatly improved the messagebus example, it now contains a persistent storage as well
 
 
 **Pyro 4.38**
