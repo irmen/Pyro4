@@ -11,6 +11,7 @@ import copy
 import pprint
 import pickle
 import base64
+import unittest
 import serpent
 import Pyro4.util
 import Pyro4.errors

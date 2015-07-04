@@ -7,10 +7,10 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 from __future__ import with_statement, print_function
 import time
 import random
-
+import unittest
 from Pyro4.socketserver.threadpool import Pool, PoolError
 import Pyro4.threadutil
-from testsupport import unittest
+
 
 JOB_TIME = 0.2
 

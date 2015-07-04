@@ -13,7 +13,7 @@ import Pyro4
 
 __all__ = ["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO",
            "AtomicCounter", "NonserializableError", "MyThing", "MyThingExposed",
-           "MyThingExposedSub", "MyThingSub", "unittest"]
+           "MyThingExposedSub", "MyThingSub"]
 
 if sys.version_info < (3, 0):
     # noinspection PyUnresolvedReferences
@@ -40,12 +40,6 @@ else:
     unicode = str
     unichr = chr
     basestring = str
-
-if ((2, 7) <= sys.version_info < (3, 0)) or (sys.version_info >= (3, 1)):
-    import unittest
-else:
-    # noinspection PyUnresolvedReferences
-    import unittest2 as unittest
 
 
 class AtomicCounter(object):
@@ -139,7 +133,7 @@ class MyThing(object):
     __hash__ = object.__hash__
 
 
-@Pyro4.expose
+@Pyro4.expose()
 class MyThingExposed(object):
     blurp = 99   # won't be exposed, because it is a class attribute and not a property
     _name = ""

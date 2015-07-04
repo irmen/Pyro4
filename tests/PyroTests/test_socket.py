@@ -9,6 +9,7 @@ import os
 import sys
 import platform
 import time
+import unittest
 import Pyro4.socketutil as SU
 from Pyro4 import threadutil, errors
 from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
@@ -17,7 +18,6 @@ from Pyro4.core import Daemon
 import Pyro4.message
 import Pyro4.util
 import Pyro4.constants
-import Pyro4
 from testsupport import *
 
 

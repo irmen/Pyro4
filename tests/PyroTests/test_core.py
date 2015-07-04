@@ -10,10 +10,9 @@ import logging
 import os
 import sys
 import time
-import warnings
+import unittest
 import Pyro4.configuration
 import Pyro4.core
-
 import Pyro4.errors
 import Pyro4.constants
 import Pyro4.futures
@@ -511,6 +510,37 @@ class CoreTests(unittest.TestCase):
         self.assertFalse(hash(p1) == hash(p3))
         self.assertFalse(p1 == 42)
         self.assertTrue(p1 != 42)
+
+    def testExposeInstancemodeInvalid(self):
+        with self.assertRaises(ValueError):
+            @Pyro4.core.expose(instance_mode="kaputt")
+            class TestClass:
+                def method(self):
+                    pass
+
+    def testExposeInstancemodeDefault(self):
+        @Pyro4.core.expose()
+        class TestClass:
+            def method(self):
+                pass
+
+    def testExposeInstancecreatorInvalid(self):
+        with self.assertRaises(TypeError):
+            @Pyro4.core.expose(instance_creator=12345)
+            class TestClass:
+                def method(self):
+                    pass
+
+    def testExposeInstancing(self):
+        def creator(clazz):
+            return clazz()
+        @Pyro4.core.expose(instance_mode="percall", instance_creator=creator)
+        class TestClass:
+            def method(self):
+                pass
+        im, ic = TestClass._pyroInstancing
+        self.assertEqual("percall", im)
+        self.assertIs(creator, ic)
 
 
 class RemoteMethodTests(unittest.TestCase):

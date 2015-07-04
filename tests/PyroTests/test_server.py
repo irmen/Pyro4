@@ -5,15 +5,15 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
+import time
+import sys
+import uuid
+import unittest
 import Pyro4.core
 import Pyro4.errors
 import Pyro4.util
 import Pyro4.message
-import time
-import sys
-import uuid
 from Pyro4 import threadutil, current_context
-import Pyro4
 from testsupport import *
 
 

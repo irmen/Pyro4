@@ -6,8 +6,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import hashlib
 import hmac
-
-from testsupport import unittest
+import unittest
 import Pyro4.message
 from Pyro4.message import Message
 import Pyro4.constants

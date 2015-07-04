@@ -8,6 +8,7 @@ from __future__ import with_statement, print_function
 import sys
 import select
 import os
+import unittest
 import Pyro4.core
 import Pyro4.naming
 import Pyro4.naming_storage

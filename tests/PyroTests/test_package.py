@@ -4,6 +4,7 @@ Tests for the package structure and import names.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
+import unittest
 import Pyro4
 import Pyro4.constants
 import Pyro4.core
@@ -13,7 +14,6 @@ import Pyro4.nsc
 import Pyro4.socketutil
 import Pyro4.threadutil
 import Pyro4.util
-from testsupport import unittest
 
 
 class TestPackage(unittest.TestCase):

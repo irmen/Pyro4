@@ -9,6 +9,7 @@ import sys
 import time
 import socket
 import uuid
+import unittest
 import Pyro4.core
 import Pyro4.constants
 import Pyro4.socketutil
@@ -483,6 +484,73 @@ class DaemonTests(unittest.TestCase):
         finally:
             Pyro4.config.NATHOST = None
             Pyro4.config.NATPORT = 0
+
+    def testInstanceCreationSingle(self):
+        def creator(clazz):
+            return clazz("testname")
+        @Pyro4.core.expose(instance_mode="single", instance_creator=creator)
+        class TestClass:
+            def __init__(self, name):
+                self.name = name
+        conn = Pyro4.socketutil.SocketConnection(socket.socket())
+        d = Pyro4.core.Daemon()
+        instance1 = d._getInstance(TestClass, conn)
+        instance2 = d._getInstance(TestClass, conn)
+        self.assertEqual("testname", instance1.name)
+        self.assertIs(instance1, instance2)
+        self.assertTrue(TestClass in d._pyroInstances)
+        self.assertIs(instance1, d._pyroInstances[TestClass])
+        self.assertFalse(TestClass in conn.pyroInstances)
+
+    def testInstanceCreationSession(self):
+        def creator(clazz):
+            return clazz("testname")
+        @Pyro4.core.expose(instance_mode="session", instance_creator=creator)
+        class TestClass:
+            def __init__(self, name):
+                self.name = name
+        conn1 = Pyro4.socketutil.SocketConnection(socket.socket())
+        conn2 = Pyro4.socketutil.SocketConnection(socket.socket())
+        d = Pyro4.core.Daemon()
+        instance1a = d._getInstance(TestClass, conn1)
+        instance1b = d._getInstance(TestClass, conn1)
+        instance2a = d._getInstance(TestClass, conn2)
+        instance2b = d._getInstance(TestClass, conn2)
+        self.assertIs(instance1a, instance1b)
+        self.assertIs(instance2a, instance2b)
+        self.assertIsNot(instance1a, instance2a)
+        self.assertFalse(TestClass in d._pyroInstances)
+        self.assertTrue(TestClass in conn1.pyroInstances)
+        self.assertTrue(TestClass in conn2.pyroInstances)
+        self.assertIs(instance1a, conn1.pyroInstances[TestClass])
+        self.assertIs(instance2a, conn2.pyroInstances[TestClass])
+
+    def testInstanceCreationPerCall(self):
+        def creator(clazz):
+            return clazz("testname")
+        @Pyro4.core.expose(instance_mode="percall", instance_creator=creator)
+        class TestClass:
+            def __init__(self, name):
+                self.name = name
+        conn = Pyro4.socketutil.SocketConnection(socket.socket())
+        d = Pyro4.core.Daemon()
+        instance1 = d._getInstance(TestClass, conn)
+        instance2 = d._getInstance(TestClass, conn)
+        self.assertIsNot(instance1, instance2)
+        self.assertFalse(TestClass in d._pyroInstances)
+        self.assertFalse(TestClass in conn.pyroInstances)
+
+    def testInstanceCreationWrongType(self):
+        def creator(clazz):
+            return Pyro4.core.URI("PYRO:test@localhost:9999")
+        @Pyro4.core.expose(instance_creator=creator)
+        class TestClass:
+            def method(self):
+                pass
+        conn = Pyro4.socketutil.SocketConnection(socket.socket())
+        d = Pyro4.core.Daemon()
+        with self.assertRaises(TypeError):
+            d._getInstance(TestClass, conn)
 
 
 class MetaInfoTests(unittest.TestCase):

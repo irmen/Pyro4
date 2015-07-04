@@ -5,11 +5,11 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import time
+import unittest
 from threading import Thread, Event
 import Pyro4.test.echoserver as echoserver
 import Pyro4.util
 import Pyro4
-from testsupport import *
 
 
 class EchoServerThread(Thread):
