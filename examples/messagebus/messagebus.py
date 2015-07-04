@@ -144,9 +144,9 @@ CREATE TABLE IF NOT EXISTS Message(
                 cursor.executemany("DELETE FROM Message WHERE id = ?", all_guids)
 
 
-def make_messagebus():
+def make_messagebus(clazz):
     storage = SqliteStorage("messages.sqlite")
-    return MessageBus(storage=storage)
+    return clazz(storage=storage)
 
 
 @Pyro4.expose(instance_mode="single", instance_creator=make_messagebus)
