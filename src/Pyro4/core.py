@@ -544,8 +544,8 @@ class Proxy(object):
             # invoke the get_metadata method on the daemon
             result = known_metadata or self._pyroInvoke("get_metadata", [objectId], {}, objectId=constants.DAEMON_NAME)
             self.__processMetadata(result)
-        except errors.PyroError as x:
-            log.error("problem getting metadata: %r", x)
+        except errors.PyroError:
+            log.exception("problem getting metadata")
             raise
 
     def __processMetadata(self, metadata):
@@ -1185,12 +1185,16 @@ class Daemon(object):
         Find or create a new instance of the class
         """
         def createInstance(clazz, creator):
-            if creator:
-                obj = creator(clazz)
-                if isinstance(obj, clazz):
-                    return obj
-                raise TypeError("instance creator returned object of different type")
-            return clazz()
+            try:
+                if creator:
+                    obj = creator(clazz)
+                    if isinstance(obj, clazz):
+                        return obj
+                    raise TypeError("instance creator returned object of different type")
+                return clazz()
+            except Exception as x:
+                log.exception("could not create pyro object instance")
+                raise
         instance_mode, instance_creator = clazz._pyroInstancing
         if instance_mode == "single":
             # create and use one singleton instance of this class (not a global singleton, just exactly one per daemon)

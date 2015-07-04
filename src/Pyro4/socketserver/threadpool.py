@@ -42,8 +42,7 @@ class Worker(Pyro4.threadutil.Thread):
             try:
                 job()
             except Exception:
-                tb = "".join(Pyro4.util.getPyroTraceback())
-                log.error("unhandled exception from job in worker thread %s: %s", self.name, tb)
+                log.exception("unhandled exception from job in worker thread %s: %s", self.name)
                 # we continue running, just pick another job from the queue
 
 
