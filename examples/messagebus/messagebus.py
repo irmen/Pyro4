@@ -29,11 +29,14 @@ class MemoryStorage(dict):
     (because it inherits from dict it is automatically a collections.MutableMapping)
     Stopping the message bus server will make it instantly forget about every topic and pending messages.
     """
+    def __init__(self):
+        super(MemoryStorage, self).__init__()
+
     def add_message(self, topic, message):
         self.__getitem__(topic).append(message)
 
     def get_all_pending_messages(self):
-        return copy.deepcopy(self)
+        return copy.deepcopy(dict(self))
 
     def remove_messages(self, topics_messages):
         for topic in topics_messages:
@@ -141,7 +144,6 @@ CREATE TABLE IF NOT EXISTS Message(
                 cursor.executemany("DELETE FROM Message WHERE id = ?", all_guids)
 
 
-
 def make_messagebus():
     storage = SqliteStorage("messages.sqlite")
     return MessageBus(storage=storage)
@@ -154,12 +156,12 @@ class MessageBus(object):
             storage = MemoryStorage()
         self.messages_for_topics = storage     # topic -> list of pending messages
         log.info("using storage: %s", self.messages_for_topics.__class__.__name__)
-        self.subscribers = {topic: set() for topic in self.messages_for_topics}   # topic -> set of handlers
+        self.msg_lock = threading.Lock()
         self.msg_sema = threading.Semaphore(value=0)
+        self.subscribers = {topic: set() for topic in self.messages_for_topics}   # topic -> set of handlers
         self.sender = threading.Thread(target=self.__sender, name="messagebus.sender")
         self.sender.daemon = True
         self.sender.start()
-        self.msg_lock = threading.Lock()
         self.seq = 1        # global message sequence number
         log.info("started")
 
