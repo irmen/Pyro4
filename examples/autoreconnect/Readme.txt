@@ -21,9 +21,11 @@ NOTES:
 2- By default Pyro starts its daemons on a random port. If you want
    to support autoreconnection, you will need to restart your daemon
    on the port it used before. Easiest is to pick a fixed port.
-3- If using the name server or relying on PYRO-uri's: then your server
-   MUST register the objects with their old objectId to the daemon.
-   Otherwise the client will try to access an unknown object Id.
+3- If you rely on PYRO-uri's: then your server MUST register the objects
+   with their old objectId to the daemon. Otherwise the client will try
+   to access an unknown object Id.  (this is not needed when you
+   are ONLY using PYRONAME-uris, where a new lookup to the name server
+   is performed instead)
 4- If the NS loses its registrations, you're out of luck.
    Clients that rely on name server based reconnects will fail.
 5- The client is reponsible for detecting a network problem itself.
