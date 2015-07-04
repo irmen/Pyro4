@@ -152,7 +152,7 @@ see :ref:`object_concurrency`.
 
 You can also let Pyro create instances for you and just register the *class* that you want to expose.
 Unless you tell Pyro otherwise (see :ref:`decorating-pyro-class`), Pyro creates an instance of your class
-per *session* (=proxy connection) via a parameterless constructor. By registering the class instead of
+per *session* (=proxy connection) via a constructor function that takes the class as a single parameter. By registering the class instead of
 an instance object directly, you have some flexibility in controlling what instances are used for a remote
 method call. An example of registering a class that will have one new instance for every method call::
 
@@ -179,7 +179,8 @@ You set this via the ``instance_mode`` parameter of the ``@expose`` decorator. T
 
 Normally Pyro will simply use a default parameterless constructor call to create the instance.
 If you need special initialization or the class's init method requires parameters, you have to specify
-a ``instance_creator`` callable as well. Pyro will then use that to create an instance of your class.
+an ``instance_creator`` callable as well. Pyro will then use that to create an instance of your class.
+It will call it with the class to create an instance of as the single parameter.
 
 Anyway, when you run this, the uri will be printed and the server sits waiting for requests.
 The uri that is being printed looks a bit like this: ``PYRO:obj_dcf713ac20ce4fb2a6e72acaeba57dfd@localhost:51850``

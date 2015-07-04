@@ -8,6 +8,8 @@ Change Log
 - better exception when message size exceeds 2 gigabyte limit
 - mentioned the 2 gigabyte message size limit in the docs
 - added auto retry mechanism, MAX_RETRIES config item, and autoretry example.
+- API CHANGE: the instance_creator function passed to @expose now get the class as a single parameter when invoked by Pyro
+- removed test suite dependencies on unittest2 (was used for Python 2.6)
 
 
 **Pyro 4.38**

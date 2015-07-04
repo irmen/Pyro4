@@ -16,7 +16,7 @@ class SingleInstance(object):
         return id(self)
 
 
-@Pyro4.expose(instance_mode="session", instance_creator=lambda: SessionInstance.create_instance())
+@Pyro4.expose(instance_mode="session", instance_creator=lambda clazz: clazz.create_instance())
 class SessionInstance(object):
     def msg(self, message):
         print("[%s] %s.msg: %s" % (id(self), self.__class__.__name__, message))

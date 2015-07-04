@@ -1186,7 +1186,7 @@ class Daemon(object):
         """
         def createInstance(clazz, creator):
             if creator:
-                obj = creator()
+                obj = creator(clazz)
                 if isinstance(obj, clazz):
                     return obj
                 raise TypeError("instance creator returned object of different type")
