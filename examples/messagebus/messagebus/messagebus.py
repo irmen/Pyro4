@@ -1,18 +1,12 @@
 from __future__ import print_function
 import threading
-import copy
-import sys
-import traceback
 import uuid
 import datetime
 import time
 import logging
+import sys
 from collections import defaultdict
 from contextlib import closing
-try:
-    import queue
-except ImportError:
-    import Queue as queue
 try:
     import cPickle as pickle
 except ImportError:
@@ -23,14 +17,13 @@ except ImportError:
     sqlite3 = None
 import Pyro4
 import Pyro4.errors
+from .client import Message
+from . import PYRO_MSGBUS_NAME
 
 
-__all__ = ["PYRO_MSGBUS_NAME", "MemoryStorage", "SqliteStorage", "MessageBus", "Subscriber"]
-
-PYRO_MSGBUS_NAME = "Pyro.MessageBus"
+__all__ = ["MemoryStorage", "SqliteStorage", "MessageBus"]
 
 log = logging.getLogger("Pyro.MessageBus")
-Pyro4.config.SERVERTYPE = "multiplex"
 Pyro4.config.COMMTIMEOUT = 30.0
 Pyro4.config.POLLTIMEOUT = 10.0
 Pyro4.config.MAX_MESSAGE_SIZE = 256*1024     # 256 kb
@@ -45,7 +38,6 @@ class MemoryStorage(object):
     def __init__(self):
         self.messages = {}      # topic -> list of pending messages
         self.subscribers = {}   # topic -> set of subscribers
-        self.sequence_nrs = {}  # topic -> global message sequence number
         self.total_msg_count = 0
 
     def topics(self):
@@ -56,7 +48,6 @@ class MemoryStorage(object):
             return
         self.messages[topic] = []
         self.subscribers[topic] = set()
-        self.sequence_nrs[topic] = 0
 
     def remove_topic(self, topic):
         if topic not in self.messages:
@@ -68,8 +59,6 @@ class MemoryStorage(object):
         del self.subscribers[topic]
 
     def add_message(self, topic, message):
-        self.sequence_nrs[topic] += 1
-        message["seq"] = self.sequence_nrs[topic]
         self.messages[topic].append(message)
         self.total_msg_count += 1
 
@@ -83,7 +72,7 @@ class MemoryStorage(object):
             self.subscribers[topic].discard(subscriber)
 
     def all_pending_messages(self):
-        return copy.deepcopy(self.messages)
+        return {topic: msgs.copy() for topic, msgs in self.messages.items()}
 
     def all_subscribers(self):
         all_subs = {}
@@ -98,7 +87,10 @@ class MemoryStorage(object):
                 for message in topics_messages[topic]:
                     try:
                         msg_list.remove(message)
-                    except KeyError:
+                    except ValueError:
+                        import pdb
+                        pdb.set_trace()
+                        raise  # XXX
                         pass
 
     def stats(self):
@@ -129,7 +121,6 @@ CREATE TABLE IF NOT EXISTS Topic (
 CREATE TABLE IF NOT EXISTS Message(
   id  CHAR(36) PRIMARY KEY,
   created  DATETIME NOT NULL,
-  seq  INTEGER NOT NULL,
   topic  INTEGER NOT NULL,
   msgdata  BLOB NOT NULL,
   FOREIGN KEY(topic) REFERENCES Topic(id)
@@ -143,7 +134,6 @@ CREATE TABLE IF NOT EXISTS Subscription(
 ); """)
         conn.commit()
         topics = self.topics()
-        self.sequence_nrs = {topic: 0 for topic in topics}  # topic -> global message sequence number
         self.proxy_cache = {}
         self.total_msg_count = 0
 
@@ -169,7 +159,6 @@ CREATE TABLE IF NOT EXISTS Subscription(
         with closing(conn.cursor()) as cursor:
             if not cursor.execute("SELECT EXISTS(SELECT 1 FROM Topic WHERE topic=?)", [topic]).fetchone()[0]:
                 cursor.execute("INSERT INTO Topic(topic) VALUES(?)", [topic])
-                self.sequence_nrs[topic] = 0
         conn.commit()
 
     def remove_topic(self, topic):
@@ -190,16 +179,14 @@ CREATE TABLE IF NOT EXISTS Subscription(
                 pass
 
     def add_message(self, topic, message):
-        msg_data = pickle.dumps(message["data"], pickle.HIGHEST_PROTOCOL)
-        self.sequence_nrs[topic] += 1
-        message["seq"] = self.sequence_nrs[topic]
+        msg_data = pickle.dumps(message.data, pickle.HIGHEST_PROTOCOL)
         conn = self.dbconn()
         with closing(conn.cursor()) as cursor:
             topic_id = cursor.execute("SELECT id FROM Topic WHERE topic=?", [topic]).fetchone()[0]
             if cursor.execute("SELECT EXISTS(SELECT 1 FROM Subscription WHERE topic=?)", [topic_id]).fetchone()[0]:
                 # there is at least one subscriber for this topic, insert the message (otherwise just discard it)
-                cursor.execute("INSERT INTO Message(id, created, seq, topic, msgdata) VALUES (?,?,?,?,?)",
-                               [str(message["msgid"]), message["created"], message["seq"], topic_id, msg_data])
+                cursor.execute("INSERT INTO Message(id, created, topic, msgdata) VALUES (?,?,?,?)",
+                               [str(message.msgid), message.created, topic_id, msg_data])
         conn.commit()
         self.total_msg_count += 1
 
@@ -229,16 +216,11 @@ CREATE TABLE IF NOT EXISTS Subscription(
     def all_pending_messages(self):
         conn = self.dbconn()
         with closing(conn.cursor()) as cursor:
-            msgs = cursor.execute("SELECT t.topic, m.id, m.created, m.seq, m.msgdata FROM Message AS m, Topic as t WHERE m.topic=t.id").fetchall()
+            msgs = cursor.execute("SELECT t.topic, m.id, m.created, m.msgdata FROM Message AS m, Topic as t WHERE m.topic=t.id").fetchall()
         conn.commit()
         result = defaultdict(list)
         for msg in msgs:
-            result[msg[0]].append({
-                "msgid": uuid.UUID(msg[1]),
-                "created": datetime.datetime.strptime(msg[2], "%Y-%m-%d %H:%M:%S.%f"),
-                "seq": msg[3],
-                "data": pickle.loads(msg[4])
-            })
+            result[msg[0]].append(Message(uuid.UUID(msg[1]), datetime.datetime.strptime(msg[2], "%Y-%m-%d %H:%M:%S.%f"), pickle.loads(msg[3])))
         return result
 
     def all_subscribers(self):
@@ -265,7 +247,7 @@ CREATE TABLE IF NOT EXISTS Subscription(
     def remove_messages(self, topics_messages):
         if not topics_messages:
             return
-        all_guids = [[str(message["msgid"])] for msglist in topics_messages.values() for message in msglist]
+        all_guids = [[str(message.msgid)] for msglist in topics_messages.values() for message in msglist]
         conn = self.dbconn()
         with closing(conn.cursor()) as cursor:
             cursor.executemany("DELETE FROM Message WHERE id = ?", all_guids)
@@ -282,8 +264,12 @@ CREATE TABLE IF NOT EXISTS Subscription(
 
 
 def make_messagebus(clazz):
-    storage = SqliteStorage()
-    # storage = MemoryStorage()  # XXX
+    if make_messagebus.storagetype == "sqlite":
+        storage = SqliteStorage()
+    elif make_messagebus.storagetype == "memory":
+        storage = MemoryStorage()
+    else:
+        raise ValueError("invalid storagetype")
     return clazz(storage=storage)
 
 
@@ -318,12 +304,7 @@ class MessageBus(object):
             return self.storage.topics()
 
     def send(self, topic, message):
-        message = {
-            "msgid": uuid.uuid1(),
-            "created": datetime.datetime.now(),
-            "seq": 0,
-            "data": message,
-        }
+        message = Message(uuid.uuid1(), datetime.datetime.now(), message)
         self.add_topic(topic)
         with self.msg_lock:
             self.storage.add_message(topic, message)
@@ -374,11 +355,11 @@ class MessageBus(object):
                                 # skipping because subber is scheduled for removal
                                 continue
                             try:
-                                subscriber.incoming_message(topic, **message)
+                                subscriber.incoming_message(topic, message)
                             except Exception as x:
                                 # can't deliver it, drop the message and the subscription
-                                log.warn("error delivering message for topic=%s, msgid=%s, seq=%d, subscriber=%s, error=%r" %
-                                         (topic, message["msgid"], message["seq"], subscriber, x))
+                                log.warn("error delivering message for topic=%s, msgid=%s, subscriber=%s, error=%r" %
+                                         (topic, message.msgid, subscriber, x))
                                 log.warn("removing subscription because of that error")
                                 subs_to_remove.add((topic, subscriber))
             # remove processed messages
@@ -396,38 +377,12 @@ class MessageBus(object):
               (timestamp, topics, subscribers, pending, messages), end="")
 
 
-@Pyro4.expose()
-class Subscriber(object):
-    def __init__(self):
-        self.bus = Pyro4.Proxy("PYRONAME:"+PYRO_MSGBUS_NAME)
-        self.messages = queue.Queue()
-        self.consumer_thread = threading.Thread(target=self.__consume_message)
-        self.consumer_thread.daemon = True
-        self.consumer_thread.start()
-
-    def incoming_message(self, topic, msgid, seq, created, data):
-        self.messages.put((topic, msgid, seq, created, data))
-
-    def __consume_message(self):
-        # this runs in a thread, to pick up and process incoming messages
-        while True:
-            try:
-                topic, msgid, seq, created, data = self.messages.get(timeout=1)
-            except queue.Empty:
-                time.sleep(0.002)
-                continue
-            try:
-                self.consume_message(topic, msgid, seq, created, data)
-            except Exception:
-                print("Error while consuming message:", file=sys.stderr)
-                traceback.print_exc(file=sys.stderr)
-
-    def consume_message(self, topic, msgid, seq, created, data):
-        # this is called from a background thread
-        raise NotImplementedError("subclass should implement this")
-
-
 if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        raise SystemExit("provide storage type as argument (sqlite/memory)")
+    if sys.argv[1] not in ("sqlite", "memory"):
+        raise ValueError("invalid storagetype")
+    make_messagebus.storagetype = sys.argv[1]
     Pyro4.Daemon.serveSimple({
         MessageBus: PYRO_MSGBUS_NAME
     })

@@ -13,20 +13,20 @@ You can also run multiple subscribers at the same time, the published
 messages will be delivered to each subscriber.
 
 
-The messagebus is very simplistic if you use the in-memory storage:
-It only keeps messages and subscribers in memory. If the message bus server
+The messagebus is a bit simplistic if you use the in-memory storage:
+it only keeps messages and subscribers in memory. If the message bus server
 dies, everything is lost. If an error occurs when forwarding a message to subscribers,
 the message is immediately discarded. If it was a communication error,
 the subscriber is immediately removed from the topic as well.
-The in-memory storage is VERY fast though, so if you're after a very high
+The in-memory storage is very fast though, so if you're after a very high
 message troughput, it may be the storage option for you.
 
-However you can also use the SqliteStorage which uses a sqlite database
+However you can also use the SqliteStorage which uses a database on disk
 to store topics, messages and subscriptions. If the message bus server dies,
 it will simply continue where it was. No messages will get lost, and it
 also remembers the subscribers. So simply restarting the message bus server
 is enough to get everything back on track without lost data.
-The sqlite storage is quite slow tough, so if you need a very high message
+The sqlite storage is quite slow tough, so if you need a high message
 troughput, it may not be suitable.
 
 

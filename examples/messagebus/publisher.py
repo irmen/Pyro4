@@ -16,7 +16,7 @@ location = sys.argv[1].strip()
 bus = Pyro4.Proxy("PYRONAME:"+PYRO_MSGBUS_NAME)
 
 while True:
-    time.sleep(0.0001)
+    time.sleep(0.01)
     forecast = (location, random.choice(["sunny", "cloudy", "storm", "rainy", "hail", "thunder", "calm", "mist", "cold", "hot"]))
     print("Forecast:", forecast)
     try:

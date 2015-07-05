@@ -1,5 +1,5 @@
 import Pyro4
-from messagebus import Subscriber
+from messagebus.client import Subscriber
 from Pyro4.util import excepthook
 import sys
 
@@ -10,13 +10,12 @@ Pyro4.config.AUTOPROXY = True
 
 @Pyro4.expose()
 class Subber(Subscriber):
-    def consume_message(self, topic, msgid, seq, created, data):
+    def consume_message(self, topic, message):
         print("\nGOT MESSAGE:")
-        print("   topic:", topic, type(topic))
-        print("   msgid:", msgid, type(msgid))
-        print(" created:", created, type(created))
-        print("     seq:", seq, type(seq))
-        print("    data:", data, type(data))
+        print("   topic:", topic)
+        print("   msgid:", message.msgid)
+        print(" created:", message.created)
+        print("    data:", message.data)
 
 
 subber = Subber()
