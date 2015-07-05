@@ -16,7 +16,7 @@ if __name__ == "__main__":
     hostname = sys.argv[1].strip()
     if sys.argv[2] not in ("sqlite", "memory"):
         raise ValueError("invalid storagetype")
-    make_messagebus.storagetype = sys.argv[1]
+    make_messagebus.storagetype = sys.argv[2]
     Pyro4.Daemon.serveSimple({
         MessageBus: PYRO_MSGBUS_NAME
     }, host=hostname)
