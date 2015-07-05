@@ -1,9 +1,16 @@
+"""
+Pyro MessageBus:  a simple pub/sub message bus.
+Provides a way of cummunicating where the sender and receivers are fully decoupled.
+
+Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
+"""
 from __future__ import print_function
 import threading
 import uuid
 import datetime
 import time
 import logging
+import traceback
 import sys
 from collections import defaultdict
 from contextlib import closing
@@ -15,19 +22,81 @@ try:
     import sqlite3
 except ImportError:
     sqlite3 = None
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import Pyro4
 import Pyro4.errors
-from .client import Message
+from Pyro4.util import SerializerBase
 from . import PYRO_MSGBUS_NAME
 
 
-__all__ = ["MemoryStorage", "SqliteStorage", "MessageBus"]
+__all__ = ["MessageBus", "Message", "SerializerBase"]
 
 log = logging.getLogger("Pyro.MessageBus")
-Pyro4.config.COMMTIMEOUT = 30.0
-Pyro4.config.POLLTIMEOUT = 10.0
-Pyro4.config.MAX_MESSAGE_SIZE = 256*1024     # 256 kb
-Pyro4.config.MAX_RETRIES = 3
+
+if sys.version_info >= (3, 0):
+    basestring = str
+
+
+class Message(object):
+    __slots__ = ("msgid", "created", "data")
+
+    def __init__(self, msgid, created, data):
+        self.msgid = msgid
+        self.created = created
+        self.data = data
+
+    @staticmethod
+    def to_dict(obj):
+        return {
+            "__class__": "Pyro4.utils.messagebus.message",
+            "msgid": str(obj.msgid),
+            "created": obj.created.isoformat(),
+            "data": obj.data
+        }
+
+    @classmethod
+    def from_dict(cls, classname, d):
+        return cls(uuid.UUID(d["msgid"]),
+                   datetime.datetime.strptime(d["created"], "%Y-%m-%dT%H:%M:%S.%f"),
+                   d["data"])
+
+# make sure Pyro knows how to serialize the custom Message class
+SerializerBase.register_class_to_dict(Message, Message.to_dict)
+SerializerBase.register_dict_to_class("Pyro4.utils.messagebus.message", Message.from_dict)
+
+
+@Pyro4.expose()
+class Subscriber(object):
+    def __init__(self):
+        self.bus = Pyro4.Proxy("PYRONAME:"+PYRO_MSGBUS_NAME)
+        self.messages = queue.Queue()
+        self.consumer_thread = threading.Thread(target=self.__consume_message)
+        self.consumer_thread.daemon = True
+        self.consumer_thread.start()
+
+    def incoming_message(self, topic, message):
+        self.messages.put((topic, message))
+
+    def __consume_message(self):
+        # this runs in a thread, to pick up and process incoming messages
+        while True:
+            try:
+                topic, message = self.messages.get(timeout=1)
+            except queue.Empty:
+                time.sleep(0.002)
+                continue
+            try:
+                self.consume_message(topic, message)
+            except Exception:
+                print("Error while consuming message:", file=sys.stderr)
+                traceback.print_exc(file=sys.stderr)
+
+    def consume_message(self, topic, message):
+        # this is called from a background thread
+        raise NotImplementedError("subclass should implement this")
 
 
 class MemoryStorage(object):
@@ -72,7 +141,7 @@ class MemoryStorage(object):
             self.subscribers[topic].discard(subscriber)
 
     def all_pending_messages(self):
-        return {topic: msgs.copy() for topic, msgs in self.messages.items()}
+        return {topic: list(msgs) for topic, msgs in self.messages.items()}
 
     def all_subscribers(self):
         all_subs = {}
@@ -180,13 +249,17 @@ CREATE TABLE IF NOT EXISTS Subscription(
 
     def add_message(self, topic, message):
         msg_data = pickle.dumps(message.data, pickle.HIGHEST_PROTOCOL)
+        if sys.version_info < (3, 0):
+            blob_data = buffer(msg_data)
+        else:
+            blob_data = msg_data
         conn = self.dbconn()
         with closing(conn.cursor()) as cursor:
             topic_id = cursor.execute("SELECT id FROM Topic WHERE topic=?", [topic]).fetchone()[0]
             if cursor.execute("SELECT EXISTS(SELECT 1 FROM Subscription WHERE topic=?)", [topic_id]).fetchone()[0]:
                 # there is at least one subscriber for this topic, insert the message (otherwise just discard it)
                 cursor.execute("INSERT INTO Message(id, created, topic, msgdata) VALUES (?,?,?,?)",
-                               [str(message.msgid), message.created, topic_id, msg_data])
+                               [str(message.msgid), message.created, topic_id, blob_data])
         conn.commit()
         self.total_msg_count += 1
 
@@ -220,7 +293,11 @@ CREATE TABLE IF NOT EXISTS Subscription(
         conn.commit()
         result = defaultdict(list)
         for msg in msgs:
-            result[msg[0]].append(Message(uuid.UUID(msg[1]), datetime.datetime.strptime(msg[2], "%Y-%m-%d %H:%M:%S.%f"), pickle.loads(msg[3])))
+            if sys.version_info < (3, 0):
+                blob_data = str(msg[3])
+            else:
+                blob_data = msg[3]
+            result[msg[0]].append(Message(uuid.UUID(msg[1]), datetime.datetime.strptime(msg[2], "%Y-%m-%d %H:%M:%S.%f"), pickle.loads(blob_data)))
         return result
 
     def all_subscribers(self):
@@ -265,12 +342,11 @@ CREATE TABLE IF NOT EXISTS Subscription(
 
 def make_messagebus(clazz):
     if make_messagebus.storagetype == "sqlite":
-        storage = SqliteStorage()
+        return clazz(storage=SqliteStorage())
     elif make_messagebus.storagetype == "memory":
-        storage = MemoryStorage()
+        return clazz(storage=MemoryStorage())
     else:
         raise ValueError("invalid storagetype")
-    return clazz(storage=storage)
 
 
 @Pyro4.expose(instance_mode="single", instance_creator=make_messagebus)
@@ -288,7 +364,7 @@ class MessageBus(object):
         log.info("started")
 
     def add_topic(self, topic):
-        if not isinstance(topic, str):
+        if not isinstance(topic, basestring):
             raise TypeError("topic must be str")
         with self.msg_lock:
             self.storage.create_topic(topic)
@@ -375,14 +451,3 @@ class MessageBus(object):
         timestamp = timestamp.replace(microsecond=0)
         print("\r[%s] stats: %d topics, %d subs, %d pending, %d total     " %
               (timestamp, topics, subscribers, pending, messages), end="")
-
-
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        raise SystemExit("provide storage type as argument (sqlite/memory)")
-    if sys.argv[1] not in ("sqlite", "memory"):
-        raise ValueError("invalid storagetype")
-    make_messagebus.storagetype = sys.argv[1]
-    Pyro4.Daemon.serveSimple({
-        MessageBus: PYRO_MSGBUS_NAME
-    })

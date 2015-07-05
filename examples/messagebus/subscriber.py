@@ -1,5 +1,6 @@
+from __future__ import print_function
 import Pyro4
-from messagebus.client import Subscriber
+from messagebus.messagebus import Subscriber
 from Pyro4.util import excepthook
 import sys
 
