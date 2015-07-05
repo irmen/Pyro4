@@ -10,6 +10,7 @@ from messagebus import PYRO_MSGBUS_NAME
 sys.excepthook = excepthook
 
 
+# @todo use optparse
 if len(sys.argv) != 2:
     raise SystemExit("please give a city or country name as argument.")
 location = sys.argv[1].strip()

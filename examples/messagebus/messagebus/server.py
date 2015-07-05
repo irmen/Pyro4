@@ -11,6 +11,7 @@ Pyro4.config.MAX_MESSAGE_SIZE = 256*1024     # 256 kb
 Pyro4.config.MAX_RETRIES = 3
 
 if __name__ == "__main__":
+    # @todo use optparse
     if len(sys.argv) != 3:
         raise SystemExit("provide hostname to bind on, and storage type (sqlite/memory) as arguments")
     hostname = sys.argv[1].strip()

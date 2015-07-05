@@ -19,6 +19,7 @@ class Subber(Subscriber):
         print("    data:", message.data)
 
 
+# @todo use optparse
 if len(sys.argv) != 2:
     raise SystemExit("give hostname to bind on as argument")
 

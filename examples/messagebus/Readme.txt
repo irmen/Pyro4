@@ -26,8 +26,8 @@ to store topics, messages and subscriptions. If the message bus server dies,
 it will simply continue where it was. No messages will get lost, and it
 also remembers the subscribers. So simply restarting the message bus server
 is enough to get everything back on track without lost data.
-The sqlite storage is quite slow tough, so if you need a high message
-troughput, it may not be suitable.
+The sqlite storage is slower than the in-memory storage (and MUCH slower when
+running on Windows), so if you need a high message troughput, it may not be suitable.
 
 
 @todo maybe promote this into Pyro4.utils?
