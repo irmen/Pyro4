@@ -11,11 +11,12 @@ Pyro4.config.MAX_MESSAGE_SIZE = 256*1024     # 256 kb
 Pyro4.config.MAX_RETRIES = 3
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        raise SystemExit("provide storage type as argument (sqlite/memory)")
-    if sys.argv[1] not in ("sqlite", "memory"):
+    if len(sys.argv) != 3:
+        raise SystemExit("provide hostname to bind on, and storage type (sqlite/memory) as arguments")
+    hostname = sys.argv[1].strip()
+    if sys.argv[2] not in ("sqlite", "memory"):
         raise ValueError("invalid storagetype")
     make_messagebus.storagetype = sys.argv[1]
     Pyro4.Daemon.serveSimple({
         MessageBus: PYRO_MSGBUS_NAME
-    })
+    }, host=hostname)
