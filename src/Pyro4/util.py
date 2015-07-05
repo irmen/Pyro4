@@ -362,10 +362,17 @@ class SerializerBase(object):
                     exceptiontype = getattr(builtins, short_classname)
                     if issubclass(exceptiontype, BaseException):
                         return SerializerBase.make_exception(exceptiontype, data)
+            elif namespace == "sqlite3" and short_classname.endswith("Error"):
+                import sqlite3
+                exceptiontype = getattr(sqlite3, short_classname)
+                if issubclass(exceptiontype, BaseException):
+                    return SerializerBase.make_exception(exceptiontype, data)
+
         # try one of the serializer classes
         for serializer in _serializers.values():
             if classname == serializer.__class__.__name__:
                 return serializer
+        log.warn("unsupported serialized class: " + classname)
         raise Pyro4.errors.SerializeError("unsupported serialized class: " + classname)
 
     @staticmethod
