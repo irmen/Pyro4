@@ -19,8 +19,11 @@ class Subber(Subscriber):
         print("    data:", message.data)
 
 
+if len(sys.argv) != 2:
+    raise SystemExit("give hostname to bind on as argument")
+
 subber = Subber()
-d = Pyro4.Daemon()
+d = Pyro4.Daemon(host=sys.argv[1].strip())
 d.register(subber)
 
 subber.bus.subscribe("weather-forecast", subber)
