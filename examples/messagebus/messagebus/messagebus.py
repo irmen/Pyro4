@@ -143,6 +143,12 @@ class MemoryStorage(object):
     def all_pending_messages(self):
         return {topic: list(msgs) for topic, msgs in self.messages.items()}
 
+    def has_pending_messages(self, topic):
+        return topic in self.messages and any(self.messages[topic])
+
+    def has_subscribers(self, topic):
+        return topic in self.subscribers and any(self.subscribers[topic])
+
     def all_subscribers(self):
         all_subs = {}
         for topic, subs in self.subscribers.items():
@@ -219,9 +225,7 @@ CREATE TABLE IF NOT EXISTS Subscription(
     def topics(self):
         conn = self.dbconn()
         with closing(conn.cursor()) as cursor:
-            topics = [r[0] for r in cursor.execute("SELECT topic FROM Topic").fetchall()]
-        conn.commit()
-        return topics
+            return [r[0] for r in cursor.execute("SELECT topic FROM Topic").fetchall()]
 
     def create_topic(self, topic):
         conn = self.dbconn()
@@ -233,7 +237,11 @@ CREATE TABLE IF NOT EXISTS Subscription(
     def remove_topic(self, topic):
         conn = self.dbconn()
         with closing(conn.cursor()) as cursor:
-            topic_id = cursor.execute("SELECT id FROM Topic WHERE topic=?", [topic]).fetchone([0])
+            topic_id = cursor.execute("SELECT id FROM Topic WHERE topic=?", [topic]).fetchone()
+            if not topic_id:
+                return
+            else:
+                topic_id = topic_id[0]
             sub_uris = [r[0] for r in cursor.execute("SELECT subscriber FROM Subscription WHERE topic=?", [topic_id]).fetchall()]
             cursor.execute("DELETE FROM Subscription WHERE topic=?", [topic_id])
             cursor.execute("DELETE FROM Message WHERE topic=?", [topic_id])
@@ -290,7 +298,6 @@ CREATE TABLE IF NOT EXISTS Subscription(
         conn = self.dbconn()
         with closing(conn.cursor()) as cursor:
             msgs = cursor.execute("SELECT t.topic, m.id, m.created, m.msgdata FROM Message AS m, Topic as t WHERE m.topic=t.id").fetchall()
-        conn.commit()
         result = defaultdict(list)
         for msg in msgs:
             if sys.version_info < (3, 0):
@@ -299,6 +306,16 @@ CREATE TABLE IF NOT EXISTS Subscription(
                 blob_data = msg[3]
             result[msg[0]].append(Message(uuid.UUID(msg[1]), datetime.datetime.strptime(msg[2], "%Y-%m-%d %H:%M:%S.%f"), pickle.loads(blob_data)))
         return result
+
+    def has_pending_messages(self, topic):
+        conn = self.dbconn()
+        with closing(conn.cursor()) as cursor:
+            return cursor.execute("SELECT EXISTS(SELECT 1 FROM Message WHERE topic=(SELECT id FROM Topic WHERE topic=?))", [topic]).fetchone()[0]
+
+    def has_subscribers(self, topic):
+        conn = self.dbconn()
+        with closing(conn.cursor()) as cursor:
+            return cursor.execute("SELECT EXISTS(SELECT 1 FROM Subscription WHERE topic=(SELECT id FROM Topic WHERE topic=?))", [topic]).fetchone()[0]
 
     def all_subscribers(self):
         conn = self.dbconn()
@@ -336,8 +353,7 @@ CREATE TABLE IF NOT EXISTS Subscription(
             topics = cursor.execute("SELECT COUNT(*) FROM Topic").fetchone()[0]
             subscribers = cursor.execute("SELECT COUNT(*) FROM Subscription").fetchone()[0]
             pending = cursor.execute("SELECT COUNT(*) FROM Message").fetchone()[0]
-        conn.commit()
-        return topics, subscribers, pending, self.total_msg_count
+            return topics, subscribers, pending, self.total_msg_count
 
 
 def make_messagebus(clazz):
@@ -370,18 +386,21 @@ class MessageBus(object):
             self.storage.create_topic(topic)
 
     def remove_topic(self, topic):
-        if self.storage.has_pending_messages(topic):
-            raise ValueError("topic still has pending messages")
-        with self.msg_lock:
-            self.storage.remove_topic(topic)
+        try:
+            if self.storage.has_pending_messages(topic) or self.storage.has_subscribers(topic):
+                raise ValueError("topic still has pending messages and/or subscribers")
+        except KeyError:
+            pass
+        else:
+            with self.msg_lock:
+                self.storage.remove_topic(topic)
 
-    def list_topics(self):
+    def topics(self):
         with self.msg_lock:
-            return self.storage.topics()
+            return set(self.storage.topics())
 
     def send(self, topic, message):
         message = Message(uuid.uuid1(), datetime.datetime.now(), message)
-        self.add_topic(topic)
         with self.msg_lock:
             self.storage.add_message(topic, message)
         self.msg_added.set()   # signal that a new message has arrived

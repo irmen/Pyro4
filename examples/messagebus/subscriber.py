@@ -27,6 +27,10 @@ subber = Subber()
 d = Pyro4.Daemon(host=sys.argv[1].strip())
 d.register(subber)
 
+topics = subber.bus.topics()
+print("Topics on the bus: ", topics)
+print("Subscribing to weather-forecast.")
+
 subber.bus.subscribe("weather-forecast", subber)
 # note: we subscribe on the bus *after* registering the subber as a Pyro object
 # this results in Pyro automatically making a proxy for the subber

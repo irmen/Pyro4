@@ -16,6 +16,7 @@ if len(sys.argv) != 2:
 location = sys.argv[1].strip()
 
 bus = Pyro4.Proxy("PYRONAME:"+PYRO_MSGBUS_NAME)
+bus.add_topic("weather-forecast")
 
 while True:
     time.sleep(0.01)
