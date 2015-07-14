@@ -12,6 +12,10 @@ a different location argument when you start each of them to see the results.
 You can also run multiple subscribers at the same time, the published
 messages will be delivered to each subscriber.
 
+There are two kinds of subscribers:
+- one that automatically consumes the messages as soon as they arrive on the bus,
+- one that has a manual message processing loop
+
 
 The messagebus is a bit simplistic if you use the in-memory storage:
 it only keeps messages and subscribers in memory. If the message bus server
@@ -30,4 +34,5 @@ The sqlite storage is slower than the in-memory storage (and MUCH slower when
 running on Windows), so if you need a high message troughput, it may not be suitable.
 
 
-@todo maybe promote this into Pyro4.utils?
+@todo add queue mechanism next to pubsub?
+@todo promote this into Pyro4.utils?

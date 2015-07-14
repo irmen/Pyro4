@@ -177,6 +177,12 @@ You set this via the ``instance_mode`` parameter of the ``@expose`` decorator. T
 - ``session``: a new instance is created for every new proxy connection. This is the default.
 - ``percall``: a new instance is creaded for every single method call.
 
+.. sidebar:: note on instance creation
+
+    When you register a class in this way, be aware that Pyro only creates an actual
+    instance of it when it is first needed. If nobody connects to the deamon requesting
+    the services of this class, no instance will ever be created.
+
 Normally Pyro will simply use a default parameterless constructor call to create the instance.
 If you need special initialization or the class's init method requires parameters, you have to specify
 an ``instance_creator`` callable as well. Pyro will then use that to create an instance of your class.

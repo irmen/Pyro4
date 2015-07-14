@@ -70,21 +70,22 @@ SerializerBase.register_dict_to_class("Pyro4.utils.messagebus.message", Message.
 
 @Pyro4.expose()
 class Subscriber(object):
-    def __init__(self):
+    def __init__(self, auto_consume=True, max_queue_size=5000):
         self.bus = Pyro4.Proxy("PYRONAME:"+PYRO_MSGBUS_NAME)
-        self.messages = queue.Queue()
-        self.consumer_thread = threading.Thread(target=self.__consume_message)
-        self.consumer_thread.daemon = True
-        self.consumer_thread.start()
+        self.received_messages = queue.Queue(maxsize=max_queue_size)
+        if auto_consume:
+            self.__bus_consumer_thread = threading.Thread(target=self.__bus_consume_message)
+            self.__bus_consumer_thread.daemon = True
+            self.__bus_consumer_thread.start()
 
     def incoming_message(self, topic, message):
-        self.messages.put((topic, message))
+        self.received_messages.put((topic, message))
 
-    def __consume_message(self):
+    def __bus_consume_message(self):
         # this runs in a thread, to pick up and process incoming messages
         while True:
             try:
-                topic, message = self.messages.get(timeout=1)
+                topic, message = self.received_messages.get(timeout=1)
             except queue.Empty:
                 time.sleep(0.002)
                 continue

@@ -5,6 +5,8 @@ from Pyro4.util import excepthook
 import sys
 
 sys.excepthook = excepthook
+if sys.version_info < (3, 0):
+    input = raw_input
 
 Pyro4.config.AUTOPROXY = True
 
@@ -12,6 +14,7 @@ Pyro4.config.AUTOPROXY = True
 @Pyro4.expose()
 class Subber(Subscriber):
     def consume_message(self, topic, message):
+        # This callback-method is called automatically when a message arrives on the bus.
         print("\nGOT MESSAGE:")
         print("   topic:", topic)
         print("   msgid:", message.msgid)
@@ -19,12 +22,11 @@ class Subber(Subscriber):
         print("    data:", message.data)
 
 
-# @todo use optparse
-if len(sys.argv) != 2:
-    raise SystemExit("give hostname to bind on as argument")
+hostname = input("hostname to bind on (empty=localhost): ").strip() or "localhost"
 
+# create a messagebus subscriber that uses automatic message retrieval (via a callback)
 subber = Subber()
-d = Pyro4.Daemon(host=sys.argv[1].strip())
+d = Pyro4.Daemon(host=hostname)
 d.register(subber)
 
 topics = subber.bus.topics()
