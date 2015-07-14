@@ -282,6 +282,7 @@ class Proxy(object):
                 # ironpython doesn't grok bytes for b64encode
                 self._pyroHmacKey = str(self._pyroHmacKey)
             encodedHmac = "b64:"+(base64.b64encode(self._pyroHmacKey).decode("ascii"))
+        # for backwards compatibility reasons we also put the timeout and maxretries into the state
         return self._pyroUri.asString(), tuple(self._pyroOneway), tuple(self._pyroMethods), tuple(self._pyroAttrs),\
             self.__pyroTimeout, encodedHmac, self._pyroHandshake, self._pyroMaxRetries
 
@@ -302,10 +303,15 @@ class Proxy(object):
         self.__setstate__((uri, oneway, methods, attrs, timeout, hmac_key, handshake, max_retries))
 
     def __getstate__(self):
-        return self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout, self._pyroHmacKey, self._pyroHandshake, self._pyroMaxRetries  # skip the connection
+        # for backwards compatibility reasons we also put the timeout and maxretries into the state
+        return self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout, self._pyroHmacKey, self._pyroHandshake, self._pyroMaxRetries
 
     def __setstate__(self, state):
-        self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout, self._pyroHmacKey, self._pyroHandshake, self._pyroMaxRetries = state
+        # Note that the timeout and maxretries are also part of the state (for backwards compatibility reasons),
+        # but we're not using them here. Instead we get the configured values from the 'local' config.
+        self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, _, self._pyroHmacKey, self._pyroHandshake, _ = state
+        self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
+        self._pyroMaxRetries = Pyro4.config.MAX_RETRIES
         self._pyroConnection = None
         self._pyroSeq = 0
         self._pyroRawWireResponse = False

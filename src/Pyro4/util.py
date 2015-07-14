@@ -372,7 +372,7 @@ class SerializerBase(object):
         for serializer in _serializers.values():
             if classname == serializer.__class__.__name__:
                 return serializer
-        log.warn("unsupported serialized class: " + classname)
+        log.warning("unsupported serialized class: " + classname)
         raise Pyro4.errors.SerializeError("unsupported serialized class: " + classname)
 
     @staticmethod

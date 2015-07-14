@@ -67,7 +67,7 @@ class MultiplexedSocketServerBase(object):
                     try:
                         self.daemon.clientDisconnect(s)
                     except Exception as x:
-                        log.warn("Error in clientDisconnect: " + str(x))
+                        log.warning("Error in clientDisconnect: " + str(x))
                     s.close()
                     self.clients.discard(s)
 
@@ -187,7 +187,7 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
                                 try:
                                     self.daemon.clientDisconnect(conn)
                                 except Exception as x:
-                                    log.warn("Error in clientDisconnect: " + str(x))
+                                    log.warning("Error in clientDisconnect: " + str(x))
                                 conn.close()
                                 self.clients.discard(conn)
                                 if fn in fileno2connection:
@@ -236,7 +236,7 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                             try:
                                 self.daemon.clientDisconnect(conn)
                             except Exception as x:
-                                log.warn("Error in clientDisconnect: " + str(x))
+                                log.warning("Error in clientDisconnect: " + str(x))
                             conn.close()
                             self.clients.discard(conn)
             except socket.timeout:

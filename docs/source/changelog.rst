@@ -12,6 +12,7 @@ Change Log
 - removed test suite dependencies on unittest2 (was used for Python 2.6)
 - greatly improved the messagebus example, it now contains a persistent storage as well
 - can now deserialize sqlite3 exceptions as well (without the need of registering custom class serializers)
+- serialized proxies now gets the timeout and retries properties from the active config settings rather than from the serialized data
 
 
 **Pyro 4.38**
