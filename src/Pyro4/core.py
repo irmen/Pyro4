@@ -943,6 +943,7 @@ class Daemon(object):
         objects is a dict containing objects to register as keys, and
         their names (or None) as values. If ns is true they will be registered
         in the naming server as well, otherwise they just stay local.
+        If you need to publish on a unix domain socket you can't use this shortcut method.
         See the documentation on 'publishing objects' (in chapter: Servers) for more details.
         """
         if daemon is None:
