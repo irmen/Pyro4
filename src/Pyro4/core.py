@@ -1199,7 +1199,7 @@ class Daemon(object):
                         return obj
                     raise TypeError("instance creator returned object of different type")
                 return clazz()
-            except Exception as x:
+            except Exception:
                 log.exception("could not create pyro object instance")
                 raise
         instance_mode, instance_creator = clazz._pyroInstancing

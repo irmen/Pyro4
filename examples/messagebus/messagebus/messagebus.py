@@ -206,6 +206,7 @@ class SqliteStorage(object):
     If you restart it, it will also reconnect to the subscribers and carry on from where it stopped.
     """
     dbconnections = {}
+
     def __init__(self):
         conn = self.dbconn()
         conn.execute("PRAGMA foreign_keys = ON;")
@@ -230,7 +231,6 @@ CREATE TABLE IF NOT EXISTS Subscription(
   FOREIGN KEY(topic) REFERENCES Topic(id)
 ); """)
         conn.commit()
-        topics = self.topics()
         self.proxy_cache = {}
         self.total_msg_count = 0
 
