@@ -41,7 +41,8 @@ daemon_thread.start()
 # mass subscribe to all available topics
 topics = list(sorted(subber.bus.topics()))
 subber.init_counters(topics)
-subber.bus.subscribe(subber, *topics)
+for t in topics:
+    subber.bus.subscribe(t, subber)
 
 # show a table of the active topics on the bus
 while True:

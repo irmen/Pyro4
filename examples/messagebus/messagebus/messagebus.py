@@ -437,24 +437,21 @@ class MessageBus(object):
     def send_no_ack(self, topic, message):
         self.send(topic, message)
 
-    def subscribe(self, subscriber, *topics):
-        """Add a subscription to one or multiple topics."""
+    def subscribe(self, topic, subscriber):
+        """Add a subscription to a topic."""
         meth = getattr(subscriber, "incoming_message", None)
         if not meth or not callable(meth):
             raise TypeError("subscriber must have incoming_message() method")
-        for topic in topics:
-            self.add_topic(topic)   # make sure the topic exists
+        self.add_topic(topic)   # make sure the topic exists
         with self.msg_lock:
-            for topic in topics:
-                self.storage.add_subscriber(topic, subscriber)
-                log.debug("subscribed: %s -> %s" % (topic, subscriber))
+            self.storage.add_subscriber(topic, subscriber)
+            log.debug("subscribed: %s -> %s" % (topic, subscriber))
 
-    def unsubscribe(self, subscriber, *topics):
-        """Remove a subscription to one or multiple topics."""
+    def unsubscribe(self, topic, subscriber):
+        """Remove a subscription to a topic."""
         with self.msg_lock:
-            for topic in topics:
-                self.storage.remove_subscriber(topic, subscriber)
-                log.debug("unsubscribed %s from topic %s" % (subscriber, topic))
+            self.storage.remove_subscriber(topic, subscriber)
+            log.debug("unsubscribed %s from topic %s" % (subscriber, topic))
 
     def _unsubscribe_many(self, subscribers):
         if subscribers:
