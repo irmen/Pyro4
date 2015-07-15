@@ -302,7 +302,9 @@ CREATE TABLE IF NOT EXISTS Subscription(
         uri = subscriber._pyroUri.asString()
         conn = self.dbconn()
         with closing(conn.cursor()) as cursor:
-            cursor.execute("INSERT INTO Subscription(topic, subscriber) VALUES ((SELECT id FROM Topic WHERE topic=?),?)", [topic, uri])
+            topic_id = cursor.execute("SELECT id FROM Topic WHERE topic=?", [topic]).fetchone()[0]
+            if not cursor.execute("SELECT EXISTS(SELECT 1 FROM Subscription WHERE topic=? AND subscriber=?)", [topic_id, uri]).fetchone()[0]:
+                cursor.execute("INSERT INTO Subscription(topic, subscriber) VALUES (?,?)", [topic_id, uri])
         self.proxy_cache[uri] = subscriber
         conn.commit()
 
