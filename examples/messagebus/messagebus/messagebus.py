@@ -34,7 +34,7 @@ from . import PYRO_MSGBUS_NAME
 
 __all__ = ["MessageBus", "Message", "SerializerBase"]
 
-log = logging.getLogger("Pyro.MessageBus")
+log = logging.getLogger("Pyro4.MessageBus")
 
 if sys.version_info >= (3, 0):
     basestring = str
@@ -449,15 +449,19 @@ class MessageBus(object):
 
     def unsubscribe(self, subscriber, *topics):
         """Remove a subscription to one or multiple topics."""
-        unsub = [(topic, subscriber) for topic in topics]
-        self._unsubscribe_many(unsub)
+        with self.msg_lock:
+            for topic in topics:
+                self.storage.remove_subscriber(topic, subscriber)
+                log.debug("unsubscribed %s from topic %s" % (subscriber, topic))
 
-    def _unsubscribe_many(self, subscriptions):
-        if subscriptions:
+    def _unsubscribe_many(self, subscribers):
+        if subscribers:
+            topics = self.storage.topics()
             with self.msg_lock:
-                for topic, subscriber in subscriptions:
-                    self.storage.remove_subscriber(topic, subscriber)
-                    log.debug("unsubscribed: %s -> %s" % (topic, subscriber))
+                for topic in topics:
+                    for subscriber in subscribers:
+                        self.storage.remove_subscriber(topic, subscriber)
+            log.debug("unsubscribed from all topics: %s" % subscribers)
 
     def __sender(self):
         # this runs in a thread, to pick up and forward incoming messages
@@ -475,7 +479,7 @@ class MessageBus(object):
                 if topic not in subs_per_topic or not messages:
                     continue
                 for subscriber in subs_per_topic[topic]:
-                    if (topic, subscriber) in subs_to_remove:
+                    if subscriber in subs_to_remove:
                         # skipping because subscriber is scheduled for removal
                         continue
                     try:
@@ -490,7 +494,7 @@ class MessageBus(object):
                         # can't deliver them, drop the subscription
                         log.warning("error delivering message(s) for topic=%s, subscriber=%s, error=%r" % (topic, subscriber, x))
                         log.warning("removing subscription because of that error")
-                        subs_to_remove.add((topic, subscriber))
+                        subs_to_remove.add(subscriber)
             # remove processed messages
             if msgs_per_topic:
                 with self.msg_lock:
