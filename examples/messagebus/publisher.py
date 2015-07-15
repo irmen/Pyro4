@@ -1,3 +1,6 @@
+"""
+This is the publisher meant for the 'weather' messages example.
+"""
 from __future__ import print_function
 import time
 import random
@@ -8,12 +11,11 @@ from Pyro4.util import excepthook
 from messagebus import PYRO_MSGBUS_NAME
 
 sys.excepthook = excepthook
+if sys.version_info < (3, 0):
+    input = raw_input
 
 
-# @todo use optparse
-if len(sys.argv) != 2:
-    raise SystemExit("please give a city or country name as argument.")
-location = sys.argv[1].strip()
+location = input("Give city or country to use as location: ").strip() or 'Amsterdam'
 
 bus = Pyro4.Proxy("PYRONAME:"+PYRO_MSGBUS_NAME)
 bus.add_topic("weather-forecast")

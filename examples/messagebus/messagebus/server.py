@@ -12,7 +12,7 @@ from .messagebus import make_messagebus, MessageBus
 import Pyro4
 
 
-Pyro4.config.COMMTIMEOUT = 30.0
+Pyro4.config.COMMTIMEOUT = 20.0
 Pyro4.config.POLLTIMEOUT = 10.0
 Pyro4.config.MAX_MESSAGE_SIZE = 256*1024     # 256 kb
 Pyro4.config.MAX_RETRIES = 3

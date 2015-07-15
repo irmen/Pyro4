@@ -1,8 +1,11 @@
+"""
+This is a subscriber meant for the 'weather' messages example.
+"""
 from __future__ import print_function
+import sys
 import Pyro4
 from messagebus.messagebus import Subscriber
 from Pyro4.util import excepthook
-import sys
 
 sys.excepthook = excepthook
 if sys.version_info < (3, 0):
@@ -33,7 +36,7 @@ topics = subber.bus.topics()
 print("Topics on the bus: ", topics)
 print("Subscribing to weather-forecast.")
 
-subber.bus.subscribe("weather-forecast", subber)
+subber.bus.subscribe(subber, "weather-forecast")
 # note: we subscribe on the bus *after* registering the subber as a Pyro object
 # this results in Pyro automatically making a proxy for the subber
 print("Subscribed on weather-forecast")

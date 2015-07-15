@@ -81,6 +81,11 @@ class Subscriber(object):
     def incoming_message(self, topic, message):
         self.received_messages.put((topic, message))
 
+    def incoming_messages(self, topic, messages):
+        # this is an optimization to receive multiple messages for the topic at the same time
+        for msg in messages:
+            self.incoming_message(topic, msg)
+
     def __bus_consume_message(self):
         # this runs in a thread, to pick up and process incoming messages
         while True:
@@ -108,6 +113,7 @@ class MemoryStorage(object):
     def __init__(self):
         self.messages = {}      # topic -> list of pending messages
         self.subscribers = {}   # topic -> set of subscribers
+        self.proxy_cache = {}
         self.total_msg_count = 0
 
     def topics(self):
@@ -126,6 +132,13 @@ class MemoryStorage(object):
         for sub in self.subscribers.get(topic, set()):
             if hasattr(sub, "_pyroRelease"):
                 sub._pyroRelease()
+            if hasattr(sub, "_pyroUri"):
+                try:
+                    proxy = self.proxy_cache[sub._pyroUri]
+                    proxy._pyroRelease()
+                    del self.proxy_cache[sub._pyroUri]
+                except KeyError:
+                    pass
         del self.subscribers[topic]
 
     def add_message(self, topic, message):
@@ -133,12 +146,23 @@ class MemoryStorage(object):
         self.total_msg_count += 1
 
     def add_subscriber(self, topic, subscriber):
+        if hasattr(subscriber, "_pyroUri"):
+            # if we already have a subscriber proxy for this uri, use that instead
+            subscriber = self.proxy_cache.get(subscriber._pyroUri, subscriber)
+            self.proxy_cache[subscriber._pyroUri] = subscriber
         self.subscribers[topic].add(subscriber)
 
     def remove_subscriber(self, topic, subscriber):
         if subscriber in self.subscribers[topic]:
             if hasattr(subscriber, "_pyroRelease"):
                 subscriber._pyroRelease()
+            if hasattr(subscriber, "_pyroUri"):
+                try:
+                    proxy = self.proxy_cache[subscriber._pyroUri]
+                    proxy._pyroRelease()
+                    del self.proxy_cache[subscriber._pyroUri]
+                except KeyError:
+                    pass
             self.subscribers[topic].discard(subscriber)
 
     def all_pending_messages(self):
@@ -164,9 +188,6 @@ class MemoryStorage(object):
                     try:
                         msg_list.remove(message)
                     except ValueError:
-                        import pdb
-                        pdb.set_trace()
-                        raise  # XXX
                         pass
 
     def stats(self):
@@ -264,7 +285,10 @@ CREATE TABLE IF NOT EXISTS Subscription(
             blob_data = msg_data
         conn = self.dbconn()
         with closing(conn.cursor()) as cursor:
-            topic_id = cursor.execute("SELECT id FROM Topic WHERE topic=?", [topic]).fetchone()[0]
+            res = cursor.execute("SELECT id FROM Topic WHERE topic=?", [topic]).fetchone()
+            if not res:
+                raise KeyError(topic)
+            topic_id = res[0]
             if cursor.execute("SELECT EXISTS(SELECT 1 FROM Subscription WHERE topic=?)", [topic_id]).fetchone()[0]:
                 # there is at least one subscriber for this topic, insert the message (otherwise just discard it)
                 cursor.execute("INSERT INTO Message(id, created, topic, msgdata) VALUES (?,?,?,?)",
@@ -411,22 +435,27 @@ class MessageBus(object):
     def send_no_ack(self, topic, message):
         self.send(topic, message)
 
-    def subscribe(self, topic, subscriber):
+    def subscribe(self, subscriber, *topics):
+        """Add a subscription to one or multiple topics."""
         meth = getattr(subscriber, "incoming_message", None)
         if not meth or not callable(meth):
             raise TypeError("subscriber must have incoming_message() method")
-        self.add_topic(topic)
+        for topic in topics:
+            self.add_topic(topic)   # make sure the topic exists
         with self.msg_lock:
-            self.storage.add_subscriber(topic, subscriber)
-        log.debug("subscribed: %s -> %s" % (topic, subscriber))
+            for topic in topics:
+                self.storage.add_subscriber(topic, subscriber)
+                log.debug("subscribed: %s -> %s" % (topic, subscriber))
 
-    def unsubscribe(self, topic, subscriber):
-        self.unsubscribe_many([(topic, subscriber)])
+    def unsubscribe(self, subscriber, *topics):
+        """Remove a subscription to one or multiple topics."""
+        unsub = [(topic, subscriber) for topic in topics]
+        self._unsubscribe_many(unsub)
 
-    def unsubscribe_many(self, subs):
-        if subs:
+    def _unsubscribe_many(self, subscriptions):
+        if subscriptions:
             with self.msg_lock:
-                for topic, subscriber in subs:
+                for topic, subscriber in subscriptions:
                     self.storage.remove_subscriber(topic, subscriber)
                     log.debug("unsubscribed: %s -> %s" % (topic, subscriber))
 
@@ -443,27 +472,26 @@ class MessageBus(object):
                 subs_per_topic = self.storage.all_subscribers()
             subs_to_remove = set()
             for topic, messages in msgs_per_topic.items():
-                if topic in subs_per_topic:
-                    subscribers = subs_per_topic[topic]
-                    for message in messages:
-                        for subscriber in subscribers:
-                            if (topic, subscriber) in subs_to_remove:
-                                # skipping because subber is scheduled for removal
-                                continue
-                            try:
-                                subscriber.incoming_message(topic, message)
-                            except Exception as x:
-                                # can't deliver it, drop the message and the subscription
-                                log.warn("error delivering message for topic=%s, msgid=%s, subscriber=%s, error=%r" %
-                                         (topic, message.msgid, subscriber, x))
-                                log.warn("removing subscription because of that error")
-                                subs_to_remove.add((topic, subscriber))
+                if topic not in subs_per_topic or not messages:
+                    continue
+                for subscriber in subs_per_topic[topic]:
+                    if (topic, subscriber) in subs_to_remove:
+                        # skipping because subscriber is scheduled for removal
+                        continue
+                    try:
+                        # send the batch of messages pending for this topic in one go
+                        subscriber.incoming_messages(topic, messages)
+                    except Exception as x:
+                        # can't deliver them, drop the subscription
+                        log.warning("error delivering %d message(s) for topic=%s, subscriber=%s, error=%r" % (len(messages), topic, subscriber, x))
+                        log.warning("removing subscription because of that error")
+                        subs_to_remove.add((topic, subscriber))
             # remove processed messages
             if msgs_per_topic:
                 with self.msg_lock:
                     self.storage.remove_messages(msgs_per_topic)
-            # remove broken subbers
-            self.unsubscribe_many(subs_to_remove)
+            # remove broken subscribers
+            self._unsubscribe_many(subs_to_remove)
 
     def _print_stats(self):
         topics, subscribers, pending, messages = self.storage.stats()

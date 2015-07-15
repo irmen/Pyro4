@@ -1,3 +1,6 @@
+"""
+This is a subscriber meant for the 'weather' messages example.
+"""
 from __future__ import print_function
 import sys
 import threading
@@ -49,7 +52,7 @@ topics = subber.bus.topics()
 print("Topics on the bus: ", topics)
 print("Subscribing to weather-forecast.")
 
-subber.bus.subscribe("weather-forecast", subber)
+subber.bus.subscribe(subber, "weather-forecast")
 # note: we subscribe on the bus *after* registering the subber as a Pyro object
 # this results in Pyro automatically making a proxy for the subber
 print("Subscribed on weather-forecast")
@@ -57,7 +60,7 @@ print("Subscribed on weather-forecast")
 # run the manual message loop
 print("Entering message loop, you should see the msg count increasing.")
 subber.manual_message_loop()
-subber.bus.unsubscribe("weather-forecast", subber)
+subber.bus.unsubscribe(subber, "weather-forecast")
 print("Unsubscribed from the topic.")
 print("Entering message loop again, you should see the msg count decrease.")
 subber.manual_message_loop()
