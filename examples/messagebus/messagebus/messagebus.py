@@ -479,11 +479,16 @@ class MessageBus(object):
                         # skipping because subscriber is scheduled for removal
                         continue
                     try:
-                        # send the batch of messages pending for this topic in one go
-                        subscriber.incoming_messages(topic, messages)
+                        try:
+                            # send the batch of messages pending for this topic in one go
+                            subscriber.incoming_messages(topic, messages)
+                        except Pyro4.errors.MessageTooLargeError:
+                            # the batch doesn't fit in the configured max msg size, send them one by one instead
+                            for message in messages:
+                                subscriber.incoming_message(topic, message)
                     except Exception as x:
                         # can't deliver them, drop the subscription
-                        log.warning("error delivering %d message(s) for topic=%s, subscriber=%s, error=%r" % (len(messages), topic, subscriber, x))
+                        log.warning("error delivering message(s) for topic=%s, subscriber=%s, error=%r" % (topic, subscriber, x))
                         log.warning("removing subscription because of that error")
                         subs_to_remove.add((topic, subscriber))
             # remove processed messages
