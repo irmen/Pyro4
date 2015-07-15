@@ -13,6 +13,7 @@ Change Log
 - greatly improved the messagebus example, it now contains a persistent storage as well
 - can now deserialize sqlite3 exceptions as well (without the need of registering custom class serializers)
 - serialized proxies now gets the timeout and retries properties from the active config settings rather than from the serialized data
+- new MessageTooLargeError when the max message size is exceeded (subclesses ProtocolError, which was the old error thrown in this case)
 
 
 **Pyro 4.38**

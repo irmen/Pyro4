@@ -101,7 +101,7 @@ class Message(object):
             self.annotations["HMAC"] = self.hmac()   # should be done last because it calculates hmac over other annotations
         self.annotations_size = sum([6 + len(v) for v in self.annotations.values()])
         if 0 < Pyro4.config.MAX_MESSAGE_SIZE < (self.data_size + self.annotations_size):
-            raise errors.ProtocolError("max message size exceeded (%d where max=%d)" % (self.data_size + self.annotations_size, Pyro4.config.MAX_MESSAGE_SIZE))
+            raise errors.MessageTooLargeError("max message size exceeded (%d where max=%d)" % (self.data_size + self.annotations_size, Pyro4.config.MAX_MESSAGE_SIZE))
 
     def __repr__(self):
         return "<%s.%s at %x, type=%d flags=%d seq=%d datasize=%d #ann=%d>" % (self.__module__, self.__class__.__name__, id(self), self.type, self.flags, self.seq, self.data_size, len(self.annotations))
@@ -171,7 +171,7 @@ class Message(object):
             errorMsg = "max message size exceeded (%d where max=%d)" % (msg.data_size + msg.annotations_size, Pyro4.config.MAX_MESSAGE_SIZE)
             log.error("connection " + str(connection) + ": " + errorMsg)
             connection.close()  # close the socket because at this point we can't return the correct sequence number for returning an error message
-            exc = errors.ProtocolError(errorMsg)
+            exc = errors.MessageTooLargeError(errorMsg)
             exc.pyroMsg = msg
             raise exc
         if requiredMsgTypes and msg.type not in requiredMsgTypes:

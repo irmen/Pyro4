@@ -33,6 +33,11 @@ class ProtocolError(CommunicationError):
     pass
 
 
+class MessageTooLargeError(ProtocolError):
+    """Pyro received a message or was trying to send a message that exceeds the maximum message size as configured."""
+    pass
+
+
 class NamingError(PyroError):
     """There was a problem related to the name server or object names."""
     pass
