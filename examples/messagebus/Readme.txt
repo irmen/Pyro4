@@ -39,3 +39,7 @@ also remembers the subscribers. So simply restarting the message bus server
 is enough to get everything back on track without lost data.
 The sqlite storage is slower than the in-memory storage (and MUCH slower when
 running on Windows), so if you need a high message troughput, it may not be suitable.
+
+
+There's no queue mechanism, this is left as an excercise for the reader.
+(A queue is 1-to-1 communication whereas pubsub is 1-to-many)
