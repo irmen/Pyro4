@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.40**
+
+- ...
+
+
 **Pyro 4.39**
 
 - dropped support for Python 2.6 and Python 3.2. Supported versions are now 2.7, 3.3, 3.4 and up.
