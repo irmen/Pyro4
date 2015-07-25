@@ -209,7 +209,7 @@ class SqliteStorage(object):
 
     def __init__(self):
         conn = self.dbconn()
-        conn.execute("PRAGMA foreign_keys = ON;")
+        conn.execute("PRAGMA foreign_keys=ON")
         conn.execute("""
 CREATE TABLE IF NOT EXISTS Topic (
   id  INTEGER PRIMARY KEY,
@@ -258,6 +258,7 @@ CREATE TABLE IF NOT EXISTS Subscription(
 
     def remove_topic(self, topic):
         conn = self.dbconn()
+        conn.execute("PRAGMA foreign_keys=ON")
         with closing(conn.cursor()) as cursor:
             topic_id = cursor.execute("SELECT id FROM Topic WHERE topic=?", [topic]).fetchone()
             if not topic_id:
@@ -284,6 +285,7 @@ CREATE TABLE IF NOT EXISTS Subscription(
         else:
             blob_data = msg_data
         conn = self.dbconn()
+        conn.execute("PRAGMA foreign_keys=ON")
         with closing(conn.cursor()) as cursor:
             res = cursor.execute("SELECT id FROM Topic WHERE topic=?", [topic]).fetchone()
             if not res:
@@ -301,6 +303,7 @@ CREATE TABLE IF NOT EXISTS Subscription(
             raise ValueError("can only store subscribers that are a Pyro proxy")
         uri = subscriber._pyroUri.asString()
         conn = self.dbconn()
+        conn.execute("PRAGMA foreign_keys=ON")
         with closing(conn.cursor()) as cursor:
             topic_id = cursor.execute("SELECT id FROM Topic WHERE topic=?", [topic]).fetchone()[0]
             if not cursor.execute("SELECT EXISTS(SELECT 1 FROM Subscription WHERE topic=? AND subscriber=?)", [topic_id, uri]).fetchone()[0]:
@@ -310,6 +313,7 @@ CREATE TABLE IF NOT EXISTS Subscription(
 
     def remove_subscriber(self, topic, subscriber):
         conn = self.dbconn()
+        conn.execute("PRAGMA foreign_keys=ON")
         uri = subscriber._pyroUri.asString()
         with closing(conn.cursor()) as cursor:
             cursor.execute("DELETE FROM Subscription WHERE topic=(SELECT id FROM Topic WHERE topic=?) AND subscriber=?", [topic, uri])
@@ -370,6 +374,7 @@ CREATE TABLE IF NOT EXISTS Subscription(
             return
         all_guids = [[str(message.msgid)] for msglist in topics_messages.values() for message in msglist]
         conn = self.dbconn()
+        conn.execute("PRAGMA foreign_keys=ON")
         with closing(conn.cursor()) as cursor:
             cursor.executemany("DELETE FROM Message WHERE id = ?", all_guids)
         conn.commit()
