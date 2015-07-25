@@ -15,7 +15,7 @@ from Pyro4.errors import NamingError, PyroError, ProtocolError
 from Pyro4 import core, socketutil
 import Pyro4.constants
 
-__all__ = ["locateNS", "resolve", "startNS", "startNSloop", "MemoryStorage"]
+__all__ = ["locateNS", "resolve", "type_meta", "startNS", "startNSloop", "MemoryStorage"]
 
 if sys.version_info >= (3, 0):
     basestring = str
@@ -32,14 +32,23 @@ class MemoryStorage(dict):
     def __init__(self, **kwargs):
         super(MemoryStorage, self).__init__(**kwargs)
 
-    def optimized_prefix_list(self, prefix):
+    def __setitem__(self, key, value):
+        uri, metadata = value
+        super(MemoryStorage, self).__setitem__(key, (uri, metadata or frozenset()))
+
+    def optimized_prefix_list(self, prefix, return_metadata=False):
         return None
 
-    def optimized_regex_list(self, regex):
+    def optimized_regex_list(self, regex, return_metadata=False):
         return None
 
-    def everything(self):
-        return self.copy()
+    def optimized_metadata_search(self, metadata, return_metadata=False):
+        return None
+
+    def everything(self, return_metadata=False):
+        if return_metadata:
+            return self.copy()
+        return {name: uri for name, (uri, metadata) in self.items()}
 
     def remove_items(self, items):
         for item in items:
@@ -67,16 +76,21 @@ class NameServer(object):
     def count(self):
         return len(self.storage)
 
-    def lookup(self, name):
-        """Lookup the given name, returns an URI if found"""
+    def lookup(self, name, return_metadata=False):
+        """
+        Lookup the given name, returns an URI if found.
+        Returns tuple (uri, metadata) if return_metadata is True.
+        """
         try:
-            return core.URI(self.storage[name])
+            uri, metadata = self.storage[name]
+            uri = core.URI(uri)
+            return (uri, metadata or frozenset()) if return_metadata else uri
         except KeyError:
             raise NamingError("unknown name: " + name)
 
-    def register(self, name, uri, safe=False):
+    def register(self, name, uri, safe=False, metadata=None):
         """Register a name with an URI. If safe is true, name cannot be registered twice.
-        The uri can be a string or an URI object."""
+        The uri can be a string or an URI object. Metadata must be a collection of strings."""
         if isinstance(uri, core.URI):
             uri = uri.asString()
         elif not isinstance(uri, basestring):
@@ -88,7 +102,18 @@ class NameServer(object):
         with self.lock:
             if safe and name in self.storage:
                 raise NamingError("name already registered: " + name)
-            self.storage[name] = uri
+            self.storage[name] = uri, metadata
+
+    def set_metadata(self, name, metadata):
+        """update the metadata for an existing registration"""
+        if not isinstance(name, basestring):
+            raise TypeError("name must be a str")
+        with self.lock:
+            try:
+                uri, old_meta = self.storage[name]
+                self.storage[name] = uri, metadata
+            except KeyError:
+                raise NamingError("unknown name: " + name)
 
     def remove(self, name=None, prefix=None, regex=None):
         """Remove a registration. returns the number of items removed."""
@@ -111,22 +136,24 @@ class NameServer(object):
         return 0
 
     # noinspection PyNoneFunctionAssignment
-    def list(self, prefix=None, regex=None):
+    def list(self, prefix=None, regex=None, metadata=None, return_metadata=False):
         """Retrieve the registered items as a dictionary name-to-URI. The URIs
         in the resulting dict are strings, not URI objects.
-        You can filter by prefix or by regex."""
+        You can filter by prefix or by regex or by metadata subset (separately)"""
+        if sum(1 for x in [prefix, regex, metadata] if x is not None) > 1:
+            raise ValueError("you can only filter on one thing at a time")
         with self.lock:
             if prefix:
-                result = self.storage.optimized_prefix_list(prefix)
+                result = self.storage.optimized_prefix_list(prefix, return_metadata)
                 if result is not None:
                     return result
                 result = {}
                 for name in self.storage:
                     if name.startswith(prefix):
-                        result[name] = self.storage[name]
+                        result[name] = self.storage[name] if return_metadata else self.storage[name][0]
                 return result
             elif regex:
-                result = self.storage.optimized_regex_list(regex)
+                result = self.storage.optimized_regex_list(regex, return_metadata)
                 if result is not None:
                     return result
                 result = {}
@@ -138,11 +165,22 @@ class NameServer(object):
                 else:
                     for name in self.storage:
                         if regex.match(name):
-                            result[name] = self.storage[name]
+                            result[name] = self.storage[name] if return_metadata else self.storage[name][0]
                     return result
+            if metadata:
+                # return the entries which have the given metadata as (a subset of) their metadata
+                result = self.storage.optimized_metadata_search(metadata, return_metadata)
+                if result is not None:
+                    return result
+                metadata = frozenset(metadata)
+                result = {}
+                for name, (uri, meta) in self.storage.everything(return_metadata=True).items():
+                    if metadata.issubset(meta):
+                        result[name] = (uri, meta) if return_metadata else uri
+                return result
             else:
                 # just return (a copy of) everything
-                return self.storage.everything()
+                return self.storage.everything(return_metadata)
 
     def ping(self):
         """A simple test method to check if the name server is running correctly."""
@@ -170,6 +208,9 @@ class NameServerDaemon(core.Daemon):
             log.debug("using persistent dbm storage in file %s", dbmfile)
             from Pyro4.naming_storage import DbmStorage
             self.nameserver = NameServer(DbmStorage(dbmfile))
+            warning = "Warning: the DbmStorage doesn't support metadata."
+            log.warning(warning)
+            print(warning)
         elif storage.startswith("sql:") and len(storage) > 4:
             sqlfile = storage[4:]
             log.debug("using persistent sql storage in file %s", sqlfile)
@@ -182,7 +223,8 @@ class NameServerDaemon(core.Daemon):
             log.debug("number of existing entries in storage: %d", existing_count)
         super(NameServerDaemon, self).__init__(host, port, unixsocket, nathost=nathost, natport=natport)
         self.register(self.nameserver, Pyro4.constants.NAMESERVER_NAME)
-        self.nameserver.register(Pyro4.constants.NAMESERVER_NAME, self.uriFor(self.nameserver))
+        metadata = {"class:Pyro4.naming.NameServer"}
+        self.nameserver.register(Pyro4.constants.NAMESERVER_NAME, self.uriFor(self.nameserver), metadata=metadata)
         log.info("nameserver daemon created")
 
     def close(self):
@@ -451,6 +493,15 @@ def resolve(uri, hmac_key=None):
         return uri
     else:
         raise PyroError("invalid uri protocol")
+
+
+def type_meta(class_or_object, prefix="class:"):
+    """extracts type metadata from the given class or object, can be used as Name server metadata."""
+    if hasattr(class_or_object, "__mro__"):
+        return {prefix+c.__module__+"."+c.__name__ for c in class_or_object.__mro__ if c.__module__ not in ("builtins", "__builtin__")}
+    if hasattr(class_or_object, "__class__"):
+        return type_meta(class_or_object.__class__)
+    return frozenset()
 
 
 def main(args=None):

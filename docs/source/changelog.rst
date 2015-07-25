@@ -4,7 +4,9 @@ Change Log
 
 **Pyro 4.40**
 
-- ...
+- support for metadata added to the name server (list of strings per registration).
+  You need to use memory or sqlite storage for this; the dbm storage doesn't support it.
+- name server has a new method set_metadata(), to set new metadata for an existing registration
 
 
 **Pyro 4.39**

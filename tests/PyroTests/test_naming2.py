@@ -253,6 +253,85 @@ class OfflineNameServerTests(unittest.TestCase):
         ns.close()
         bc.close()
 
+    def testMetadata(self):
+        self.storageProvider.clear()
+        ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
+        # register some names with metadata, and perform simple lookups
+        ns.register("meta1", "PYRO:meta1@localhost:1111", metadata={"a", "b", "c"})
+        ns.register("meta2", "PYRO:meta2@localhost:2222", metadata={"x", "y", "z"})
+        uri = ns.lookup("meta1")
+        self.assertEqual("meta1", uri.object)
+        uri, metadata = ns.lookup("meta1", return_metadata=True)
+        self.assertEqual("meta1", uri.object)
+        self.assertSetEqual({"a", "b", "c"}, metadata)
+        uri = ns.lookup("meta2")
+        self.assertEqual("meta2", uri.object)
+        uri, metadata = ns.lookup("meta2", return_metadata=True)
+        self.assertEqual("meta2", uri.object)
+        self.assertSetEqual({"x", "y", "z"}, metadata)
+        # get a list of everything, without and with metadata
+        reg = ns.list()
+        self.assertDictEqual({'meta1': 'PYRO:meta1@localhost:1111', 'meta2': 'PYRO:meta2@localhost:2222'}, reg)
+        reg = ns.list(return_metadata=True)
+        uri1, meta1 = reg["meta1"]
+        uri2, meta2 = reg["meta2"]
+        self.assertEqual("PYRO:meta1@localhost:1111", uri1)
+        self.assertSetEqual({"a", "b", "c"}, meta1)
+        self.assertEqual("PYRO:meta2@localhost:2222", uri2)
+        self.assertSetEqual({"x", "y", "z"}, meta2)
+        # filter on metadata subset
+        reg = ns.list(metadata={"a", "c"}, return_metadata=False)
+        self.assertEqual(1, len(reg))
+        self.assertEqual("PYRO:meta1@localhost:1111", reg["meta1"])
+        reg = ns.list(metadata={"a", "c"}, return_metadata=True)
+        self.assertEqual(1, len(reg))
+        uri1, meta1 = reg["meta1"]
+        self.assertEqual("PYRO:meta1@localhost:1111", uri1)
+        self.assertSetEqual({"a", "b", "c"}, meta1)
+        reg = ns.list(metadata={"a", "wrong"})
+        self.assertEqual({}, reg)
+        reg = ns.list(metadata={"a", "b", "c", "wrong"})
+        self.assertEqual({}, reg)
+        reg = ns.list(metadata={"a", "c", "x"})
+        self.assertEqual({}, reg)
+        # update some metadata
+        with self.assertRaises(NamingError):
+            ns.set_metadata("derpaderp", set())
+        ns.set_metadata("meta1", {"one", "two", "three"})
+        uri, meta = ns.lookup("meta1", return_metadata=True)
+        self.assertSetEqual({"one", "two", "three"}, meta)
+        # remove record that has some metadata
+        ns.remove("meta1")
+        self.assertEqual(["meta2"], list(ns.list().keys()))
+        # other list filters
+        reg = ns.list(prefix="meta", return_metadata=True)
+        self.assertEqual(1, len(reg))
+        self.assertSetEqual({"x", "y", "z"}, reg["meta2"][1])
+        reg = ns.list(regex="meta2.*", return_metadata=True)
+        self.assertEqual(1, len(reg))
+        self.assertSetEqual({"x", "y", "z"}, reg["meta2"][1])
+        self.assertEqual(1, ns.count())
+
+    def testEmptyMetadata(self):
+        self.storageProvider.clear()
+        ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
+        # register some names with metadata, and perform simple lookups
+        ns.register("meta1", "PYRO:meta1@localhost:1111", metadata=[])
+        uri, meta = ns.lookup("meta1", return_metadata=True)
+        self.assertSetEqual(set(), meta)
+        registrations = ns.list(return_metadata=True)
+        for name in registrations:
+            uri, meta = registrations[name]
+            self.assertSetEqual(set(), meta)
+        ns.set_metadata("meta1", [])
+
+    def testListNoMultipleFilters(self):
+        ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
+        with self.assertRaises(ValueError):
+            ns.list(prefix="a", regex="a")
+        with self.assertRaises(ValueError):
+            ns.list(prefix="a", metadata=[])
+
 
 @unittest.skipIf(Pyro4.naming_storage.dbm is None, "dbm must be available")
 class OfflineNameServerTestsDbmStorage(OfflineNameServerTests):
@@ -268,6 +347,10 @@ class OfflineNameServerTestsDbmStorage(OfflineNameServerTests):
         import glob
         for file in glob.glob("pyro-test.dbm*"):
             os.remove(file)
+
+    @unittest.skip("dbmstorage doesn't support metadata")
+    def testMetadata(self):
+        pass
 
 
 @unittest.skipIf(Pyro4.naming_storage.sqlite3 is None, "sqlite3 must be available")
