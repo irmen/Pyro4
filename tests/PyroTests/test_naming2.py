@@ -296,7 +296,7 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertEqual({}, reg)
         # update some metadata
         with self.assertRaises(NamingError):
-            ns.set_metadata("derpaderp", set())
+            ns.set_metadata("notexistingname", set())
         ns.set_metadata("meta1", {"one", "two", "three"})
         uri, meta = ns.lookup("meta1", return_metadata=True)
         self.assertSetEqual({"one", "two", "three"}, meta)
