@@ -1,9 +1,0 @@
-Ideas / TODO
-
-The most pressing issues can be found in the issue tracker on Github.
-
-* Make Pyro support listening to multiple network interfaces at the same time (and returning the correct URI from the daemon. Name server is harder...)
-* add multiprocess server (forking?) based on multiprocessing?
-* concurrency strategies in the daemon? (reentrant, single)
-* Pyro-over-SSH (not SSL/TLS) using Paramiko?
-
