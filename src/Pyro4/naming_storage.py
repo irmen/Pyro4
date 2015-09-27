@@ -179,7 +179,7 @@ class SqlStorage(MutableMapping):
         # defining a regex function isn't much better than simply regexing ourselves over the full table.
         return None
 
-    def optimized_metadata_search(self, metadata=None, metadata_any=None, return_metadata=False):
+    def optimized_metadata_search(self, metadata_all=None, metadata_any=None, return_metadata=False):
         try:
             with closing(sqlite3.connect(self.dbfile)) as db:
                 if metadata_any:
@@ -189,10 +189,10 @@ class SqlStorage(MutableMapping):
                           .format(seq=",".join(['?']*len(metadata_any)))
                 else:
                     # all of the given metadata
-                    params = list(metadata)
-                    params.append(len(metadata))
+                    params = list(metadata_all)
+                    params.append(len(metadata_all))
                     sql = "SELECT id, name, uri FROM pyro_names WHERE id IN (SELECT object FROM pyro_metadata WHERE metadata IN ({seq}) " \
-                          "GROUP BY object HAVING COUNT(metadata)=?)".format(seq=",".join(['?']*len(metadata)))
+                          "GROUP BY object HAVING COUNT(metadata)=?)".format(seq=",".join(['?']*len(metadata_all)))
                 result = db.execute(sql, params).fetchall()
                 if return_metadata:
                     names = {}
@@ -372,8 +372,8 @@ class DbmStorage(MutableMapping):
             except dbm.error as e:
                 raise NamingError("dbm error in optimized_regex_list: "+str(e))
 
-    def optimized_metadata_search(self, metadata=None, metadata_any=None, return_metadata=False):
-        if metadata or metadata_any:
+    def optimized_metadata_search(self, metadata_all=None, metadata_any=None, return_metadata=False):
+        if metadata_all or metadata_any:
             raise NamingError("DbmStorage doesn't support metadata")
         return self.everything(return_metadata)
 

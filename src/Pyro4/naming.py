@@ -42,7 +42,7 @@ class MemoryStorage(dict):
     def optimized_regex_list(self, regex, return_metadata=False):
         return None
 
-    def optimized_metadata_search(self, metadata=None, metadata_any=None, return_metadata=False):
+    def optimized_metadata_search(self, metadata_all=None, metadata_any=None, return_metadata=False):
         return None
 
     def everything(self, return_metadata=False):
@@ -136,11 +136,11 @@ class NameServer(object):
         return 0
 
     # noinspection PyNoneFunctionAssignment
-    def list(self, prefix=None, regex=None, metadata=None, metadata_any=None, return_metadata=False):
+    def list(self, prefix=None, regex=None, metadata_all=None, metadata_any=None, return_metadata=False):
         """Retrieve the registered items as a dictionary name-to-URI. The URIs
         in the resulting dict are strings, not URI objects.
         You can filter by prefix or by regex or by metadata subset (separately)"""
-        if sum(1 for x in [prefix, regex, metadata, metadata_any] if x is not None) > 1:
+        if sum(1 for x in [prefix, regex, metadata_all, metadata_any] if x is not None) > 1:
             raise ValueError("you can only filter on one thing at a time")
         with self.lock:
             if prefix:
@@ -167,15 +167,15 @@ class NameServer(object):
                         if regex.match(name):
                             result[name] = self.storage[name] if return_metadata else self.storage[name][0]
                     return result
-            elif metadata:
+            elif metadata_all:
                 # return the entries which have all of the given metadata as (a subset of) their metadata
-                result = self.storage.optimized_metadata_search(metadata, return_metadata=return_metadata)
+                result = self.storage.optimized_metadata_search(metadata_all=metadata_all, return_metadata=return_metadata)
                 if result is not None:
                     return result
-                metadata = frozenset(metadata)
+                metadata_all = frozenset(metadata_all)
                 result = {}
                 for name, (uri, meta) in self.storage.everything(return_metadata=True).items():
-                    if metadata.issubset(meta):
+                    if metadata_all.issubset(meta):
                         result[name] = (uri, meta) if return_metadata else uri
                 return result
             elif metadata_any:

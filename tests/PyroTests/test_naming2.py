@@ -280,19 +280,19 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertEqual("PYRO:meta2@localhost:2222", uri2)
         self.assertSetEqual({"x", "y", "z"}, meta2)
         # filter on metadata subset
-        reg = ns.list(metadata={"a", "c"}, return_metadata=False)
+        reg = ns.list(metadata_all={"a", "c"}, return_metadata=False)
         self.assertEqual(1, len(reg))
         self.assertEqual("PYRO:meta1@localhost:1111", reg["meta1"])
-        reg = ns.list(metadata={"a", "c"}, return_metadata=True)
+        reg = ns.list(metadata_all={"a", "c"}, return_metadata=True)
         self.assertEqual(1, len(reg))
         uri1, meta1 = reg["meta1"]
         self.assertEqual("PYRO:meta1@localhost:1111", uri1)
         self.assertSetEqual({"a", "b", "c"}, meta1)
-        reg = ns.list(metadata={"a", "wrong"})
+        reg = ns.list(metadata_all={"a", "wrong"})
         self.assertEqual({}, reg)
-        reg = ns.list(metadata={"a", "b", "c", "wrong"})
+        reg = ns.list(metadata_all={"a", "b", "c", "wrong"})
         self.assertEqual({}, reg)
-        reg = ns.list(metadata={"a", "c", "x"})
+        reg = ns.list(metadata_all={"a", "c", "x"})
         self.assertEqual({}, reg)
         # update some metadata
         with self.assertRaises(NamingError):
@@ -347,7 +347,7 @@ class OfflineNameServerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ns.list(prefix="a", regex="a")
         with self.assertRaises(ValueError):
-            ns.list(prefix="a", metadata=[])
+            ns.list(prefix="a", metadata_all=[])
 
 
 @unittest.skipIf(Pyro4.naming_storage.dbm is None, "dbm must be available")

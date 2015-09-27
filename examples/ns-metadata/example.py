@@ -48,12 +48,12 @@ for name in entries:
 
 # query for various metadata
 print("\nall storage:")
-devices = ns.list(metadata={"resource:storage"})
+devices = ns.list(metadata_all={"resource:storage"})
 for name, uri in devices.items():
     print("   {} -> {}".format(name, uri))
 
 print("\nall FAST printers:")
-devices = ns.list(metadata={"resource:printer", "performance:fast"})
+devices = ns.list(metadata_all={"resource:printer", "performance:fast"})
 for name, uri in devices.items():
     print("   {} -> {}".format(name, uri))
 
@@ -69,11 +69,11 @@ meta.add("performance:fast")
 ns.set_metadata("example.resource.photoprinter", meta)
 
 print("\nall FAST printers (after photoprinter upgrade):")
-devices = ns.list(metadata={"resource:printer", "performance:fast"})
+devices = ns.list(metadata_all={"resource:printer", "performance:fast"})
 for name, uri in devices.items():
     print("   {} -> {}".format(name, uri))
 
 print("\nall resource types:")
-devices = ns.list(metadata={"class:resources.Resource"})
+devices = ns.list(metadata_all={"class:resources.Resource"})
 for name, uri in devices.items():
     print("   {} -> {}".format(name, uri))
