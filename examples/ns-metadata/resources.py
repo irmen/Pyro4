@@ -29,3 +29,12 @@ class TapeStorage(Resource):
 class DiskStorage(Resource):
     pass
 
+
+@expose()
+class Telephone(Resource):
+    pass
+
+
+@expose()
+class Faxmachine(Resource):
+    pass

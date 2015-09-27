@@ -1,7 +1,7 @@
 import Pyro4
 from Pyro4.naming import type_meta
 
-from resources import LaserPrinter, MatrixPrinter, PhotoPrinter, TapeStorage, DiskStorage
+from resources import LaserPrinter, MatrixPrinter, PhotoPrinter, TapeStorage, DiskStorage, Telephone, Faxmachine
 
 
 # register various objects with some metadata describing their resource class
@@ -22,6 +22,12 @@ ns.register("example.resource.tapestorage", uri,
 uri = d.register(DiskStorage)
 ns.register("example.resource.diskstorage", uri,
             metadata=type_meta(DiskStorage) | {"resource:storage", "performance:fast"})
+uri = d.register(Telephone)
+ns.register("example.resource.telephone", uri,
+            metadata=type_meta(Telephone) | {"resource:communication"})
+uri = d.register(Faxmachine)
+ns.register("example.resource.faxmachine", uri,
+            metadata=type_meta(Faxmachine) | {"resource:communication"})
 
 
 # check that the name server is actually capable of storing metadata
@@ -48,6 +54,11 @@ for name, uri in devices.items():
 
 print("\nall FAST printers:")
 devices = ns.list(metadata={"resource:printer", "performance:fast"})
+for name, uri in devices.items():
+    print("   {} -> {}".format(name, uri))
+
+print("\nall storage OR communication devices :")
+devices = ns.list(metadata_any={"resource:storage", "resource:communication"})
 for name, uri in devices.items():
     print("   {} -> {}".format(name, uri))
 

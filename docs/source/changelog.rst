@@ -4,9 +4,11 @@ Change Log
 
 **Pyro 4.40**
 
+- added python 3.5 to supported versions and configs
 - support for metadata added to the name server (list of strings per registration).
   You need to use memory or sqlite storage for this; the dbm storage doesn't support it.
 - name server has a new method set_metadata(), to set new metadata for an existing registration
+- removed obsolete stdinstdout example, it depended on exposing private attributes and Pyro hasn't allowed this anymore for quite some time (4.27)
 
 
 **Pyro 4.39**

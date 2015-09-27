@@ -1,5 +1,4 @@
 include LICENSE
-include TODO.txt
 include MANIFEST.in
 recursive-include tests *
 recursive-include examples *

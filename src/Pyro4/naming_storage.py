@@ -179,13 +179,20 @@ class SqlStorage(MutableMapping):
         # defining a regex function isn't much better than simply regexing ourselves over the full table.
         return None
 
-    def optimized_metadata_search(self, metadata, return_metadata=False):
+    def optimized_metadata_search(self, metadata=None, metadata_any=None, return_metadata=False):
         try:
             with closing(sqlite3.connect(self.dbfile)) as db:
-                params = list(metadata)
-                params.append(len(metadata))
-                sql = "SELECT id, name, uri FROM pyro_names WHERE id IN (SELECT object FROM pyro_metadata WHERE metadata IN ({seq}) " \
-                      "GROUP BY object HAVING COUNT(metadata)=?)".format(seq=",".join(['?']*len(metadata)))
+                if metadata_any:
+                    # any of the given metadata
+                    params = list(metadata_any)
+                    sql = "SELECT id, name, uri FROM pyro_names WHERE id IN (SELECT object FROM pyro_metadata WHERE metadata IN ({seq}))" \
+                          .format(seq=",".join(['?']*len(metadata_any)))
+                else:
+                    # all of the given metadata
+                    params = list(metadata)
+                    params.append(len(metadata))
+                    sql = "SELECT id, name, uri FROM pyro_names WHERE id IN (SELECT object FROM pyro_metadata WHERE metadata IN ({seq}) " \
+                          "GROUP BY object HAVING COUNT(metadata)=?)".format(seq=",".join(['?']*len(metadata)))
                 result = db.execute(sql, params).fetchall()
                 if return_metadata:
                     names = {}
@@ -365,8 +372,8 @@ class DbmStorage(MutableMapping):
             except dbm.error as e:
                 raise NamingError("dbm error in optimized_regex_list: "+str(e))
 
-    def optimized_metadata_search(self, metadata, return_metadata=False):
-        if metadata:
+    def optimized_metadata_search(self, metadata=None, metadata_any=None, return_metadata=False):
+        if metadata or metadata_any:
             raise NamingError("DbmStorage doesn't support metadata")
         return self.everything(return_metadata)
 

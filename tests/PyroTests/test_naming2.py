@@ -312,6 +312,23 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertSetEqual({"x", "y", "z"}, reg["meta2"][1])
         self.assertEqual(1, ns.count())
 
+    def testMetadataAny(self):
+        self.storageProvider.clear()
+        ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
+        # register some names with metadata, and perform simple lookups
+        ns.register("meta1", "PYRO:meta1@localhost:1111", metadata={"a", "b", "c"})
+        ns.register("meta2", "PYRO:meta2@localhost:2222", metadata={"x", "y", "z"})
+        ns.register("meta3", "PYRO:meta3@localhost:2222", metadata={"k", "l", "m"})
+        result = ns.list(metadata_any={"1", "2", "3"})
+        self.assertEqual({}, result)
+        result = ns.list(metadata_any={"1", "2", "a"})
+        self.assertEqual(1, len(result))
+        self.assertIn("meta1", result)
+        result = ns.list(metadata_any={"1", "2", "a", "z"})
+        self.assertEqual(2, len(result))
+        self.assertIn("meta1", result)
+        self.assertIn("meta2", result)
+
     def testEmptyMetadata(self):
         self.storageProvider.clear()
         ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
@@ -352,6 +369,10 @@ class OfflineNameServerTestsDbmStorage(OfflineNameServerTests):
     def testMetadata(self):
         pass
 
+    @unittest.skip("dbmstorage doesn't support metadata")
+    def testMetadataAny(self):
+        pass
+
 
 @unittest.skipIf(Pyro4.naming_storage.sqlite3 is None, "sqlite3 must be available")
 class OfflineNameServerTestsSqlStorage(OfflineNameServerTests):
@@ -363,7 +384,7 @@ class OfflineNameServerTestsSqlStorage(OfflineNameServerTests):
         super(OfflineNameServerTestsSqlStorage, self).tearDown()
         import glob
         for file in glob.glob("pyro-test.sqlite*"):
-            os.remove(file)
+           os.remove(file)
 
 
 if __name__ == "__main__":
