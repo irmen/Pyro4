@@ -518,7 +518,12 @@ You can also do this on a per-proxy basis by setting the timeout property on the
 
 There is also a server setting related to oneway calls, that says if oneway method
 calls should be executed in a separate thread or not. If this is set to ``False``,
-they will execute in
+they will execute in the same thread as the other method calls. This means that if the
+oneway call is taking a long time to complete, the other method calls from the client may
+actually stall, because they're waiting on the server to complete the oneway call that
+came before them. To avoid this problem you can set this config item to True (which is the default).
+This runs the oneway call in its own thread (regardless of the server type that is used)
+and other calls can be processed immediately::
 
     Pyro4.config.ONEWAY_THREADED = True     # this is the default
 
