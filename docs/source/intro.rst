@@ -32,6 +32,7 @@ Here's a quick overview of Pyro's features:
 - works between systems on different architectures and operating systems (64-bit, 32-bit, Intel, PowerPC, Windows, Linux, OSX...)
 - designed to be very easy to use and get out of your way as much as possible, but still provide a lot of flexibility when you do need it
 - name server that keeps track of your object's actual locations so you can move them around transparently.
+- yellow-pages type lookups possible, based on metadata tags on registrations in the name server
 - support for automatic reconnection to servers in case of interruptions.
 - automatic proxy-ing of Pyro objects which means you can return references to remote objects just as if it were normal objects.
 - one-way invocations for enhanced performance.

@@ -124,7 +124,7 @@ There are several command line options for this tool:
    Specify the storage mechanism to use. You have several options:
 
     - ``memory`` - fast, volatile in-memory database. This is the default.
-    - ``dbm:dbfile`` - dbm-style persistent database table. Provide the filename to use.
+    - ``dbm:dbfile`` - dbm-style persistent database table. Provide the filename to use. This storage type does not support metadata.
     - ``sql:sqlfile`` - sqlite persistent database. Provide the filename to use.
 
 .. option:: -x, --nobc
@@ -234,6 +234,12 @@ listmatching : listmatching pattern
 lookup : lookup name
   Looks up a single name registration and prints the uri.
 
+listmeta_all : listmeta_all metadata [metadata...]
+  List the objects having *all* of the given metadata tags
+
+listmeta_any : listmeta_any metadata [metadata...]
+  List the objects having *any one* (or multiple) of the given metadata tags
+
 register : register name uri
   Registers a name to the given Pyro object :abbr:`URI (universal resource identifier)`.
 
@@ -242,6 +248,10 @@ remove : remove name
 
 removematching : removematching pattern
   Removes all entries matching the given regular expression pattern.
+
+setmeta : setmeta name [metadata...]
+  Sets the new list of metadata tags for the given Pyro object.
+  If you don't specify any metadata tags, the metadata of the object is cleared.
 
 ping
   Does nothing besides checking if the name server is running and reachable.
@@ -377,23 +387,28 @@ care of it automatically for you), but it can still be useful in certain situati
 
 So, resolving a logical name can be done in several ways:
 
-- let Pyro do it for you, for instance simply pass a ``PYRONAME`` URI to the proxy constructor
-- use a ``PYRONAME`` URI and resolve it using the ``resolve`` utility function (see below)
-- obtain a name server proxy and use its ``lookup`` method;  ``uri = ns.lookup("objectname")``
+#. The easiest way: let Pyro do it for you! Simply pass a ``PYRONAME`` URI to the proxy constructor,
+   and forget all about the resolving happening under the hood::
 
-You can resolve a ``PYRONAME`` URI explicitly using the following utility function:
-:func:`Pyro4.naming.resolve` (also available as :func:`Pyro4.resolve`), which goes like this:
+    obj = Pyro4.Proxy("PYRONAME:objectname")
+    obj.method()
 
-.. function:: resolve(uri [, hmac_key=None])
+#. obtain a name server proxy and use its ``lookup`` method (:meth:`Pyro4.naming.NameServer.lookup`).
+   You could then use this resolved uri to get an actual proxy, or do other things with it::
 
-    Finds a name server, and use that to resolve a PYRONAME uri into the direct PYRO uri pointing to the named object.
-    If uri is already a PYRO uri, it is returned unmodified.
-    *Note:* if you need to resolve more than a few names, consider using the name server directly instead of
-    repeatedly calling this function, to avoid the name server lookup overhead from each call.
+    ns = Pyro4.locateNS()
+    uri = ns.lookup("objectname")
+    # uri now is the resolved 'objectname'
+    obj = Pyro4.Proxy(uri)
+    obj.method()
 
-    :param uri: PYRONAME uri that you want to resolve
-    :type uri: string or :class:`Pyro4.core.URI`
-    :param hmac_key: optional hmac key to use
+#. use a ``PYRONAME`` URI and resolve it using the ``resolve`` utility function :func:`Pyro4.naming.resolve` (also available as :func:`Pyro4.resolve`)::
+
+    uri = Pyro4.resolve("PYRONAME:objectname")
+    # uri now is the resolved 'objectname'
+    obj = Pyro4.Proxy(uri)
+    obj.method()
+
 
 .. index::
     double: name server; registering objects
@@ -495,6 +510,97 @@ and then restart the name server. For instance::
     $ pyro4-ns
 
 If you enable logging you will then see that the name server says that pickle is among the accepted serializers.
+
+
+.. index::
+    double: name server; Yellow-pages
+    double: name server; Metadata
+
+Yellow-pages ability of the Name Server (metadata tags)
+=======================================================
+Since Pyro 4.40, it is possible to tag object registrations in the name server with one or more Metadata tags.
+These are simple strings but you're free to put anything you want in it. One way of using it, is to provide
+a form of Yellow-pages object lookup: instead of directly asking for the registered object by its unique name
+(telephone book), you're asking for any registration from a certain *category*. You get back a list of
+registered objects from the queried category, from which you can then choose the one you want.
+
+As an example, imagine the following objects registered in the name server (with the metadata as shown):
+
+=================== ======================= ========
+Name                Uri                     Metadata
+=================== ======================= ========
+printer.secondfloor PYRO:printer1@host:1234 printer
+printer.hallway     PYRO:printer2@host:1234 printer
+storage.diskcluster PYRO:disks1@host:1234   storage
+storage.ssdcluster  PYRO:disks2@host:1234   storage
+=================== ======================= ========
+
+Instead of having to know the exact name of a required object you can query the name server for
+all objects having a certain set of metadata.
+So in the above case, your client code doesn't have to 'know' that it needs to lookup the ``printer.hallway``
+object to get the uri of a printer (in this case the one down in the hallway).
+Instead it can just ask for a list of all objects having the ``printer`` metadata tag.
+It will get a list containing both ``printer.secondfloor`` and ``printer.hallway`` so you will still
+have to choose the object you want to use - or perhaps even use both.
+The objects tagged with ``storage`` won't be returned.
+
+Arguably the most useful way to deal with the metadata is to use it for Yellow-pages style lookups.
+You can ask for all objects having some set of metadata tags, where you can choose if
+they should have *all* of the given tags or only *any one* (or more) of the given tags. Additional or
+other filtering must be done in the client code itself.
+So in the above example, querying with ``metadata_any={'printer', 'storage'}`` will return all four
+objects, while querying with ``metadata_all={'printer', 'storage'}`` will return an empty list (because
+there are no objects that are both a printer and storage).
+
+**Setting metadata in the name server**
+
+Object registrations in the name server by default have an empty set of metadata tags associated with them.
+However the ``register`` method (:meth:`Pyro4.naming.NameServer.register`) has an optional ``metadata`` argument,
+you can set that to a set of strings that will be the metadata tags associated with the object registration.
+For instance::
+
+    ns.register("printer.secondfloor", "PYRO:printer1@host:1234", metadata={"printer"})
+
+
+**Getting metadata back from the name server**
+
+The ``lookup`` (:meth:`Pyro4.naming.NameServer.lookup`) and ``list`` (:meth:`Pyro4.naming.NameServer.list`) methods
+of the name server have an optional ``return_metadata`` argument.
+By default it is False, and you just get back the registered URI (lookup) or a dictionary with the registered
+names and their URI as values (list). If you set it to True however, you'll get back tuples instead:
+(uri, set-of-metadata-tags)::
+
+    ns.lookup("printer.secondfloor", return_metadata=True)
+    # returns: (<Pyro4.core.URI at 0x6211e0, PYRO:printer1@host:1234>, {'printer'})
+
+    ns.list(return_metadata=True)
+    # returns something like:
+    #   {'printer.secondfloor': ('PYRO:printer1@host:1234', {'printer'}),
+    #    'Pyro.NameServer': ('PYRO:Pyro.NameServer@localhost:9090', {'class:Pyro4.naming.NameServer'})}
+    # (as you can see the name server itself has also been registered with a metadata tag)
+
+**Querying on metadata (Yellow-page lookup)**
+
+You can ask the name server to list all objects having some set of metadata tags.
+The ``list`` (:meth:`Pyro4.naming.NameServer.list`) method of the name server has two optional arguments
+to allow you do do this: ``metadata_all`` and ``metadata_any``.
+
+#. ``metadata_all``: give all objects having *all* of the given metadata tags::
+
+    ns.list(metadata_all={"printer"})
+    # returns: {'printer.secondfloor': 'PYRO:printer1@host:1234'}
+    ns.list(metadata_all={"printer", "communication"})
+    # returns: {}   (there is no object that's both a printer and a communication device)
+
+#. ``metadata_any``: give all objects having *one* (or more) of the given metadata tags::
+
+    ns.list(metadata_any={"storage", "printer", "communication"})
+    # returns: {'printer.secondfloor': 'PYRO:printer1@host:1234'}
+
+
+You can find some code that uses the metadata API in the :file:`ns-metadata` example.
+Note that the ``nsc`` tool (:ref:`nameserver-nsc`) also allows you to manipulate the metadata in the name server from the command line.
+
 
 .. index:: Name Server API
 

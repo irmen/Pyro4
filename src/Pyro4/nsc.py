@@ -14,8 +14,10 @@ if sys.version_info < (3, 0):
 def handleCommand(nameserver, options, args):
     def printListResult(resultdict, title=""):
         print("--------START LIST %s" % title)
-        for name, uri in sorted(resultdict.items()):
+        for name, (uri, metadata) in sorted(resultdict.items()):
             print("%s --> %s" % (name, uri))
+            if metadata:
+                print("    metadata:", metadata)
         print("--------END LIST %s" % title)
 
     def cmd_ping():
@@ -24,19 +26,22 @@ def handleCommand(nameserver, options, args):
 
     def cmd_listprefix():
         if len(args) == 1:
-            printListResult(nameserver.list())
+            printListResult(nameserver.list(return_metadata=True))
         else:
-            printListResult(nameserver.list(prefix=args[1]), "- prefix '%s'" % args[1])
+            printListResult(nameserver.list(prefix=args[1], return_metadata=True), "- prefix '%s'" % args[1])
 
     def cmd_listregex():
         if len(args) != 2:
             raise SystemExit("requires one argument: pattern")
-        printListResult(nameserver.list(regex=args[1]), "- regex '%s'" % args[1])
+        printListResult(nameserver.list(regex=args[1], return_metadata=True), "- regex '%s'" % args[1])
 
     def cmd_lookup():
         if len(args) != 2:
             raise SystemExit("requires one argument: name")
-        print(nameserver.lookup(args[1]))
+        uri, metadata = nameserver.lookup(args[1], return_metadata=True)
+        print(uri)
+        if metadata:
+            print("metadata:", metadata)
 
     def cmd_register():
         if len(args) != 3:
@@ -59,14 +64,39 @@ def handleCommand(nameserver, options, args):
             count = nameserver.remove(regex=args[1])
             print("%d items removed." % count)
 
+    def cmd_setmeta():
+        if len(args) < 2:
+            raise SystemExit("requires at least 2 arguments: uri and zero or more meta tags")
+        metadata = set(args[2:])
+        nameserver.set_metadata(args[1], metadata)
+        if metadata:
+            print("Metadata updated")
+        else:
+            print("Metadata cleared")
+
+    def cmd_listmeta_all():
+        if len(args) < 2:
+            raise SystemExit("requires at least one metadata tag argument")
+        metadata = set(args[1:])
+        printListResult(nameserver.list(metadata_all=metadata, return_metadata=True), " - searched by metadata")
+
+    def cmd_listmeta_any():
+        if len(args) < 2:
+            raise SystemExit("requires at least one metadata tag argument")
+        metadata = set(args[1:])
+        printListResult(nameserver.list(metadata_any=metadata, return_metadata=True), " - searched by metadata")
+
     commands = {
         "ping": cmd_ping,
         "list": cmd_listprefix,
         "listmatching": cmd_listregex,
+        "listmeta_all": cmd_listmeta_all,
+        "listmeta_any": cmd_listmeta_any,
         "lookup": cmd_lookup,
         "register": cmd_register,
         "remove": cmd_remove,
-        "removematching": cmd_removeregex
+        "removematching": cmd_removeregex,
+        "setmeta": cmd_setmeta
     }
     try:
         commands[args[0]]()
@@ -77,8 +107,8 @@ def handleCommand(nameserver, options, args):
 
 def main(args=None):
     from optparse import OptionParser
-    usage = "usage: %prog [options] command [arguments]\nCommand is one of: " \
-            "register remove removematching lookup list listmatching ping"
+    usage = "usage: %prog [options] command [arguments]\nCommands: " \
+            "register remove removematching lookup list listmatching\n          listmeta_all listmeta_any setmeta ping"
     parser = OptionParser(usage=usage)
     parser.add_option("-n", "--host", dest="host", help="hostname of the NS")
     parser.add_option("-p", "--port", dest="port", type="int",
@@ -87,7 +117,8 @@ def main(args=None):
     parser.add_option("-k", "--key", help="the HMAC key to use")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose output")
     options, args = parser.parse_args(args)
-    if not args or args[0] not in ("register", "remove", "removematching", "list", "listmatching", "lookup", "ping"):
+    if not args or args[0] not in ("register", "remove", "removematching", "list", "listmatching", "lookup",
+                                   "listmeta_all", "listmeta_any", "setmeta", "ping"):
         parser.error("invalid or missing command")
     if options.verbose:
         print("Locating name server...")

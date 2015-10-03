@@ -90,7 +90,7 @@ class NameServer(object):
 
     def register(self, name, uri, safe=False, metadata=None):
         """Register a name with an URI. If safe is true, name cannot be registered twice.
-        The uri can be a string or an URI object. Metadata must be a collection of strings."""
+        The uri can be a string or an URI object. Metadata must be None, or a collection of strings."""
         if isinstance(uri, core.URI):
             uri = uri.asString()
         elif not isinstance(uri, basestring):
@@ -99,6 +99,9 @@ class NameServer(object):
             core.URI(uri)  # check if uri is valid
         if not isinstance(name, basestring):
             raise TypeError("name must be a str")
+        if isinstance(metadata, basestring):
+            raise TypeError("metadata should not be a str, but another iterable (set, list, etc)")
+        metadata and iter(metadata)  # validate that metadata is iterable
         with self.lock:
             if safe and name in self.storage:
                 raise NamingError("name already registered: " + name)
@@ -108,6 +111,9 @@ class NameServer(object):
         """update the metadata for an existing registration"""
         if not isinstance(name, basestring):
             raise TypeError("name must be a str")
+        if isinstance(metadata, basestring):
+            raise TypeError("metadata should not be a str, but another iterable (set, list, etc)")
+        metadata and iter(metadata)  # validate that metadata is iterable
         with self.lock:
             try:
                 uri, old_meta = self.storage[name]
@@ -169,6 +175,9 @@ class NameServer(object):
                     return result
             elif metadata_all:
                 # return the entries which have all of the given metadata as (a subset of) their metadata
+                if isinstance(metadata_all, basestring):
+                    raise TypeError("metadata_all should not be a str, but another iterable (set, list, etc)")
+                metadata_all and iter(metadata_all)   # validate that metadata is iterable
                 result = self.storage.optimized_metadata_search(metadata_all=metadata_all, return_metadata=return_metadata)
                 if result is not None:
                     return result
@@ -180,6 +189,9 @@ class NameServer(object):
                 return result
             elif metadata_any:
                 # return the entries which have any of the given metadata as part of their metadata
+                if isinstance(metadata_any, basestring):
+                    raise TypeError("metadata_any should not be a str, but another iterable (set, list, etc)")
+                metadata_any and iter(metadata_any)   # validate that metadata is iterable
                 result = self.storage.optimized_metadata_search(metadata_any=metadata_any, return_metadata=return_metadata)
                 if result is not None:
                     return result
@@ -489,7 +501,14 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
 
 
 def resolve(uri, hmac_key=None):
-    """Resolve a 'magic' uri (PYRONAME) into the direct PYRO uri."""
+    """
+    Resolve a 'magic' uri (PYRONAME) into the direct PYRO uri.
+    It finds a name server, and use that to resolve a PYRONAME uri into the direct PYRO uri pointing to the named object.
+    If uri is already a PYRO uri, it is returned unmodified.
+    You can consider this a shortcut function so that you don't have to locate and use a name server proxy yourself.
+    Note: if you need to resolve more than a few names, consider using the name server directly instead of repeatedly
+    calling this function, to avoid the name server lookup overhead from each call.
+    """
     if isinstance(uri, basestring):
         uri = core.URI(uri)
     elif not isinstance(uri, core.URI):

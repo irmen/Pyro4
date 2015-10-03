@@ -253,6 +253,24 @@ class OfflineNameServerTests(unittest.TestCase):
         ns.close()
         bc.close()
 
+    def testMetadataRegisterInvalidTypes(self):
+        ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
+        with self.assertRaises(TypeError):
+            ns.register("meta1", "PYRO:meta1@localhost:1111", metadata=12345)   # metadata must be iterable
+        with self.assertRaises(TypeError):
+            ns.register("meta1", "PYRO:meta1@localhost:1111", metadata="string")   # metadata must not be str
+
+    def testMetadataListInvalidTypes(self):
+        ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)
+        with self.assertRaises(TypeError):
+            ns.list(metadata_all=12345)
+        with self.assertRaises(TypeError):
+            ns.list(metadata_all="string")
+        with self.assertRaises(TypeError):
+            ns.list(metadata_any=12345)
+        with self.assertRaises(TypeError):
+            ns.list(metadata_any="string")
+
     def testMetadata(self):
         self.storageProvider.clear()
         ns = Pyro4.naming.NameServer(storageProvider=self.storageProvider)

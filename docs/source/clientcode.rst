@@ -584,7 +584,9 @@ Here are a couple of suggestions on how to make copies of a proxy:
 See the :file:`proxysharing` example for more details.
 
 
-.. index:: metadata
+.. index::
+    double: Daemon; Metadata
+
 .. _metadata:
 
 Metadata from the daemon

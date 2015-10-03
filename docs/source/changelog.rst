@@ -6,8 +6,10 @@ Change Log
 
 - added python 3.5 to supported versions and configs
 - support for metadata added to the name server (list of strings per registration).
+  This provides a service like yellow-pages where you can query on category (for instance).
   You need to use memory or sqlite storage for this; the dbm storage doesn't support it.
-- name server has a new method set_metadata(), to set new metadata for an existing registration
+- name server also has a new method set_metadata(), to set new metadata for an existing registration
+- nsc tool has new commands to deal with metadata in the name server: setmeta, listmeta_all and listmeta_any
 - removed obsolete stdinstdout example, it depended on exposing private attributes and Pyro hasn't allowed this anymore for quite some time (4.27)
 
 
