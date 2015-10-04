@@ -205,8 +205,8 @@ With a syntax that is slightly different from normal method calls,
 it provides the same asynchronous function calls as the async proxy has.
 Note that Python itself has a similar thing in the standard library since version 3.2, see
 http://docs.python.org/3/library/concurrent.futures.html#future-objects . However Pyro's Future
-object is available on older Python versions too, and works slightly differently. It's
-also a little bit easier to work with.
+object is available on older Python versions too. It works slightly differently and perhaps
+a little bit easier as well.
 
 You create a ``Future`` object for a callable that you want to execute in the background,
 and receive its results somewhere in the future::

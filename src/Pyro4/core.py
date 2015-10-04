@@ -320,7 +320,7 @@ class Proxy(object):
 
     def __copy__(self):
         uriCopy = URI(self._pyroUri)
-        p = Proxy(uriCopy)
+        p = type(self)(uriCopy)
         p._pyroOneway = set(self._pyroOneway)
         p._pyroMethods = set(self._pyroMethods)
         p._pyroAttrs = set(self._pyroAttrs)
@@ -664,7 +664,9 @@ class _BatchProxyAdapter(object):
         pass
 
     def __copy__(self):
-        return self
+        copy = type(self)(self.__proxy)
+        copy.__calls = list(self.__calls)
+        return copy
 
     def __resultsgenerator(self, results):
         for result in results:
@@ -696,7 +698,12 @@ class _AsyncProxyAdapter(object):
         self.__proxy = proxy
 
     def __getattr__(self, name):
+        if name in dir(self.__proxy):
+            return getattr(self.__proxy, name)
         return _AsyncRemoteMethod(self.__proxy, name)
+
+    def __copy__(self):
+        return type(self)(self.__proxy)
 
 
 class _AsyncRemoteMethod(object):

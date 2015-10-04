@@ -249,6 +249,13 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(p1.object, p3.object)
         self.assertEqual(p1, p3)
 
+    def testUriSubclassCopy(self):
+        class SubURI(Pyro4.core.URI):
+            pass
+        u = SubURI("PYRO:12345@hostname:9999")
+        u2 = copy.copy(u)
+        self.assertIsInstance(u2, SubURI)
+
     def testUriEqual(self):
         p1 = Pyro4.core.URI("PYRO:12345@host.com:9999")
         p2 = Pyro4.core.URI("PYRO:12345@host.com:9999")
@@ -304,6 +311,25 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(p1._pyroTimeout, p2._pyroTimeout)
         self.assertEqual(p1._pyroHmacKey, p2._pyroHmacKey)
         self.assertEqual(p1._pyroHandshake, p2._pyroHandshake)
+
+    def testProxySubclassCopy(self):
+        class ProxySub(Pyro4.core.Proxy):
+            pass
+        p = ProxySub("PYRO:12345@hostname:9999")
+        p2 = copy.copy(p)
+        self.assertIsInstance(p2, ProxySub)
+
+    def testAsyncProxyAdapterCopy(self):
+        proxy = Pyro4.core.Proxy("PYRO:12345@hostname:9999")
+        asyncproxy = proxy._pyroAsync()
+        p2 = copy.copy(asyncproxy)
+        self.assertIsInstance(p2, Pyro4.core._AsyncProxyAdapter)
+
+    def testBatchProxyAdapterCopy(self):
+        proxy = Pyro4.core.Proxy("PYRO:12345@hostname:9999")
+        batchproxy = proxy._pyroBatch()
+        p2 = copy.copy(batchproxy)
+        self.assertIsInstance(p2, Pyro4.core._BatchProxyAdapter)
 
     def testProxyOffline(self):
         # only offline stuff here.
