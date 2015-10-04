@@ -24,7 +24,7 @@ class CustomAnnotationProxy(Pyro4.Proxy):
         return annotations
 
     def _pyroResponseAnnotations(self, annotations, msgtype):
-        print("    Got response (type=%d). Annotations:" % msgtype)
+        print("    Got response (msgtype=%d). Annotations:" % msgtype)
         for key in annotations:
             if key == "CORR":
                 value = uuid.UUID(bytes=annotations[key])
@@ -41,11 +41,14 @@ with CustomAnnotationProxy(uri) as proxy:
     for i in range(4):
         msg = proxy.echo("hello-%d" % i)
 
-
 proxies = [CustomAnnotationProxy(uri) for _ in range(5)]
 for p in proxies:
     print("Sending one message from new proxy...")
     msg = p.echo("hello-%d" % id(p))
     p._pyroRelease()
+
+with CustomAnnotationProxy(uri) as proxy:
+    print("Finally, sending a oneway message...")
+    proxy.oneway("hello-ONEWAY")
 
 print("See the console output on the server for more results.")

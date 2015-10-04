@@ -550,6 +550,13 @@ When accessed in a Pyro server it contains various attributes:
     You can check the source to see what this is all about, but perhaps the single most useful
     attribute exposed here is ``sock``, which is the socket connection.
     So the client's IP address can for instance be obtained via :code:`Pyro4.current_context.client.sock.getpeername()[0]` .
+    However, since for oneway calls the socket connection will likely be closed already, this is not 100% reliable.
+    Therefore Pyro stores the result of the ``getpeername`` call in a separate attribute on the context:
+    ``client_sock_addr`` (see below)
+
+.. py:attribute:: Pyro4.current_context.client_sock_addr
+
+    (*tuple*) the socket address of the client doing the call. It is a tuple of the client host address and the port.
 
 .. py:attribute:: Pyro4.current_context.seq
 

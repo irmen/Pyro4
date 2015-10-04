@@ -1109,6 +1109,7 @@ class Daemon(object):
             serializer = util.get_serializer_by_id(msg.serializer_id)
             objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
             current_context.client = conn
+            current_context.client_sock_addr = conn.sock.getpeername()   # store this because on oneway calls the socket will be disconnected
             current_context.seq = msg.seq
             current_context.annotations = msg.annotations
             current_context.msg_flags = msg.flags
@@ -1148,9 +1149,7 @@ class Daemon(object):
                         method = util.getAttribute(obj, method)
                         if request_flags & Pyro4.message.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:
                             # oneway call to be run inside its own thread
-                            thread = threadutil.Thread(target=method, args=vargs, kwargs=kwargs)
-                            thread.setDaemon(True)
-                            thread.start()   # this is the actual method call to the Pyro object (in its own thread)
+                            _OnewayCallThread(target=method, args=vargs, kwargs=kwargs).start()
                         else:
                             isCallback = getattr(method, "_pyroCallback", False)
                             data = method(*vargs, **kwargs)  # this is the actual method call to the Pyro object
@@ -1436,11 +1435,35 @@ class _CallContext(threading.local):
     def __init__(self):
         # per-thread initialization
         self.client = None
+        self.client_sock_addr = None
         self.seq = 0
         self.msg_flags = 0
         self.serializer_id = 0
         self.annotations = {}
         self.correlation_id = None
+
+    def to_global(self):
+        return dict(self.__dict__)
+
+    def from_global(self, values):
+        self.client = values["client"]
+        self.seq = values["seq"]
+        self.msg_flags = values["msg_flags"]
+        self.serializer_id = values["serializer_id"]
+        self.annotations = values["annotations"]
+        self.correlation_id = values["correlation_id"]
+        self.client_sock_addr = values["client_sock_addr"]
+
+
+class _OnewayCallThread(threadutil.Thread):
+    def __init__(self, target, args, kwargs):
+        super(_OnewayCallThread, self).__init__(target=target, args=args, kwargs=kwargs, name="oneway-call")
+        self.daemon = True
+        self.parent_context = current_context.to_global()
+
+    def run(self):
+        current_context.from_global(self.parent_context)
+        super(_OnewayCallThread, self).run()
 
 
 current_context = _CallContext()

@@ -11,14 +11,18 @@ class EchoServer(object):
         print("  thread: ", threading.current_thread().ident)
         print("  obj.pyroid: ", self._pyroId)
         print("  obj.daemon: ", self._pyroDaemon)
-        print("  context.client: ", ctx.client.sock.getpeername()[0], ctx.client)
+        print("  context.client: ", ctx.client)
+        print("  context.client_sock_addr: ", ctx.client_sock_addr)
         print("  context.seq: ", ctx.seq)
         print("  context.msg_flags: ", ctx.msg_flags)
         print("  context.serializer_id: ", ctx.serializer_id)
         print("  context.correlation_id:", ctx.correlation_id)
-        # print("  context.annotations: ", ctx.annotations)
         print("  custom annotation 'XYZZ':", ctx.annotations["XYZZ"])
         return message
+
+    @Pyro4.oneway
+    def oneway(self, message):
+        return self.echo(message)
 
 
 class CustomDaemon(Pyro4.Daemon):

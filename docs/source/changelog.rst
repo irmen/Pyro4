@@ -12,6 +12,8 @@ Change Log
 - nsc tool has new commands to deal with metadata in the name server: setmeta, listmeta_all and listmeta_any
 - removed obsolete stdinstdout example, it depended on exposing private attributes and Pyro hasn't allowed this anymore for quite some time (4.27)
 - removed a problematic ipv6 unittest, and an often-failing workaround to determine the ipv6 address
+- added ``current_context.client_sock_addr`` containing the address of the client doing the call
+- current_context is now correct for oneway calls
 
 
 **Pyro 4.39**
