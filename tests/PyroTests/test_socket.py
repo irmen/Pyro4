@@ -80,7 +80,6 @@ class TestSocketutil(unittest.TestCase):
         version = Pyro4.config.PREFER_IP_VERSION
         try:
             Pyro4.config.PREFER_IP_VERSION = 6
-            self.assertEqual(6, SU.getIpVersion("127.0.0.1"))
             self.assertEqual(6, SU.getIpVersion("::1"))
             self.assertEqual(6, SU.getIpVersion("localhost"))
             Pyro4.config.PREFER_IP_VERSION = 4

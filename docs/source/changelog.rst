@@ -11,6 +11,7 @@ Change Log
 - name server also has a new method set_metadata(), to set new metadata for an existing registration
 - nsc tool has new commands to deal with metadata in the name server: setmeta, listmeta_all and listmeta_any
 - removed obsolete stdinstdout example, it depended on exposing private attributes and Pyro hasn't allowed this anymore for quite some time (4.27)
+- removed a problematic ipv6 unittest, and an often-failing workaround to determine the ipv6 address
 
 
 **Pyro 4.39**
