@@ -13,7 +13,8 @@ Change Log
 - removed obsolete stdinstdout example, it depended on exposing private attributes and Pyro hasn't allowed this anymore for quite some time (4.27)
 - removed a problematic ipv6 unittest, and an often-failing workaround to determine the ipv6 address
 - added ``current_context.client_sock_addr`` containing the address of the client doing the call
-- current_context is now correct for oneway calls
+- current_context is now correct for oneway calls and async calls
+- fixed some __copy__ methods to correctly deal with possible subclassing (Proxy)
 
 
 **Pyro 4.39**
