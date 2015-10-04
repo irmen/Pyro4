@@ -607,7 +607,8 @@ over the network. Pyro internally uses a couple of chunks to exchange extra data
 and a daemon: correlation ids (annotation ``CORR``) and hmac signatures
 (annotation ``HMAC``). These chunk types are reserved and you should not touch them.
 All other annotation types are free to use in your own code (and will be ignored
-by Pyro itself). There's no limit on the number of annotations you can add to a message.
+by Pyro itself). There's no limit on the number of annotations you can add to a message, but each
+individual annotation cannot be larger than 64 Kb.
 
 An annotation is a low level datastructure (to optimize the generation of network messages):
 a chunk identifier string of exactly 4 characters (such as "CODE"), and its value, a byte sequence.
