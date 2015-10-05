@@ -105,6 +105,8 @@ class NameServer(object):
         with self.lock:
             if safe and name in self.storage:
                 raise NamingError("name already registered: " + name)
+            if metadata:
+                metadata = set(metadata)
             self.storage[name] = uri, metadata
 
     def set_metadata(self, name, metadata):
@@ -117,6 +119,8 @@ class NameServer(object):
         with self.lock:
             try:
                 uri, old_meta = self.storage[name]
+                if metadata:
+                    metadata = set(metadata)
                 self.storage[name] = uri, metadata
             except KeyError:
                 raise NamingError("unknown name: " + name)

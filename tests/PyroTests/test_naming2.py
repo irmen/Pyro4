@@ -277,6 +277,7 @@ class OfflineNameServerTests(unittest.TestCase):
         # register some names with metadata, and perform simple lookups
         ns.register("meta1", "PYRO:meta1@localhost:1111", metadata={"a", "b", "c"})
         ns.register("meta2", "PYRO:meta2@localhost:2222", metadata={"x", "y", "z"})
+        ns.register("meta3", "PYRO:meta3@localhost:3333", metadata=["p", "q", "r", "r", "q"])
         uri = ns.lookup("meta1")
         self.assertEqual("meta1", uri.object)
         uri, metadata = ns.lookup("meta1", return_metadata=True)
@@ -287,9 +288,14 @@ class OfflineNameServerTests(unittest.TestCase):
         uri, metadata = ns.lookup("meta2", return_metadata=True)
         self.assertEqual("meta2", uri.object)
         self.assertSetEqual({"x", "y", "z"}, metadata)
+        uri, metadata = ns.lookup("meta3", return_metadata=True)
+        self.assertEqual("meta3", uri.object)
+        self.assertIsInstance(metadata, set)
+        self.assertSetEqual({"p", "q", "r"}, metadata)
         # get a list of everything, without and with metadata
         reg = ns.list()
-        self.assertDictEqual({'meta1': 'PYRO:meta1@localhost:1111', 'meta2': 'PYRO:meta2@localhost:2222'}, reg)
+        self.assertDictEqual({'meta1': 'PYRO:meta1@localhost:1111', 'meta2': 'PYRO:meta2@localhost:2222',
+                              'meta3': 'PYRO:meta3@localhost:3333'}, reg)
         reg = ns.list(return_metadata=True)
         uri1, meta1 = reg["meta1"]
         uri2, meta2 = reg["meta2"]
@@ -318,8 +324,14 @@ class OfflineNameServerTests(unittest.TestCase):
         ns.set_metadata("meta1", {"one", "two", "three"})
         uri, meta = ns.lookup("meta1", return_metadata=True)
         self.assertSetEqual({"one", "two", "three"}, meta)
+        # check that a collection is converted to a set
+        ns.set_metadata("meta1", ["one", "two", "three", "three", "two"])
+        uri, meta = ns.lookup("meta1", return_metadata=True)
+        self.assertIsInstance(meta, set)
+        self.assertSetEqual({"one", "two", "three"}, meta)
         # remove record that has some metadata
         ns.remove("meta1")
+        ns.remove("meta3")
         self.assertEqual(["meta2"], list(ns.list().keys()))
         # other list filters
         reg = ns.list(prefix="meta", return_metadata=True)
