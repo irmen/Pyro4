@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.41**
+
+- ...
+
+
 **Pyro 4.40**
 
 - added python 3.5 to supported versions and configs
