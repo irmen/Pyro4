@@ -10,6 +10,7 @@ import logging
 import os
 import sys
 import time
+import uuid
 import unittest
 import Pyro4.configuration
 import Pyro4.core
@@ -567,6 +568,19 @@ class CoreTests(unittest.TestCase):
         im, ic = TestClass._pyroInstancing
         self.assertEqual("percall", im)
         self.assertIs(creator, ic)
+
+    def testCallContext(self):
+        ctx = Pyro4.core.current_context
+        corr_id = uuid.UUID('1897022f-c481-4117-a4cc-cbd1ca100582')
+        ctx.correlation_id = corr_id
+        d = ctx.to_global()
+        self.assertIsInstance(d, dict)
+        self.assertEqual(corr_id, d["correlation_id"])
+        corr_id2 = uuid.UUID('67b05ad9-2d6a-4ed8-8ed5-95cba68b4cf9')
+        d["correlation_id"] = corr_id2
+        ctx.from_global(d)
+        self.assertEqual(corr_id2, Pyro4.current_context.correlation_id)
+        Pyro4.current_context.correlation_id = None
 
 
 class RemoteMethodTests(unittest.TestCase):

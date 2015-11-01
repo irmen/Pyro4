@@ -1450,7 +1450,18 @@ class _CallContext(threading.local):
         self.correlation_id = None
 
     def to_global(self):
-        return dict(self.__dict__)
+        if sys.platform != "cli":
+            return dict(self.__dict__)
+        # ironpython somehow has problems getting at the values, so do it manually:
+        return {
+            "client": self.client,
+            "seq": self.seq,
+            "msg_flags": self.msg_flags,
+            "serializer_id": self.serializer_id,
+            "annotations": self.annotations,
+            "correlation_id": self.correlation_id,
+            "client_sock_addr": self.client_sock_addr
+        }
 
     def from_global(self, values):
         self.client = values["client"]

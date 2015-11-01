@@ -586,7 +586,7 @@ When accessed in a Pyro server it contains various attributes:
     to relate all remote method calls that originate from a single call.
     To make this work you'll have to set this to a new :py:class:`uuid.UUID` in your client
     code right before you call a Pyro method.
-    Note that it is required that the correlation id needs to be of type :py:class:`uuid.UUID`.
+    Note that it is required that the correlation id is of type :py:class:`uuid.UUID`.
     Note that the HTTP gateway (see :ref:`http-gateway`) also creates a correlation id for
     every request, and will return it via the ``X-Pyro-Correlation-Id`` HTTP-header in the response.
     It will also accept this header optionally on a request in which case it will use the

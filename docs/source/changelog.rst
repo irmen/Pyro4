@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.41**
 
-- ...
+- fixed IronPython crash with Pyro4.core.current_context
 
 
 **Pyro 4.40**
