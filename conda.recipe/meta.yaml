@@ -1,0 +1,44 @@
+package:
+  name: pyro4
+  version: 4.40
+
+source:
+  git_rev: 4.40
+  git_url: git@github.com:ijstokes/Pyro4.git
+
+build:
+  # entry_points:
+    # Put any entry points (scripts to be generated automatically) here. The
+    # syntax is module:function.  For example
+    #
+    # - gensim = gensim:main
+    #
+    # Would create an entry point called gensim that calls gensim.main()
+
+
+  # If this is a new build for the same version, increment the build
+  # number. If you do not include this key, it defaults to 0.
+  number: 1
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - serpent >=1.11
+
+  run:
+    - python
+    - serpent >=1.11
+
+test:
+  # Python imports
+  imports:
+    - Pyro4
+
+about:
+  home: http://radimrehurek.com/Pyro4
+  license: MIT
+
+# See
+# http://docs.continuum.io/conda/build.html for
+# more information about meta.yaml
