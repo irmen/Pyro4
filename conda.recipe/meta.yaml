@@ -3,8 +3,7 @@ package:
   version: 4.40
 
 source:
-  git_rev: 4.40
-  git_url: git@github.com:ijstokes/Pyro4.git
+  path: ..
 
 build:
   # entry_points:
@@ -38,7 +37,3 @@ test:
 about:
   home: http://radimrehurek.com/Pyro4
   license: MIT
-
-# See
-# http://docs.continuum.io/conda/build.html for
-# more information about meta.yaml
