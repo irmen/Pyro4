@@ -416,6 +416,21 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertGreaterEqual(Pyro4.config.PICKLE_PROTOCOL_VERSION, 2)
         self.assertEqual(pickle.HIGHEST_PROTOCOL, Pyro4.config.PICKLE_PROTOCOL_VERSION)
 
+    def testUriSerializationWithoutSlots(self):
+        orig_protocol = Pyro4.config.PICKLE_PROTOCOL_VERSION
+        Pyro4.config.PICKLE_PROTOCOL_VERSION = 2
+        try:
+            u = Pyro4.core.URI("PYRO:obj@localhost:1234")
+            d, compr = self.ser.serializeData(u)
+            self.assertFalse(compr)
+            import pickletools
+            d = pickletools.optimize(d)
+            result1 = b'\x80\x02cPyro4.core\nURI\n)\x81(U\x04PYROU\x03objNU\tlocalhostM\xd2\x04tb.'
+            result2 = b'\x80\x02cPyro4.core\nURI\n)\x81(X\x04\x00\x00\x00PYROX\x03\x00\x00\x00objNX\t\x00\x00\x00localhostM\xd2\x04tb.'
+            self.assertTrue(d in (result1, result2))
+        finally:
+            Pyro4.config.PICKLE_PROTOCOL_VERSION = orig_protocol
+
 
 class SerializeTests_serpent(SerializeTests_pickle):
     SERIALIZER = "serpent"
@@ -461,6 +476,15 @@ class SerializeTests_serpent(SerializeTests_pickle):
         data2 = self.ser.deserializeData(ser, compressed=compressed)
         self.assertEqual(od, data2)
 
+    def testUriSerializationWithoutSlots(self):
+        u = Pyro4.core.URI("PYRO:obj@localhost:1234")
+        d, compr = self.ser.serializeData(u)
+        self.assertFalse(compr)
+        result1 = b"# serpent utf-8 python3.2\n{'__class__':'Pyro4.core.URI','state':('PYRO','obj',None,'localhost',1234)}"
+        result2 = b"# serpent utf-8 python3.2\n{'state':('PYRO','obj',None,'localhost',1234),'__class__':'Pyro4.core.URI'}"
+        result3 = b"# serpent utf-8 python2.6\n{'state':('PYRO','obj',None,'localhost',1234),'__class__':'Pyro4.core.URI'}"
+        self.assertTrue(d in (result1, result2, result3))
+
 
 class SerializeTests_json(SerializeTests_pickle):
     SERIALIZER = "json"
@@ -480,6 +504,14 @@ class SerializeTests_json(SerializeTests_pickle):
         data2 = self.ser.deserializeData(ser, compressed=compressed)
         self.assertEqual(list(data), data2)
 
+    def testUriSerializationWithoutSlots(self):
+        u = Pyro4.core.URI("PYRO:obj@localhost:1234")
+        d, compr = self.ser.serializeData(u)
+        self.assertFalse(compr)
+        result1 = b'{"__class__": "Pyro4.core.URI", "state": ["PYRO", "obj", null, "localhost", 1234]}'
+        result2 = b'{"state": ["PYRO", "obj", null, "localhost", 1234], "__class__": "Pyro4.core.URI"}'
+        self.assertTrue(d in (result1, result2))
+
 
 class SerializeTests_marshal(SerializeTests_pickle):
     SERIALIZER = "marshal"
@@ -487,6 +519,15 @@ class SerializeTests_marshal(SerializeTests_pickle):
     def testCircular(self):
         with self.assertRaises(ValueError):  # marshal doesn't support object graphs
             super(SerializeTests_marshal, self).testCircular()
+
+    def testUriSerializationWithoutSlots(self):
+        u = Pyro4.core.URI("PYRO:obj@localhost:1234")
+        d, compr = self.ser.serializeData(u)
+        self.assertFalse(compr)
+        result1 = b'{\xda\x05state)\x05\xfa\x04PYRO\xfa\x03objN\xfa\tlocalhost\xe9\xd2\x04\x00\x00\xda\t__class__z\x0ePyro4.core.URI0'
+        result2 = b'{\xda\t__class__z\x0ePyro4.core.URI\xda\x05state)\x05\xfa\x04PYRO\xfa\x03objN\xfa\tlocalhost\xe9\xd2\x04\x00\x000'
+        result3 = b'{t\x05\x00\x00\x00state(\x05\x00\x00\x00s\x04\x00\x00\x00PYROs\x03\x00\x00\x00objNs\t\x00\x00\x00localhosti\xd2\x04\x00\x00t\t\x00\x00\x00__class__s\x0e\x00\x00\x00Pyro4.core.URI0'
+        self.assertTrue(d in (result1, result2, result3))
 
 
 class GenericTests(unittest.TestCase):

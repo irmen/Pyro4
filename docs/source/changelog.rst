@@ -5,6 +5,7 @@ Change Log
 **Pyro 4.41**
 
 - fixed IronPython crash with Pyro4.core.current_context
+- got rid of __slots__ on the URI class
 
 
 **Pyro 4.40**
