@@ -483,11 +483,12 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
     # pyro direct lookup
     if not port:
         port = Pyro4.config.NS_PORT
-    if ":" in host:
-        host = "[%s]" % host
     if core.URI.isUnixsockLocation(host):
         uristring = "PYRO:%s@%s" % (Pyro4.constants.NAMESERVER_NAME, host)
     else:
+        # if not a unix socket, check for ipv6
+	if ":" in host:
+            host = "[%s]" % host
         uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port)
     uri = core.URI(uristring)
     log.debug("locating the NS: %s", uri)
