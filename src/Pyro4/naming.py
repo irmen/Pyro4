@@ -487,7 +487,7 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
         uristring = "PYRO:%s@%s" % (Pyro4.constants.NAMESERVER_NAME, host)
     else:
         # if not a unix socket, check for ipv6
-	if ":" in host:
+        if ":" in host:
             host = "[%s]" % host
         uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port)
     uri = core.URI(uristring)
