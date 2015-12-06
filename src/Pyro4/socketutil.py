@@ -476,7 +476,10 @@ def bindOnUnusedPort(sock, host='localhost'):
     This code is based on the code in the stdlib's test.test_support module."""
     if sock.family in (socket.AF_INET, socket.AF_INET6) and sock.type == socket.SOCK_STREAM:
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            try:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            except socket.error:
+                pass
     if sock.family == socket.AF_INET:
         if host == 'localhost':
             sock.bind(('127.0.0.1', 0))

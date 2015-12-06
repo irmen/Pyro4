@@ -45,7 +45,7 @@ class Configuration(object):
         self.SERVERTYPE = "thread"
         self.COMMTIMEOUT = 0.0
         self.POLLTIMEOUT = 2.0  # seconds
-        self.SOCK_REUSE = False  # so_reuseaddr on server sockets?
+        self.SOCK_REUSE = True  # so_reuseaddr on server sockets?
         self.SOCK_NODELAY = False  # tcp_nodelay on socket?
         self.THREADING2 = False  # use threading2 if available?
         self.ONEWAY_THREADED = True  # oneway calls run in their own thread
