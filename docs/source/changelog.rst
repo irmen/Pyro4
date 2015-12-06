@@ -6,6 +6,7 @@ Change Log
 
 - fixed IronPython crash with Pyro4.core.current_context
 - got rid of __slots__ on the URI class
+- fixed output of nsc metadata string on Python 2.x
 
 
 **Pyro 4.40**
