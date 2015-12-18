@@ -72,6 +72,11 @@ class NameServerTests(unittest.TestCase):
         Pyro4.config.NS_PORT = self.old_nsPort
         Pyro4.config.NS_BCPORT = self.old_bcPort
 
+    def testLookupUnixsockParsing(self):
+        # this must not raise AttributeError, it did before because of a parse bug
+        with self.assertRaises(NamingError):
+            Pyro4.naming.locateNS("./u:/tmp/pyro4-naming.usock")
+
     def testLookupAndRegister(self):
         ns = Pyro4.naming.locateNS()  # broadcast lookup
         self.assertIsInstance(ns, Pyro4.core.Proxy)

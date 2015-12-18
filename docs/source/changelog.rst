@@ -4,6 +4,7 @@ Change Log
 
 **Pyro 4.41**
 
+- fixed uri parsing bug in locateNS when trying to locate name server via unix domain socket
 - fixed IronPython crash with Pyro4.core.current_context
 - got rid of __slots__ on the URI class
 - fixed output of nsc metadata string on Python 2.x
