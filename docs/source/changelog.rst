@@ -9,6 +9,8 @@ Change Log
 - got rid of __slots__ on the URI class
 - fixed output of nsc metadata string on Python 2.x
 - sock_reuse option is now default on
+- daemon now logs its pid when starting
+- poll-server error handling now reflects the select server (swallow error when shutting down)
 
 
 **Pyro 4.40**
