@@ -167,7 +167,15 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
                 poll.register(r.fileno(), select.POLLIN | select.POLLPRI)
                 fileno2connection[r.fileno()] = r
             while loopCondition():
-                polls = poll.poll(1000 * Pyro4.config.POLLTIMEOUT)
+                try:
+                    polls = poll.poll(1000 * Pyro4.config.POLLTIMEOUT)
+                except select.error:
+                    if loopCondition():
+                        raise
+                    else:
+                        # swallow the select error if the loopcondition is no longer true, and exit loop
+                        # this can occur if we are shutting down and the socket is no longer valid
+                        break
                 for (fd, mask) in polls:
                     conn = fileno2connection[fd]
                     if conn is self.sock:

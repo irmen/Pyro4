@@ -9,6 +9,7 @@ import inspect
 import re
 import logging
 import sys
+import os
 import time
 import threading
 import uuid
@@ -900,7 +901,7 @@ class Daemon(object):
         self.transportServer.init(self, host, port, unixsocket)
         #: The location (str of the form ``host:portnumber``) on which the Daemon is listening
         self.locationStr = self.transportServer.locationStr
-        log.debug("created daemon on %s", self.locationStr)
+        log.debug("created daemon on %s (pid %d)", self.locationStr, os.getpid())
         natport_for_loc = natport
         if natport == 0:
             # expose internal port number as NAT port as well. (don't use port because it could be 0 and will be chosen by the OS)
