@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.42**
+
+- ...
+
+
 **Pyro 4.41**
 
 - fixed uri parsing bug in locateNS when trying to locate name server via unix domain socket
