@@ -1,6 +1,5 @@
 from __future__ import print_function
 import sys
-import random
 import Pyro4
 
 if sys.version_info < (3, 0):
@@ -31,6 +30,12 @@ with Pyro4.Proxy(uri) as p:
     # unexposed attributes
     print("\nAccessing unexposed attributes:")
     try:
+        print("accessing p.sub...")
+        _ = p.sub
+        raise RuntimeError("this should not be possible!")   # because p.sub is not an exposed property
+    except AttributeError as x:
+        print("ok, got expected error:", x)
+    try:
         print("accessing p.value...")
         _ = p.value
         raise RuntimeError("this should not be possible!")   # because p.value is not an exposed property
@@ -52,24 +57,23 @@ with Pyro4.Proxy(uri) as p:
 
 with Pyro4.Proxy(uri) as p:
     # Dotted name traversal is not supported by Pyro because that is a security vulnerability.
-    # Show that we get attribute errors if we try to do it anyway.
+    # What will happen instead is that the first part of the name will be evaluated and returned,
+    # and that the rest of the expression will be evaluated on the local object instead of
+    # directly on the remote one.
     print("\nTrying dotted name traversal:")
-    value = p.getSubValue()
-    print("value gotten from p.getSubValue()=", value)
+    value = p.prop_sub
+    print("value gotten from p.prop_sub=", value)
+    print("\nTrying to update the dictionary directly on the remote object...")
+    p.prop_sub.update({"test": "nope"})   # this will only update the local copy!
+    new_value = p.prop_sub
+    print("value gotten from p.prop_sub=", new_value, "  (should be unchanged!)")
+    assert new_value == value, "update should not have been done remotely"
     try:
-        value = p.sub.getValue()
-        print("value gotten from p.sub.getValue()=", value)
-    except AttributeError as x:
-        print("ok, got expected error:", x)
-    print("adding 500 to the value")
-    try:
-        p.sub.addToValue(500)
-    except AttributeError as x:
-        print("ok, got expected error:", x)
-    value = p.getSubValue()
-    print("value gotten from p.getSubValue()=", value)
-    try:
-        value = p.sub.getValue()
-        print("value gotten from p.sub.getValue()=", value)
-    except AttributeError as x:
-        print("ok, got expected error:", x)
+        print("\nTrying longer dotted name: p.prop_sub.foobar.attribute")
+        _ = p.prop_sub.foobar.attribute
+        raise RuntimeError("this should not be possible!")
+    except Exception as x:
+        remote_tb = getattr(x, "_pyroTraceback", None)
+        if remote_tb:
+            raise RuntimeError("We got a remote traceback but this should have been a local one only")
+        print("ok, got expected error (local only):", x)

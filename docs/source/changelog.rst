@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.42**
 
-- ...
+- fixed dotted attribute client code in the ``attributes`` example
 
 
 **Pyro 4.41**

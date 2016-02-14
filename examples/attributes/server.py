@@ -1,26 +1,12 @@
 from __future__ import print_function
 import Pyro4
 
-
 something = "Something"
-
-
-class SubThingy(object):
-    def __init__(self):
-        self.value = 42
-        self._value = 123
-        self.__value = 999
-
-    def getValue(self):
-        return self.value
-
-    def addToValue(self, amount):
-        self.value += amount
 
 
 class Thingy(object):
     def __init__(self):
-        self.sub = SubThingy()
+        self.sub = {"name": "value"}
         self.value = 42
         self._value = 123
         self.__value = 999
@@ -32,12 +18,6 @@ class Thingy(object):
     @Pyro4.expose
     def __len__(self):
         return 200
-
-    def getSubValue(self):
-        return self.sub.getValue()
-
-    def addSubValue(self, amount):
-        self.sub.addToValue(amount)
 
     def printSomething(self):
         print("something:", something)
