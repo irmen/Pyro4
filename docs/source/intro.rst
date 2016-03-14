@@ -26,8 +26,8 @@ Here's a quick overview of Pyro's features:
 
 - written in 100% Python so extremely portable.
 - defaults to a safe serializer (`serpent <https://pypi.python.org/pypi/serpent>`_) that supports many Python data types.
-- supports different serializers (serpent, json, marshal, pickle).
-- support for all Python data types that are pickleable when using the 'pickle' serializer [1]_.
+- supports different serializers (serpent, json, marshal, pickle, dill).
+- support for all Python data types that are serializable when using the 'pickle' or 'dill' serializers [1]_.
 - runs on normal Python 2.x, Python **3.x**, IronPython, Pypy.
 - works between systems on different architectures and operating systems (64-bit, 32-bit, Intel, PowerPC, Windows, Linux, OSX...)
 - designed to be very easy to use and get out of your way as much as possible, but still provide a lot of flexibility when you do need it
@@ -254,10 +254,11 @@ Experiment with the ``benchmark``, ``batchedcalls`` and ``hugetransfer`` example
 
 .. rubric:: Footnotes
 
-.. [1] When configured to use the :py:mod:`pickle` serializer, your system may be vulnerable
-    because of the sercurity risks of the pickle protocol (possibility of arbitrary
+.. [1] When configured to use the :py:mod:`pickle` or :py:mod:`dill` serializer,
+    your system may be vulnerable
+    because of the sercurity risks of the pickle and dill protocols (possibility of arbitrary
     code execution).
     Pyro does have some security measures in place to mitigate this risk somewhat.
     They are described in the :doc:`security` chapter. It is strongly advised to read it.
     By default, Pyro is configured to use the safe `serpent` serializer, so you won't have
-    to deal with these issues unless you configure it explicitly to use pickle.
+    to deal with these issues unless you configure it explicitly to use these serializers.

@@ -102,10 +102,11 @@ PREFER_IP_VERSION       int     4              The IP address type that is prefe
 THREADING2              bool    False          Use the threading2 module if available instead of Python's standard threading module
 THREADPOOL_SIZE         int     16             For the thread pool server: amount of worker threads to be spawned.
 FLAME_ENABLED           bool    False          Should Pyro Flame be enabled on the server
-SERIALIZER              str     serpent        The wire protocol serializer to use for clients/proxies (one of: serpent, json, marshal, pickle)
+SERIALIZER              str     serpent        The wire protocol serializer to use for clients/proxies (one of: serpent, json, marshal, pickle, dill)
 SERIALIZERS_ACCEPTED    set     json,marshal,  The wire protocol serializers accepted in the server/daemon.
                                 serpent        Use comma separated string for initial config, will be a set after initialization.
 PICKLE_PROTOCOL_VERSION int     highest poss   The pickle protocol version to use, if pickle is selected as serializer. Defaults to pickle.HIGHEST_PROTOCOL
+DILL_PROTOCOL_VERSION   int     highest poss   The dill protocol version to use, if dill is selected as serializer. Defaults to `-1` (highest protocol).
 JSON_MODULE             string  json           The json module to use for the json serializer. (json is included in the stdlib, simplejson is a possible 3rd party alternative).
 LOGWIRE                 bool    False          If wire-level message data should be written to the logfile (you may want to disable COMPRESSION)
 METADATA                bool    True           Client: Get remote object metadata from server automatically on proxy connect (methods, attributes, oneways, etc) and use local checks in the proxy against it (set to False to use compatible behavior with Pyro 4.26 and earlier)
