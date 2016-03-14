@@ -242,7 +242,6 @@ Server code configuration
     If your server also uses Pyro to call other servers, you may also need to configure
     it as mentioned above at 'client code'. This is because the incoming and outgoing serializer formats
     are configured independently.
-    To see how this works in practice you can look at the :file:`stockquotes` example.
 
 
 .. index:: release proxy connection

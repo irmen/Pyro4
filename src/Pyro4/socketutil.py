@@ -15,7 +15,7 @@ from Pyro4.errors import CommunicationError, TimeoutError, ConnectionClosedError
 
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.
-# So I didn't include them in de list of retryable errors.
+# So I didn't include them in the list of retryable errors.
 ERRNO_RETRIES = [errno.EINTR, errno.EAGAIN, errno.EWOULDBLOCK, errno.EINPROGRESS]
 if hasattr(errno, "WSAEINTR"):
     ERRNO_RETRIES.append(errno.WSAEINTR)
