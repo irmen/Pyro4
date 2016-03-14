@@ -4,6 +4,7 @@ Change Log
 
 **Pyro 4.42**
 
+- added dill serialization support
 - fixed dotted attribute client code in the ``attributes`` example
 
 
