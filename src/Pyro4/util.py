@@ -451,10 +451,10 @@ class DillSerializer(SerializerBase):
     serializer_id = Pyro4.message.SERIALIZER_DILL
 
     def dumpsCall(self, obj, method, vargs, kwargs):
-        return dill.dumps((obj, method, vargs, kwargs), Pyro4.config.PICKLE_PROTOCOL_VERSION)
+        return dill.dumps((obj, method, vargs, kwargs), Pyro4.config.DILL_PROTOCOL_VERSION)
 
     def dumps(self, data):
-        return dill.dumps(data, Pyro4.config.PICKLE_PROTOCOL_VERSION)
+        return dill.dumps(data, Pyro4.config.DILL_PROTOCOL_VERSION)
 
     def loadsCall(self, data):
         return dill.loads(data)
