@@ -73,11 +73,20 @@ class DaemonTests(unittest.TestCase):
     def testSerializerAccepted(self):
         self.assertIn("marshal", Pyro4.config.SERIALIZERS_ACCEPTED)
         self.assertNotIn("pickle", Pyro4.config.SERIALIZERS_ACCEPTED)
+        self.assertNotIn("dill", Pyro4.config.SERIALIZERS_ACCEPTED)
         with Pyro4.core.Daemon(port=0) as d:
             msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_MARSHAL, 0, 0, hmac_key=d._pyroHmacKey)
             cm = ConnectionMock(msg)
             d.handleRequest(cm)  # marshal serializer should be accepted
             msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_PICKLE, 0, 0, hmac_key=d._pyroHmacKey)
+            cm = ConnectionMock(msg)
+            try:
+                d.handleRequest(cm)
+                self.fail("should crash")
+            except Pyro4.errors.ProtocolError as x:
+                self.assertIn("serializer that is not accepted", str(x))
+                pass
+            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_DILL, 0, 0, hmac_key=d._pyroHmacKey)
             cm = ConnectionMock(msg)
             try:
                 d.handleRequest(cm)
@@ -565,7 +574,7 @@ class MetaInfoTests(unittest.TestCase):
         with Pyro4.core.Daemon() as d:
             daemon_obj = d.objectsById[Pyro4.constants.DAEMON_NAME]
             meta = daemon_obj.get_metadata(Pyro4.constants.DAEMON_NAME)
-            for ser_id in [Pyro4.message.SERIALIZER_JSON, Pyro4.message.SERIALIZER_MARSHAL, Pyro4.message.SERIALIZER_PICKLE, Pyro4.message.SERIALIZER_SERPENT]:
+            for ser_id in [Pyro4.message.SERIALIZER_JSON, Pyro4.message.SERIALIZER_MARSHAL, Pyro4.message.SERIALIZER_PICKLE, Pyro4.message.SERIALIZER_SERPENT, Pyro4.message.SERIALIZER_DILL]:
                 serializer = get_serializer_by_id(ser_id)
                 data = serializer.dumps(meta)
                 _ = serializer.loads(data)

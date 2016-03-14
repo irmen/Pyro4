@@ -8,6 +8,11 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import unittest
 import sys
 import os
+try:
+    import dill
+except ImportError:
+    sys.stderr.write('Module dill is required to run Pyro4 tests!\n')
+    raise
 
 from_tox = "--tox" in sys.argv
 xml_report = "--xml" in sys.argv

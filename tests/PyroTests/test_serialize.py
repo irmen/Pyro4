@@ -13,6 +13,7 @@ import pickle
 import base64
 import unittest
 import serpent
+import dill
 import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
@@ -156,8 +157,8 @@ class SerializeTests_pickle(unittest.TestCase):
                 obj.name = "hello"
                 daemon.register(obj)
                 o, _ = self.ser.serializeData(obj)
-                if self.SERIALIZER == "pickle":
-                    # only pickle can deserialize the PrettyPrinter class without the need of explicit deserialization function
+                if self.SERIALIZER in ("pickle", "dill"):
+                    # only pickle and dill can deserialize the PrettyPrinter class without the need of explicit deserialization function
                     o2 = self.ser.deserializeData(o)
                     self.assertEqual("hello", o2.name)
                     self.assertEqual(42, o2._width)
@@ -266,8 +267,8 @@ class SerializeTests_pickle(unittest.TestCase):
             self.assertEqual(set(['oneway']), p1._pyroOneway)
 
     def testCustomClassFail(self):
-        if self.SERIALIZER == "pickle":
-            self.skipTest("pickle simply serializes custom classes")
+        if self.SERIALIZER in ("pickle", "dill"):
+            self.skipTest("pickle and dill simply serialize custom classes")
         o = pprint.PrettyPrinter(stream="dummy", width=42)
         s, c = self.ser.serializeData(o)
         try:
@@ -277,8 +278,8 @@ class SerializeTests_pickle(unittest.TestCase):
             pass
 
     def testCustomClassOk(self):
-        if self.SERIALIZER == "pickle":
-            self.skipTest("pickle simply serializes custom classes just fine")
+        if self.SERIALIZER in ("pickle", "dill"):
+            self.skipTest("pickle and dill simply serialize custom classes just fine")
         o = MyThing("test")
         Pyro4.util.SerializerBase.register_class_to_dict(MyThing, mything_dict)
         Pyro4.util.SerializerBase.register_dict_to_class("CUSTOM-Mythingymabob", mything_creator)
@@ -432,6 +433,30 @@ class SerializeTests_pickle(unittest.TestCase):
             Pyro4.config.PICKLE_PROTOCOL_VERSION = orig_protocol
 
 
+class SerializeTests_dill(SerializeTests_pickle):
+    SERIALIZER = "dill"
+
+    def testProtocolVersion(self):
+        self.assertEqual(dill.HIGHEST_PROTOCOL, Pyro4.config.DILL_PROTOCOL_VERSION)
+
+    @unittest.skip('not implemented')
+    def testUriSerializationWithoutSlots(self):
+        pass
+
+    def testSerializeLambda(self):
+        l = lambda x: x * x
+        ser, compressed = self.ser.serializeData(l)
+        l2 = self.ser.deserializeData(ser, compressed=compressed)
+        self.assertEqual(l2(3.), 9.)
+
+    def testSerializeLocalFunction(self):
+        def f(x):
+            return x * x
+        ser, compressed = self.ser.serializeData(f)
+        f2 = self.ser.deserializeData(ser, compressed=compressed)
+        self.assertEqual(f2(3.), 9.)
+
+
 class SerializeTests_serpent(SerializeTests_pickle):
     SERIALIZER = "serpent"
 
@@ -540,9 +565,15 @@ class GenericTests(unittest.TestCase):
             Pyro4.util.get_serializer("serpent")
         except ImportError:
             pass
+        try:
+            import dill
+            Pyro4.util.get_serializer("dill")
+        except ImportError:
+            pass
 
     def testSerializersAvailableById(self):
         Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_PICKLE)
+        Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_DILL)
         Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
         self.assertRaises(Pyro4.errors.ProtocolError, lambda: Pyro4.util.get_serializer_by_id(9999999))
 
