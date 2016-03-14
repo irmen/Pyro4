@@ -60,7 +60,11 @@ class Configuration(object):
         self.SERIALIZERS_ACCEPTED = "serpent,marshal,json"   # these are the 'safe' serializers
         self.LOGWIRE = False  # log wire-level messages
         self.PICKLE_PROTOCOL_VERSION = pickle.HIGHEST_PROTOCOL
-        self.DILL_PROTOCOL_VERSION = -1  # Highest protocol
+        try:
+            import dill
+            self.DILL_PROTOCOL_VERSION = dill.HIGHEST_PROTOCOL  # Highest protocol
+        except ImportError:
+            self.DILL_PROTOCOL_VERSION = -1
         self.METADATA = True  # get metadata from server on proxy connect
         self.REQUIRE_EXPOSE = False  # require @expose to make members remotely accessible (if False, everything is accessible)
         self.USE_MSG_WAITALL = hasattr(socket, "MSG_WAITALL") and platform.system() != "Windows"      # not reliable on windows even though it is defined
