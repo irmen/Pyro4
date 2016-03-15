@@ -432,6 +432,9 @@ class SerializeTests_pickle(unittest.TestCase):
             Pyro4.config.PICKLE_PROTOCOL_VERSION = orig_protocol
 
 
+import platform
+@unittest.skipIf(platform.python_implementation() == 'PyPy',
+                 'PyPy not currently supported with dill')
 class SerializeTests_dill(SerializeTests_pickle):
     SERIALIZER = "dill"
 
@@ -566,6 +569,9 @@ class GenericTests(unittest.TestCase):
         except ImportError:
             pass
         try:
+            import platform
+            if platform.python_implementation() == 'PyPy':
+                raise ImportError('Currently dill is not supported with PyPy')
             import dill
             Pyro4.util.get_serializer("dill")
         except ImportError:
@@ -573,7 +579,9 @@ class GenericTests(unittest.TestCase):
 
     def testSerializersAvailableById(self):
         Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_PICKLE)
-        Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_DILL)
+        import platform
+        if platform.python_implementation() != 'PyPy':
+            Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_DILL)
         Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
         self.assertRaises(Pyro4.errors.ProtocolError, lambda: Pyro4.util.get_serializer_by_id(9999999))
 

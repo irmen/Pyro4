@@ -86,6 +86,9 @@ class DaemonTests(unittest.TestCase):
             except Pyro4.errors.ProtocolError as x:
                 self.assertIn("serializer that is not accepted", str(x))
                 pass
+            import platform
+            if platform.python_implementation() == 'PyPy':
+                return
             msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_DILL, 0, 0, hmac_key=d._pyroHmacKey)
             cm = ConnectionMock(msg)
             try:
@@ -575,6 +578,9 @@ class MetaInfoTests(unittest.TestCase):
             daemon_obj = d.objectsById[Pyro4.constants.DAEMON_NAME]
             meta = daemon_obj.get_metadata(Pyro4.constants.DAEMON_NAME)
             for ser_id in [Pyro4.message.SERIALIZER_JSON, Pyro4.message.SERIALIZER_MARSHAL, Pyro4.message.SERIALIZER_PICKLE, Pyro4.message.SERIALIZER_SERPENT, Pyro4.message.SERIALIZER_DILL]:
+                import platform
+                if platform.python_implementation() == 'PyPy':
+                    continue
                 serializer = get_serializer_by_id(ser_id)
                 data = serializer.dumps(meta)
                 _ = serializer.loads(data)

@@ -602,6 +602,9 @@ _ser = MarshalSerializer()
 _serializers["marshal"] = _ser
 _serializers_by_id[_ser.serializer_id] = _ser
 try:
+    import platform
+    if platform.python_implementation() == 'PyPy':
+        raise ImportError('Currently dill is not supported with PyPy')
     import dill
     _ser = DillSerializer()
     _serializers["dill"] = _ser
