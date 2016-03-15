@@ -13,7 +13,6 @@ import pickle
 import base64
 import unittest
 import serpent
-import dill
 import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
@@ -437,6 +436,7 @@ class SerializeTests_dill(SerializeTests_pickle):
     SERIALIZER = "dill"
 
     def testProtocolVersion(self):
+        import dill
         self.assertEqual(dill.HIGHEST_PROTOCOL, Pyro4.config.DILL_PROTOCOL_VERSION)
 
     @unittest.skip('not implemented')
