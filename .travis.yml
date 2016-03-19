@@ -3,11 +3,12 @@ language: python
 python:
   - 2.7
   - 3.3
-  - 3.4
+  - 3.4.3
   - 3.5
   - pypy
 install:
   - pip install -e .
-script: 
-  - cd tests 
+  - pip install -r test_requirements.txt
+script:
+  - cd tests
   - python -E run_testsuite.py

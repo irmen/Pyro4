@@ -100,6 +100,7 @@ For normal usage, there's not a single line of Pyro specific code once you have 
 .. index::
     single: object serialization
     double: serialization; pickle
+    double: serialization; dill
     double: serialization; serpent
     double: serialization; marshal
     double: serialization; json
@@ -148,13 +149,17 @@ on what objects you can use.
   no custom classes can be serialized. Part of the standard library.
 * pickle: the legacy serializer. Fast and supports almost all types. Has security problems though. Part
   of the standard library. No longer used by default.
+* dill: similar to pickle serializer, but more capable. Extends python's 'pickle' module
+  for serializing and de-serializing python objects to the majority of the built-in python types.
+  Has security problems though, just as pickle.
 
-.. index:: SERIALIZER, PICKLE_PROTOCOL_VERSION, SERIALIZERS_ACCEPTED
+.. index:: SERIALIZER, PICKLE_PROTOCOL_VERSION, SERIALIZERS_ACCEPTED, DILL_PROTOCOL_VERSION
 
 You select the serializer to be used by setting the ``SERIALIZER`` config item. (See the :doc:`/config` chapter).
 The valid choices are the names of the serializer from the list mentioned above.
-If you're using pickle, and need to control the pickle protocol version that is used, you can do so with the
-``PICKLE_PROTOCOL_VERSION`` config item. By default Pyro will use the highest one available.
+If you're using pickle or dill, and need to control the protocol version that is used,
+you can do so with the ``PICKLE_PROTOCOL_VERSION`` or ``DILL_PROTOCOL_VERSION`` config items.
+By default Pyro will use the highest one available.
 
 .. note::
     Since Pyro 4.20 the default serializer is "``serpent``". Serpent is secure but cannot
@@ -165,7 +170,7 @@ If you're using pickle, and need to control the pickle protocol version that is 
 .. note::
     The serializer(s) that a Pyro server/daemon accepts, is controlled by a different
     config item (``SERIALIZERS_ACCEPTED``). This can be a set of one or more serializers.
-    By default it accepts the set of 'safe' serializers, so "``pickle``" is excluded.
+    By default it accepts the set of 'safe' serializers, so "``pickle``" and "``dill``" are excluded.
     If the server doesn't accept the serializer that you configured
     for your client, it will refuse the requests and respond with an exception that tells
     you about the unsupported serializer choice. If it *does* accept your requests,
@@ -173,7 +178,8 @@ If you're using pickle, and need to control the pickle protocol version that is 
 
 .. note::
     Because the name server is just a regular Pyro server as well, you will have to tell
-    it to allow the pickle serializer if your client code uses this. See :ref:`nameserver-pickle`.
+    it to allow the pickle or dill serializers if your client code uses them.
+    See :ref:`nameserver-pickle` and :ref:`nameserver-dill`.
 
 
 .. index:: deserialization, serializing custom classes, deserializing custom classes
@@ -184,7 +190,8 @@ Changing the way your custom classes are (de)serialized
 -------------------------------------------------------
 
 .. note::
-    The information in this paragraph applies only when you're not using the pickle serialization protocol.
+    The information in this paragraph applies only when you're not using the pickle nor dill
+    serialization protocols.
 
 By default, custom classes are serialized into a dict.
 They are not deserialized back into instances of your custom class. This avoids possible security issues.

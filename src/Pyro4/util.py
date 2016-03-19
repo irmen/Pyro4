@@ -333,6 +333,8 @@ class SerializerBase(object):
         elif classname.startswith("Pyro4.util."):
             if classname == "Pyro4.util.PickleSerializer":
                 return PickleSerializer()
+            elif classname == "Pyro4.util.DillSerializer":
+                return DillSerializer()
             elif classname == "Pyro4.util.MarshalSerializer":
                 return MarshalSerializer()
             elif classname == "Pyro4.util.JsonSerializer":
@@ -429,6 +431,36 @@ class PickleSerializer(SerializerBase):
 
     def loads(self, data):
         return pickle.loads(data)
+
+    @classmethod
+    def register_type_replacement(cls, object_type, replacement_function):
+        def copyreg_function(obj):
+            return replacement_function(obj).__reduce__()
+
+        try:
+            copyreg.pickle(object_type, copyreg_function)
+        except TypeError:
+            pass
+
+
+class DillSerializer(SerializerBase):
+    """
+    A (de)serializer that wraps the Dill serialization protocol.
+    It can optionally compress the serialized data, and is thread safe.
+    """
+    serializer_id = Pyro4.message.SERIALIZER_DILL
+
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        return dill.dumps((obj, method, vargs, kwargs), Pyro4.config.DILL_PROTOCOL_VERSION)
+
+    def dumps(self, data):
+        return dill.dumps(data, Pyro4.config.DILL_PROTOCOL_VERSION)
+
+    def loadsCall(self, data):
+        return dill.loads(data)
+
+    def loads(self, data):
+        return dill.loads(data)
 
     @classmethod
     def register_type_replacement(cls, object_type, replacement_function):
@@ -569,6 +601,16 @@ import marshal
 _ser = MarshalSerializer()
 _serializers["marshal"] = _ser
 _serializers_by_id[_ser.serializer_id] = _ser
+try:
+    import platform
+    if platform.python_implementation() == 'PyPy':
+        raise ImportError('Currently dill is not supported with PyPy')
+    import dill
+    _ser = DillSerializer()
+    _serializers["dill"] = _ser
+    _serializers_by_id[_ser.serializer_id] = _ser
+except ImportError:
+    pass
 try:
     try:
         import importlib

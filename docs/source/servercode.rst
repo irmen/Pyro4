@@ -624,7 +624,7 @@ and how to deal with existing code that relies on pickle.
 .. note::
     Since Pyro 4.20 the default serializer is "``serpent``". It used to be "``pickle``" in older versions.
     The default set of accepted serializers in the server is the set of 'safe' serializers,
-    so "``pickle``" is not among the default.
+    so "``pickle``" and "``dill``" are not among the default.
 
 
 Other features

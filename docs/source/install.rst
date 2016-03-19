@@ -22,7 +22,7 @@ Pyro will default to using the `serpent <https://pypi.python.org/pypi/serpent>`_
 will need to install Serpent as well, unless you configure Pyro to use one of the other serializers.
 
 .. note::
-    When Pyro is configured to use pickle or marshal as its serialization format, it is required to have the same *major* Python versions
+    When Pyro is configured to use pickle, dill or marshal as its serialization format, it is required to have the same *major* Python versions
     on your clients and your servers. Otherwise the different parties cannot decipher each others serialized data.
     This means you cannot let Python 2.x talk to Python 3.x with Pyro. However
     it should be fine to have Python 3.3 talk to Python 3.4 for instance.
