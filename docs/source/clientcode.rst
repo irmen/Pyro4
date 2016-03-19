@@ -149,7 +149,7 @@ on what objects you can use.
   no custom classes can be serialized. Part of the standard library.
 * pickle: the legacy serializer. Fast and supports almost all types. Has security problems though. Part
   of the standard library. No longer used by default.
-* dill: similar to pickle serializer, but more capable. Extends python's 'pickle' module
+* dill: See https://pypi.python.org/pypi/dill It is similar to pickle serializer, but more capable. Extends python's 'pickle' module
   for serializing and de-serializing python objects to the majority of the built-in python types.
   Has security problems though, just as pickle.
 
