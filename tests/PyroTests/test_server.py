@@ -477,6 +477,7 @@ class ServerTestsOnce(unittest.TestCase):
     def testAsyncProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
             async = Pyro4.async(p)
+            async._pyroBind()  # force that any metadata is processed
             begin = time.time()
             result = async.delayAndId(1, 42)
             duration = time.time() - begin
@@ -497,6 +498,7 @@ class ServerTestsOnce(unittest.TestCase):
 
         with Pyro4.core.Proxy(self.objectUri) as p:
             async = Pyro4.async(p)
+            async._pyroBind()  # force that any metadata is processed
             holder = FuncHolder()
             begin = time.time()
             result = async.multiply(2, 3)

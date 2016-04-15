@@ -198,7 +198,7 @@ To find out the protocol version that your client code is using, you can use thi
 
 Asynchronous ('future') normal function calls
 =============================================
-Pyro provides an async proxy wrapper to call remote methods asynchronously, see :ref:`async-calls`.
+Pyro provides an async proxy to call remote methods asynchronously, see :ref:`async-calls`.
 For normal Python code, Python provides a similar mechanism in the form of the
 :py:class:`Pyro4.futures.Future` class (also available as ``Pyro4.Future``).
 With a syntax that is slightly different from normal method calls,

@@ -7,6 +7,7 @@ Change Log
 - added dill serialization support (https://pypi.python.org/pypi/dill)
 - fixed dotted attribute client code in the ``attributes`` example
 - handles EINTR signal and will continue the server loop now in this case, on Python 3.4 and newer.
+- fixed async proxy calls not being done async, when metadata is used
 
 
 **Pyro 4.41**

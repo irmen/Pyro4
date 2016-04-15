@@ -321,10 +321,15 @@ class CoreTests(unittest.TestCase):
         self.assertIsInstance(p2, ProxySub)
 
     def testAsyncProxyAdapterCopy(self):
-        proxy = Pyro4.core.Proxy("PYRO:12345@hostname:9999")
-        asyncproxy = proxy._pyroAsync()
-        p2 = copy.copy(asyncproxy)
-        self.assertIsInstance(p2, Pyro4.core._AsyncProxyAdapter)
+        try:
+            Pyro4.config.METADATA = False
+            proxy = Pyro4.core.Proxy("PYRO:12345@hostname:9999")
+            asyncproxy = proxy._pyroAsync()
+            p2 = copy.copy(asyncproxy)
+            asynccall = p2.foobar()
+            self.assertIsInstance(asynccall, Pyro4.futures.FutureResult)
+        finally:
+            Pyro4.config.METADATA = True
 
     def testBatchProxyAdapterCopy(self):
         proxy = Pyro4.core.Proxy("PYRO:12345@hostname:9999")
@@ -587,6 +592,7 @@ class RemoteMethodTests(unittest.TestCase):
     class BatchProxyMock(object):
         def __init__(self):
             self.result = []
+            self._pyroMaxRetries = 0
 
         def __copy__(self):
             return self
@@ -625,7 +631,10 @@ class RemoteMethodTests(unittest.TestCase):
             pass
 
         def _pyroAsync(self):
-            return Pyro4.core._AsyncProxyAdapter(self)
+            return self
+
+        def __getattr__(self, item):
+            return Pyro4.core._AsyncRemoteMethod(self, item, 5)
 
         def _pyroInvoke(self, methodname, vargs, kwargs, flags=0):
             if methodname == "pause_and_divide":

@@ -84,14 +84,15 @@ print("back from sleep")
 print("final value=", asyncresult.value)
 assert asyncresult.value == 36
 
-print("\n* async call with call chain, where calls are new pyro calls:")
+print("\n* async call with call chain, where calls are new non-async pyro calls:")
+normalproxy = Pyro4.Proxy(uri)
 async = Pyro4.async(proxy)
 asyncresult = async.divide(100, 5)
 # set a chain of callables to be invoked once the value is available
 # the callable will be invoked like so:  function(asyncvalue, kwarg=..., kwarg=...)
-asyncresult.then(proxy.add, increase=1) \
-    .then(proxy.add, increase=2) \
-    .then(proxy.add, increase=3)
+asyncresult.then(normalproxy.add, increase=1) \
+    .then(normalproxy.add, increase=2) \
+    .then(normalproxy.add, increase=3)
 print("getting result value (will block until available)")
 print("final value=", asyncresult.value)
 assert asyncresult.value == 26  # 100/5+1+2+3=26

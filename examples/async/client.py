@@ -1,6 +1,5 @@
 from __future__ import print_function
 import sys
-
 import Pyro4
 
 
@@ -22,15 +21,14 @@ print("getting result value...(will block until available)")
 print("resultvalue=", asyncresult.value)  # blocks until the result is available
 
 print("\n* async call, with normal call inbetween:")
-async = Pyro4.async(proxy)
+normalproxy = Pyro4.Proxy(uri)
 asyncresult = async.divide(100, 5)  # returns immediately
-print("client does normal call: ", proxy.multiply(5, 20))
-print("client does normal call: ", proxy.multiply(5, 30))
+print("client does normal call: ", normalproxy.multiply(5, 20))
+print("client does normal call: ", normalproxy.multiply(5, 30))
 print("getting result value of async call...(will block until available)")
 print("resultvalue=", asyncresult.value)  # blocks until the result is available
 
 print("\n* async call with exception:")
-async = Pyro4.async(proxy)
 asyncresult = async.divide(100, 0)  # will trigger a zero division error, 100//0
 print("getting result value...")
 try:
@@ -40,7 +38,6 @@ except ZeroDivisionError:
     print("got exception (expected):", repr(sys.exc_info()[1]))
 
 print("\n* async call with timeout:")
-async = Pyro4.async(proxy)
 asyncresult = async.divide(100, 5)
 print("checking if ready within 2 seconds...")
 ready = asyncresult.wait(2)  # wait for ready within 2 seconds but the server takes 3
@@ -52,7 +49,6 @@ print("available=", asyncresult.ready)
 print("resultvalue=", asyncresult.value)
 
 print("\n* a few async calls at the same time:")
-async = Pyro4.async(proxy)
 results = [
     async.divide(100, 7),
     async.divide(100, 6),

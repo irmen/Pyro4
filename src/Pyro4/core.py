@@ -198,7 +198,7 @@ class Proxy(object):
     __pyroAttributes = frozenset(
         ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri",
          "_pyroOneway", "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq", "_pyroHmacKey",
-         "_pyroRawWireResponse", "_pyroHandshake", "_pyroMaxRetries",
+         "_pyroRawWireResponse", "_pyroHandshake", "_pyroMaxRetries", "_Proxy__async",
          "_Proxy__pyroHmacKey", "_Proxy__pyroTimeout", "_Proxy__pyroLock", "_Proxy__pyroConnLock"])
 
     def __init__(self, uri):
@@ -220,6 +220,7 @@ class Proxy(object):
         self.__pyroLock = threadutil.Lock()
         self.__pyroConnLock = threadutil.RLock()   # reentrant lock because pyroInvoke (or rather, pyroRelease) may lock it from within pyroCreateConnection
         util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
+        self.__async = False
 
     @property
     def _pyroHmacKey(self):
@@ -250,6 +251,8 @@ class Proxy(object):
         if Pyro4.config.METADATA and name not in self._pyroMethods:
             # client side check if the requested attr actually exists
             raise AttributeError("remote object '%s' has no exposed attribute or method '%s'" % (self._pyroUri, name))
+        if self.__async:
+            return _AsyncRemoteMethod(self, name, self._pyroMaxRetries)
         return _RemoteMethod(self._pyroInvoke, name, self._pyroMaxRetries)
 
     def __setattr__(self, name, value):
@@ -317,6 +320,7 @@ class Proxy(object):
         self._pyroRawWireResponse = False
         self.__pyroLock = threadutil.Lock()
         self.__pyroConnLock = threadutil.Lock()
+        self.__async = False
 
     def __copy__(self):
         uriCopy = URI(self._pyroUri)
@@ -329,6 +333,7 @@ class Proxy(object):
         p._pyroHmacKey = self._pyroHmacKey
         p._pyroRawWireResponse = self._pyroRawWireResponse
         p._pyroMaxRetries = self._pyroMaxRetries
+        p.__async = self.__async
         return p
 
     def __enter__(self):
@@ -591,8 +596,10 @@ class Proxy(object):
         return _BatchProxyAdapter(self)
 
     def _pyroAsync(self):
-        """returns a helper class that lets you do asynchronous method calls on the proxy"""
-        return _AsyncProxyAdapter(self)
+        """returns an async version of the proxy so you can do asynchronous method calls"""
+        asyncproxy = self.__copy__()
+        asyncproxy.__async = True
+        return asyncproxy
 
     def _pyroInvokeBatch(self, calls, oneway=False):
         flags = Pyro4.message.FLAGS_BATCH
@@ -679,7 +686,7 @@ class _BatchProxyAdapter(object):
         if oneway and async:
             raise errors.PyroError("async oneway calls make no sense")
         if async:
-            return _AsyncRemoteMethod(self, "<asyncbatch>")()
+            return _AsyncRemoteMethod(self, "<asyncbatch>", self.__proxy._pyroMaxRetries)()
         else:
             results = self.__proxy._pyroInvokeBatch(self.__calls, oneway)
             self.__calls = []  # clear for re-use
@@ -693,28 +700,15 @@ class _BatchProxyAdapter(object):
         return self.__resultsgenerator(results)
 
 
-class _AsyncProxyAdapter(object):
-    def __init__(self, proxy):
-        self.__proxy = proxy
-
-    def __getattr__(self, name):
-        if name in dir(self.__proxy):
-            return getattr(self.__proxy, name)
-        return _AsyncRemoteMethod(self.__proxy, name)
-
-    def __copy__(self):
-        return type(self)(self.__proxy)
-
-
 class _AsyncRemoteMethod(object):
     """async method call abstraction (call will run in a background thread)"""
-
-    def __init__(self, proxy, name):
+    def __init__(self, proxy, name, max_retries):
         self.__proxy = proxy
         self.__name = name
+        self.__max_retries = max_retries
 
     def __getattr__(self, name):
-        return _AsyncRemoteMethod(self.__proxy, "%s.%s" % (self.__name, name))
+        return _AsyncRemoteMethod(self.__proxy, "%s.%s" % (self.__name, name), self.__max_retries)
 
     def __call__(self, *args, **kwargs):
         result = Pyro4.futures.FutureResult()
@@ -724,15 +718,24 @@ class _AsyncRemoteMethod(object):
         return result
 
     def __asynccall(self, asyncresult, args, kwargs):
-        try:
-            # use a copy of the proxy otherwise calls would be serialized,
-            # and use contextmanager to close the proxy after we're done
-            with self.__proxy.__copy__() as proxy:
-                value = proxy._pyroInvoke(self.__name, args, kwargs)
-            asyncresult.value = value
-        except Exception:
-            # ignore any exceptions here, return them as part of the async result instead
-            asyncresult.value = Pyro4.futures._ExceptionWrapper(sys.exc_info()[1])
+        for attempt in range(self.__max_retries + 1):
+            try:
+                # use a copy of the proxy otherwise calls would still be done in sequence,
+                # and use contextmanager to close the proxy after we're done
+                with self.__proxy.__copy__() as proxy:
+                    value = proxy._pyroInvoke(self.__name, args, kwargs)
+                asyncresult.value = value
+                return
+            except (errors.ConnectionClosedError, errors.TimeoutError):
+                # only retry for recoverable network errors
+                if attempt >= self.__max_retries:
+                    # ignore any exceptions here, return them as part of the async result instead
+                    asyncresult.value = Pyro4.futures._ExceptionWrapper(sys.exc_info()[1])
+                    return
+            except Exception:
+                # ignore any exceptions here, return them as part of the async result instead
+                asyncresult.value = Pyro4.futures._ExceptionWrapper(sys.exc_info()[1])
+                return
 
 
 def batch(proxy):
@@ -741,7 +744,7 @@ def batch(proxy):
 
 
 def async(proxy):
-    """convenience method to get an async proxy adapter"""
+    """convenience method to get an async proxy"""
     return proxy._pyroAsync()
 
 

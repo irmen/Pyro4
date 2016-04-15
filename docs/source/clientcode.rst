@@ -322,11 +322,11 @@ Note that this feature is only available for calls on the same proxy object.
 
 How it works:
 
-#. You create a batch proxy wrapper object for the proxy object.
-#. Call all the methods you would normally call on the regular proxy, but use the batch proxy wrapper object instead.
+#. You create a batch proxy object for the proxy object.
+#. Call all the methods you would normally call on the regular proxy, but use the batch proxy object instead.
 #. Call the batch proxy object itself to obtain the generator with the results.
 
-You create a batch proxy wrapper using this: ``batch = Pyro4.batch(proxy)`` or this (equivalent): ``batch = proxy._pyroBatch()``.
+You create a batch proxy using this: ``batch = Pyro4.batch(proxy)`` or this (equivalent): ``batch = proxy._pyroBatch()``.
 The signature of the batch proxy call is as follows:
 
 .. py:method:: batchproxy.__call__([oneway=False, async=False])
@@ -380,8 +380,8 @@ meantime, the code doesn't block at all and can process the results immediately.
 It is possible to define one or more callables (the "call chain") that should be invoked
 automatically by Pyro as soon as the result value becomes available.
 
-You create an async proxy wrapper using this: ``async = Pyro4.async(proxy)`` or this (equivalent): ``async = proxy._pyroAsync()``.
-Every remote method call you make on the async proxy wrapper, returns a
+You create an async proxy using this: ``async = Pyro4.async(proxy)`` or this (equivalent): ``async = proxy._pyroAsync()``.
+Every remote method call you make on the async proxy, returns a
 :py:class:`Pyro4.futures.FutureResult` object immediately.
 This object means 'the result of this will be available at some moment in the future' and has the following interface:
 
@@ -433,7 +433,7 @@ See the :file:`async` example for more details and example code for call chains.
 
 Async calls for normal callables (not only for Pyro proxies)
 ------------------------------------------------------------
-The async proxy wrapper discussed above is only available when you are dealing with Pyro proxies.
+The async proxy discussed above is only available when you are dealing with Pyro proxies.
 It provides a convenient syntax to call the methods on the proxy asynchronously.
 For normal Python code it is sometimes useful to have a similar mechanism as well.
 Pyro provides this too, see :ref:`future-functions` for more information.
