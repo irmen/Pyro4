@@ -15,6 +15,12 @@ import Pyro4.constants
 
 log = logging.getLogger("Pyro4.multiplexserver")
 
+try:
+    InterruptedError()  # new since Python 3.4
+except NameError:
+    class InterruptedError(Exception):
+        pass
+
 
 class MultiplexedSocketServerBase(object):
     """base class for multiplexed transport server for socket connections"""
@@ -169,6 +175,8 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
             while loopCondition():
                 try:
                     polls = poll.poll(1000 * Pyro4.config.POLLTIMEOUT)
+                except InterruptedError:
+                    polls = []
                 except select.error:
                     if loopCondition():
                         raise
@@ -221,6 +229,8 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                 rlist.append(self.sock)
                 try:
                     rlist, _, _ = select.select(rlist, [], [], Pyro4.config.POLLTIMEOUT)
+                except InterruptedError:
+                    rlist = []
                 except select.error:
                     if loopCondition():
                         raise

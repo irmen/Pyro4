@@ -12,6 +12,12 @@ import select
 import Pyro4.constants
 from Pyro4.errors import CommunicationError, TimeoutError, ConnectionClosedError
 
+try:
+    InterruptedError()  # new since Python 3.4
+except NameError:
+    class InterruptedError(Exception):
+        pass
+
 
 # Note: other interesting errnos are EPERM, ENOBUFS, EMFILE
 # but it seems to me that all these signify an unrecoverable situation.
@@ -302,7 +308,10 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
                     timeout = None
                 timeout = max(0.1, timeout)  # avoid polling behavior with timeout=0
                 while True:
-                    sr, sw, se = select.select([], [sock], [sock], timeout)
+                    try:
+                        sr, sw, se = select.select([], [sock], [sock], timeout)
+                    except InterruptedError:
+                        continue
                     if sock in sw:
                         break  # yay, writable now, connect() completed
                     elif sock in se:
