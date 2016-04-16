@@ -9,3 +9,6 @@ original method call to the server and is locked (waiting for a response).
 
 A simple solution is to never reuse proxies in callbacks, and instead
 create new ones and use those in the callback functions.
+
+Another solution is to set COMMTIMEOUT such that after a certain time the
+client will abort with a timeout error, effectively breaking the deadlock.

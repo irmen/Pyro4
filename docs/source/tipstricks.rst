@@ -22,6 +22,8 @@ When you can have a circular communication pattern in your system (A-->B-->C-->A
 * with the multiplex servertype, the server itself may also block for all other remote calls because the handling of the first is not yet completed.
 
 Avoid circularity, or use *oneway* method calls on at least one of the links in the chain.
+Another possible way out of a lock situation is to set ``COMMTIMEOUT`` so that after a certain period in a locking
+situation the caller aborts with a TimeoutError, effectively breaking the deadlock.
 
 
 .. index:: releasing a proxy

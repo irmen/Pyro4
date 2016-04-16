@@ -2,8 +2,11 @@ from __future__ import print_function, with_statement
 import Pyro4.threadutil
 
 
-# a message bouncer. Passes messages back to the callback
+# A message bouncer. Passes messages back to the callback
 # object, until a certain limit is reached.
+# In this example however, it will never reach the limit,
+# because the client will deadlock first.
+
 
 class Bouncer(object):
     def __init__(self, name):

@@ -17,11 +17,11 @@ def main():
     server = Pyro4.Proxy("PYRONAME:example.deadlock")
 
     bounceObj = bouncer.Bouncer("Client")
-    daemon.register(bounceObj)  # callback objece
+    daemon.register(bounceObj)  # callback object
 
-    # register callback obj on theserver
+    # register callback on the server
     server.register(bounceObj)
-    # register server as 'callback' on the bounce object in this client
+    # Now register server as 'callback' on the bounce object in this client
     # note: we're using the same proxy here as the main program!
     # This is the main cause of the deadlock, because this proxy will already
     # be engaged in a call when the callback object here wants to use it as well.
