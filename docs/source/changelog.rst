@@ -5,6 +5,7 @@ Change Log
 **Pyro 4.43**
 
 - improved docs on instance modes and instance creation
+- improved cleanup of objects with instance_mode 'session'
 
 
 **Pyro 4.42**

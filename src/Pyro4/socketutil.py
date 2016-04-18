@@ -455,6 +455,7 @@ class SocketConnection(object):
             self.sock.close()
         except AttributeError:
             pass
+        self.pyroInstances = {}   # force releasing the session instances
 
     def fileno(self):
         return self.sock.fileno()

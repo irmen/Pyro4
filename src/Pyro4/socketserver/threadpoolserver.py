@@ -119,8 +119,10 @@ class SocketServer_Threadpool(object):
     def __del__(self):
         if self.sock is not None:
             self.sock.close()
+            self.sock = None
         if self.pool is not None:
             self.pool.close()
+            self.pool = None
 
     def __repr__(self):
         return "<%s on %s, %d workers, %d jobs>" % (self.__class__.__name__, self.locationStr,

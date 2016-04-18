@@ -57,6 +57,7 @@ class MultiplexedSocketServerBase(object):
         if self.sock is not None:
             self.sock.close()
             self.sock = None
+            self.clients = None
 
     def events(self, eventsockets):
         """used for external event loops: handle events that occur on one of the sockets of this server"""
