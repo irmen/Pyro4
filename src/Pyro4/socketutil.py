@@ -304,9 +304,8 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
             xv = sys.exc_info()[1]
             errno = getattr(xv, "errno", 0)
             if errno in ERRNO_RETRIES:
-                if timeout is _GLOBAL_DEFAULT_TIMEOUT:
-                    timeout = None
-                timeout = max(0.1, timeout)  # avoid polling behavior with timeout=0
+                if timeout is _GLOBAL_DEFAULT_TIMEOUT or timeout < 0.1:
+                    timeout = 0.1
                 while True:
                     try:
                         sr, sw, se = select.select([], [sock], [sock], timeout)

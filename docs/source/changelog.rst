@@ -5,7 +5,8 @@ Change Log
 **Pyro 4.43**
 
 - improved docs on instance modes and instance creation
-- improved cleanup of objects with instance_mode 'session'
+- improved cleanup of objects with instance_mode 'session', fixes possible memory leak
+- fixed float vs None bug in rare situation when connecting socket gets a retryable error
 
 
 **Pyro 4.42**
