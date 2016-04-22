@@ -196,6 +196,9 @@ It is also the preferred way of registering your code with the daemon.
 
 Controlling the instance mode and creation is done via the ``instance_mode`` and ``instance_creator``
 parameters of the ``expose`` decorator, which was described earlier.
+By the way, it is *not* required to have ``REQUIRE_EXPOSE`` set to true to use these.
+You can control the instance mode regardless of this setting because it only influences what methods
+and attributes of the class are exposed.
 
 By default, Pyro will create an instance of your class per *session* (=proxy connection)
 Here is an example of registering a class that will have one new instance for every single method call instead::
