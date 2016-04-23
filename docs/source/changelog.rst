@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.44**
+
+...
+
+
 **Pyro 4.43**
 
 - improved docs on instance modes and instance creation

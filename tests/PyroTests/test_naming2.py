@@ -6,7 +6,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement, print_function
 import sys
-import select
 import os
 import unittest
 import Pyro4.core
@@ -166,25 +165,6 @@ class OfflineNameServerTests(unittest.TestCase):
         ns1.close()
         ns2.close()
         bc2.close()
-
-    def testOwnloopBasics(self):
-        myIpAddress = Pyro4.socketutil.getIpAddress("", workaround127=True)
-        uri1, ns1, bc1 = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0, enableBroadcast=True)
-        self.assertTrue(bc1.fileno() > 0)
-        if Pyro4.socketutil.hasPoll:
-            p = select.poll()
-            for s in ns1.sockets:
-                p.register(s, select.POLLIN)
-            p.register(bc1.fileno(), select.POLLIN)
-            p.poll(100)
-            if hasattr(p, "close"):
-                p.close()
-        else:
-            rs = [bc1]
-            rs.extend(ns1.sockets)
-            _, _, _ = select.select(rs, [], [], 0.1)
-        ns1.close()
-        bc1.close()
 
     def testNSmain(self):
         oldstdout = sys.stdout

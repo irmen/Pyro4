@@ -1,40 +1,37 @@
 """
 Socket server based on socket multiplexing. Doesn't use threads.
+Uses the best available selector (kqueue, poll, select).
 
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement, print_function
 import socket
-import select
 import sys
 import logging
 import os
+try:
+    import selectors
+except ImportError:
+    import selectors34 as selectors
 from Pyro4 import socketutil, errors, util
 import Pyro4.constants
 
 log = logging.getLogger("Pyro4.multiplexserver")
 
-try:
-    InterruptedError()  # new since Python 3.4
-except NameError:
-    class InterruptedError(Exception):
-        pass
 
-
-class MultiplexedSocketServerBase(object):
-    """base class for multiplexed transport server for socket connections"""
-
+class SocketServer_Multiplex(object):
+    """Multiplexed transport server for socket connections (uses select, poll, kqueue, ...)"""
     def __init__(self):
         self.sock = self.daemon = self.locationStr = None
-        self.clients = set()
+        self.selector = selectors.DefaultSelector()
 
     def init(self, daemon, host, port, unixsocket=None):
         log.info("starting multiplexed socketserver")
+        log.debug("selector implementation: "+self.selector.__class__.__name__)
         self.sock = None
         bind_location = unixsocket if unixsocket else (host, port)
         self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True, nodelay=Pyro4.config.SOCK_NODELAY)
-        self.clients = set()
         self.daemon = daemon
         sockaddr = self.sock.getsockname()
         if not unixsocket and sockaddr[0].startswith("127."):
@@ -49,24 +46,25 @@ class MultiplexedSocketServerBase(object):
                 self.locationStr = "[%s]:%d" % (host, port)
             else:
                 self.locationStr = "%s:%d" % (host, port)
+        self.selector.register(self.sock, selectors.EVENT_READ)
 
     def __repr__(self):
-        return "<%s on %s, %d connections>" % (self.__class__.__name__, self.locationStr, len(self.clients))
+        return "<%s on %s, %d connections>" % (self.__class__.__name__, self.locationStr, len(self.selector.get_map())-1)
 
     def __del__(self):
         if self.sock is not None:
+            self.selector.close()
             self.sock.close()
             self.sock = None
-            self.clients = None
 
     def events(self, eventsockets):
-        """used for external event loops: handle events that occur on one of the sockets of this server"""
+        """handle events that occur on one of the sockets of this server"""
         for s in eventsockets:
             if s is self.sock:
                 # server socket, means new connection
                 conn = self._handleConnection(self.sock)
                 if conn:
-                    self.clients.add(conn)
+                    self.selector.register(conn, selectors.EVENT_READ)
             else:
                 # must be client socket, means remote call
                 active = self.handleRequest(s)
@@ -75,8 +73,8 @@ class MultiplexedSocketServerBase(object):
                         self.daemon.clientDisconnect(s)
                     except Exception as x:
                         log.warning("Error in clientDisconnect: " + str(x))
+                    self.selector.unregister(s)
                     s.close()
-                    self.clients.discard(s)
 
     def _handleConnection(self, sock):
         try:
@@ -114,6 +112,7 @@ class MultiplexedSocketServerBase(object):
 
     def close(self):
         log.debug("closing socketserver")
+        self.selector.close()
         if self.sock:
             sockname = None
             try:
@@ -126,18 +125,14 @@ class MultiplexedSocketServerBase(object):
                 if os.path.exists(sockname):
                     os.remove(sockname)
         self.sock = None
-        for c in self.clients:
-            try:
-                c.close()
-            except Exception:
-                pass
-        self.clients = set()
 
     @property
     def sockets(self):
-        socks = [self.sock]
-        socks.extend(self.clients)
-        return socks
+        registrations = self.selector.get_map()
+        if registrations:
+            return [sk.fileobj for sk in registrations.values()]
+        else:
+            return []
 
     def wakeup(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
@@ -160,104 +155,16 @@ class MultiplexedSocketServerBase(object):
             log.warning(msg)
             return False
 
-
-class SocketServer_Poll(MultiplexedSocketServerBase):
-    """transport server for socket connections, poll loop multiplex version."""
-
     def loop(self, loopCondition=lambda: True):
-        log.debug("enter poll-based requestloop")
-        poll = select.poll()
-        try:
-            fileno2connection = {}  # map fd to original connection object
-            rlist = list(self.clients) + [self.sock]
-            for r in rlist:
-                poll.register(r.fileno(), select.POLLIN | select.POLLPRI)
-                fileno2connection[r.fileno()] = r
-            while loopCondition():
-                try:
-                    polls = poll.poll(1000 * Pyro4.config.POLLTIMEOUT)
-                except InterruptedError:
-                    polls = []
-                except select.error:
-                    if loopCondition():
-                        raise
-                    else:
-                        # swallow the select error if the loopcondition is no longer true, and exit loop
-                        # this can occur if we are shutting down and the socket is no longer valid
-                        break
-                for (fd, mask) in polls:
-                    conn = fileno2connection[fd]
-                    if conn is self.sock:
-                        conn = self._handleConnection(self.sock)
-                        if conn:
-                            poll.register(conn.fileno(), select.POLLIN | select.POLLPRI)
-                            fileno2connection[conn.fileno()] = conn
-                            self.clients.add(conn)
-                    else:
-                        active = self.handleRequest(conn)
-                        if not active:
-                            try:
-                                fn = conn.fileno()
-                            except socket.error:
-                                pass
-                            else:
-                                try:
-                                    self.daemon.clientDisconnect(conn)
-                                except Exception as x:
-                                    log.warning("Error in clientDisconnect: " + str(x))
-                                conn.close()
-                                self.clients.discard(conn)
-                                if fn in fileno2connection:
-                                    poll.unregister(fn)
-                                    del fileno2connection[fn]
-        except KeyboardInterrupt:
-            log.debug("stopping on break signal")
-            pass
-        finally:
-            if hasattr(poll, "close"):
-                poll.close()
-        log.debug("exit poll-based requestloop")
-
-
-class SocketServer_Select(MultiplexedSocketServerBase):
-    """transport server for socket connections, select loop version."""
-
-    def loop(self, loopCondition=lambda: True):
-        log.debug("entering select-based requestloop")
+        log.debug("entering multiplexed requestloop")
         while loopCondition():
             try:
-                rlist = list(self.clients)
-                rlist.append(self.sock)
                 try:
-                    rlist, _, _ = select.select(rlist, [], [], Pyro4.config.POLLTIMEOUT)
-                except InterruptedError:
-                    rlist = []
-                except select.error:
-                    if loopCondition():
-                        raise
-                    else:
-                        # swallow the select error if the loopcondition is no longer true, and exit loop
-                        # this can occur if we are shutting down and the socket is no longer valid
-                        break
-                if self.sock in rlist:
-                    try:
-                        rlist.remove(self.sock)
-                    except ValueError:
-                        pass  # this can occur when closing down, even when we just tested for presence in the list
-                    conn = self._handleConnection(self.sock)
-                    if conn:
-                        self.clients.add(conn)
-                for conn in rlist:
-                    # no need to remove conn from rlist, because no more processing is done after this
-                    if conn in self.clients:
-                        active = self.handleRequest(conn)
-                        if not active:
-                            try:
-                                self.daemon.clientDisconnect(conn)
-                            except Exception as x:
-                                log.warning("Error in clientDisconnect: " + str(x))
-                            conn.close()
-                            self.clients.discard(conn)
+                    events = self.selector.select(Pyro4.config.POLLTIMEOUT)
+                except OSError:
+                    events = []
+                conns = [key.fileobj for key, mask in events]
+                self.events(conns)
             except socket.timeout:
                 pass  # just continue the loop on a timeout
             except KeyboardInterrupt:

@@ -31,7 +31,8 @@ elif sys.version_info >= (3, 4):
 class CoreTests(unittest.TestCase):
     def testProxyNoHmac(self):
         # check that proxy without hmac is possible
-        _ = Pyro4.Proxy("PYRO:object@host:9999")
+        with Pyro4.Proxy("PYRO:object@host:9999") as p:
+            pass
 
     def testDaemonNoHmac(self):
         # check that daemon without hmac is possible
@@ -312,6 +313,8 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(p1._pyroTimeout, p2._pyroTimeout)
         self.assertEqual(p1._pyroHmacKey, p2._pyroHmacKey)
         self.assertEqual(p1._pyroHandshake, p2._pyroHandshake)
+        p1._pyroRelease()
+        p2._pyroRelease()
 
     def testProxySubclassCopy(self):
         class ProxySub(Pyro4.core.Proxy):
@@ -319,23 +322,25 @@ class CoreTests(unittest.TestCase):
         p = ProxySub("PYRO:12345@hostname:9999")
         p2 = copy.copy(p)
         self.assertIsInstance(p2, ProxySub)
+        p._pyroRelease()
+        p2._pyroRelease()
 
     def testAsyncProxyAdapterCopy(self):
         try:
             Pyro4.config.METADATA = False
-            proxy = Pyro4.core.Proxy("PYRO:12345@hostname:9999")
-            asyncproxy = proxy._pyroAsync()
-            p2 = copy.copy(asyncproxy)
-            asynccall = p2.foobar()
-            self.assertIsInstance(asynccall, Pyro4.futures.FutureResult)
+            with Pyro4.core.Proxy("PYRO:12345@hostname:9999") as proxy:
+                asyncproxy = proxy._pyroAsync()
+                p2 = copy.copy(asyncproxy)
+                asynccall = p2.foobar()
+                self.assertIsInstance(asynccall, Pyro4.futures.FutureResult)
         finally:
             Pyro4.config.METADATA = True
 
     def testBatchProxyAdapterCopy(self):
-        proxy = Pyro4.core.Proxy("PYRO:12345@hostname:9999")
-        batchproxy = proxy._pyroBatch()
-        p2 = copy.copy(batchproxy)
-        self.assertIsInstance(p2, Pyro4.core._BatchProxyAdapter)
+        with Pyro4.core.Proxy("PYRO:12345@hostname:9999") as proxy:
+            batchproxy = proxy._pyroBatch()
+            p2 = copy.copy(batchproxy)
+            self.assertIsInstance(p2, Pyro4.core._BatchProxyAdapter)
 
     def testProxyOffline(self):
         # only offline stuff here.
@@ -353,13 +358,14 @@ class CoreTests(unittest.TestCase):
         self.assertIsNone(p1._pyroConnection)
         self.assertEqual(p3._pyroUri, p1._pyroUri)
         self.assertIsNot(p3._pyroUri, p1._pyroUri)
+        p3._pyroRelease()
 
     def testProxyRepr(self):
-        p = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
-        address = id(p)
-        expected = "<Pyro4.core.Proxy at 0x%x, not connected, for PYRO:9999@localhost:15555>" % address
-        self.assertEqual(expected, repr(p))
-        self.assertEqual(unicode(expected), unicode(p))
+        with Pyro4.core.Proxy("PYRO:9999@localhost:15555") as p:
+            address = id(p)
+            expected = "<Pyro4.core.Proxy at 0x%x, not connected, for PYRO:9999@localhost:15555>" % address
+            self.assertEqual(expected, repr(p))
+            self.assertEqual(unicode(expected), unicode(p))
 
     def testProxyDir(self):
         # PyPy tries to call deprecated __members__ and __methods__
@@ -382,18 +388,19 @@ class CoreTests(unittest.TestCase):
             self.assertEqual(dir_result, dir(p))
         finally:
             setattr(Pyro4.core.Proxy, '__dir__', old_dir_method)
+        p._pyroRelease()
 
     def testProxyDirMetadata(self):
-        p = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
-        # metadata isn't loaded
-        self.assertIn('__hash__', dir(p))
-        self.assertNotIn('ping', dir(p))
-        # emulate obtaining metadata
-        p._pyroAttrs = set(['prop'])
-        p._pyroMethods = set(['ping'])
-        self.assertIn('__hash__', dir(p))
-        self.assertIn('prop', dir(p))
-        self.assertIn('ping', dir(p))
+        with Pyro4.core.Proxy("PYRO:9999@localhost:15555") as p:
+            # metadata isn't loaded
+            self.assertIn('__hash__', dir(p))
+            self.assertNotIn('ping', dir(p))
+            # emulate obtaining metadata
+            p._pyroAttrs = set(['prop'])
+            p._pyroMethods = set(['ping'])
+            self.assertIn('__hash__', dir(p))
+            self.assertIn('prop', dir(p))
+            self.assertIn('ping', dir(p))
 
     def testProxySettings(self):
         p1 = Pyro4.core.Proxy("PYRO:9999@localhost:15555")
@@ -410,6 +417,8 @@ class CoreTests(unittest.TestCase):
         self.assertIsNot(p1._pyroOneway, p2._pyroOneway, "p1 and p2 should have different oneway tables")
         self.assertIsNot(p1._pyroAttrs, p2._pyroAttrs, "p1 and p2 should have different attr tables")
         self.assertIsNot(p1._pyroMethods, p2._pyroMethods, "p1 and p2 should have different method tables")
+        p1._pyroRelease()
+        p2._pyroRelease()
 
     def testProxyWithStmt(self):
         class ConnectionMock(object):
@@ -447,6 +456,7 @@ class CoreTests(unittest.TestCase):
             self.assertIsNotNone(p._pyroUri)
         with p:
             self.assertIsNotNone(p._pyroUri)
+        p._pyroRelease()
 
     def testProxyHmac(self):
         class ConnectionMock(object):
@@ -476,6 +486,7 @@ class CoreTests(unittest.TestCase):
             proxy.foo()
         self.assertNotIn(b"HMAC", conn_mock.msgbytes)
         self.assertIsNone(proxy._pyroHmacKey)
+        proxy._pyroRelease()
 
     def testNoConnect(self):
         wrongUri = Pyro4.core.URI("PYRO:foobar@localhost:59999")
@@ -514,6 +525,7 @@ class CoreTests(unittest.TestCase):
         self.assertIsNone(p._pyroTimeout)
         self.assertIsNone(p._pyroConnection.timeout)
         Pyro4.config.COMMTIMEOUT = None
+        p._pyroRelease()
 
     def testCallbackDecorator(self):
         # just test the decorator itself, testing the callback
@@ -542,6 +554,9 @@ class CoreTests(unittest.TestCase):
         self.assertFalse(hash(p1) == hash(p3))
         self.assertFalse(p1 == 42)
         self.assertTrue(p1 != 42)
+        p1._pyroRelease()
+        p2._pyroRelease()
+        p3._pyroRelease()
 
     def testExposeInstancemodeInvalid(self):
         with self.assertRaises(ValueError):
@@ -662,6 +677,7 @@ class RemoteMethodTests(unittest.TestCase):
             self.assertIsInstance(a, Pyro4.core._RemoteMethod, "attribute access should just be a RemoteMethod")
             a2 = a.nestedattribute.nested2
             self.assertIsInstance(a2, Pyro4.core._RemoteMethod, "nested attribute should just be another RemoteMethod")
+            p._pyroRelease()
         finally:
             Pyro4.config.METADATA = True
 
@@ -669,6 +685,7 @@ class RemoteMethodTests(unittest.TestCase):
         p = Pyro4.core.Proxy("PYRO:obj@localhost:59999")
         with self.assertRaises(Pyro4.errors.CommunicationError):
             _ = p.someattribute     # triggers attempt to get metadata
+        p._pyroRelease()
 
     def testBatchMethod(self):
         proxy = self.BatchProxyMock()
@@ -688,6 +705,7 @@ class RemoteMethodTests(unittest.TestCase):
         self.assertRaises(ValueError, next, results)  # the call to error() should generate an exception
         self.assertRaises(StopIteration, next, results)  # and now there should not be any more results
         self.assertEqual(4, len(proxy.result))  # should have done 4 calls, not 5
+        batch._pyroRelease()
 
     def testBatchMethodOneway(self):
         proxy = self.BatchProxyMock()
@@ -750,6 +768,7 @@ class RemoteMethodTests(unittest.TestCase):
         self.assertFalse(result.ready)
         _ = result.value
         self.assertTrue(result.ready)
+        proxy._pyroRelease()
 
     def testAsyncCallbackMethod(self):
         class AsyncFunctionHolder(object):
@@ -769,6 +788,7 @@ class RemoteMethodTests(unittest.TestCase):
         value = result.value
         self.assertEqual(10 // 2 + 2 + 4 + 1, value)
         self.assertEqual(3, holder.asyncFunctionCount)
+        proxy._pyroRelease()
 
     def testCrashingAsyncCallbackMethod(self):
         def normalAsyncFunction(value, x):
@@ -786,6 +806,7 @@ class RemoteMethodTests(unittest.TestCase):
             self.fail("expected exception")
         except ZeroDivisionError:
             pass  # ok
+        proxy._pyroRelease()
 
     def testAsyncMethodTimeout(self):
         proxy = self.AsyncProxyMock()
@@ -796,6 +817,7 @@ class RemoteMethodTests(unittest.TestCase):
         self.assertTrue(result.wait(1))  # will be ready within 1 seconds more
         self.assertTrue(result.ready)
         self.assertEqual(5, result.value)
+        proxy._pyroRelease()
 
 
 class TestSimpleServe(unittest.TestCase):

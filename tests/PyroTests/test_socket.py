@@ -12,7 +12,7 @@ import time
 import unittest
 import Pyro4.socketutil as SU
 from Pyro4 import threadutil, errors
-from Pyro4.socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
+from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.core import Daemon
 import Pyro4.message
@@ -387,27 +387,10 @@ class TestSocketServer(unittest.TestCase):
         serv.close()
         self.assertIsNone(serv.sock)
 
-    def testServer_select(self):
+    def testServer_multiplex(self):
         daemon = ServerCallback()
         port = SU.findProbablyUnusedPort()
-        serv = SocketServer_Select()
-        serv.init(daemon, "localhost", port)
-        self.assertEqual("localhost:" + str(port), serv.locationStr)
-        self.assertIsNotNone(serv.sock)
-        conn = SU.SocketConnection(serv.sock, "ID12345")
-        self.assertEqual("ID12345", conn.objectId)
-        self.assertIsNotNone(conn.sock)
-        conn.close()
-        conn.close()
-        self.assertIsNotNone(conn.sock, "connections keep their socket object even if it's closed")
-        serv.close()
-        serv.close()
-        self.assertIsNone(serv.sock)
-
-    def testServer_poll(self):
-        daemon = ServerCallback()
-        port = SU.findProbablyUnusedPort()
-        serv = SocketServer_Poll()
+        serv = SocketServer_Multiplex()
         serv.init(daemon, "localhost", port)
         self.assertEqual("localhost:" + str(port), serv.locationStr)
         self.assertIsNotNone(serv.sock)
@@ -422,14 +405,13 @@ class TestSocketServer(unittest.TestCase):
         self.assertIsNone(serv.sock)
 
 
-@unittest.skipUnless(SU.hasSelect, "requires select()")
-class TestServerDOS_select(unittest.TestCase):
+class TestServerDOS_multiplex(unittest.TestCase):
     def setUp(self):
         self.orig_poll_timeout = Pyro4.config.POLLTIMEOUT
         self.orig_comm_timeout = Pyro4.config.COMMTIMEOUT
         Pyro4.config.POLLTIMEOUT = 0.5
         Pyro4.config.COMMTIMEOUT = 0.5
-        self.socket_server = SocketServer_Select
+        self.socket_server = SocketServer_Multiplex
 
     def tearDown(self):
         Pyro4.config.POLLTIMEOUT = self.orig_poll_timeout
@@ -448,7 +430,7 @@ class TestServerDOS_select(unittest.TestCase):
             self.serv.close()
 
     def testConnectCrash(self):
-        serv_thread = TestServerDOS_select.ServerThread(self.socket_server, ServerCallback_BrokenHandshake)
+        serv_thread = TestServerDOS_multiplex.ServerThread(self.socket_server, ServerCallback_BrokenHandshake)
         serv_thread.start()
         time.sleep(0.2)
         self.assertTrue(serv_thread.is_alive(), "server thread failed to start")
@@ -476,7 +458,7 @@ class TestServerDOS_select(unittest.TestCase):
             serv_thread.join()
 
     def testInvalidMessageCrash(self):
-        serv_thread = TestServerDOS_select.ServerThread(self.socket_server, TestDaemon)
+        serv_thread = TestServerDOS_multiplex.ServerThread(self.socket_server, TestDaemon)
         serv_thread.start()
         time.sleep(0.2)
         self.assertTrue(serv_thread.is_alive(), "server thread failed to start")
@@ -532,14 +514,7 @@ class TestServerDOS_select(unittest.TestCase):
             serv_thread.join()
 
 
-@unittest.skipUnless(SU.hasPoll, "requires poll()")
-class TestServerDOS_poll(TestServerDOS_select):
-    def setUp(self):
-        super(TestServerDOS_poll, self).setUp()
-        self.socket_server = SocketServer_Poll
-
-
-class TestServerDOS_threading(TestServerDOS_select):
+class TestServerDOS_threading(TestServerDOS_multiplex):
     def setUp(self):
         super(TestServerDOS_threading, self).setUp()
         self.socket_server = SocketServer_Threadpool

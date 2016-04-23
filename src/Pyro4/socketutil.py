@@ -504,13 +504,6 @@ def bindOnUnusedPort(sock, host='localhost'):
     return sock.getsockname()[1]
 
 
-"""is select() available?"""
-hasSelect = select and hasattr(select, "select")
-
-"""is poll() available?"""
-hasPoll = select and hasattr(select, "poll")
-
-
 def triggerSocket(sock):
     """send a small data packet over the socket, to trigger it"""
     try:

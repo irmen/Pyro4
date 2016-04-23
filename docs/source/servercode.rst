@@ -592,9 +592,10 @@ appropriate. If in doubt, go with the default setting.
     double: server type; multiplex
 
 2. multiplexed server (servertype ``"multiplex"``)
-    This server uses a select (or poll, if available) based connection multiplexer to process
-    all remote method calls sequentially. No threads are used in this server. It means
-    only one method call is running at a time, so if it takes a while to complete, all other
+    This server uses a connection multiplexer to process
+    all remote method calls sequentially. No threads are used in this server.
+    It uses the best supported selector available on your platform (kqueue, poll, select).
+    It means only one method call is running at a time, so if it takes a while to complete, all other
     calls are waiting for their turn (even when they are from different proxies).
     The instance mode used for registering your class, won't change the way
     the concurrent access to the instance is done: in all cases, there is only one call active at all times.

@@ -17,7 +17,7 @@ import base64
 import Pyro4.futures
 from Pyro4 import errors, threadutil, socketutil, util, constants, message
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
-from Pyro4.socketserver.multiplexserver import SocketServer_Poll, SocketServer_Select
+from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 
 
 __all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "oneway"]
@@ -897,8 +897,7 @@ class Daemon(object):
         if Pyro4.config.SERVERTYPE == "thread":
             self.transportServer = SocketServer_Threadpool()
         elif Pyro4.config.SERVERTYPE == "multiplex":
-            # choose the 'best' multiplexing implementation
-            self.transportServer = SocketServer_Poll() if socketutil.hasPoll else SocketServer_Select()
+            self.transportServer = SocketServer_Multiplex()
         else:
             raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
         self.transportServer.init(self, host, port, unixsocket)

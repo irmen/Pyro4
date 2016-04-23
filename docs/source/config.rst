@@ -96,7 +96,7 @@ BROADCAST_ADDRS         str     <broadcast>,   List of comma separated addresses
                                 0.0.0.0
 ONEWAY_THREADED         bool    True           Enable to make oneway calls be processed in their own separate thread
 POLLTIMEOUT             float   2.0            For the multiplexing server only: the timeout of the select or poll calls
-SERVERTYPE              str     thread         Select the Pyro server type. thread=thread pool based, multiplex=select/poll based
+SERVERTYPE              str     thread         Select the Pyro server type. thread=thread pool based, multiplex=select/poll/kqueue based
 SOCK_REUSE              bool    False          Should SO_REUSEADDR be used on sockets that Pyro creates.
 PREFER_IP_VERSION       int     4              The IP address type that is preferred (4=ipv4, 6=ipv6, 0=let OS decide).
 THREADING2              bool    False          Use the threading2 module if available instead of Python's standard threading module

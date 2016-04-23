@@ -76,6 +76,11 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
         "options": {"install": {"optimize": 0}}
     }
 
+    try:
+        import selectors
+    except ImportError:
+        setupargs["install_requires"].append("selectors34")
+
     setup(**setupargs)
 
     if len(sys.argv) >= 2 and sys.argv[1].startswith("install"):
