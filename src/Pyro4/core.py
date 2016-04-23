@@ -1021,7 +1021,7 @@ class Daemon(object):
         thread = threadutil.Thread(target=shutdown_thread)
         thread.start()
 
-    def _handshake(self, conn):
+    def _handshake(self, conn, denied_reason=None):
         """
         Perform connection handshake with new clients.
         Client sends a MSG_CONNECT message with a serialized data payload.
@@ -1030,11 +1030,14 @@ class Daemon(object):
         (like when retrieving the metadata) is because we need to force the clients
         to get past an initial connect handshake before letting them invoke any method.
         Return True for successful handshake, False if something was wrong.
+        If a denied_reason is given, the handshake will fail with the given reason.
         """
         serializer_id = message.SERIALIZER_MARSHAL
         msg_seq = 0
         try:
             msg = message.Message.recv(conn, [message.MSG_CONNECT], hmac_key=self._pyroHmacKey)
+            if denied_reason:
+                raise errors.ConnectionClosedError(denied_reason)
             if Pyro4.config.LOGWIRE:
                 _log_wiredata(log, "daemon handshake received", msg)
             if msg.serializer_id not in self.__serializer_ids:

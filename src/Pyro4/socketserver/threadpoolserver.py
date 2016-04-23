@@ -11,10 +11,11 @@ import socket
 import logging
 import sys
 import os
+import time
 import struct
 import Pyro4.util
 from Pyro4 import socketutil, errors
-from .threadpool import Pool
+from .threadpool import Pool, NoFreeWorkersError
 from ..threadutil import Lock
 
 log = logging.getLogger("Pyro4.threadpoolserver")
@@ -88,6 +89,12 @@ class ClientConnectionJob(object):
                 pass
         self.csock.close()
 
+    def denyConnection(self, reason):
+        log.warn("client connection was denied: "+reason)
+        # return failed handshake
+        self.daemon._handshake(self.csock, denied_reason=reason)
+        self.csock.close()
+
 
 class SocketServer_Threadpool(object):
     """transport server for socket connections, worker thread pool version."""
@@ -159,7 +166,16 @@ class SocketServer_Threadpool(object):
             log.debug("connected %s", caddr)
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
-            self.pool.process(ClientConnectionJob(csock, caddr, self.daemon))
+            job = ClientConnectionJob(csock, caddr, self.daemon)
+            attempt_time = max(5.0, Pyro4.config.COMMTIMEOUT or 0.0)
+            while attempt_time > 0.0:  # XXX should do this with a semaphore + acquire timeout (python 3.2+)
+                try:
+                    self.pool.process(job)
+                    return
+                except NoFreeWorkersError:
+                    time.sleep(0.5)
+                    attempt_time -= 0.5
+            job.denyConnection("no free workers, increase server threadpool size")
         except socket.timeout:
             pass  # just continue the loop on a timeout on accept
 

@@ -17,3 +17,23 @@ if config.THREADING2:
         from threading import *
 else:
     from threading import *
+
+
+class AtomicCounter(object):
+    def __init__(self, value=0):
+        self.__value = value
+        self.__lock = Lock()
+
+    def incr(self, amount=1):
+        with self.__lock:
+            self.__value += amount
+            return self.__value
+
+    def decr(self, amount=1):
+        with self.__lock:
+            self.__value -= amount
+            return self.__value
+
+    @property
+    def value(self):
+        return self.__value

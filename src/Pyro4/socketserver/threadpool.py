@@ -23,24 +23,30 @@ class PoolError(Exception):
     pass
 
 
+class NoFreeWorkersError(PoolError):
+    pass
+
+
 class Worker(Pyro4.threadutil.Thread):
     """
     Worker thread that picks jobs from the job queue and executes them.
     If it encounters the sentinel None, it will stop running.
     """
 
-    def __init__(self, jobs):
+    def __init__(self, job_pool):
         super(Worker, self).__init__()
         self.daemon = True
-        self.jobs = jobs
+        self.job_pool = job_pool
         self.name = "Pyro-Worker-%d " % id(self)
 
     def run(self):
-        for job in self.jobs:
+        while True:
+            job = self.job_pool.next_job(self)
             if job is None:
                 break
             try:
                 job()
+                self.job_pool.job_finished(self)
             except Exception:
                 log.exception("unhandled exception from job in worker thread %s: %s", self.name)
                 # we continue running, just pick another job from the queue
@@ -57,10 +63,12 @@ class Pool(object):
         self.jobs = queue.Queue()
         self.closed = False
         for _ in range(Pyro4.config.THREADPOOL_SIZE):
-            worker = Worker(self.jobs_generator())
+            worker = Worker(self)
             self.pool.append(worker)
             worker.start()
         log.debug("worker pool of size %d created", self.num_workers())
+        self.count_lock = Pyro4.threadutil.Lock()
+        self.active_worker_count = Pyro4.threadutil.AtomicCounter()
 
     def __enter__(self):
         return self
@@ -92,9 +100,16 @@ class Pool(object):
         """
         if self.closed:
             raise PoolError("job queue is closed")
+        if self.active_worker_count.value >= len(self.pool):
+            raise NoFreeWorkersError("all workers are busy")
         self.jobs.put(job)
 
-    def jobs_generator(self):
-        """generator that yields jobs from the queue"""
-        while not self.closed:
-            yield self.jobs.get()  # this is a thread-safe operation (on queue) so we don't need our own locking
+    def next_job(self, worker):
+        if self.closed:
+            return None
+        job = self.jobs.get()
+        self.active_worker_count.incr()
+        return job
+
+    def job_finished(self, worker):
+        self.active_worker_count.decr()
