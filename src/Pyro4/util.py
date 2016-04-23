@@ -1,5 +1,5 @@
 """
-Miscellaneous utilities.
+Miscellaneous utilities, and serializers.
 
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """

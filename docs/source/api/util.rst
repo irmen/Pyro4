@@ -1,5 +1,5 @@
-:mod:`Pyro4.util` --- Utilities
-===============================
+:mod:`Pyro4.util` --- Utilities and serializers
+===============================================
 
 .. automodule:: Pyro4.util
    :members:

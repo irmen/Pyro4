@@ -187,6 +187,10 @@ class SocketServer_Threadpool(object):
         # the server socket is all we care about, all client sockets are running in their own threads
         return [self.sock]
 
+    @property
+    def selector(self):
+        raise TypeError("threadpool server doesn't have multiplexing selector")
+
     def wakeup(self):
         interruptSocket(self._socketaddr)
 

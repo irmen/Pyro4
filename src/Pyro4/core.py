@@ -939,11 +939,18 @@ class Daemon(object):
 
     @property
     def sock(self):
+        """the server socket used by the daemon"""
         return self.transportServer.sock
 
     @property
     def sockets(self):
+        """list of all sockets used by the daemon (server socket and all active client sockets)"""
         return self.transportServer.sockets
+
+    @property
+    def selector(self):
+        """the multiplexing selector used, if using the multiplex server type"""
+        return self.transportServer.selector
 
     @staticmethod
     def serveSimple(objects, host=None, port=0, daemon=None, ns=True, verbose=True):

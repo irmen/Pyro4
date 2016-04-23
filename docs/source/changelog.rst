@@ -7,6 +7,7 @@ Change Log
 - improved multiplex server, now uses best available selector on your platform (kqueue, epoll, etc)
 - the above was done by using the 'selectors' module, on older pythons (<3.4)
   the backport 'selectors34' has been added as a new requirement.
+- added selector property on the daemon (to expose the multiplexing selector if that servertype is used).
 
 
 **Pyro 4.43**
