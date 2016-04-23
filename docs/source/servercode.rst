@@ -701,6 +701,20 @@ to bind your servers on if you want to make them publicly accessible:
 * :py:func:`Pyro4.socketutil.getInterfaceAddress`
 
 
+Cleaning up / disconnecting stale client connections
+----------------------------------------------------
+A client proxy will keep a connection open even if it is rarely used.
+It's good practice for the clients to take this in consideration and release the proxy.
+But the server can't enforce this, some clients may keep a connection open for a long time.
+Unfortunately it's hard to tell when a client connection has become stale (unused).
+Pyro's default behavior is to accept this fact and not kill the connection.
+This does mean however that many stale client connections will eventually block the
+server's resources, for instance all workers threads in the threadpool server.
+
+There's a simple possible solution to this, which is to specify a communication timeout
+on your server. For more information about this, read :ref:`tipstricks_release_proxy`.
+
+
 .. index:: Daemon API
 
 Daemon Pyro interface

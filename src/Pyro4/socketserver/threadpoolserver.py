@@ -46,6 +46,10 @@ class ClientConnectionJob(object):
                     except errors.SecurityError:
                         log.debug("security error on client %s", self.caddr)
                         break
+                    except errors.TimeoutError as x:
+                        # for timeout errors we're not really interested in detailed traceback info
+                        log.warning("error during handleRequest: %s" % x)
+                        break
                     except:
                         # other errors log a warning, break this loop and close the client connection
                         ex_t, ex_v, ex_tb = sys.exc_info()

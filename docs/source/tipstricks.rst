@@ -25,8 +25,8 @@ Avoid circularity, or use *oneway* method calls on at least one of the links in 
 Another possible way out of a lock situation is to set ``COMMTIMEOUT`` so that after a certain period in a locking
 situation the caller aborts with a TimeoutError, effectively breaking the deadlock.
 
-
 .. index:: releasing a proxy
+.. _tipstricks_release_proxy:
 
 'After X simultaneous proxy connections, Pyro seems to freeze!' So: Release your proxies when you can.
 ------------------------------------------------------------------------------------------------------
@@ -37,6 +37,10 @@ You can use the ``THREADPOOL_SIZE`` config item to increase the number of thread
 Or you could consider using the multiplex server instead, which doesn't have this particular issue.
 Still, it is a good thing to think about when you can release a proxy in your code.
 Don't worry about reconnecting, that's done automatically once it is used again.
+Another option is to set ``COMMTIMEOUT`` to a certain value *on your server*, which will free up unused connections after the given time.
+But your client code may now crash with a TimeoutError or ConnectionClosedError when it tries to use a proxy that worked earlier.
+You can use Pyro's autoreconnect feature to work around this but it makes the code more complex.
+
 You can use explicit ``_pyroRelease`` calls or use the proxy from within a context manager.
 It's not a good idea to release it after every single remote method call though, because then the cost
 of reconnecting the socket will cause a serious drop in performance (unless every call is at least a few seconds after the previous one).

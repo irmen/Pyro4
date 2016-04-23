@@ -46,7 +46,7 @@ class SocketServer_Multiplex(object):
                 self.locationStr = "[%s]:%d" % (host, port)
             else:
                 self.locationStr = "%s:%d" % (host, port)
-        self.selector.register(self.sock, selectors.EVENT_READ)
+        self.selector.register(self.sock, selectors.EVENT_READ | selectors.EVENT_WRITE)
 
     def __repr__(self):
         return "<%s on %s, %d connections>" % (self.__class__.__name__, self.locationStr, len(self.selector.get_map())-1)
@@ -64,7 +64,7 @@ class SocketServer_Multiplex(object):
                 # server socket, means new connection
                 conn = self._handleConnection(self.sock)
                 if conn:
-                    self.selector.register(conn, selectors.EVENT_READ)
+                    self.selector.register(conn, selectors.EVENT_READ | selectors.EVENT_WRITE)
             else:
                 # must be client socket, means remote call
                 active = self.handleRequest(s)
@@ -146,6 +146,10 @@ class SocketServer_Multiplex(object):
         except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
             # client went away or caused a security error.
             # close the connection silently.
+            return False
+        except errors.TimeoutError as x:
+            # for timeout errors we're not really interested in detailed traceback info
+            log.warning("error during handleRequest: %s" % x)
             return False
         except:
             # other error occurred, close the connection, but also log a warning

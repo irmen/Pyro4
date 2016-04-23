@@ -1107,6 +1107,11 @@ class Daemon(object):
         isCallback = False
         try:
             msg = message.Message.recv(conn, [message.MSG_INVOKE, message.MSG_PING], hmac_key=self._pyroHmacKey)
+        except errors.CommunicationError as x:
+            # we couldn't even get data from the client, this is an immediate error
+            log.info("error receiving data from client %s: %s", conn.sock.getpeername(), x)
+            raise x
+        try:
             request_flags = msg.flags
             request_seq = msg.seq
             request_serializer_id = msg.serializer_id
