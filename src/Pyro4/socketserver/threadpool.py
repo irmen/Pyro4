@@ -5,6 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
+import sys
 import logging
 import Pyro4.threadutil
 import Pyro4.util
@@ -41,12 +42,12 @@ class Worker(Pyro4.threadutil.Thread):
 
     def run(self):
         while True:
-            job = self.job_pool.next_job(self)
+            job = self.job_pool.next_job()
             if job is None:
                 break
             try:
                 job()
-                self.job_pool.job_finished(self)
+                self.job_pool.job_finished()
             except Exception:
                 log.exception("unhandled exception from job in worker thread %s: %s", self.name)
                 # we continue running, just pick another job from the queue
@@ -62,13 +63,15 @@ class Pool(object):
         self.pool = []
         self.jobs = queue.Queue()
         self.closed = False
+        if Pyro4.config.THREADPOOL_SIZE < 1:
+            raise ValueError("threadpool size must be >= 1")
         for _ in range(Pyro4.config.THREADPOOL_SIZE):
             worker = Worker(self)
             self.pool.append(worker)
             worker.start()
         log.debug("worker pool of size %d created", self.num_workers())
         self.count_lock = Pyro4.threadutil.Lock()
-        self.active_worker_count = Pyro4.threadutil.AtomicCounter()
+        self.available_workers_sema = Pyro4.threadutil.BoundedSemaphore(self.num_workers())
 
     def __enter__(self):
         return self
@@ -85,31 +88,32 @@ class Pool(object):
         self.pool = []
 
     def __repr__(self):
-        return "<%s.%s at 0x%x, %d workers, %d jobs>" % \
-               (self.__class__.__module__, self.__class__.__name__, id(self), self.num_workers(), self.num_jobs())
+        return "<%s.%s at 0x%x, %d workers, %d waiting jobs>" % \
+               (self.__class__.__module__, self.__class__.__name__, id(self), self.num_workers(), self.waiting_jobs())
 
-    def num_jobs(self):
+    def waiting_jobs(self):
         return self.jobs.qsize()
 
     def num_workers(self):
         return len(self.pool)
 
     def process(self, job):
-        """
-        Add the job to the general job queue. Job is any callable object.
-        """
+        """Add the job to the general job queue."""
         if self.closed:
             raise PoolError("job queue is closed")
-        if self.active_worker_count.value >= len(self.pool):
+        if sys.version_info < (3, 2):
+            success = self.available_workers_sema.acquire(blocking=False)
+        else:
+            timeout = max(0.5, min(5, (Pyro4.config.COMMTIMEOUT or 99999)-1))
+            success = self.available_workers_sema.acquire(blocking=True, timeout=timeout)
+        if not success:
             raise NoFreeWorkersError("all workers are busy")
         self.jobs.put(job)
 
-    def next_job(self, worker):
+    def next_job(self):
         if self.closed:
             return None
-        job = self.jobs.get()
-        self.active_worker_count.incr()
-        return job
+        return self.jobs.get()
 
-    def job_finished(self, worker):
-        self.active_worker_count.decr()
+    def job_finished(self):
+        self.available_workers_sema.release()

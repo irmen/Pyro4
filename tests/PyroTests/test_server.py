@@ -490,7 +490,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testAsyncProxyCallchain(self):
         class FuncHolder(object):
-            count = AtomicCounter()
+            count = threadutil.AtomicCounter()
 
             def function(self, value, increase=1):
                 self.count.incr()
@@ -510,7 +510,7 @@ class ServerTestsOnce(unittest.TestCase):
             value = result.value
             self.assertTrue(result.ready)
             self.assertEqual(22, value)
-            self.assertEqual(3, holder.count.value())
+            self.assertEqual(3, holder.count.value)
 
     def testBatchOneway(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -542,7 +542,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testBatchAsyncCallchain(self):
         class FuncHolder(object):
-            count = AtomicCounter()
+            count = threadutil.AtomicCounter()
 
             def function(self, values):
                 result = [value + 1 for value in values]
@@ -559,7 +559,7 @@ class ServerTestsOnce(unittest.TestCase):
             value = result.value
             self.assertTrue(result.ready)
             self.assertEqual([44, 14], value)
-            self.assertEqual(2, holder.count.value())
+            self.assertEqual(2, holder.count.value)
 
     def testPyroTracebackNormal(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -625,7 +625,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testConnectingThreads(self):
         class ConnectingThread(threadutil.Thread):
-            new_connections = AtomicCounter()
+            new_connections = threadutil.AtomicCounter()
 
             def __init__(self, proxy, event):
                 threadutil.Thread.__init__(self)
@@ -647,7 +647,7 @@ class ServerTestsOnce(unittest.TestCase):
             event.set()
             for t in threads:
                 t.join()
-            self.assertEqual(1, ConnectingThread.new_connections.value())  # proxy shared among threads must still have only 1 connect done
+            self.assertEqual(1, ConnectingThread.new_connections.value)  # proxy shared among threads must still have only 1 connect done
 
     def testMaxMsgSize(self):
         with Pyro4.core.Proxy(self.objectUri) as p:

@@ -507,7 +507,10 @@ class Proxy(object):
                         serializer = util.get_serializer_by_id(msg.serializer_id)
                         handshake_response = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
                     if msg.type == message.MSG_CONNECTFAIL:
-                        error = "connection rejected, reason: " + handshake_response
+                        if sys.version_info < (3, 0):
+                            error = "connection rejected, reason: " + handshake_response.decode()
+                        else:
+                            error = "connection rejected, reason: " + handshake_response
                         conn.close()
                         log.error(error)
                         raise errors.CommunicationError(error)
@@ -1109,7 +1112,7 @@ class Daemon(object):
             msg = message.Message.recv(conn, [message.MSG_INVOKE, message.MSG_PING], hmac_key=self._pyroHmacKey)
         except errors.CommunicationError as x:
             # we couldn't even get data from the client, this is an immediate error
-            log.info("error receiving data from client %s: %s", conn.sock.getpeername(), x)
+            # log.info("error receiving data from client %s: %s", conn.sock.getpeername(), x)
             raise x
         try:
             request_flags = msg.flags

@@ -167,7 +167,9 @@ class SocketServer_Multiplex(object):
                     events = self.selector.select(Pyro4.config.POLLTIMEOUT)
                 except OSError:
                     events = []
-                conns = [key.fileobj for key, mask in events]
+                # get all the socket connection objects that have a READ event
+                # (the WRITE events are ignored here, they're registered to let timeouts work etc)
+                conns = [key.fileobj for key, mask in events if mask & selectors.EVENT_READ]
                 self.events(conns)
             except socket.timeout:
                 pass  # just continue the loop on a timeout

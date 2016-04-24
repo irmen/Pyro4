@@ -8,7 +8,7 @@ from __future__ import with_statement, print_function
 import time
 import random
 import unittest
-from Pyro4.socketserver.threadpool import Pool, PoolError
+from Pyro4.socketserver.threadpool import Pool, PoolError, NoFreeWorkersError
 import Pyro4.threadutil
 
 
@@ -20,9 +20,15 @@ class Job(object):
         self.name = name
 
     def __call__(self):
-        # print("Job() '%s'" % self.name)
         time.sleep(JOB_TIME - random.random() / 10.0)
-        # print("Job() '%s' done" % self.name)
+
+
+class SlowJob(object):
+    def __init__(self, name="unnamed"):
+        self.name = name
+
+    def __call__(self):
+        time.sleep(5*JOB_TIME - random.random() / 10.0)
 
 
 class PoolTests(unittest.TestCase):
@@ -42,8 +48,9 @@ class PoolTests(unittest.TestCase):
             job = Job()
             p.process(job)
             time.sleep(0.02)  # let it pick up the job
-            self.assertEqual(0, p.num_jobs())
+            self.assertEqual(0, p.waiting_jobs())
 
+    @unittest.skip("requires queue on threadpool jobs")  # XXX add queue on/off config item
     def testMany(self):
         class Job2(object):
             def __init__(self, name="unnamed"):
@@ -56,21 +63,32 @@ class PoolTests(unittest.TestCase):
             for i in range(1 + Pyro4.config.THREADPOOL_SIZE * 100):
                 p.process(Job2(str(i)))
             time.sleep(2)
-            self.assertEqual(0, p.num_jobs(), "queue must be finished in under two seconds")
+            self.assertEqual(0, p.waiting_jobs(), "queue must be finished in under two seconds")
+
+    def testAllBusy(self):
+        try:
+            Pyro4.config.COMMTIMEOUT = 0.2
+            with Pool() as p:
+                for i in range(Pyro4.config.THREADPOOL_SIZE):
+                    p.process(SlowJob(str(i+1)))
+                # putting one more than the number of workers should raise an error:
+                with self.assertRaises(NoFreeWorkersError):
+                    p.process(SlowJob("toomuch"))
+        finally:
+            Pyro4.config.COMMTIMEOUT = 0.0
 
     def testClose(self):
         # test that after closing a job queue, no more new jobs are taken from the queue, and some other stuff
         with Pool() as p:
-            for i in range(2 * Pyro4.config.THREADPOOL_SIZE):
+            for i in range(Pyro4.config.THREADPOOL_SIZE):
                 p.process(Job(str(i + 1)))
-            self.assertTrue(p.num_jobs() > 1)
-
-        self.assertRaises(PoolError, p.process, Job(1))  # must not allow new jobs after closing
-        self.assertTrue(p.num_jobs() > 1)
+        with self.assertRaises(PoolError):
+            p.process(Job(1))  # must not allow new jobs after closing
+        self.assertTrue(p.waiting_jobs() > 1)
         time.sleep(JOB_TIME * 1.1)
-        jobs_left = p.num_jobs()
+        jobs_left = p.waiting_jobs()
         time.sleep(JOB_TIME * 1.1)  # wait till jobs finish and a new one *might* be taken off the queue
-        self.assertEqual(jobs_left, p.num_jobs(), "may not process new jobs after close")
+        self.assertEqual(jobs_left, p.waiting_jobs(), "may not process new jobs after close")
 
 
 if __name__ == "__main__":

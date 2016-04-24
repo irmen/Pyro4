@@ -11,7 +11,6 @@ import socket
 import logging
 import sys
 import os
-import time
 import struct
 import Pyro4.util
 from Pyro4 import socketutil, errors
@@ -136,8 +135,8 @@ class SocketServer_Threadpool(object):
             self.pool = None
 
     def __repr__(self):
-        return "<%s on %s, %d workers, %d jobs>" % (self.__class__.__name__, self.locationStr,
-                                                    self.pool.num_workers(), self.pool.num_jobs())
+        return "<%s on %s, %d workers, %d waiting jobs>" % (self.__class__.__name__, self.locationStr,
+                                                    self.pool.num_workers(), self.pool.waiting_jobs())
 
     def loop(self, loopCondition=lambda: True):
         log.debug("threadpool server requestloop")
@@ -171,15 +170,10 @@ class SocketServer_Threadpool(object):
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
             job = ClientConnectionJob(csock, caddr, self.daemon)
-            attempt_time = max(5.0, Pyro4.config.COMMTIMEOUT or 0.0)
-            while attempt_time > 0.0:  # XXX should do this with a semaphore + acquire timeout (python 3.2+)
-                try:
-                    self.pool.process(job)
-                    return
-                except NoFreeWorkersError:
-                    time.sleep(0.5)
-                    attempt_time -= 0.5
-            job.denyConnection("no free workers, increase server threadpool size")
+            try:
+                self.pool.process(job)
+            except NoFreeWorkersError:
+                job.denyConnection("no free workers, increase server threadpool size")
         except socket.timeout:
             pass  # just continue the loop on a timeout on accept
 

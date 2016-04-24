@@ -21,8 +21,12 @@ else:
 
 class AtomicCounter(object):
     def __init__(self, value=0):
+        self.__initial = value
         self.__value = value
         self.__lock = Lock()
+
+    def reset(self):
+        self.__value = self.__initial
 
     def incr(self, amount=1):
         with self.__lock:

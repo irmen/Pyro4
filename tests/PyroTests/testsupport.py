@@ -7,13 +7,11 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement
 import sys
-import threading
 import pickle
 import Pyro4
 
 __all__ = ["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO",
-           "AtomicCounter", "NonserializableError", "MyThing", "MyThingExposed",
-           "MyThingExposedSub", "MyThingSub"]
+           "NonserializableError", "MyThing", "MyThingExposed", "MyThingExposedSub", "MyThingSub"]
 
 if sys.version_info < (3, 0):
     # noinspection PyUnresolvedReferences
@@ -40,23 +38,6 @@ else:
     unicode = str
     unichr = chr
     basestring = str
-
-
-class AtomicCounter(object):
-    def __init__(self):
-        self.lock = threading.Lock()
-        self.count = 0
-
-    def reset(self):
-        self.count = 0
-
-    def incr(self):
-        with self.lock:
-            self.count += 1
-
-    def value(self):
-        with self.lock:
-            return self.count
 
 
 class NonserializableError(Exception):
