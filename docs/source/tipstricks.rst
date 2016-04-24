@@ -32,9 +32,9 @@ situation the caller aborts with a TimeoutError, effectively breaking the deadlo
 ------------------------------------------------------------------------------------------------------
 A connected proxy that is unused takes up resources on the server. In the case of the threadpool server type,
 it locks up a single thread. If you have too many connected proxies at the same time, the server may run out
-of threads and stops responding.
-You can use the ``THREADPOOL_SIZE`` config item to increase the number of threads Pyro uses in its thread pool in the daemon.
-Or you could consider using the multiplex server instead, which doesn't have this particular issue.
+of threads and won't be able to accept new connections.
+You can use the ``THREADPOOL_SIZE`` config item to increase the number of threads.
+Or you could consider using the multiplex server instead, which doesn't have this limitation.
 Still, it is a good thing to think about when you can release a proxy in your code.
 Don't worry about reconnecting, that's done automatically once it is used again.
 Another option is to set ``COMMTIMEOUT`` to a certain value *on your server*, which will free up unused connections after the given time.

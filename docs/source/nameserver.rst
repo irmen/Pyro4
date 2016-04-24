@@ -444,8 +444,7 @@ Free connections quickly (or: scaling the Name Server)
 ======================================================
 By default the Name server uses a Pyro socket server based on whatever configuration is the default.
 Usually that will be a threadpool based server with a limited pool size. If more clients connect to
-the name server than the pool size allows, new connections block (and may lock up your system if
-no existing connections are freed).
+the name server than the pool size allows, they will get a connection error.
 
 It is suggested you apply the following pattern when using the name server in your code:
 
@@ -466,8 +465,7 @@ You can control its behavior by setting certain Pyro config items before startin
 - You can set ``SERVERTYPE=multiplex`` to create a server that doesn't use a limited connection (thread) pool,
   but multiplexes as many connections as the system allows. However, the actual calls to the server must
   now wait on eachother to complete before the next call is processed. This may impact performance in other ways.
-- You can set ``THREADPOOLSIZE`` to a larger number as the default. This extends the connection pool of
-  the server but it is still limited by an upper bound ofcourse.
+- You can set ``THREADPOOLSIZE`` to a larger number than the default.
 - You can set ``COMMTIMEOUT`` to a certain value, which frees up unused connections after the given time.
   But the client code may now crash with a TimeoutError or ConnectionClosedError when it tries to use a
   proxy it obtained earlier. (You can use Pyro's autoreconnect feature to work around this but it makes
