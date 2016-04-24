@@ -262,16 +262,16 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertEqual("meta1", uri.object)
         uri, metadata = ns.lookup("meta1", return_metadata=True)
         self.assertEqual("meta1", uri.object)
-        self.assertSetEqual({"a", "b", "c"}, metadata)
+        self.assertSetEqual({"a", "b", "c"}, set(metadata))
         uri = ns.lookup("meta2")
         self.assertEqual("meta2", uri.object)
         uri, metadata = ns.lookup("meta2", return_metadata=True)
         self.assertEqual("meta2", uri.object)
-        self.assertSetEqual({"x", "y", "z"}, metadata)
+        self.assertSetEqual({"x", "y", "z"}, set(metadata))
         uri, metadata = ns.lookup("meta3", return_metadata=True)
         self.assertEqual("meta3", uri.object)
-        self.assertIsInstance(metadata, set)
-        self.assertSetEqual({"p", "q", "r"}, metadata)
+        self.assertIsInstance(metadata, list)
+        self.assertSetEqual({"p", "q", "r"}, set(metadata))
         # get a list of everything, without and with metadata
         reg = ns.list()
         self.assertDictEqual({'meta1': 'PYRO:meta1@localhost:1111', 'meta2': 'PYRO:meta2@localhost:2222',
@@ -280,9 +280,9 @@ class OfflineNameServerTests(unittest.TestCase):
         uri1, meta1 = reg["meta1"]
         uri2, meta2 = reg["meta2"]
         self.assertEqual("PYRO:meta1@localhost:1111", uri1)
-        self.assertSetEqual({"a", "b", "c"}, meta1)
+        self.assertSetEqual({"a", "b", "c"}, set(meta1))
         self.assertEqual("PYRO:meta2@localhost:2222", uri2)
-        self.assertSetEqual({"x", "y", "z"}, meta2)
+        self.assertSetEqual({"x", "y", "z"}, set(meta2))
         # filter on metadata subset
         reg = ns.list(metadata_all={"a", "c"}, return_metadata=False)
         self.assertEqual(1, len(reg))
@@ -291,7 +291,7 @@ class OfflineNameServerTests(unittest.TestCase):
         self.assertEqual(1, len(reg))
         uri1, meta1 = reg["meta1"]
         self.assertEqual("PYRO:meta1@localhost:1111", uri1)
-        self.assertSetEqual({"a", "b", "c"}, meta1)
+        self.assertSetEqual({"a", "b", "c"}, set(meta1))
         reg = ns.list(metadata_all={"a", "wrong"})
         self.assertEqual({}, reg)
         reg = ns.list(metadata_all={"a", "b", "c", "wrong"})
@@ -303,12 +303,12 @@ class OfflineNameServerTests(unittest.TestCase):
             ns.set_metadata("notexistingname", set())
         ns.set_metadata("meta1", {"one", "two", "three"})
         uri, meta = ns.lookup("meta1", return_metadata=True)
-        self.assertSetEqual({"one", "two", "three"}, meta)
+        self.assertSetEqual({"one", "two", "three"}, set(meta))
         # check that a collection is converted to a set
         ns.set_metadata("meta1", ["one", "two", "three", "three", "two"])
         uri, meta = ns.lookup("meta1", return_metadata=True)
-        self.assertIsInstance(meta, set)
-        self.assertSetEqual({"one", "two", "three"}, meta)
+        self.assertIsInstance(meta, list)
+        self.assertSetEqual({"one", "two", "three"}, set(meta))
         # remove record that has some metadata
         ns.remove("meta1")
         ns.remove("meta3")
@@ -316,10 +316,10 @@ class OfflineNameServerTests(unittest.TestCase):
         # other list filters
         reg = ns.list(prefix="meta", return_metadata=True)
         self.assertEqual(1, len(reg))
-        self.assertSetEqual({"x", "y", "z"}, reg["meta2"][1])
+        self.assertSetEqual({"x", "y", "z"}, set(reg["meta2"][1]))
         reg = ns.list(regex="meta2.*", return_metadata=True)
         self.assertEqual(1, len(reg))
-        self.assertSetEqual({"x", "y", "z"}, reg["meta2"][1])
+        self.assertSetEqual({"x", "y", "z"}, set(reg["meta2"][1]))
         self.assertEqual(1, ns.count())
 
     def testMetadataAny(self):
@@ -345,11 +345,11 @@ class OfflineNameServerTests(unittest.TestCase):
         # register some names with metadata, and perform simple lookups
         ns.register("meta1", "PYRO:meta1@localhost:1111", metadata=[])
         uri, meta = ns.lookup("meta1", return_metadata=True)
-        self.assertSetEqual(set(), meta)
+        self.assertEqual([], meta)
         registrations = ns.list(return_metadata=True)
         for name in registrations:
             uri, meta = registrations[name]
-            self.assertSetEqual(set(), meta)
+            self.assertEqual([], meta)
         ns.set_metadata("meta1", [])
 
     def testListNoMultipleFilters(self):
