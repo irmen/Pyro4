@@ -687,7 +687,7 @@ def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
                     exceptionObject.__dict__.update(piggyback)
 
 
-def get_exposed_members(obj, only_exposed=True):
+def get_exposed_members(obj, only_exposed=True, as_lists=False):
     """
     Return public and exposed members of the given object's class.
     You can also provide a class directly.
@@ -697,6 +697,7 @@ def get_exposed_members(obj, only_exposed=True):
     The return value consists of the exposed methods, exposed attributes, and methods
     tagged as @oneway.
     (All this is used as meta data that Pyro sends to the proxy if it asks for it)
+    as_lists is meant for python 2 compatibility.
     """
     if not inspect.isclass(obj):
         obj = obj.__class__
@@ -724,6 +725,10 @@ def get_exposed_members(obj, only_exposed=True):
         # This automatically solves the protection/security issue: you have to
         # explicitly decide to make an attribute into a @property (and to @expose it
         # if REQUIRE_EXPOSED=True) before it is remotely accessible.
+    if as_lists:
+        methods = list(methods)
+        oneway = list(oneway)
+        attrs = list(attrs)
     return {
         "methods": methods,
         "oneway": oneway,

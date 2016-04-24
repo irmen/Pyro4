@@ -84,7 +84,10 @@ class NameServer(object):
         try:
             uri, metadata = self.storage[name]
             uri = core.URI(uri)
-            return (uri, metadata or frozenset()) if return_metadata else uri
+            if return_metadata:
+                metadata = list(metadata) if metadata else []
+                return uri, metadata
+            return uri
         except KeyError:
             raise NamingError("unknown name: " + name)
 
@@ -150,22 +153,32 @@ class NameServer(object):
         """Retrieve the registered items as a dictionary name-to-URI. The URIs
         in the resulting dict are strings, not URI objects.
         You can filter by prefix or by regex or by metadata subset (separately)"""
+        def fix_set(result):
+            # for python 2 compatibility we cannot send sets to the default (serpent) serializer.
+            # that's why we will convert them to lists here.
+            if return_metadata:
+                fixed = {}
+                for name, data in result.items():
+                    fixed[name] = (data[0], list(data[1]))
+                return fixed
+            return result
+
         if sum(1 for x in [prefix, regex, metadata_all, metadata_any] if x is not None) > 1:
             raise ValueError("you can only filter on one thing at a time")
         with self.lock:
             if prefix:
                 result = self.storage.optimized_prefix_list(prefix, return_metadata)
                 if result is not None:
-                    return result
+                    return fix_set(result)
                 result = {}
                 for name in self.storage:
                     if name.startswith(prefix):
                         result[name] = self.storage[name] if return_metadata else self.storage[name][0]
-                return result
+                return fix_set(result)
             elif regex:
                 result = self.storage.optimized_regex_list(regex, return_metadata)
                 if result is not None:
-                    return result
+                    return fix_set(result)
                 result = {}
                 try:
                     regex = re.compile(regex)
@@ -176,7 +189,7 @@ class NameServer(object):
                     for name in self.storage:
                         if regex.match(name):
                             result[name] = self.storage[name] if return_metadata else self.storage[name][0]
-                    return result
+                    return fix_set(result)
             elif metadata_all:
                 # return the entries which have all of the given metadata as (a subset of) their metadata
                 if isinstance(metadata_all, basestring):
@@ -184,13 +197,13 @@ class NameServer(object):
                 metadata_all and iter(metadata_all)   # validate that metadata is iterable
                 result = self.storage.optimized_metadata_search(metadata_all=metadata_all, return_metadata=return_metadata)
                 if result is not None:
-                    return result
+                    return fix_set(result)
                 metadata_all = frozenset(metadata_all)
                 result = {}
                 for name, (uri, meta) in self.storage.everything(return_metadata=True).items():
                     if metadata_all.issubset(meta):
                         result[name] = (uri, meta) if return_metadata else uri
-                return result
+                return fix_set(result)
             elif metadata_any:
                 # return the entries which have any of the given metadata as part of their metadata
                 if isinstance(metadata_any, basestring):
@@ -198,16 +211,16 @@ class NameServer(object):
                 metadata_any and iter(metadata_any)   # validate that metadata is iterable
                 result = self.storage.optimized_metadata_search(metadata_any=metadata_any, return_metadata=return_metadata)
                 if result is not None:
-                    return result
+                    return fix_set(result)
                 metadata_any = frozenset(metadata_any)
                 result = {}
                 for name, (uri, meta) in self.storage.everything(return_metadata=True).items():
                     if metadata_any & meta:
                         result[name] = (uri, meta) if return_metadata else uri
-                return result
+                return fix_set(result)
             else:
                 # just return (a copy of) everything
-                return self.storage.everything(return_metadata)
+                return fix_set(self.storage.everything(return_metadata))
 
     def ping(self):
         """A simple test method to check if the name server is running correctly."""

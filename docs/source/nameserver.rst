@@ -525,6 +525,9 @@ a form of Yellow-pages object lookup: instead of directly asking for the registe
 (telephone book), you're asking for any registration from a certain *category*. You get back a list of
 registered objects from the queried category, from which you can then choose the one you want.
 
+.. note::
+    Metadata tags are case-sensitive.
+
 As an example, imagine the following objects registered in the name server (with the metadata as shown):
 
 =================== ======================= ========

@@ -865,7 +865,7 @@ class DaemonObject(object):
             constants.DAEMON_NAME, self.daemon.locationStr, self.daemon.natLocationStr,
             len(self.daemon.objectsById), self.daemon.transportServer)
 
-    def get_metadata(self, objectId):
+    def get_metadata(self, objectId, as_lists=False):
         """
         Get metadata for the given object (exposed methods, oneways, attributes).
         If you get an error in your proxy saying that 'DaemonObject' has no attribute 'get_metdata',
@@ -874,7 +874,7 @@ class DaemonObject(object):
         """
         obj = self.daemon.objectsById.get(objectId)
         if obj is not None:
-            return util.get_exposed_members(obj, only_exposed=Pyro4.config.REQUIRE_EXPOSE)
+            return util.get_exposed_members(obj, only_exposed=Pyro4.config.REQUIRE_EXPOSE, as_lists=as_lists)
         else:
             log.debug("unknown object requested: %s", objectId)
             raise errors.DaemonError("unknown object")
@@ -1060,7 +1060,7 @@ class Daemon(object):
                 flags = message.FLAGS_META_ON_CONNECT
                 handshake_response = {
                     "handshake": handshake_response,
-                    "meta": self.objectsById[constants.DAEMON_NAME].get_metadata(data["object"])
+                    "meta": self.objectsById[constants.DAEMON_NAME].get_metadata(data["object"], as_lists=True)
                 }
             else:
                 flags = 0

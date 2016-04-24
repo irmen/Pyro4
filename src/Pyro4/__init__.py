@@ -26,7 +26,7 @@ def _configLogging():
     logfilename = os.environ.get("PYRO_LOGFILE", "pyro.log")
     if logfilename == "{stderr}":
         logfilename = None
-    if level is not None:
+    if level not in (None, ""):
         levelvalue = getattr(logging, level)
         if len(logging.root.handlers) == 0:
             # configure the logging with some sensible defaults.
