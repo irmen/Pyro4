@@ -50,20 +50,24 @@ class PoolTests(unittest.TestCase):
             time.sleep(0.02)  # let it pick up the job
             self.assertEqual(0, p.waiting_jobs())
 
-    @unittest.skip("requires queue on threadpool jobs")  # XXX add queue on/off config item
-    def testMany(self):
+    def testThreadpoolQueue(self):
         class Job2(object):
             def __init__(self, name="unnamed"):
                 self.name = name
 
             def __call__(self):
-                time.sleep(0.01)
-
-        with Pool() as p:
-            for i in range(1 + Pyro4.config.THREADPOOL_SIZE * 100):
-                p.process(Job2(str(i)))
-            time.sleep(2)
-            self.assertEqual(0, p.waiting_jobs(), "queue must be finished in under two seconds")
+                time.sleep(0.7)
+        try:
+            Pyro4.config.THREADPOOL_ALLOW_QUEUE = True
+            Pyro4.config.COMMTIMEOUT = 0.1
+            with Pool() as p:
+                for i in range(1 + Pyro4.config.THREADPOOL_SIZE * 2):
+                    p.process(Job2(str(i)))
+                time.sleep(2)
+                self.assertEqual(0, p.waiting_jobs(), "queue must be finished in under two seconds")
+        finally:
+            Pyro4.config.THREADPOOL_ALLOW_QUEUE = False
+            Pyro4.config.COMMTIMEOUT = 0
 
     def testAllBusy(self):
         try:

@@ -8,10 +8,11 @@ Change Log
 - the above was done by using the 'selectors' module, on older pythons (<3.4)
   the backport 'selectors34' has been added as a new requirement.
 - added selector property on the daemon (to expose the multiplexing selector if that servertype is used).
-- when the threadpool server is used and it runs out of worker threads, clients attempting to connect
+- Behavior change: when the threadpool server is used and it runs out of worker threads, clients attempting to connect
   now get a connection error telling them that the server threadpool has to be increased.
-  On python 3.2 and newer a short timeout is used for the case that in the meantime a connection
-  becomes available.
+  On python 3.2 and newer a short timeout is used for the case that in the meantime a connection becomes available.
+- THREADPOOL_ALLOW_QUEUE config item added. Enables you to choose for the previous
+  blocking behavior when the threadpool server can no longer accept new connections. Defaults to False.
 
 
 **Pyro 4.43**

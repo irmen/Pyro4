@@ -101,13 +101,14 @@ class Pool(object):
         """Add the job to the general job queue."""
         if self.closed:
             raise PoolError("job queue is closed")
-        if sys.version_info < (3, 2):
-            success = self.available_workers_sema.acquire(blocking=False)
-        else:
-            timeout = max(0.5, min(5, (Pyro4.config.COMMTIMEOUT or 99999)-1))
-            success = self.available_workers_sema.acquire(blocking=True, timeout=timeout)
-        if not success:
-            raise NoFreeWorkersError("all workers are busy")
+        if not Pyro4.config.THREADPOOL_ALLOW_QUEUE:
+            if sys.version_info < (3, 2):
+                success = self.available_workers_sema.acquire(blocking=False)
+            else:
+                timeout = max(0.5, min(5, (Pyro4.config.COMMTIMEOUT or 99999)-1))
+                success = self.available_workers_sema.acquire(blocking=True, timeout=timeout)
+            if not success:
+                raise NoFreeWorkersError("all workers are busy")
         self.jobs.put(job)
 
     def next_job(self):
