@@ -603,8 +603,8 @@ _serializers["marshal"] = _ser
 _serializers_by_id[_ser.serializer_id] = _ser
 try:
     import platform
-    if platform.python_implementation() == 'PyPy':
-        raise ImportError('Currently dill is not supported with PyPy')
+    if platform.python_implementation() in ('PyPy', 'IronPython'):
+        raise ImportError('Currently dill is not supported with PyPy and IronPython')
     import dill
     _ser = DillSerializer()
     _serializers["dill"] = _ser

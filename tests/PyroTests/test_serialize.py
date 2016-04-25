@@ -433,8 +433,8 @@ class SerializeTests_pickle(unittest.TestCase):
 
 
 import platform
-@unittest.skipIf(platform.python_implementation() == 'PyPy',
-                 'PyPy not currently supported with dill')
+@unittest.skipIf(platform.python_implementation() in ('PyPy', 'IronPython'),
+                 'PyPy and IronPython not currently supported with dill')
 class SerializeTests_dill(SerializeTests_pickle):
     SERIALIZER = "dill"
 
@@ -570,8 +570,8 @@ class GenericTests(unittest.TestCase):
             pass
         try:
             import platform
-            if platform.python_implementation() == 'PyPy':
-                raise ImportError('Currently dill is not supported with PyPy')
+            if platform.python_implementation() in ('PyPy', 'IronPython'):
+                raise ImportError('Currently dill is not supported with IronPython and PyPy')
             import dill
             Pyro4.util.get_serializer("dill")
         except ImportError:
@@ -580,7 +580,7 @@ class GenericTests(unittest.TestCase):
     def testSerializersAvailableById(self):
         Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_PICKLE)
         import platform
-        if platform.python_implementation() != 'PyPy':
+        if platform.python_implementation() not in ('PyPy', 'IronPython'):
             Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_DILL)
         Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
         self.assertRaises(Pyro4.errors.ProtocolError, lambda: Pyro4.util.get_serializer_by_id(9999999))
