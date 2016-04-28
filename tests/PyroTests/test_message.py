@@ -167,6 +167,12 @@ class MessageTestsHmac(unittest.TestCase):
         with self.assertRaises(TypeError):
             data.hmac()
 
+    def testSecureCompare(self):
+        self.assertFalse(Pyro4.message.secure_compare("apple", "banana"))
+        self.assertFalse(Pyro4.message.secure_compare(b"apple", b"banana"))
+        self.assertTrue(Pyro4.message.secure_compare("apple", "apple"))
+        self.assertTrue(Pyro4.message.secure_compare(b"apple", b"apple"))
+
     def testChecksum(self):
         msg = Message(Pyro4.message.MSG_RESULT, b"test", 42, 0, 1, hmac_key=b"secret")
         c = ConnectionMock()

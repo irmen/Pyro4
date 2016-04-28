@@ -18,6 +18,7 @@ Change Log
 - THREADPOOL_ALLOW_QUEUE config item added. Enables you to choose for the previous
   blocking behavior when the threadpool server can no longer accept new connections. Defaults to False.
 - fixed import and test problems with IronPython (it doesn't like the dill serializer either)
+- Improved security when comparing HMAC codes
 
 
 **Pyro 4.43**

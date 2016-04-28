@@ -14,7 +14,7 @@ from Pyro4 import errors, constants
 import Pyro4.constants
 
 
-__all__ = ["Message"]
+__all__ = ["Message", "secure_compare"]
 
 log = logging.getLogger("Pyro4.message")
 
@@ -195,7 +195,7 @@ class Message(object):
         # read data
         msg.data = connection.recv(msg.data_size)
         if "HMAC" in msg.annotations and hmac_key:
-            if msg.annotations["HMAC"] != msg.hmac():
+            if not secure_compare(msg.annotations["HMAC"], msg.hmac()):
                 exc = errors.SecurityError("message hmac mismatch")
                 exc.pyroMsg = msg
                 raise exc
@@ -222,3 +222,25 @@ class Message(object):
         ping = Message(MSG_PING, b"ping", 42, 0, 0, hmac_key=hmac_key)
         pyroConnection.send(ping.to_bytes())
         Message.recv(pyroConnection, [MSG_PING])
+
+
+try:
+    from hmac import compare_digest
+except ImportError:
+    # Python version doesn't have it natively, use a python fallback implementation
+    import operator
+    try:
+        reduce
+    except NameError:
+        from functools import reduce
+
+    def compare_digest(a, b):
+        if type(a) != type(b):
+            raise TypeError("arguments must both be same type")
+        if len(a) != len(b):
+            return False
+        return reduce(operator.and_, map(operator.eq, a, b), True)
+
+
+def secure_compare(a, b):
+    return compare_digest(a, b)
