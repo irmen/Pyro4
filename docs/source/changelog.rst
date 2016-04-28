@@ -19,6 +19,7 @@ Change Log
   blocking behavior when the threadpool server can no longer accept new connections. Defaults to False.
 - fixed import and test problems with IronPython (it doesn't like the dill serializer either)
 - Improved security when comparing HMAC codes
+- added 'diffie-hellman' example to shows a way to approach server-client agreement on a shared secret key
 
 
 **Pyro 4.43**
