@@ -504,6 +504,29 @@ For more details and example code, see the :file:`eventloop` and :file:`gui_even
 They show how to use Pyro including a name server, in your own event loop, and also possible ways
 to use Pyro from within a GUI program with its own event loop.
 
+.. index:: Combining Daemons
+
+Combining Daemon request loops
+------------------------------
+In certain situations you will be dealing with more than one daemon at the same time.
+For instance, when you want to run your own Daemon together with an 'embedded' Name Server Daemon,
+or perhaps just another daemon with different settings.
+
+Usually you run the daemon's :meth:`Pyro4.core.Daemon.requestLoop` method to handle incoming requests.
+But when you have more than one daemon to deal with, you have to run the loops of all of them in parallel somehow.
+There are a few ways to do this:
+
+1. multithreading: run each daemon inside its own thread
+2. multiplexing event loop: write a multiplexing event loop and call back into the appropriate
+   daemon when one of its connections send a request.
+   You can do this using :mod:`selectors` or :mod:`select` and you can even integrate other (non-Pyro)
+   file-like selectables into such a loop. Also see the paragraph above.
+3. use :meth:`Pyro4.core.Daemon.combine` to combine several daemons into one,
+   so that you only have to call the requestLoop of that "master daemon".
+   Basically Pyro will run an integrated multiplexed event loop for you.
+   Again, have a look at the :file:`eventloop` example to see how this can be done.
+   (Note: this will only work with the ``multiplex`` server type, not with the ``thread`` type)
+
 
 .. index::
     double: Pyro daemon; shutdown

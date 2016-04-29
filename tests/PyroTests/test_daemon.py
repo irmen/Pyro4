@@ -11,6 +11,7 @@ import socket
 import uuid
 import unittest
 import Pyro4.core
+import Pyro4.naming
 import Pyro4.constants
 import Pyro4.socketutil
 import Pyro4.message
@@ -563,6 +564,38 @@ class DaemonTests(unittest.TestCase):
         d = Pyro4.core.Daemon()
         with self.assertRaises(TypeError):
             d._getInstance(TestClass, conn)
+
+    def testCombine(self):
+        d1 = Pyro4.core.Daemon()
+        d2 = Pyro4.core.Daemon()
+        with self.assertRaises(TypeError):
+            d1.combine(d2)
+        d1.close()
+        d2.close()
+        try:
+            Pyro4.config.SERVERTYPE = "multiplex"
+            d1 = Pyro4.core.Daemon()
+            d2 = Pyro4.core.Daemon()
+            nsuri, nsd, bcd = Pyro4.naming.startNS(host="", bchost="")
+            d1_selector = d1.transportServer.selector
+            d1.combine(d2)
+            d1.combine(nsd)
+            d1.combine(bcd)
+            self.assertIs(d1_selector, d1.transportServer.selector)
+            self.assertIs(d1_selector, d2.transportServer.selector)
+            self.assertIs(d1_selector, nsd.transportServer.selector)
+            self.assertIs(d1_selector, bcd.transportServer.selector)
+            self.assertEqual(4, len(d1.sockets))
+            self.assertIn(d1.sock, d1.sockets)
+            self.assertIn(d2.sock, d1.sockets)
+            self.assertIn(nsd.sock, d1.sockets)
+            self.assertIn(bcd, d1.sockets)
+            bcd.close()
+            nsd.close()
+            d2.close()
+            d1.close()
+        finally:
+            Pyro4.config.SERVERTYPE = "thread"
 
 
 class MetaInfoTests(unittest.TestCase):
