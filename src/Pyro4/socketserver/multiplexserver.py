@@ -10,6 +10,7 @@ import socket
 import sys
 import logging
 import os
+from collections import defaultdict
 try:
     import selectors
 except ImportError:
@@ -46,7 +47,7 @@ class SocketServer_Multiplex(object):
                 self.locationStr = "[%s]:%d" % (host, port)
             else:
                 self.locationStr = "%s:%d" % (host, port)
-        self.selector.register(self.sock, selectors.EVENT_READ | selectors.EVENT_WRITE)
+        self.selector.register(self.sock, selectors.EVENT_READ | selectors.EVENT_WRITE, self)
 
     def __repr__(self):
         return "<%s on %s, %d connections>" % (self.__class__.__name__, self.locationStr, len(self.selector.get_map())-1)
@@ -64,7 +65,7 @@ class SocketServer_Multiplex(object):
                 # server socket, means new connection
                 conn = self._handleConnection(self.sock)
                 if conn:
-                    self.selector.register(conn, selectors.EVENT_READ | selectors.EVENT_WRITE)
+                    self.selector.register(conn, selectors.EVENT_READ | selectors.EVENT_WRITE, self)
             else:
                 # must be client socket, means remote call
                 active = self.handleRequest(s)
@@ -169,11 +170,22 @@ class SocketServer_Multiplex(object):
                     events = []
                 # get all the socket connection objects that have a READ event
                 # (the WRITE events are ignored here, they're registered to let timeouts work etc)
-                conns = [key.fileobj for key, mask in events if mask & selectors.EVENT_READ]
-                self.events(conns)
+                events_per_server = defaultdict(list)
+                for key, mask in events:
+                    if mask & selectors.EVENT_READ:
+                        events_per_server[key.data].append(key.fileobj)
+                for server, fileobjs in events_per_server.items():
+                    server.events(fileobjs)
             except socket.timeout:
                 pass  # just continue the loop on a timeout
             except KeyboardInterrupt:
                 log.debug("stopping on break signal")
                 break
         log.debug("exit select-based requestloop")
+
+    def combine_loop(self, server):
+        for sock in server.sockets:
+            # objects can signal that they should not have the EVENT_WRITE mask set via this special attribute:
+            write_event = 0 if getattr(sock, "_pyroMultiplexOnlyReadEvents", False) else selectors.EVENT_WRITE
+            self.selector.register(sock, selectors.EVENT_READ | write_event, server)
+        server.selector = self.selector

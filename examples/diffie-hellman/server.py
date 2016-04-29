@@ -1,12 +1,9 @@
-try:
-    import selectors
-except ImportError:
-    import selectors34 as selectors
 import Pyro4
 import Pyro4.errors
 from diffiehellman import DiffieHellman
 
 Pyro4.config.REQUIRE_EXPOSE = True
+Pyro4.config.SERVERTYPE = "multiplex"
 
 
 @Pyro4.expose
@@ -45,14 +42,6 @@ ns.register("example.dh.keyexchange", uri)
 
 ns._pyroRelease()
 
+key_daemon.combine_loop(daemon)
 print("Starting server loop...")
-while True:
-    selector = selectors.DefaultSelector()
-    for sock in daemon.sockets:
-        selector.register(sock, selectors.EVENT_READ | selectors.EVENT_WRITE, daemon.events)
-    for sock in key_daemon.sockets:
-        selector.register(sock, selectors.EVENT_READ | selectors.EVENT_WRITE, key_daemon.events)
-    events = selector.select(1)
-    for key, mask in events:
-        callback = key.data
-        callback([key.fileobj])
+key_daemon.requestLoop()

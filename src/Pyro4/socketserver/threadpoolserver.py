@@ -159,6 +159,9 @@ class SocketServer_Threadpool(object):
                 break
         log.debug("threadpool server exits requestloop")
 
+    def combine_loop(self, server):
+        raise TypeError("You can't use the loop combiner on the threadpool server type")
+
     def events(self, eventsockets):
         """used for external event loops: handle events that occur on one of the sockets of this server"""
         # we only react on events on our own server socket.

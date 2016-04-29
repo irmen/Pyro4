@@ -1395,6 +1395,15 @@ class Daemon(object):
             return {"CORR": current_context.correlation_id.bytes}
         return {}
 
+    def combine(self, daemon):
+        """
+        Combines the event loop of the other daemon in the current daemon's loop.
+        You can then simply run the current daemon's requestLoop to serve both daemons.
+        This works fine on the multiplex server type, but may not work on the threaded server type!
+        """
+        log.debug("combining event loop with other daemon")
+        self.transportServer.combine_loop(daemon.transportServer)
+
     def __repr__(self):
         return "<%s.%s at 0x%x, %s, %d objects>" % (self.__class__.__module__, self.__class__.__name__,
                                                     id(self), self.locationStr, len(self.objectsById))

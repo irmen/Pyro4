@@ -17,6 +17,7 @@ Change Log
   On python 3.2 and newer a short timeout is used for the case that in the meantime a connection becomes available.
 - THREADPOOL_ALLOW_QUEUE config item added. Enables you to choose for the previous
   blocking behavior when the threadpool server can no longer accept new connections. Defaults to False.
+- Added Daemon.combine() which merges different daemons' request loops and lets you just run the 'master daemon' requestLoop
 - fixed import and test problems with IronPython (it doesn't like the dill serializer either)
 - Improved security when comparing HMAC codes
 - added 'diffie-hellman' example to shows a way to approach server-client agreement on a shared secret key
