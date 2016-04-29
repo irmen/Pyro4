@@ -524,6 +524,7 @@ There are a few ways to do this:
 3. use :meth:`Pyro4.core.Daemon.combine` to combine several daemons into one,
    so that you only have to call the requestLoop of that "master daemon".
    Basically Pyro will run an integrated multiplexed event loop for you.
+   You can combine normal Daemon objects, the NameServerDaemon and also the name server's BroadcastServer.
    Again, have a look at the :file:`eventloop` example to see how this can be done.
    (Note: this will only work with the ``multiplex`` server type, not with the ``thread`` type)
 
