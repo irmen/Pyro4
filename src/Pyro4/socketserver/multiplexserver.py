@@ -82,6 +82,7 @@ class SocketServer_Multiplex(object):
             if sock is None:
                 return
             csock, caddr = sock.accept()
+            log.debug("connected %s", caddr)
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
         except socket.error:
@@ -147,6 +148,7 @@ class SocketServer_Multiplex(object):
         except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
             # client went away or caused a security error.
             # close the connection silently.
+            log.debug("disconnected %s", conn.sock.getpeername())
             return False
         except errors.TimeoutError as x:
             # for timeout errors we're not really interested in detailed traceback info
