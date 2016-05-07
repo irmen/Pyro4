@@ -1,21 +1,15 @@
 """
-Thread pooled job queue with a fixed number of worker threads.
+Thread pool job processor with variable number of worker threads (between max/min amount).
 
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
-import sys
 import logging
 import Pyro4.threadutil
 import Pyro4.util
 
-try:
-    import queue
-except ImportError:
-    import Queue as queue
-
-__all__ = ["PoolError", "Pool"]
+__all__ = ["PoolError", "NoFreeWorkersError", "Pool"]
 
 log = logging.getLogger("Pyro4.threadpool")
 
@@ -29,49 +23,52 @@ class NoFreeWorkersError(PoolError):
 
 
 class Worker(Pyro4.threadutil.Thread):
-    """
-    Worker thread that picks jobs from the job queue and executes them.
-    If it encounters the sentinel None, it will stop running.
-    """
-
-    def __init__(self, job_pool):
+    def __init__(self, pool):
         super(Worker, self).__init__()
         self.daemon = True
-        self.job_pool = job_pool
         self.name = "Pyro-Worker-%d " % id(self)
+        self.job_available = Pyro4.threadutil.Event()
+        self.job = None
+        self.pool = pool
+
+    def process(self, job):
+        self.job = job
+        self.job_available.set()
 
     def run(self):
         while True:
-            job = self.job_pool.next_job()
-            if job is None:
+            self.job_available.wait()
+            self.job_available.clear()
+            if self.job is None:
                 break
             try:
-                job()
-                self.job_pool.job_finished()
+                self.job()
             except Exception:
                 log.exception("unhandled exception from job in worker thread %s: %s", self.name)
-                # we continue running, just pick another job from the queue
+            self.job = None
+            self.pool.notify_done(self)
+        self.pool = None
 
 
 class Pool(object):
     """
-    A job queue that is serviced by a pool of worker threads.
-    The size of the pool is configurable but stays fixed.
+    A job processing pool that is using a pool of worker threads.
+    The amount of worker threads in the pool is configurable and scales between min/max size.
     """
-
     def __init__(self):
-        self.pool = []
-        self.jobs = queue.Queue()
+        if Pyro4.config.THREADPOOL_SIZE < 1 or Pyro4.config.THREADPOOL_SIZE_MIN < 1:
+            raise ValueError("threadpool sizes must be greater than zero")
+        if Pyro4.config.THREADPOOL_SIZE_MIN > Pyro4.config.THREADPOOL_SIZE:
+            raise ValueError("minimum threadpool size must be less than or equal to max size")
+        self.idle = set()
+        self.busy = set()
         self.closed = False
-        if Pyro4.config.THREADPOOL_SIZE < 1:
-            raise ValueError("threadpool size must be >= 1")
-        for _ in range(Pyro4.config.THREADPOOL_SIZE):
+        for _ in range(Pyro4.config.THREADPOOL_SIZE_MIN):
             worker = Worker(self)
-            self.pool.append(worker)
+            self.idle.add(worker)
             worker.start()
-        log.debug("worker pool of size %d created", self.num_workers())
+        log.debug("worker pool created with initial size %d", self.num_workers())
         self.count_lock = Pyro4.threadutil.Lock()
-        self.available_workers_sema = Pyro4.threadutil.BoundedSemaphore(self.num_workers())
 
     def __enter__(self):
         return self
@@ -80,41 +77,46 @@ class Pool(object):
         self.close()
 
     def close(self):
-        """Close down the thread pool, signaling to all remaining worker threads to shut down."""
-        for _ in range(self.num_workers()):
-            self.jobs.put(None)  # None as a job means: terminate the worker
-        log.debug("closing down, %d halt-jobs issued", self.num_workers())
-        self.closed = True
-        self.pool = []
+        if not self.closed:
+            log.debug("closing down")
+            for w in self.busy:
+                w.process(None)
+            for w in self.idle:
+                w.process(None)
+            self.closed = True
+            while self.idle:
+                self.idle.pop().join()
+            while self.busy:
+                self.busy.pop().join()
 
     def __repr__(self):
-        return "<%s.%s at 0x%x, %d workers, %d waiting jobs>" % \
-               (self.__class__.__module__, self.__class__.__name__, id(self), self.num_workers(), self.waiting_jobs())
-
-    def waiting_jobs(self):
-        return self.jobs.qsize()
+        return "<%s.%s at 0x%x, %d busy workers, %d idle workers>" % \
+               (self.__class__.__module__, self.__class__.__name__, id(self), len(self.busy), len(self.idle))
 
     def num_workers(self):
-        return len(self.pool)
+        return len(self.busy) + len(self.idle)
 
     def process(self, job):
-        """Add the job to the general job queue."""
         if self.closed:
             raise PoolError("job queue is closed")
-        if not Pyro4.config.THREADPOOL_ALLOW_QUEUE:
-            if sys.version_info < (3, 2):
-                success = self.available_workers_sema.acquire(blocking=False)
-            else:
-                timeout = max(0.5, min(5, (Pyro4.config.COMMTIMEOUT or 99999)-1))
-                success = self.available_workers_sema.acquire(blocking=True, timeout=timeout)
-            if not success:
-                raise NoFreeWorkersError("all workers are busy")
-        self.jobs.put(job)
+        if self.idle:
+            worker = self.idle.pop()
+        elif self.num_workers() < Pyro4.config.THREADPOOL_SIZE:
+            worker = Worker(self)
+            worker.start()
+        else:
+            raise NoFreeWorkersError("no free workers available, increase thread pool size")
+        self.busy.add(worker)
+        worker.process(job)
+        log.debug("worker counts: %d busy, %d idle", len(self.busy), len(self.idle))
 
-    def next_job(self):
+    def notify_done(self, worker):
         if self.closed:
-            return None
-        return self.jobs.get()
-
-    def job_finished(self):
-        self.available_workers_sema.release()
+            worker.process(None)
+            return
+        self.busy.remove(worker)
+        if len(self.idle) >= Pyro4.config.THREADPOOL_SIZE_MIN:
+            worker.process(None)
+        else:
+            self.idle.add(worker)
+        log.debug("worker counts: %d busy, %d idle", len(self.busy), len(self.idle))

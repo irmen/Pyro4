@@ -20,7 +20,7 @@ class Configuration(object):
                  "COMPRESSION", "SERVERTYPE", "COMMTIMEOUT",
                  "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
                  "DETAILED_TRACEBACK", "SOCK_REUSE", "SOCK_NODELAY", "PREFER_IP_VERSION",
-                 "THREADPOOL_SIZE", "THREADPOOL_ALLOW_QUEUE", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
+                 "THREADPOOL_SIZE", "THREADPOOL_SIZE_MIN", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
                  "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
                  "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
                  "METADATA", "REQUIRE_EXPOSE", "USE_MSG_WAITALL", "JSON_MODULE",
@@ -50,8 +50,8 @@ class Configuration(object):
         self.THREADING2 = False  # use threading2 if available?
         self.ONEWAY_THREADED = True  # oneway calls run in their own thread
         self.DETAILED_TRACEBACK = False
-        self.THREADPOOL_SIZE = 16
-        self.THREADPOOL_ALLOW_QUEUE = False
+        self.THREADPOOL_SIZE = 40
+        self.THREADPOOL_SIZE_MIN = 4
         self.AUTOPROXY = True
         self.MAX_MESSAGE_SIZE = 0  # 0 = unlimited
         self.BROADCAST_ADDRS = "<broadcast>, 0.0.0.0"  # comma separated list of broadcast addresses

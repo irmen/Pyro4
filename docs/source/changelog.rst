@@ -2,6 +2,14 @@
 Change Log
 **********
 
+**Pyro 4.4x**
+
+- threaded socket server now adapts the number of threads dynamically depending on connection count
+- THREADPOOL_SIZE_MIN config item added to specify the min number of threads (defaults to 4)
+- THREADPOOL_ALLOW_QUEUE config item removed, it is no longer relevant
+  @todo docs
+
+
 **Pyro 4.44**
 
 - Fixed 'malformed string' error when a Python 2 client talks to a Python 3 server;

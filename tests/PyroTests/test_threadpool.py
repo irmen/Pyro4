@@ -33,7 +33,8 @@ class SlowJob(object):
 
 class PoolTests(unittest.TestCase):
     def setUp(self):
-        pass
+        Pyro4.config.THREADPOOL_SIZE_MIN = 2
+        Pyro4.config.THREADPOOL_SIZE = 4
 
     def tearDown(self):
         Pyro4.config.reset()
@@ -48,26 +49,7 @@ class PoolTests(unittest.TestCase):
             job = Job()
             p.process(job)
             time.sleep(0.02)  # let it pick up the job
-            self.assertEqual(0, p.waiting_jobs())
-
-    def testThreadpoolQueue(self):
-        class Job2(object):
-            def __init__(self, name="unnamed"):
-                self.name = name
-
-            def __call__(self):
-                time.sleep(0.7)
-        try:
-            Pyro4.config.THREADPOOL_ALLOW_QUEUE = True
-            Pyro4.config.COMMTIMEOUT = 0.1
-            with Pool() as p:
-                for i in range(1 + Pyro4.config.THREADPOOL_SIZE * 2):
-                    p.process(Job2(str(i)))
-                time.sleep(2)
-                self.assertEqual(0, p.waiting_jobs(), "queue must be finished in under two seconds")
-        finally:
-            Pyro4.config.THREADPOOL_ALLOW_QUEUE = False
-            Pyro4.config.COMMTIMEOUT = 0
+            self.assertEqual(1, len(p.busy))
 
     def testAllBusy(self):
         try:
@@ -82,17 +64,35 @@ class PoolTests(unittest.TestCase):
             Pyro4.config.COMMTIMEOUT = 0.0
 
     def testClose(self):
-        # test that after closing a job queue, no more new jobs are taken from the queue, and some other stuff
         with Pool() as p:
             for i in range(Pyro4.config.THREADPOOL_SIZE):
                 p.process(Job(str(i + 1)))
         with self.assertRaises(PoolError):
             p.process(Job(1))  # must not allow new jobs after closing
-        self.assertTrue(p.waiting_jobs() > 1)
-        time.sleep(JOB_TIME * 1.1)
-        jobs_left = p.waiting_jobs()
-        time.sleep(JOB_TIME * 1.1)  # wait till jobs finish and a new one *might* be taken off the queue
-        self.assertEqual(jobs_left, p.waiting_jobs(), "may not process new jobs after close")
+        self.assertEqual(0, len(p.busy))
+        self.assertEqual(0, len(p.idle))
+
+    def testScaling(self):
+        with Pool() as p:
+            for i in range(Pyro4.config.THREADPOOL_SIZE_MIN-1):
+                p.process(Job("x"))
+            self.assertEqual(1, len(p.idle))
+            self.assertEqual(Pyro4.config.THREADPOOL_SIZE_MIN-1, len(p.busy))
+            p.process(Job("x"))
+            self.assertEqual(0, len(p.idle))
+            self.assertEqual(Pyro4.config.THREADPOOL_SIZE_MIN, len(p.busy))
+            # grow until no more free workers
+            while True:
+                try:
+                    p.process(Job("x"))
+                except NoFreeWorkersError:
+                    break
+            self.assertEqual(0, len(p.idle))
+            self.assertEqual(Pyro4.config.THREADPOOL_SIZE, len(p.busy))
+            # wait till jobs are done and check ending situation
+            time.sleep(JOB_TIME*1.5)
+            self.assertEqual(0, len(p.busy))
+            self.assertEqual(Pyro4.config.THREADPOOL_SIZE_MIN, len(p.idle))
 
 
 if __name__ == "__main__":
