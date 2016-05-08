@@ -47,7 +47,7 @@ class SocketServer_Multiplex(object):
                 self.locationStr = "[%s]:%d" % (host, port)
             else:
                 self.locationStr = "%s:%d" % (host, port)
-        self.selector.register(self.sock, selectors.EVENT_READ | selectors.EVENT_WRITE, self)
+        self.selector.register(self.sock, selectors.EVENT_READ, self)
 
     def __repr__(self):
         return "<%s on %s, %d connections>" % (self.__class__.__name__, self.locationStr, len(self.selector.get_map())-1)
@@ -65,7 +65,7 @@ class SocketServer_Multiplex(object):
                 # server socket, means new connection
                 conn = self._handleConnection(self.sock)
                 if conn:
-                    self.selector.register(conn, selectors.EVENT_READ | selectors.EVENT_WRITE, self)
+                    self.selector.register(conn, selectors.EVENT_READ, self)
             else:
                 # must be client socket, means remote call
                 active = self.handleRequest(s)
@@ -82,6 +82,7 @@ class SocketServer_Multiplex(object):
             if sock is None:
                 return
             csock, caddr = sock.accept()
+            log.debug("connected %s", caddr)
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
         except socket.error:
@@ -147,6 +148,7 @@ class SocketServer_Multiplex(object):
         except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
             # client went away or caused a security error.
             # close the connection silently.
+            log.debug("disconnected %s", conn.sock.getpeername())
             return False
         except errors.TimeoutError as x:
             # for timeout errors we're not really interested in detailed traceback info
@@ -185,7 +187,5 @@ class SocketServer_Multiplex(object):
 
     def combine_loop(self, server):
         for sock in server.sockets:
-            # objects can signal that they should not have the EVENT_WRITE mask set via this special attribute:
-            write_event = 0 if getattr(sock, "_pyroMultiplexOnlyReadEvents", False) else selectors.EVENT_WRITE
-            self.selector.register(sock, selectors.EVENT_READ | write_event, server)
+            self.selector.register(sock, selectors.EVENT_READ, server)
         server.selector = self.selector

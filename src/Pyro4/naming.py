@@ -297,7 +297,6 @@ class NameServerDaemon(core.Daemon):
 
 class BroadcastServer(object):
     REQUEST_NSURI = "GET_NSURI" if sys.platform == "cli" else b"GET_NSURI"
-    _pyroMultiplexOnlyReadEvents = True  # seems selectors are flipping when also using event.WRITE on a bc socket
 
     class TransportServerAdapter(object):
         # this adapter is used to be able to pass the BroadcastServer to Daemon.combine() to integrate the event loops.
