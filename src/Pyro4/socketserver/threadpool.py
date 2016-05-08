@@ -5,6 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import with_statement
+import time
 import logging
 import Pyro4.threadutil
 import Pyro4.util
@@ -84,9 +85,13 @@ class Pool(object):
             for w in self.idle:
                 w.process(None)
             self.closed = True
-            # only join on the idle threads; the busy threads may hang the application if they don't finish
-            while self.idle:
-                self.idle.pop().join()
+            time.sleep(0.1)
+            idle, self.idle = self.idle, set()
+            busy, self.busy = self.busy, set()
+            while idle:
+                idle.pop().join(timeout=0.1)
+            while busy:
+                busy.pop().join(timeout=0.1)
 
     def __repr__(self):
         return "<%s.%s at 0x%x, %d busy workers, %d idle workers>" % \
@@ -110,10 +115,11 @@ class Pool(object):
         log.debug("worker counts: %d busy, %d idle", len(self.busy), len(self.idle))
 
     def notify_done(self, worker):
+        if worker in self.busy:
+            self.busy.remove(worker)
         if self.closed:
             worker.process(None)
             return
-        self.busy.remove(worker)
         if len(self.idle) >= Pyro4.config.THREADPOOL_SIZE_MIN:
             worker.process(None)
         else:
