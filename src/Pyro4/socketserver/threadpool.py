@@ -84,10 +84,9 @@ class Pool(object):
             for w in self.idle:
                 w.process(None)
             self.closed = True
+            # only join on the idle threads; the busy threads may hang the application if they don't finish
             while self.idle:
                 self.idle.pop().join()
-            while self.busy:
-                self.busy.pop().join()
 
     def __repr__(self):
         return "<%s.%s at 0x%x, %d busy workers, %d idle workers>" % \
