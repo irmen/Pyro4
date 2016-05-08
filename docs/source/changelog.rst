@@ -23,6 +23,7 @@ Change Log
 - fixed import and test problems with IronPython (it doesn't like the dill serializer either)
 - Improved security when comparing HMAC codes
 - added 'diffie-hellman' example to shows a way to approach server-client agreement on a shared secret key
+- a few IronPython releated changes regarding str/bytes to decrease the number of special cases
 
 
 **Pyro 4.43**

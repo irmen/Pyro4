@@ -19,10 +19,13 @@ IronPython
 ----------
 `IronPython <http://ironpython.net>`_ is a Python implementation running on the .NET virtual machine.
 
-- Pyro runs with IronPython 2.7. Older versions may or may not work, and lack required modules such as zlib.
+- Pyro runs with IronPython 2.7.5. Older versions may or may not work, and can lack required modules such as zlib.
 
 - IronPython cannot properly serialize exception objects, which could lead to problems when dealing with
-  Pyro's enhanced tracebacks. For now, Pyro contains a workaround for this IronPython `bug <https://github.com/IronLanguages/main/issues/943>`_.
+  Pyro's enhanced tracebacks. For now, Pyro contains a workaround for this `bug <https://github.com/IronLanguages/main/issues/943>`_.
+
+- You may have to use the ``-X:Frames`` command line option when starting Ironpython.
+  (one of the libraries Pyro4 depends on when running in Ironpython, requires this)
 
 
 .. index:: Pypy

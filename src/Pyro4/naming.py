@@ -296,7 +296,7 @@ class NameServerDaemon(core.Daemon):
 
 
 class BroadcastServer(object):
-    REQUEST_NSURI = "GET_NSURI" if sys.platform == "cli" else b"GET_NSURI"
+    REQUEST_NSURI = b"GET_NSURI"
 
     class TransportServerAdapter(object):
         # this adapter is used to be able to pass the BroadcastServer to Daemon.combine() to integrate the event loops.
@@ -374,7 +374,7 @@ class BroadcastServer(object):
         except socket.error:
             pass
         except SystemError:
-            if sys.platform == 'cli' and not self.running:
+            if sys.platform == "cli" and not self.running:
                 # ironpython throws these systemerrors when shutting down... we can ignore them.
                 pass
             else:

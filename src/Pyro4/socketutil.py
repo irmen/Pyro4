@@ -132,9 +132,6 @@ def receiveData(sock, size):
         retrydelay = 0.0
         msglen = 0
         chunks = []
-        EMPTY_BYTES = b""
-        if sys.platform == "cli":
-            EMPTY_BYTES = ""
         if Pyro4.config.USE_MSG_WAITALL:
             # waitall is very convenient and if a socket error occurs,
             # we can assume the receive has failed. No need for a loop,
@@ -170,7 +167,7 @@ def receiveData(sock, size):
                         break
                     chunks.append(chunk)
                     msglen += len(chunk)
-                data = EMPTY_BYTES.join(chunks)
+                data = b"".join(chunks)
                 del chunks
                 if len(data) != size:
                     err = ConnectionClosedError("receiving: not enough data")
@@ -507,9 +504,6 @@ def bindOnUnusedPort(sock, host='localhost'):
 def triggerSocket(sock):
     """send a small data packet over the socket, to trigger it"""
     try:
-        data = b"!" * 16
-        if sys.platform == "cli":
-            data = "!" * 16
-        sock.sendall(data)
+        sock.sendall(b"!" * 16)
     except (socket.error, AttributeError):
         pass

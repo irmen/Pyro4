@@ -73,7 +73,7 @@ class ClientConnectionJob(object):
         except:
             ex_t, ex_v, ex_tb = sys.exc_info()
             tb = Pyro4.util.formatTraceback(ex_t, ex_v, ex_tb)
-            log.warning("error during connect/handshake: %s; %s", ex_v, "\n".join(tb))
+            log.warning("error during connect/handshake: %s; %s", ex_v, "\n".join(tb))  # XXX use exc_info=True argument
             self.csock.close()
         return False
 

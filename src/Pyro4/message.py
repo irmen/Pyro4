@@ -127,8 +127,6 @@ class Message(object):
                     k = k.encode("ASCII")
                 a.append(struct.pack("!4sH", k, len(v)))
                 a.append(v)
-            if sys.platform == "cli":
-                return "".join(a)
             return b"".join(a)
         return b""
 
@@ -191,6 +189,8 @@ class Message(object):
                 if sys.version_info >= (3, 0):
                     anno = anno.decode("ASCII")
                 msg.annotations[anno] = annotations_data[i + 6:i + 6 + length]
+                if sys.platform == "cli":
+                    msg.annotations[anno] = bytes(msg.annotations[anno])
                 i += 6 + length
         # read data
         msg.data = connection.recv(msg.data_size)
@@ -214,7 +214,7 @@ class Message(object):
         for k, v in sorted(self.annotations.items()):    # note: sorted because we need fixed order to get the same hmac
             if k != "HMAC":
                 mac.update(v)
-        return mac.digest()
+        return mac.digest() if sys.platform != "cli" else bytes(mac.digest())
 
     @staticmethod
     def ping(pyroConnection, hmac_key=None):
@@ -225,7 +225,7 @@ class Message(object):
 
 
 try:
-    from hmac import compare_digest
+    from hmac import compare_digest as secure_compare
 except ImportError:
     # Python version doesn't have it natively, use a python fallback implementation
     import operator
@@ -234,13 +234,9 @@ except ImportError:
     except NameError:
         from functools import reduce
 
-    def compare_digest(a, b):
+    def secure_compare(a, b):
         if type(a) != type(b):
             raise TypeError("arguments must both be same type")
         if len(a) != len(b):
             return False
         return reduce(operator.and_, map(operator.eq, a, b), True)
-
-
-def secure_compare(a, b):
-    return compare_digest(a, b)

@@ -172,6 +172,8 @@ class MessageTestsHmac(unittest.TestCase):
         self.assertFalse(Pyro4.message.secure_compare(b"apple", b"banana"))
         self.assertTrue(Pyro4.message.secure_compare("apple", "apple"))
         self.assertTrue(Pyro4.message.secure_compare(b"apple", b"apple"))
+        with self.assertRaises(TypeError):
+            Pyro4.message.secure_compare(999, "typemismatch")
 
     def testChecksum(self):
         msg = Message(Pyro4.message.MSG_RESULT, b"test", 42, 0, 1, hmac_key=b"secret")

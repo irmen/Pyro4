@@ -220,10 +220,7 @@ class SerializeTests_pickle(unittest.TestCase):
         proxy._pyroHandshake = "apples"
         proxy._pyroMaxRetries = 78
         state = proxy.__getstate_for_dict__()
-        if sys.platform == 'cli':
-            b64_secret = "b64:"+base64.b64encode("secret").decode("utf-8")
-        else:
-            b64_secret = "b64:"+base64.b64encode(b"secret").decode("utf-8")
+        b64_secret = "b64:"+base64.b64encode(b"secret").decode("utf-8")
         self.assertEqual(('PYRO:object@host:4444', tuple(set("ghi")), tuple(set("def")), tuple(set("abc")), 42, b64_secret, "apples", 78), state)
         proxy2 = Pyro4.core.Proxy("PYRONAME:xxx")
         proxy2.__setstate_from_dict__(state)

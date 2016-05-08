@@ -492,8 +492,16 @@ class MarshalSerializer(SerializerBase):
         kwargs = self.recreate_classes(kwargs)
         return obj, method, vargs, kwargs
 
-    def loads(self, data):
-        return self.recreate_classes(marshal.loads(data))
+    if sys.platform == "cli":
+        def loads(self, data):
+            if type(data) is not str:
+                # Ironpython's marshal expects str...
+                data = str(data)
+            return self.recreate_classes(marshal.loads(data))
+    else:
+        def loads(self, data):
+            return self.recreate_classes(marshal.loads(data))
+
 
     @classmethod
     def register_type_replacement(cls, object_type, replacement_function):
