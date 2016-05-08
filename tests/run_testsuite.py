@@ -8,6 +8,8 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import unittest
 import sys
 import os
+import Pyro4
+Pyro4.config.reset()
 
 from_tox = "--tox" in sys.argv
 xml_report = "--xml" in sys.argv
