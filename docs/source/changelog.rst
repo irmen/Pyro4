@@ -4,14 +4,6 @@ Change Log
 
 **Pyro 4.44**
 
-- Fixed 'malformed string' error when a Python 2 client talks to a Python 3 server;
-  proxy metadata and nameserver metadata tags are no longer returned as a set but as a list.
-  (This problem occurs in the serpent serializer because of a problem with the underlying ast.literal_eval function
-  across different python versions)
-- improved multiplex server, now uses best available selector on your platform (kqueue, epoll, etc)
-- the above was done by using the 'selectors' module, on older pythons (<3.4)
-  the backport 'selectors34' has been added as a new requirement.
-- added selector property on the daemon (to expose the multiplexing selector if that servertype is used).
 - Behavior change: when the threadpool server is used and it runs out of worker threads, clients attempting to connect
   now get a connection error telling them that the server threadpool has to be increased.
   On python 3.2 and newer a short timeout is used for the case that in the meantime a connection becomes available.
@@ -19,9 +11,17 @@ Change Log
   blocking behavior when the threadpool server can no longer accept new connections. Defaults to False.
   *note: this is a temporary solution, in the next release a different threadpool implementation will be shipped
   for which this config item is no longer relevant*
+- Fixed 'malformed string' error when a Python 2 client talks to a Python 3 server;
+  proxy metadata and nameserver metadata tags are no longer returned as a set but as a list.
+  (This problem occurs in the serpent serializer because of a problem with the underlying ast.literal_eval function
+  across different python versions)
+- improved multiplex server, now uses best available selector on your platform (kqueue, epoll, etc)
+  This was done by using the 'selectors' module, on older pythons (<3.4)
+  the backport 'selectors34' has been added as a new requirement.
+- added selector property on the daemon (to expose the multiplexing selector if that servertype is used).
 - Added Daemon.combine() which merges different daemons' request loops and lets you just run the 'master daemon' requestLoop
-- fixed import and test problems with IronPython (it doesn't like the dill serializer either)
-- Improved security when comparing HMAC codes
+- fixed import and test problems with IronPython (it doesn't like the dill serializer either, like pypy)
+- Improved security when comparing HMAC codes (against timing attacks)
 - added 'diffie-hellman' example to shows a way to approach server-client agreement on a shared secret key
 - a few IronPython releated changes regarding str/bytes to decrease the number of special cases
 
