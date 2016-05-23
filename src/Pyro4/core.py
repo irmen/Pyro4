@@ -281,9 +281,6 @@ class Proxy(object):
     def __getstate_for_dict__(self):
         encodedHmac = None
         if self._pyroHmacKey is not None:
-            if sys.platform == 'cli' and type(self._pyroHmacKey) is bytes:
-                # ironpython doesn't grok bytes for b64encode
-                self._pyroHmacKey = str(self._pyroHmacKey)
             encodedHmac = "b64:"+(base64.b64encode(self._pyroHmacKey).decode("ascii"))
         # for backwards compatibility reasons we also put the timeout and maxretries into the state
         return self._pyroUri.asString(), tuple(self._pyroOneway), tuple(self._pyroMethods), tuple(self._pyroAttrs),\
@@ -1069,7 +1066,7 @@ class Daemon(object):
             if compressed:
                 flags |= message.FLAGS_COMPRESSED
         except Exception as x:
-            log.debug("handshake failed, reason: (%s) %s" % (x.__class__.__name__, x))
+            log.debug("handshake failed, reason:", exc_info=True)
             serializer = util.get_serializer_by_id(serializer_id)
             data, compressed = serializer.serializeData(str(x), False)
             msgtype = message.MSG_CONNECTFAIL

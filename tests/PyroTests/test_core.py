@@ -474,10 +474,7 @@ class CoreTests(unittest.TestCase):
         proxy._pyroConnection = conn_mock
         with self.assertRaises(Pyro4.errors.ConnectionClosedError):
             proxy.foo()
-        if sys.platform == 'cli':
-            self.assertIn("HMAC", conn_mock.msgbytes)
-        else:
-            self.assertIn(b"HMAC", conn_mock.msgbytes)
+        self.assertIn(b"HMAC", conn_mock.msgbytes)
 
         conn_mock = ConnectionMock()
         proxy._pyroConnection = conn_mock
