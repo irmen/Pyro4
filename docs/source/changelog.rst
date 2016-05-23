@@ -4,13 +4,13 @@ Change Log
 
 **Pyro 4.44**
 
-- Behavior change: when the threadpool server is used and it runs out of worker threads, clients attempting to connect
+- *Behavior change:* when the threadpool server is used and it runs out of worker threads, clients attempting to connect
   now get a connection error telling them that the server threadpool has to be increased.
   On python 3.2 and newer a short timeout is used for the case that in the meantime a connection becomes available.
 - THREADPOOL_ALLOW_QUEUE config item added. Enables you to choose for the previous
   blocking behavior when the threadpool server can no longer accept new connections. Defaults to False.
   *note: this is a temporary solution, in the next release a different threadpool implementation will be shipped
-  for which this config item is no longer relevant*
+  for which this config item is no longer relevant. It will be removed again then.*
 - Fixed 'malformed string' error when a Python 2 client talks to a Python 3 server;
   proxy metadata and nameserver metadata tags are no longer returned as a set but as a list.
   (This problem occurs in the serpent serializer because of a problem with the underlying ast.literal_eval function
