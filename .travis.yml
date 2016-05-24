@@ -6,6 +6,8 @@ python:
   - 3.4.4
   - 3.5
   - pypy
+before_install:
+  - pip install "pip>=7.1.0"
 install:
   - pip install -e .
   - pip install -r test_requirements.txt
