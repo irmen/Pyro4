@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.46**
+
+- ...
+
+
 **Pyro 4.45**
 
 - Dependency fix in setup/wheel/pip for selectors34 module.

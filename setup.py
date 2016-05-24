@@ -46,7 +46,7 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
         "platforms": "any",
         "install_requires": ["serpent>=1.11"],
         "extras_require": {
-            ':python_version<"3.4"': ["selectors34"]
+            ":python_version<'3.4'": ["selectors34"]
         },
         "requires": ["serpent"],
         "classifiers": [
