@@ -1,5 +1,4 @@
 import sys
-import os
 import re
 
 try:
@@ -46,6 +45,9 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
         "scripts": [],
         "platforms": "any",
         "install_requires": ["serpent>=1.11"],
+        "extras_require": {
+            ':python_version<"3.4"': ["selectors34"]
+        },
         "requires": ["serpent"],
         "classifiers": [
             "Development Status :: 5 - Production/Stable",
@@ -75,11 +77,6 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
         },
         "options": {"install": {"optimize": 0}}
     }
-
-    try:
-        import selectors
-    except ImportError:
-        setupargs["install_requires"].append("selectors34")
 
     setup(**setupargs)
 
