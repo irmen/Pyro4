@@ -2,7 +2,7 @@
 Change Log
 **********
 
-**Pyro 4.4x**
+**Pyro 4.4x threadpool branch**
 
 - threaded socket server now adapts the number of threads dynamically depending on connection count
 - THREADPOOL_SIZE_MIN config item added to specify the min number of threads (defaults to 4)
