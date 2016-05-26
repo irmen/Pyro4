@@ -10,6 +10,16 @@ Change Log
   @todo docs
 
 
+**Pyro 4.46**
+
+- ...
+
+
+**Pyro 4.45**
+
+- Dependency fix in setup/wheel/pip for selectors34 module.
+
+
 **Pyro 4.44**
 
 - *Behavior change:* when the threadpool server is used and it runs out of worker threads, clients attempting to connect
