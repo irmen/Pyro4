@@ -11,15 +11,11 @@ import Pyro4.socketutil
 import Pyro4.threadutil
 
 
-Pyro4.config.COMMTIMEOUT = 10
-Pyro4.config.REQUIRE_EXPOSE = True
-
-
 datafiles = {}      # temporary files
 datablobs = {}      # in-memory
 
 
-@Pyro4.expose()
+@Pyro4.expose
 class BlobServer(object):
     def get_with_pyro(self, size):
         print("sending %d bytes" % size)
