@@ -332,8 +332,9 @@ Pyro is not meant as a tool to transfer large amounts of binary data (images, so
 Its wire protocol is not optimized for these kinds of data. The occasional transmission of such data
 is fine (:doc:`flame` even provides a convenience method for that, if you like:
 :meth:`Pyro4.utils.flame.Flame.sendfile`) but usually it is better to use something else to do
-the actual data transfer (file share+file copy, ftp, scp, rsync).
-Also, Pyro has a 2 gigabyte message size limitation at this time.
+the actual data transfer (file share+file copy, ftp, http, scp, rsync).
+Also, Pyro has a 2 gigabyte message size limitation at this time (if your Python implementation and
+system memory even allow the process to reach this size).
 
 .. note:: Serpent and binary data:
     If you do transfer binary data using the serpent serializer, you have to be aware of the following.
@@ -345,23 +346,23 @@ Also, Pyro has a 2 gigabyte message size limitation at this time.
 
 
 The following table is an indication of the relative speeds when dealing with large amounts
-of binary data. It lists the results of the :file:`hugetransfer` example, using python 3.3,
-over a 100 mbit lan connection:
+of binary data. It lists the results of the :file:`hugetransfer` example, using python 3.5,
+over a 1000 mbit lan connection:
 
 ========== ========== ============= ================
 serializer str mb/sec bytes mb/sec  bytearray mb/sec
 ========== ========== ============= ================
-pickle     30.9       32.8          31.8
-marshal    30.0       28.8          32.4
-serpent    12.5       9.1           9.1
-json       22.5       not supported not supported
+pickle     70.8       72.7          64.9
+marshal    71.0       65.0          65.2
+serpent    25.0       14.1          14.3
+json       31.5       not supported not supported
 ========== ========== ============= ================
 
 The json serializer can't deal with actual binary data at all because it can't serialize these types.
 The serpent serializer is inefficient when dealing with binary data, because
 it has to encode and decode it as a base-64 string (this is by design).
 
-Marshal and pickle are relatively efficient. But here is a short overview of the ``pickle``
+Marshal and pickle are relatively efficient, speed-wise. But here is a short overview of the ``pickle``
 wire protocol overhead for the possible binary types:
 
 ``str``
@@ -381,6 +382,17 @@ wire protocol overhead for the possible binary types:
 
 ``numpy arrays``
     usually cannot be transferred directly, see :ref:`numpy`.
+
+
+For comparison, here are the results of the ``blobserver`` example over the same connection,
+but it does two threads at the same time as well:
+
+======== ============== ==============
+protocol thread 1 speed thread 2 speed
+======== ============== ==============
+pyro     10.2 Mb/sec    9.9 Mb/Sec
+sockets
+======== ============== ==============
 
 .. index:: MSG_WAITALL
 
