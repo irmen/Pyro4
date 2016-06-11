@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.46**
 
-- ...
+- blobtransfer example added.
 
 
 **Pyro 4.45**

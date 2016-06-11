@@ -1396,7 +1396,7 @@ class Daemon(object):
         """
         Combines the event loop of the other daemon in the current daemon's loop.
         You can then simply run the current daemon's requestLoop to serve both daemons.
-        This works fine on the multiplex server type, but may not work on the threaded server type!
+        This works fine on the multiplex server type, but doesn't work with the threaded server type.
         """
         log.debug("combining event loop with other daemon")
         self.transportServer.combine_loop(daemon.transportServer)
