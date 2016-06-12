@@ -22,22 +22,26 @@ class BlobServer(object):
         data = b"x" * size
         return data
 
-    def prepare_blob(self, size, inmemory=True):
-        print("preparing blob of size %d" % size)
+    def prepare_file_blob(self, size):
+        print("preparing file-based blob of size %d" % size)
         file_id = str(uuid.uuid4())
-        if inmemory:
-            datablobs[file_id] = b"x" * size
-        else:
-            f = tempfile.TemporaryFile()
-            chunk = b"x" * 100000
-            for _ in range(size//100000):
-                f.write(chunk)
-            f.write(b"x"*(size % 100000))
-            f.flush()
-            f.seek(0, io.SEEK_SET)
-            # os.fsync(f)
-            datafiles[file_id] = f
-        blobsock_info = self._pyroDaemon.blobsocket.getsockname()
+        f = tempfile.TemporaryFile()
+        chunk = b"x" * 100000
+        for _ in range(size//100000):
+            f.write(chunk)
+        f.write(b"x"*(size % 100000))
+        f.flush()
+        f.seek(0, io.SEEK_SET)
+        # os.fsync(f)
+        datafiles[file_id] = f
+        blobsock_info = self._pyroDaemon.blobsocket.getsockname()  # return the port info for the blob socket as well
+        return file_id, blobsock_info
+
+    def prepare_memory_blob(self, size):
+        print("preparing in-memory blob of size %d" % size)
+        file_id = str(uuid.uuid4())
+        datablobs[file_id] = b"x" * size
+        blobsock_info = self._pyroDaemon.blobsocket.getsockname()  # return the port info for the blob socket as well
         return file_id, blobsock_info
 
 
