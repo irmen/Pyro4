@@ -40,7 +40,7 @@ def raw_socket(uri):
         print("thread {0} preparing {1} blobs of size {2} Mb".format(name, num_blobs, blobsize/1024.0/1024.0))
         blobs = {}
         for _ in range(num_blobs):
-            file_id, blob_address = p.prepare_file_blob(blobsize, False)
+            file_id, blob_address = p.prepare_file_blob(blobsize)
             blobs[file_id] = blob_address
 
         for file_id in blobs:
