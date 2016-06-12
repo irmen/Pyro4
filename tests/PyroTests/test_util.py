@@ -179,6 +179,7 @@ class TestUtils(unittest.TestCase):
             self.clearEnv()
 
     def testResolveAttr(self):
+        @Pyro4.expose
         class Test(object):
             def __init__(self, value):
                 self.value = value
@@ -204,6 +205,7 @@ class TestUtils(unittest.TestCase):
         obj.a._p.q = Test("q1")
         obj.a.__p = Test("p2")
         obj.a.__p.q = Test("q2")
+        self.assertEqual("hello", str(Pyro4.util.getAttribute(obj, "value")))
         self.assertEqual("<a>", str(Pyro4.util.getAttribute(obj, "a")))
         self.assertEqual("hello", str(Pyro4.util.getAttribute(obj, "__value__")))  # dunder is not private
         dunder = str(Pyro4.util.getAttribute(obj, "__p__"))

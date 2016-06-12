@@ -61,6 +61,7 @@ class MemoryStorage(dict):
         pass
 
 
+@Pyro4.expose
 class NameServer(object):
     """
     Pyro name server. Provides a simple flat name space to map logical object names to Pyro URIs.
