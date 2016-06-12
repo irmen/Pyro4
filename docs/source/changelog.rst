@@ -4,7 +4,8 @@ Change Log
 
 **Pyro 4.46**
 
-- blobtransfer example added.
+- blobtransfer example added
+- improved the docs on binary data transfer a bit
 
 
 **Pyro 4.45**
