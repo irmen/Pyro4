@@ -355,9 +355,9 @@ class ServerTestsOnce(unittest.TestCase):
             old_require = Pyro4.config.REQUIRE_EXPOSE
             Pyro4.config.REQUIRE_EXPOSE = False
             with self.daemon.proxyFor("unexposed") as p:
-                self.assertEqual(set(["unexposed", "getName"]), p._pyroMethods)
+                self.assertEqual({"unexposed", "getName"}, p._pyroMethods)
                 self.assertEqual("hello", p.getName())
-                self.assertEqual("you should not see this", p.unexposed())   # well, you should see it when REQUIRE_EXPOSE is False :)
+                self.assertEqual("you should not see this", p.unexposed())   # you *should* see it when REQUIRE_EXPOSE is False :)
         finally:
             Pyro4.config.REQUIRE_EXPOSE = old_require
 
@@ -366,7 +366,7 @@ class ServerTestsOnce(unittest.TestCase):
             old_require = Pyro4.config.REQUIRE_EXPOSE
             Pyro4.config.REQUIRE_EXPOSE = True
             with self.daemon.proxyFor("unexposed") as p:
-                self.assertEqual(set(["getName"]), p._pyroMethods)
+                self.assertEqual({"getName"}, p._pyroMethods)
                 self.assertEqual("hello", p.getName())
                 with self.assertRaises(AttributeError) as e:
                     p.unexposed()

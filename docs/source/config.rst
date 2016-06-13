@@ -111,7 +111,7 @@ DILL_PROTOCOL_VERSION   int     highest poss   The dill protocol version to use,
 JSON_MODULE             string  json           The json module to use for the json serializer. (json is included in the stdlib, simplejson is a possible 3rd party alternative).
 LOGWIRE                 bool    False          If wire-level message data should be written to the logfile (you may want to disable COMPRESSION)
 METADATA                bool    True           Client: Get remote object metadata from server automatically on proxy connect (methods, attributes, oneways, etc) and use local checks in the proxy against it (set to False to use compatible behavior with Pyro 4.26 and earlier)
-REQUIRE_EXPOSE          bool    False          Server: Is @expose required to make members remotely accessible. If False, everything is accessible (this is the default still, for backwards compatibility).
+REQUIRE_EXPOSE          bool    True           Server: Is @expose required to make members remotely accessible. If False, everything is accessible (use this only for backwards compatibility).
 USE_MSG_WAITALL         bool    True (False if Some systems have broken socket MSG_WAITALL support. Set this item to False if your system is one of these. Pyro will then use another (but slower) piece of code to receive network data.
                                 on Windows)
 MAX_RETRIES             int     0              Automatically retry network operations for some exceptions (timeout / connection closed), be careful to use when remote functions have a side effect (e.g.: calling twice results in error)

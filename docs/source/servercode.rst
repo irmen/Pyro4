@@ -33,6 +33,8 @@ Creating a Pyro class and using the Pyro4 decorators
 
 **What is exposed by default, and the REQUIRE_EXPOSE config item**
 
+@todo CHANGE THIS TO THE NEW BEHAVIOR
+
 Pyro's default behavior is to expose *all* methods of your class
 (unless they are private, which means the name is starting with a single or double underscore -- with an exception of the special 'dunder' names with double underscores such as ``__len__``).
 You don't have to do anything to your server side code to make it available to remote calls, apart from

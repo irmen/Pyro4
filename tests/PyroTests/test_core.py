@@ -47,6 +47,16 @@ class CoreTests(unittest.TestCase):
         self.assertIn("COMPRESSION", config)
         self.assertEqual(Pyro4.config.COMPRESSION, config["COMPRESSION"])
 
+    def testConfigDefaults(self):
+        # some security sensitive settings:
+        Pyro4.config.reset(False)   # reset the config to default
+        self.assertTrue(Pyro4.config.REQUIRE_EXPOSE)
+        self.assertEqual("localhost", Pyro4.config.HOST)
+        self.assertEqual("localhost", Pyro4.config.NS_HOST)
+        self.assertFalse(Pyro4.config.FLAME_ENABLED)
+        self.assertEqual("serpent", Pyro4.config.SERIALIZER)
+        self.assertEqual({"json", "serpent", "marshal"}, Pyro4.config.SERIALIZERS_ACCEPTED)
+
     def testConfigValid(self):
         try:
             Pyro4.config.XYZ_FOOBAR = True  # don't want to allow weird config names
@@ -396,8 +406,8 @@ class CoreTests(unittest.TestCase):
             self.assertIn('__hash__', dir(p))
             self.assertNotIn('ping', dir(p))
             # emulate obtaining metadata
-            p._pyroAttrs = set(['prop'])
-            p._pyroMethods = set(['ping'])
+            p._pyroAttrs = {"prop"}
+            p._pyroMethods = {"ping"}
             self.assertIn('__hash__', dir(p))
             self.assertIn('prop', dir(p))
             self.assertIn('ping', dir(p))
@@ -825,8 +835,8 @@ class TestSimpleServe(unittest.TestCase):
 
     def testSimpleServe(self):
         with TestSimpleServe.DaemonWrapper() as d:
-            o1 = MyThing(1)
-            o2 = MyThing(2)
+            o1 = MyThingPartlyExposed(1)
+            o2 = MyThingPartlyExposed(2)
             objects = {o1: "test.o1", o2: None}
             Pyro4.core.Daemon.serveSimple(objects, daemon=d, ns=False, verbose=False)
             self.assertEqual(3, len(d.objectsById))
@@ -836,9 +846,9 @@ class TestSimpleServe(unittest.TestCase):
 
     def testSimpleServeSameNames(self):
         with TestSimpleServe.DaemonWrapper() as d:
-            o1 = MyThing(1)
-            o2 = MyThing(2)
-            o3 = MyThing(3)
+            o1 = MyThingPartlyExposed(1)
+            o2 = MyThingPartlyExposed(2)
+            o3 = MyThingPartlyExposed(3)
             objects = {o1: "test.name", o2: "test.name", o3: "test.othername"}
             with self.assertRaises(Pyro4.errors.DaemonError):
                 Pyro4.core.Daemon.serveSimple(objects, daemon=d, ns=False, verbose=False)

@@ -4,8 +4,13 @@ Change Log
 
 **Pyro 4.46**
 
-- blobtransfer example added
-- improved the docs on binary data transfer a bit
+- Backwards incompatible behavior change: it's now required by default to use @expose on things you want to expose via Pyro.
+  This is because the REQUIRE_EXPOSE config item is now True by default.
+  Set it to FALSE if you have to revert to the previous (less secure) behavior where everything is exposed.
+  But the better and future proof solution is to add @expose to your code on the classes/methods/properties
+  that must be exposed, if you haven't done that already.  The REQUIRE_EXPOSE config item may be removed in a future version.
+- blobtransfer example added.
+- improved the docs on binary data transfer a bit.
 
 
 **Pyro 4.45**

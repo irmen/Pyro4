@@ -179,11 +179,12 @@ class TestUtils(unittest.TestCase):
             self.clearEnv()
 
     def testResolveAttr(self):
+        Pyro4.config.REQUIRE_EXPOSE = True
         @Pyro4.expose
-        class Test(object):
+        class Exposed(object):
             def __init__(self, value):
-                self.value = value
-                self.__value__ = value
+                self.propvalue = value
+                self.__value__ = value   # is not affected by the @expose
 
             def __str__(self):
                 return "<%s>" % self.value
@@ -197,20 +198,36 @@ class TestUtils(unittest.TestCase):
             def __p__(self):
                 return "should be allowed (dunder)"
 
-        obj = Test("hello")
-        obj.a = Test("a")
-        obj.a.b = Test("b")
-        obj.a.b.c = Test("c")
-        obj.a._p = Test("p1")
-        obj.a._p.q = Test("q1")
-        obj.a.__p = Test("p2")
-        obj.a.__p.q = Test("q2")
-        self.assertEqual("hello", str(Pyro4.util.getAttribute(obj, "value")))
+            @property
+            def value(self):
+                return self.propvalue
+
+        class Unexposed(object):
+            def __init__(self):
+                self.value = 42
+
+            def __value__(self):
+                return self.value
+
+        obj = Exposed("hello")
+        obj.a = Exposed("a")
+        obj.a.b = Exposed("b")
+        obj.a.b.c = Exposed("c")
+        obj.a._p = Exposed("p1")
+        obj.a._p.q = Exposed("q1")
+        obj.a.__p = Exposed("p2")
+        obj.a.__p.q = Exposed("q2")
+        obj.u = Unexposed()
+        obj.u.v = Unexposed()
+        # check the accessible attributes
         self.assertEqual("<a>", str(Pyro4.util.getAttribute(obj, "a")))
-        self.assertEqual("hello", str(Pyro4.util.getAttribute(obj, "__value__")))  # dunder is not private
         dunder = str(Pyro4.util.getAttribute(obj, "__p__"))
         self.assertTrue(dunder.startswith("<bound method "))  # dunder is not private, part 1 of the check
-        self.assertTrue("Test.__p__ of" in dunder)  # dunder is not private, part 2 of the check
+        self.assertTrue("Exposed.__p__ of" in dunder)  # dunder is not private, part 2 of the check
+        # check what should not be accessible
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "value")
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "propvalue")
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "__value__")  # is not affected by the @expose
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "_p")  # private
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "__p")  # private
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a.b")
@@ -219,6 +236,16 @@ class TestUtils(unittest.TestCase):
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a._p")
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a._p.q")
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "a.__p.q")
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "u")
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "u.v")
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "u.v.value")
+        # try again but with require expose disabled
+        Pyro4.config.REQUIRE_EXPOSE = False
+        self.assertIsInstance(Pyro4.util.getAttribute(obj, "u"), Unexposed)
+        self.assertEqual("<a>", str(Pyro4.util.getAttribute(obj, "a")))
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "u.v")  # still not allowed to follow the dots
+        self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "u.v.value")  # still not allowed to follow the dots
+        Pyro4.config.REQUIRE_EXPOSE = True
 
     def testUnicodeKwargs(self):
         # test the way the interpreter deals with unicode function kwargs
@@ -234,10 +261,13 @@ class TestUtils(unittest.TestCase):
 
 
 class TestMeta(unittest.TestCase):
+    def setUp(self):
+        Pyro4.config.REQUIRE_EXPOSE = True
+
     def testBasic(self):
-        o = MyThing("irmen")
+        o = MyThingFullExposed("irmen")
         m1 = Pyro4.util.get_exposed_members(o)
-        m2 = Pyro4.util.get_exposed_members(MyThing)
+        m2 = Pyro4.util.get_exposed_members(MyThingFullExposed)
         self.assertEqual(m1, m2)
         keys = m1.keys()
         self.assertEqual(3, len(keys))
@@ -245,48 +275,39 @@ class TestMeta(unittest.TestCase):
         self.assertIn("attrs", keys)
         self.assertIn("oneway", keys)
 
-    def testPrivate(self):
-        o = MyThing("irmen")
+    def testPrivateNotExposed(self):
+        o = MyThingFullExposed("irmen")
         m = Pyro4.util.get_exposed_members(o)
-        for p in ["_private_attr1", "__private_attr2", "__private__", "__private", "_private", "__init__"]:
-            self.assertNotIn(p, m["methods"])
-            self.assertNotIn(p, m["attrs"])
-            self.assertNotIn(p, m["oneway"])
+        self.assertEqual({"classmethod", "staticmethod", "method", "__dunder__", "oneway", "exposed"}, m["methods"])
+        self.assertEqual({"prop1", "readonly_prop1", "prop2"}, m["attrs"])
+        self.assertEqual({"oneway"}, m["oneway"])
+        o = MyThingPartlyExposed("irmen")
+        m = Pyro4.util.get_exposed_members(o)
+        self.assertEqual({"oneway", "exposed"}, m["methods"])
+        self.assertEqual({"prop1", "readonly_prop1"}, m["attrs"])
+        self.assertEqual({"oneway"}, m["oneway"])
 
     def testNotOnlyExposed(self):
-        o = MyThing("irmen")
+        o = MyThingPartlyExposed("irmen")
         m = Pyro4.util.get_exposed_members(o, only_exposed=False)
-        self.assertEqual(set(["prop1", "prop2", "readonly_prop1"]), m["attrs"])
-        self.assertEqual(set(["oneway"]), m["oneway"])
-        self.assertEqual(set(["classmethod", "oneway", "method", "staticmethod", "exposed", "__dunder__"]), m["methods"])
+        self.assertEqual({"classmethod", "staticmethod", "method", "__dunder__", "oneway", "exposed"}, m["methods"])
+        self.assertEqual({"prop1", "readonly_prop1", "prop2"}, m["attrs"])
+        self.assertEqual({"oneway"}, m["oneway"])
 
-    def testOnlyExposed(self):
-        o = MyThing("irmen")
+    def testPartlyExposedSubclass(self):
+        o = MyThingPartlyExposedSub("irmen")
         m = Pyro4.util.get_exposed_members(o)
-        self.assertEqual(set(["prop1", "readonly_prop1"]), m["attrs"])
-        self.assertEqual(set(), m["oneway"])
-        self.assertEqual(set(["exposed"]), m["methods"])
-
-    def testExposedClass(self):
-        o = MyThingExposed("irmen")
-        m = Pyro4.util.get_exposed_members(o)
-        self.assertEqual(set(["name", "readonly_name"]), m["attrs"])
-        self.assertEqual(set(["remotemethod"]), m["oneway"])
-        self.assertEqual(set(["classmethod", "foo", "staticmethod", "remotemethod", "__dunder__"]), m["methods"])
-
-    def testOnlyExposedSub(self):
-        o = MyThingSub("irmen")
-        m = Pyro4.util.get_exposed_members(o)
-        self.assertEqual(set(["prop1", "readonly_prop1"]), m["attrs"])
-        self.assertEqual(set(), m["oneway"])
-        self.assertEqual(set(["sub_exposed", "exposed"]), m["methods"])
+        self.assertEqual({"prop1", "readonly_prop1"}, m["attrs"])
+        self.assertEqual({"oneway"}, m["oneway"])
+        self.assertEqual({"sub_exposed", "exposed", "oneway"}, m["methods"])
 
     def testExposedSubclass(self):
         o = MyThingExposedSub("irmen")
         m = Pyro4.util.get_exposed_members(o)
-        self.assertEqual(set(["name", "readonly_name"]), m["attrs"])
-        self.assertEqual(set(["remotemethod"]), m["oneway"])
-        self.assertEqual(set(["classmethod", "foo", "staticmethod", "remotemethod", "__dunder__"]), m["methods"])
+        self.assertEqual({"readonly_prop1", "prop1", "prop2"}, m["attrs"])
+        self.assertEqual({"oneway", "oneway2"}, m["oneway"])
+        self.assertEqual({"classmethod", "staticmethod", "oneway", "__dunder__", "method", "exposed",
+                          "oneway2", "sub_exposed", "sub_unexposed"}, m["methods"])
 
     def testExposePrivateFails(self):
         with self.assertRaises(AttributeError):
@@ -322,56 +343,65 @@ class TestMeta(unittest.TestCase):
         self.assertTrue(Test2.__dunder__._pyroExposed)
 
     def testGetExposedProperty(self):
-        o = MyThingExposed("irmen")
+        o = MyThingFullExposed("irmen")
         with self.assertRaises(AttributeError):
-            Pyro4.util.get_exposed_property_value(o, "blurp")
+            Pyro4.util.get_exposed_property_value(o, "name")
         with self.assertRaises(AttributeError):
-            Pyro4.util.get_exposed_property_value(o, "_name")
-        with self.assertRaises(AttributeError):
-            Pyro4.util.get_exposed_property_value(o, "unexisting_attribute")
-        self.assertEqual("irmen", Pyro4.util.get_exposed_property_value(o, "name"))
-
-    def testGetExposedPropertyFromPartiallyExposed(self):
-        o = MyThing("irmen")
+            Pyro4.util.get_exposed_property_value(o, "c_attr")
         with self.assertRaises(AttributeError):
             Pyro4.util.get_exposed_property_value(o, "propvalue")
         with self.assertRaises(AttributeError):
-            Pyro4.util.get_exposed_property_value(o, "_name")
+            Pyro4.util.get_exposed_property_value(o, "unexisting_attribute")
+        self.assertEqual(42, Pyro4.util.get_exposed_property_value(o, "prop1"))
+        self.assertEqual(42, Pyro4.util.get_exposed_property_value(o, "prop2"))
+
+    def testGetExposedPropertyFromPartiallyExposed(self):
+        o = MyThingPartlyExposed("irmen")
         with self.assertRaises(AttributeError):
-            Pyro4.util.get_exposed_property_value(o, "prop2")
+            Pyro4.util.get_exposed_property_value(o, "name")
+        with self.assertRaises(AttributeError):
+            Pyro4.util.get_exposed_property_value(o, "c_attr")
+        with self.assertRaises(AttributeError):
+            Pyro4.util.get_exposed_property_value(o, "propvalue")
         with self.assertRaises(AttributeError):
             Pyro4.util.get_exposed_property_value(o, "unexisting_attribute")
         self.assertEqual(42, Pyro4.util.get_exposed_property_value(o, "prop1"))
+        with self.assertRaises(AttributeError):
+            Pyro4.util.get_exposed_property_value(o, "prop2")
 
     def testSetExposedProperty(self):
-        o = MyThingExposed("irmen")
+        o = MyThingFullExposed("irmen")
         with self.assertRaises(AttributeError):
-            Pyro4.util.set_exposed_property_value(o, "blurp", 99)
-        with self.assertRaises(AttributeError):
-            Pyro4.util.set_exposed_property_value(o, "_name", "error")
-        with self.assertRaises(AttributeError):
-            Pyro4.util.set_exposed_property_value(o, "unexisting_attribute", 42)
-        with self.assertRaises(AttributeError):
-            Pyro4.util.set_exposed_property_value(o, "readonly_name", "new_name")
-        Pyro4.util.set_exposed_property_value(o, "name", "new_name")
-        self.assertEqual("new_name", o.name)
-
-    def testSetExposedPropertyFromPartiallyExposed(self):
-        o = MyThing("irmen")
-        with self.assertRaises(AttributeError):
-            Pyro4.util.set_exposed_property_value(o, "propvalue", 99)
-        with self.assertRaises(AttributeError):
-            Pyro4.util.set_exposed_property_value(o, "_name", "error")
-        with self.assertRaises(AttributeError):
-            Pyro4.util.set_exposed_property_value(o, "prop2", 99)
+            Pyro4.util.set_exposed_property_value(o, "name", "erorr")
         with self.assertRaises(AttributeError):
             Pyro4.util.set_exposed_property_value(o, "unexisting_attribute", 42)
         with self.assertRaises(AttributeError):
             Pyro4.util.set_exposed_property_value(o, "readonly_prop1", 42)
-        Pyro4.util.set_exposed_property_value(o, "prop1", 998877)
-        self.assertEqual(998877, o.propvalue)
         with self.assertRaises(AttributeError):
-            Pyro4.util.set_exposed_property_value(o, "prop2", 998877)
+            Pyro4.util.set_exposed_property_value(o, "propvalue", 999)
+        self.assertEqual(42, o.prop1)
+        self.assertEqual(42, o.prop2)
+        Pyro4.util.set_exposed_property_value(o, "prop1", 999)
+        self.assertEqual(999, o.propvalue)
+        Pyro4.util.set_exposed_property_value(o, "prop2", 8888)
+        self.assertEqual(8888, o.propvalue)
+
+    def testSetExposedPropertyFromPartiallyExposed(self):
+        o = MyThingPartlyExposed("irmen")
+        with self.assertRaises(AttributeError):
+            Pyro4.util.set_exposed_property_value(o, "name", "erorr")
+        with self.assertRaises(AttributeError):
+            Pyro4.util.set_exposed_property_value(o, "unexisting_attribute", 42)
+        with self.assertRaises(AttributeError):
+            Pyro4.util.set_exposed_property_value(o, "readonly_prop1", 42)
+        with self.assertRaises(AttributeError):
+            Pyro4.util.set_exposed_property_value(o, "propvalue", 999)
+        self.assertEqual(42, o.prop1)
+        self.assertEqual(42, o.prop2)
+        Pyro4.util.set_exposed_property_value(o, "prop1", 999)
+        self.assertEqual(999, o.propvalue)
+        with self.assertRaises(AttributeError):
+            Pyro4.util.set_exposed_property_value(o, "prop2", 8888)
 
     def testIsPrivateName(self):
         self.assertTrue(Pyro4.util.is_private_attribute("_"))
@@ -384,7 +414,6 @@ class TestMeta(unittest.TestCase):
         self.assertTrue(Pyro4.util.is_private_attribute("__p"))
         self.assertTrue(Pyro4.util.is_private_attribute("___p"))
         self.assertFalse(Pyro4.util.is_private_attribute("__dunder__"))  # dunder methods should not be private except a list of exceptions as tested below
-
         self.assertTrue(Pyro4.util.is_private_attribute("__init__"))
         self.assertTrue(Pyro4.util.is_private_attribute("__call__"))
         self.assertTrue(Pyro4.util.is_private_attribute("__new__"))

@@ -2,7 +2,6 @@ import Pyro4
 import Pyro4.errors
 from diffiehellman import DiffieHellman
 
-Pyro4.config.REQUIRE_EXPOSE = True
 Pyro4.config.SERVERTYPE = "multiplex"
 
 

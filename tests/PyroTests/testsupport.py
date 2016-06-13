@@ -11,7 +11,11 @@ import pickle
 import Pyro4
 
 __all__ = ["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO",
-           "NonserializableError", "MyThing", "MyThingExposed", "MyThingExposedSub", "MyThingSub"]
+           "NonserializableError", "MyThingPartlyExposed", "MyThingFullExposed",
+           "MyThingExposedSub", "MyThingPartlyExposedSub"]
+
+
+Pyro4.config.reset(False)   # reset the config to default
 
 if sys.version_info < (3, 0):
     # noinspection PyUnresolvedReferences
@@ -45,7 +49,7 @@ class NonserializableError(Exception):
         raise pickle.PicklingError("to make this error non-serializable")
 
 
-class MyThing(object):
+class MyThingPartlyExposed(object):
     c_attr = "hi"
     propvalue = 42
     _private_attr1 = "hi"
@@ -56,7 +60,7 @@ class MyThing(object):
         self.name = name
 
     def __eq__(self, other):
-        if type(other) is MyThing:
+        if type(other) is MyThingPartlyExposed:
             return self.name == other.name
         return False
 
@@ -104,6 +108,7 @@ class MyThing(object):
         self.propvalue = value
 
     @Pyro4.oneway
+    @Pyro4.expose
     def oneway(self, arg):
         pass
 
@@ -114,70 +119,94 @@ class MyThing(object):
     __hash__ = object.__hash__
 
 
-@Pyro4.expose()
-class MyThingExposed(object):
-    blurp = 99   # won't be exposed, because it is a class attribute and not a property
-    _name = ""
+@Pyro4.expose
+class MyThingFullExposed(object):
+    """this is the same as MyThingPartlyExposed but the whole class should be exposed"""
+    c_attr = "hi"
+    propvalue = 42
+    _private_attr1 = "hi"
+    __private_attr2 = "hi"
+    name = ""
 
     def __init__(self, name="dummy"):
-        self._name = name
+        self.name = name    # note: not affected by @expose, only real properties are
 
     def __eq__(self, other):
-        if type(other) is MyThingExposed:
-            return self._name == other._name
+        if type(other) is MyThingFullExposed:
+            return self.name == other.name
         return False
 
-    def foo(self, arg):
-        return arg
-
-    @classmethod
-    def classmethod(cls, arg):
-        return arg
+    def method(self, arg, default=99, **kwargs):
+        pass
 
     @staticmethod
     def staticmethod(arg):
-        return arg
-
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        self._name = value
-
-    @property
-    def readonly_name(self):
-        return self._name
-
-    @Pyro4.oneway
-    def remotemethod(self, arg):
-        return arg
-
-    def _p(self):
         pass
 
-    def __private(self):
+    @classmethod
+    def classmethod(cls, arg):
         pass
 
     def __dunder__(self):
         pass
 
+    def __private(self):
+        pass
+
+    def _private(self):
+        pass
+
+    @property
+    def prop1(self):
+        return self.propvalue
+
+    @prop1.setter
+    def prop1(self, value):
+        self.propvalue = value
+
+    @property
+    def readonly_prop1(self):
+        return self.propvalue
+
+    @property
+    def prop2(self):
+        return self.propvalue
+
+    @prop2.setter
+    def prop2(self, value):
+        self.propvalue = value
+
+    @Pyro4.oneway
+    def oneway(self, arg):
+        pass
+
+    def exposed(self):
+        pass
+
     __hash__ = object.__hash__
 
 
-class MyThingExposedSub(MyThingExposed):
+@Pyro4.expose
+class MyThingExposedSub(MyThingFullExposed):
     def sub_exposed(self):
         pass
 
     def sub_unexposed(self):
         pass
 
+    @Pyro4.oneway
+    def oneway2(self):
+        pass
 
-class MyThingSub(MyThing):
+
+class MyThingPartlyExposedSub(MyThingPartlyExposed):
     @Pyro4.expose
     def sub_exposed(self):
         pass
 
     def sub_unexposed(self):
+        pass
+
+    @Pyro4.oneway
+    def oneway2(self):
         pass
