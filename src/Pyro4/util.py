@@ -389,7 +389,7 @@ class SerializerBase(object):
     def recreate_classes(self, literal):
         t = type(literal)
         if t is set:
-            return set([self.recreate_classes(x) for x in literal])
+            return {self.recreate_classes(x) for x in literal}
         if t is list:
             return [self.recreate_classes(x) for x in literal]
         if t is tuple:

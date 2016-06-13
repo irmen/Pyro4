@@ -11,6 +11,7 @@ Change Log
   that must be exposed, if you haven't done that already.  The REQUIRE_EXPOSE config item may be removed in a future version.
 - blobtransfer example added.
 - improved the docs on binary data transfer a bit.
+- code now uses set literals instead of old fashioned set([...])
 
 
 **Pyro 4.45**

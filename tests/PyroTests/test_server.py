@@ -276,18 +276,18 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual(set(), p._pyroOneway)
             # connecting it should obtain metadata (as long as METADATA is true)
             p._pyroBind()
-            self.assertEqual(set(['value', 'dictionary']), p._pyroAttrs)
-            self.assertEqual(set(['echo', 'getDict', 'divide', 'nonserializableException', 'ping', 'oneway_delay', 'delayAndId', 'delay', 'testargs',
-                                  'multiply', 'oneway_multiply', 'getDictAttr']), p._pyroMethods)
-            self.assertEqual(set(['oneway_multiply', 'oneway_delay']), p._pyroOneway)
+            self.assertEqual({'value', 'dictionary'}, p._pyroAttrs)
+            self.assertEqual({'echo', 'getDict', 'divide', 'nonserializableException', 'ping', 'oneway_delay', 'delayAndId', 'delay', 'testargs',
+                                  'multiply', 'oneway_multiply', 'getDictAttr'}, p._pyroMethods)
+            self.assertEqual({'oneway_multiply', 'oneway_delay'}, p._pyroOneway)
             p._pyroAttrs = None
             p._pyroGetMetadata()
-            self.assertEqual(set(['value', 'dictionary']), p._pyroAttrs)
+            self.assertEqual({'value', 'dictionary'}, p._pyroAttrs)
             p._pyroAttrs = None
             p._pyroGetMetadata(self.objectUri.object)
-            self.assertEqual(set(['value', 'dictionary']), p._pyroAttrs)
+            self.assertEqual({'value', 'dictionary'}, p._pyroAttrs)
             p._pyroAttrs = None
-            p._pyroGetMetadata(known_metadata={"attrs": set(), "oneway": set(), "methods": set(["ping"])})
+            p._pyroGetMetadata(known_metadata={"attrs": set(), "oneway": set(), "methods": {"ping"}})
             self.assertEqual(set(), p._pyroAttrs)
 
     def testProxyAttrsMetadataOff(self):
@@ -383,7 +383,7 @@ class ServerTestsOnce(unittest.TestCase):
         with Pyro4.core.Proxy(self.objectUri) as p:
             _ = p.value
             # metadata should be loaded now
-            self.assertEqual(set(["value", "dictionary"]), p._pyroAttrs)
+            self.assertEqual({"value", "dictionary"}, p._pyroAttrs)
             with self.assertRaises(AttributeError):
                 _ = p.something
             with self.assertRaises(AttributeError):
@@ -790,7 +790,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         class ProxyWithOneway(Pyro4.core.Proxy):
             def __init__(self, arg):
                 super(ProxyWithOneway, self).__init__(arg)
-                self._pyroOneway = set(["oneway_multiply", "multiply"])
+                self._pyroOneway = {"oneway_multiply", "multiply"}
 
         with ProxyWithOneway(self.objectUri) as p:
             self.assertIsNone(p.oneway_multiply(5, 11))

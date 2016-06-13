@@ -259,9 +259,9 @@ class SerializeTests_pickle(unittest.TestCase):
             self.assertIsInstance(p2, Pyro4.core.Proxy)
             self.assertEqual("thingy1", p1._pyroUri.object)
             self.assertEqual("thingy2", p2._pyroUri.object)
-            self.assertEqual(set(["prop1", "readonly_prop1"]), p1._pyroAttrs)
-            self.assertEqual(set(["exposed", "oneway"]), p1._pyroMethods)
-            self.assertEqual(set(['oneway']), p1._pyroOneway)
+            self.assertEqual({"prop1", "readonly_prop1"}, p1._pyroAttrs)
+            self.assertEqual({"exposed", "oneway"}, p1._pyroMethods)
+            self.assertEqual({'oneway'}, p1._pyroOneway)
 
     def testAutoProxyFullExposed(self):
         if self.SERIALIZER == "marshal":
@@ -282,9 +282,9 @@ class SerializeTests_pickle(unittest.TestCase):
             self.assertIsInstance(p2, Pyro4.core.Proxy)
             self.assertEqual("thingy1", p1._pyroUri.object)
             self.assertEqual("thingy2", p2._pyroUri.object)
-            self.assertEqual(set(["prop1", "prop2", "readonly_prop1"]), p1._pyroAttrs)
-            self.assertEqual(set(['classmethod', 'method', 'oneway', 'staticmethod', 'exposed', "__dunder__"]), p1._pyroMethods)
-            self.assertEqual(set(['oneway']), p1._pyroOneway)
+            self.assertEqual({"prop1", "prop2", "readonly_prop1"}, p1._pyroAttrs)
+            self.assertEqual({'classmethod', 'method', 'oneway', 'staticmethod', 'exposed', "__dunder__"}, p1._pyroMethods)
+            self.assertEqual({'oneway'}, p1._pyroOneway)
 
     def testCustomClassFail(self):
         if self.SERIALIZER in ("pickle", "dill"):
@@ -335,7 +335,7 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(data, data2)
 
     def testSet(self):
-        data = set([111, 222, 333])
+        data = {111, 222, 333}
         ser, compressed = self.ser.serializeData(data)
         data2 = self.ser.deserializeData(ser, compressed=compressed)
         self.assertEqual(data, data2)
@@ -494,7 +494,7 @@ class SerializeTests_serpent(SerializeTests_pickle):
 
     def testSet(self):
         # serpent serializes a set into a tuple on older python versions, so we override this
-        data = set([111, 222, 333])
+        data = {111, 222, 333}
         ser, compressed = self.ser.serializeData(data)
         data2 = self.ser.deserializeData(ser, compressed=compressed)
         if serpent.can_use_set_literals:
@@ -549,7 +549,7 @@ class SerializeTests_json(SerializeTests_pickle):
 
     def testSet(self):
         # json serializes a set into a list, so we override this
-        data = set([111, 222, 333])
+        data = {111, 222, 333}
         ser, compressed = self.ser.serializeData(data)
         data2 = self.ser.deserializeData(ser, compressed=compressed)
         self.assertEqual(list(data), data2)

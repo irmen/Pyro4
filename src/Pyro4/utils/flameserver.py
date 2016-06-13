@@ -37,7 +37,7 @@ def main(args=None, returnWithoutLooping=False):
     if not hmac and not options.quiet:
         print("Warning: HMAC key not set. Anyone can connect to this server!")
 
-    Pyro4.config.SERIALIZERS_ACCEPTED = set(["pickle"])  # flame requires pickle serializer, doesn't work with the others.
+    Pyro4.config.SERIALIZERS_ACCEPTED = {"pickle"}  # flame requires pickle serializer, doesn't work with the others.
 
     daemon = Pyro4.core.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
     if hmac:

@@ -39,7 +39,7 @@ function with your daemon that you want to enable flame on::
 Additionally, you have to make some configuration changes:
 
 * flame server: set the ``FLAME_ENABLED`` config item to True
-* flame server: set the ``SERIALIZERS_ACCEPTED`` config item to ``set(["pickle"])``
+* flame server: set the ``SERIALIZERS_ACCEPTED`` config item to ``{"pickle"}``
 * flame client: set the ``SERIALIZER`` config item to ``pickle``
 
 You'll have to explicitly enable Flame. When you don't, you'll
