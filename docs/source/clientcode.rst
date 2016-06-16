@@ -190,8 +190,8 @@ Changing the way your custom classes are (de)serialized
 -------------------------------------------------------
 
 .. note::
-    The information in this paragraph applies only when you're not using the pickle nor dill
-    serialization protocols.
+    The information in this paragraph is not relevant when using the pickle or dill serialization protocols,
+    they have their own ways of serializing custom classes.
 
 By default, custom classes are serialized into a dict.
 They are not deserialized back into instances of your custom class. This avoids possible security issues.

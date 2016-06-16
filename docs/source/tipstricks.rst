@@ -151,8 +151,7 @@ It may still be required to specify the pickle or dill protocol version though, 
 For instance, Python 3.4 introduced version 4 of the pickle protocol and as such won't be able to talk to Python 3.3 which is stuck
 on version 3 pickle protocol. You'll have to tell the Python 3.4 side to step down to protocol 3. There is a config item for that. The same will apply for dill protocol versions.
 
-
-The implementation independent serialization protocols (serpent or json) don't have any of these issues.
+The implementation independent serialization protocols serpent and json don't have these limitations.
 
 
 
