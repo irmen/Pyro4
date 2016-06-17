@@ -159,6 +159,7 @@ class RemoteInteractiveConsole(object):
         self.close()
 
 
+@Pyro4.expose
 class InteractiveConsole(code.InteractiveConsole):
     """Interactive console wrapper that saves output written to stdout so it can be returned as value"""
 

@@ -570,7 +570,7 @@ class Proxy(object):
             log.debug("from meta: methods=%s", sorted(self._pyroMethods))
             log.debug("from meta: attributes=%s", sorted(self._pyroAttrs))
         if not self._pyroMethods and not self._pyroAttrs:
-            raise errors.PyroError("remote object doesn't expose any methods or attributes")
+            raise errors.PyroError("remote object doesn't expose any methods or attributes. Did you forget setting @expose on them?")
 
     def _pyroReconnect(self, tries=100000000):
         """
@@ -862,7 +862,7 @@ class DaemonObject(object):
             constants.DAEMON_NAME, self.daemon.locationStr, self.daemon.natLocationStr,
             len(self.daemon.objectsById), self.daemon.transportServer)
 
-    def get_metadata(self, objectId, as_lists=False):
+    def get_metadata(self, objectId, as_lists=False):  # @todo cache?
         """
         Get metadata for the given object (exposed methods, oneways, attributes).
         If you get an error in your proxy saying that 'DaemonObject' has no attribute 'get_metdata',
@@ -871,7 +871,13 @@ class DaemonObject(object):
         """
         obj = self.daemon.objectsById.get(objectId)
         if obj is not None:
-            return util.get_exposed_members(obj, only_exposed=Pyro4.config.REQUIRE_EXPOSE, as_lists=as_lists)
+            metadata = util.get_exposed_members(obj, only_exposed=Pyro4.config.REQUIRE_EXPOSE, as_lists=as_lists)
+            if Pyro4.config.REQUIRE_EXPOSE and not metadata["methods"] and not metadata["attrs"]:
+                # Something seems wrong: nothing is remotely exposed.
+                # Possibly because older code not using @expose is now running with a more recent Pyro version
+                # where @expose is mandatory in the default configuration. Give a hint to the user.
+                log.warn("Class %r doesn't expose any methods or attributes. Did you forget setting @expose on them?", type(obj))  # XXX
+            return metadata
         else:
             log.debug("unknown object requested: %s", objectId)
             raise errors.DaemonError("unknown object")

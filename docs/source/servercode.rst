@@ -31,39 +31,26 @@ Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
 Creating a Pyro class and using the Pyro4 decorators
 ====================================================
 
-**What is exposed by default, and the REQUIRE_EXPOSE config item**
+In the spirit of being secure by default, Pyro doesn't allow remote access to anything of your class unless
+explicitly told to do so. It will never allow remote access to private methods and attributes.
+(where private means that the name is starting with a single or double underscore,
+with an exception of the special 'dunder' names with double underscores such as ``__len__``)
 
-@todo CHANGE THIS TO THE NEW BEHAVIOR
-
-Pyro's default behavior is to expose *all* methods of your class
-(unless they are private, which means the name is starting with a single or double underscore -- with an exception of the special 'dunder' names with double underscores such as ``__len__``).
-You don't have to do anything to your server side code to make it available to remote calls, apart from
-registering the class with a Pyro daemon ofcourse.
-This is for backward compatibility and ease-of-use reasons.
-
-If you don't like this (maybe security reasons) or simply want to expose only a part of your class to the remote world,
-you can tell Pyro to *require* the explicit use of the ``@expose`` decorator (described below) on the items that you want to make
-available for remote access. If something doesn't have the decorator, it is not remotely accessible.
-This behavior can be chosen by setting the ``REQUIRE_EXPOSE`` config item to ``True``. It is set to ``False`` by default,
-because of backwards compatibility reasons.
-
-**the @expose decorator: exposing classes, methods and attributes for remote access**
-
-The ``@Pyro4.expose`` decorator lets you mark the following items to be available for remote access:
+Exposing classes, methods and properties is done using the ``@Pyro4.expose`` decorator.
+It lets you mark the following items to be available for remote access:
 
 - methods (including classmethod and staticmethod. You cannot expose a private method, i.e. name starting with underscore). You *can* expose a 'dunder' method with double underscore such as ``__len__``. There is a list of dunder methods that will never be remoted though (because they are essential to let the Pyro proxy function correctly).
 - properties (will be available as remote attributes on the proxy)
 - classes (exposing a class has the effect of exposing every method and property of the class automatically)
 
-Remember that you must set the ``REQUIRE_EXPOSE`` config item to ``True`` to let all this have any effect!
-Also because it is not possible to decorate attributes on a class, it is required to provide a @property for them
+Because it is not possible to decorate attributes on a class, it is required to provide a @property for them
 and decorate that with ``@expose``, if you want to provide a remotely accessible attribute.
+
+Anything that isn't decorated with ``@expose`` is not remotely accessible.
 
 Here's a piece of example code that shows how a partially exposed Pyro class may look like::
 
     import Pyro4
-
-    Pyro4.config.REQUIRE_EXPOSE = True      # make @expose do something
 
     class PyroService(object):
 
@@ -92,6 +79,19 @@ Here's a piece of example code that shows how a partially exposed Pyro class may
         def attr(self, value):      # exposed as 'proxy.attr' writable
             self.value = value
 
+
+.. note::
+    Prior to Pyro version 4.46, the default behavior was different: Pyro exposed everything, no special
+    action was needed in your server side code to make it available to remote calls. Probably the easiest way
+    to make old code that was written for this model to fit the new default behavior is to add a single
+    ``@Pyro4.expose`` decorator on all of your Pyro classes. Better (safer) is to only add it to the methods
+    and properties of the classes that are accessed remotely.
+    If you cannot (or don't want to) change your code to be compatible with the new behavior, you can set
+    the ``REQUIRE_EXPOSE`` config item back to ``False`` (it is now ``True`` by default). This will restore
+    the old behavior.
+    Notice that it has been possible for a long time already for older code to utilize
+    the ``@export`` decorator and the current, safer, behavior by having ``REQUIRE_EXPOSE`` set to ``True``.
+    That choice has now simply become the default.
 
 .. index:: oneway decorator
 
@@ -198,7 +198,6 @@ It is also the preferred way of registering your code with the daemon.
 
 Controlling the instance mode and creation is done via the ``instance_mode`` and ``instance_creator``
 parameters of the ``expose`` decorator, which was described earlier.
-By the way, it is *not* required to have ``REQUIRE_EXPOSE`` set to true to use these.
 You can control the instance mode regardless of this setting because it only influences what methods
 and attributes of the class are exposed.
 
