@@ -445,11 +445,8 @@ class SocketConnection(object):
     def close(self):
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
-        except (OSError, socket.error):
-            pass
-        try:
             self.sock.close()
-        except AttributeError:
+        except:
             pass
         self.pyroInstances = {}   # force releasing the session instances
 
