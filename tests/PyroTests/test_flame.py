@@ -4,7 +4,6 @@ Tests for Pyro Flame.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
 import sys
 import unittest
 import Pyro4.utils.flame

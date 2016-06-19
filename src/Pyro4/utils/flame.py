@@ -6,7 +6,6 @@ Flame requires the pickle serializer to be used.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
 import sys
 import types
 import code

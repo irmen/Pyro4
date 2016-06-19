@@ -4,7 +4,6 @@ Thread pooled job queue with a fixed number of worker threads.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
 import sys
 import logging
 import Pyro4.threadutil

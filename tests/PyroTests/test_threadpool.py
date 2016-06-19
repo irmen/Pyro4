@@ -4,7 +4,7 @@ Tests for the thread pool.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement, print_function
+from __future__ import print_function
 import time
 import random
 import unittest
