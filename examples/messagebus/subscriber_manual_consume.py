@@ -1,5 +1,6 @@
 """
 This is a subscriber meant for the 'weather' messages example.
+It uses a custom code loop to get and process messages.
 """
 from __future__ import print_function
 import sys
@@ -16,7 +17,7 @@ if sys.version_info < (3, 0):
 Pyro4.config.AUTOPROXY = True
 
 
-@Pyro4.expose()
+@Pyro4.expose
 class Subber(Subscriber):
     def consume_message(self, topic, message):
         # In this case, this consume message method is called by our own code loop.

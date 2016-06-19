@@ -64,6 +64,7 @@ for name, uri in devices.items():
 
 # upgrade the photo printer
 uri, meta = ns.lookup("example.resource.photoprinter", return_metadata=True)
+meta = set(meta)
 meta.discard("performance:slow")
 meta.add("performance:fast")
 ns.set_metadata("example.resource.photoprinter", meta)

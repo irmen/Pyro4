@@ -9,6 +9,7 @@ import Pyro4.socketutil
 
 
 class Testclass(object):
+    @Pyro4.expose
     def transfer(self, data):
         if Pyro4.config.SERIALIZER == "serpent" and type(data) is dict:
             # decode serpent base-64 encoded bytes
@@ -20,7 +21,7 @@ class Testclass(object):
 
 Pyro4.Daemon.serveSimple(
     {
-        Testclass(): "example.hugetransfer"
+        Testclass: "example.hugetransfer"
     },
     host=Pyro4.socketutil.getIpAddress("localhost", workaround127=True),
     ns=False, verbose=True)

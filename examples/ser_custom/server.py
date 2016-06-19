@@ -35,6 +35,7 @@ SerializerBase.register_dict_to_class("mycustomclasses.OtherThingy", otherthingy
 
 # regular Pyro server stuff
 
+@Pyro4.expose
 class Server(object):
     def method(self, arg):
         print("\nmethod called, arg=", arg)
@@ -49,6 +50,6 @@ class Server(object):
 
 Pyro4.core.Daemon.serveSimple(
     {
-        Server(): "example.customclasses"
+        Server: "example.customclasses"
     },
     ns=False)

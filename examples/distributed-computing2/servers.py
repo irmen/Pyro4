@@ -9,7 +9,7 @@ except ImportError:
 import Pyro4
 
 
-@Pyro4.expose()
+@Pyro4.expose
 class WordCounter(object):
     filter_words = {'a', 'an', 'at', 'the', 'i', 'he', 'she', 's', 'but', 'was', 'has', 'had', 'have', 'and',
                     'are', 'as', 'be', 'by', 'for', 'if', 'in', 'is', 'it', 'of', 'or', 'that',
@@ -27,7 +27,7 @@ class WordCounter(object):
                 interesting_words = [w for w in line.split() if w.isalpha() and w not in self.filter_words]
                 counts.update(interesting_words)
             if num % 10 == 0:
-                time.sleep(0.01)  # artificial delay
+                time.sleep(0.01)  # artificial delay to dramatize execution time differences
         return counts
 
 
@@ -36,7 +36,7 @@ def grouper(n, iterable, padvalue=None):
     return zip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
 
 
-@Pyro4.expose()
+@Pyro4.expose
 class Dispatcher(object):
     def count(self, lines):
         # use the name server's prefix lookup to get all registered wordcounters

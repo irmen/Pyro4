@@ -1,3 +1,7 @@
+import Pyro4
+
+
+@Pyro4.expose
 class Thingy(object):
     def __init__(self, number):
         self.number = number

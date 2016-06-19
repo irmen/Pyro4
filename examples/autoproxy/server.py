@@ -4,6 +4,7 @@ import Pyro4
 from thingy import Thingy
 
 
+@Pyro4.expose
 class Factory(object):
     def createSomething(self, number):
         # create a new item
@@ -16,9 +17,6 @@ class Factory(object):
         return thing
 
 
-d = Pyro4.Daemon()
-uri = d.register(Factory(), "example.autoproxy")
-print("server object uri:", uri)
-print("autoproxy?", Pyro4.config.AUTOPROXY)
-print("factory server running.")
-d.requestLoop()
+Pyro4.Daemon.serveSimple({
+    Factory: "example.autoproxy"
+}, ns=False)

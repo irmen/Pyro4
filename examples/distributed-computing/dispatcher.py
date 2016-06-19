@@ -13,6 +13,7 @@ from workitem import Workitem
 SerializerBase.register_dict_to_class("workitem.Workitem", Workitem.from_dict)
 
 
+@Pyro4.expose
 class DispatcherQueue(object):
     def __init__(self):
         self.workqueue = queue.Queue()
@@ -45,5 +46,5 @@ class DispatcherQueue(object):
 # main program
 
 Pyro4.Daemon.serveSimple({
-    DispatcherQueue(): "example.distributed.dispatcher"
+    DispatcherQueue: "example.distributed.dispatcher"
 })

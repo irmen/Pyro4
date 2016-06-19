@@ -1,4 +1,3 @@
-from __future__ import with_statement
 import random
 import sys
 import robot
@@ -8,6 +7,7 @@ import Pyro4
 
 class DrunkenGameObserver(remote.GameObserver):
     @Pyro4.oneway
+    @Pyro4.expose
     def world_update(self, iteration, world, robotdata):
         # change directions randomly
         if random.random() > 0.8:
@@ -27,6 +27,7 @@ class AngryGameObserver(remote.GameObserver):
         self.directioncounter = 0
 
     @Pyro4.oneway
+    @Pyro4.expose
     def world_update(self, iteration, world, robotdata):
         # move in a loop yelling angry stuff
         if iteration % 50 == 0:
@@ -47,6 +48,7 @@ class ScaredGameObserver(remote.GameObserver):
         self.robot.change_direction(self.direction)
 
     @Pyro4.oneway
+    @Pyro4.expose
     def world_update(self, iteration, world, robotdata):
         if iteration % 50 == 0:
             self.robot.emote("I'm scared!")

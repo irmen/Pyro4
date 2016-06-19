@@ -16,11 +16,13 @@ class CallbackHandler(object):
         b = 0
         return a // b
 
+    @Pyro4.expose
     def call1(self):
         print("\n\ncallback 1 received from server!")
         print("going to crash - you won't see the exception here, only on the server")
         return self.crash()
 
+    @Pyro4.expose
     @Pyro4.callback
     def call2(self):
         print("\n\ncallback 2 received from server!")

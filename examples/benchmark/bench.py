@@ -1,6 +1,7 @@
 import Pyro4
 
 
+@Pyro4.expose
 class bench(object):
     def length(self, string):
         return len(string)

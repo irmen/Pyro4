@@ -12,12 +12,12 @@ Pyro4.config.POLLTIMEOUT = 5.0  # only used for multiplexing server
 
 
 class TestDisconnect(object):
+    @Pyro4.expose
     def echo(self, arg):
         print("echo: ", arg)
         return arg
 
 
-d = Pyro4.Daemon()
-uri = d.register(TestDisconnect(), "disconnect")
-print("uri =", uri)
-d.requestLoop()
+Pyro4.Daemon.serveSimple({
+    TestDisconnect: "example.disconnect"
+}, ns=False)

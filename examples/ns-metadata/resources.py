@@ -5,36 +5,36 @@ class Resource(object):
     pass
 
 
-@expose()
+@expose
 class LaserPrinter(Resource):
     pass
 
 
-@expose()
+@expose
 class MatrixPrinter(Resource):
     pass
 
 
-@expose()
+@expose
 class PhotoPrinter(Resource):
     pass
 
 
-@expose()
+@expose
 class TapeStorage(Resource):
     pass
 
 
-@expose()
+@expose
 class DiskStorage(Resource):
     pass
 
 
-@expose()
+@expose
 class Telephone(Resource):
     pass
 
 
-@expose()
+@expose
 class Faxmachine(Resource):
     pass

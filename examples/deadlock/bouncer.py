@@ -1,4 +1,4 @@
-from __future__ import print_function, with_statement
+from __future__ import print_function
 import Pyro4.threadutil
 
 
@@ -8,6 +8,7 @@ import Pyro4.threadutil
 # because the client will deadlock first.
 
 
+@Pyro4.expose
 class Bouncer(object):
     def __init__(self, name):
         self.name = name

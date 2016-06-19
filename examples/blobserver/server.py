@@ -1,5 +1,4 @@
 from __future__ import print_function
-import socket
 import select
 import tempfile
 import uuid
@@ -111,7 +110,7 @@ class BlobServerDaemon(Pyro4.core.Daemon):
             raise KeyError("no data for given id")
 
 
-daemon = BlobServerDaemon(host=socket.gethostname())
-uri = daemon.register(BlobServer, "example.blobserver")
-print("Blob server URI:", uri)
-daemon.requestLoop()
+with BlobServerDaemon(host=Pyro4.socketutil.getIpAddress("")) as daemon:
+    uri = daemon.register(BlobServer, "example.blobserver")
+    print("Blob server URI:", uri)
+    daemon.requestLoop()

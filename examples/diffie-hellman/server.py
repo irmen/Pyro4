@@ -15,7 +15,7 @@ class SecretStuff(object):
 
 ns = Pyro4.locateNS()
 daemon = Pyro4.Daemon()
-daemon._pyroHmacKey = b"will be set to shared secret key"
+daemon._pyroHmacKey = b"will be set to shared secret key by KeyExchange"
 uri = daemon.register(SecretStuff)
 ns.register("example.dh.secretstuff", uri)
 
@@ -35,12 +35,14 @@ class KeyExchange(object):
         return self.dh.public_key
 
 
+# The key exchange service can't be part of the same daemon as the
+# other service because it must not have a Hmac key set on the daemon.
+# So we create another daemon without hmac key and combine it.
 key_daemon = Pyro4.Daemon()
 uri = key_daemon.register(KeyExchange)
 ns.register("example.dh.keyexchange", uri)
-
 ns._pyroRelease()
 
-key_daemon.combine_loop(daemon)
+key_daemon.combine(daemon)
 print("Starting server loop...")
 key_daemon.requestLoop()

@@ -56,11 +56,7 @@ class SessionboundDatabase(object):
         return "hi"
 
 
-daemon = Pyro4.Daemon()
-ns = Pyro4.locateNS()
-uri = daemon.register(SingletonDatabase)
-ns.register("example.usersession.singletondb", uri)
-uri = daemon.register(SessionboundDatabase)
-ns.register("example.usersession.sessiondb", uri)
-print("Server is ready.")
-daemon.requestLoop()
+Pyro4.Daemon.serveSimple({
+    SingletonDatabase: "example.usersession.singletondb",
+    SessionboundDatabase: "example.usersession.sessiondb"
+})

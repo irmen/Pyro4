@@ -2,6 +2,7 @@ from __future__ import print_function
 import Pyro4
 
 
+@Pyro4.expose
 class Aggregator(object):
     def __init__(self):
         self.viewers = {}

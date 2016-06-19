@@ -1,6 +1,4 @@
-from __future__ import with_statement
 import time
-
 import Pyro4
 
 
@@ -10,6 +8,7 @@ class Worker(object):
         self.callback = callback
         print("Worker %d created" % self.number)
 
+    @Pyro4.expose
     @Pyro4.oneway
     def work(self, amount):
         print("Worker %d busy..." % self.number)
@@ -23,6 +22,7 @@ class CallbackServer(object):
     def __init__(self):
         self.number = 0
 
+    @Pyro4.expose
     def addworker(self, callback):
         self.number += 1
         print("server: adding worker %d" % self.number)
@@ -31,10 +31,6 @@ class CallbackServer(object):
         return worker
 
 
-with Pyro4.core.Daemon() as daemon:
-    with Pyro4.naming.locateNS() as ns:
-        obj = CallbackServer()
-        uri = daemon.register(obj)
-        ns.register("example.callback", uri)
-    print("Server ready.")
-    daemon.requestLoop()
+Pyro4.Daemon.serveSimple({
+    CallbackServer: "example.callback"
+})

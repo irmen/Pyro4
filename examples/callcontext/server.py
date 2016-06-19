@@ -32,9 +32,9 @@ class CustomDaemon(Pyro4.Daemon):
         return annotations
 
 
-daemon = CustomDaemon()
-daemon._pyroHmacKey = b"secr3t_k3y"
-uri = daemon.register(EchoServer(), "example.context")  # provide a logical name ourselves
-print("Server is ready. You can use the following URI to connect:")
-print(uri)
-daemon.requestLoop()
+with CustomDaemon() as daemon:
+    daemon._pyroHmacKey = b"secr3t_k3y"
+    uri = daemon.register(EchoServer, "example.context")  # provide a logical name ourselves
+    print("Server is ready. You can use the following URI to connect:")
+    print(uri)
+    daemon.requestLoop()

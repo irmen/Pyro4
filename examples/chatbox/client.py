@@ -1,6 +1,4 @@
-from __future__ import with_statement
 import sys
-
 import Pyro4
 from Pyro4 import threadutil
 
@@ -17,6 +15,7 @@ class Chatter(object):
         self.chatbox = Pyro4.core.Proxy('PYRONAME:example.chatbox.server')
         self.abort = 0
 
+    @Pyro4.expose
     @Pyro4.oneway
     def message(self, nick, msg):
         if nick != self.nick:

@@ -2,6 +2,7 @@ from __future__ import print_function
 import Pyro4
 
 
+@Pyro4.expose
 class Warehouse(object):
     def __init__(self):
         self.contents = ["chair", "bike", "flashlight", "laptop", "couch"]
@@ -19,10 +20,9 @@ class Warehouse(object):
 
 
 def main():
-    warehouse = Warehouse()
     Pyro4.Daemon.serveSimple(
         {
-            warehouse: "example.warehouse"
+            Warehouse: "example.warehouse"
         },
         ns=True)
 
