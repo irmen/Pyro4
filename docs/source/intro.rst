@@ -122,6 +122,7 @@ First let's see the server code::
     # saved as greeting-server.py
     import Pyro4
 
+    @Pyro4.expose
     class GreetingMaker(object):
         def get_fortune(self, name):
             return "Hello, {0}. Here is your fortune message:\n" \
@@ -173,6 +174,7 @@ We'll have to modify a few lines in :file:`greeting-server.py` to make it regist
     # saved as greeting-server.py
     import Pyro4
 
+    @Pyro4.expose
     class GreetingMaker(object):
         def get_fortune(self, name):
             return "Hello, {0}. Here is your fortune message:\n" \

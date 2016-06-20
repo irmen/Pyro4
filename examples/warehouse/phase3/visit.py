@@ -8,8 +8,8 @@ from person import Person
 
 sys.excepthook = Pyro4.util.excepthook
 
-with Pyro4.Proxy("PYRONAME:example.warehouse") as warehouse:
-    janet = Person("Janet")
-    henry = Person("Henry")
-    janet.visit(warehouse)
-    henry.visit(warehouse)
+warehouse = Pyro4.Proxy("PYRONAME:example.warehouse")
+janet = Person("Janet")
+henry = Person("Henry")
+janet.visit(warehouse)
+henry.visit(warehouse)

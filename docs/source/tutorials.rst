@@ -302,19 +302,20 @@ phase 2: first Pyro version
 That wasn't very exciting but you now have working code for the basics of the warehouse system.
 Now you'll use Pyro to turn the warehouse into a standalone component, that people from other
 computers can visit. You'll need to add a couple of lines to the :file:`warehouse.py` file so that it will
-start a Pyro server for the warehouse object. The easiest way to do this is to create the object
-that you want to make available as Pyro object, and register it with a 'Pyro daemon' (the server that
-listens for and processes incoming remote method calls)::
+start a Pyro server for the warehouse object. You can do this by registering your Pyro class with a 'Pyro daemon',
+the server that listens for and processes incoming remote method calls. One way to do that is like this
+(you can ignore the details about this for now)::
 
-        warehouse = Warehouse()
         Pyro4.Daemon.serveSimple(
                 {
-                    warehouse: "example.warehouse"
+                    Warehouse: "example.warehouse"
                 },
                 ns = False)
 
-For now, ignore the details of what exactly the :py:meth:`serveSimple` method call does.
-Next up is addding a little ``main`` function so it will be started correctly, which should
+Next, we have to tell Pyro what parts of the class should be remotely accessible, and what pars aren't supposed
+to be accessible. This has to do with security. We'll be adding a ``@Pyro4.expose`` decorator on the Warehouse
+class definition, which is sufficient for now.
+Finally we add a little ``main`` function so it will be started correctly, which should
 make the code now look like this (:file:`warehouse.py`)::
 
     from __future__ import print_function
@@ -322,6 +323,7 @@ make the code now look like this (:file:`warehouse.py`)::
     import person
 
 
+    @Pyro4.expose
     class Warehouse(object):
         def __init__(self):
             self.contents = ["chair", "bike", "flashlight", "laptop", "couch"]
@@ -339,10 +341,9 @@ make the code now look like this (:file:`warehouse.py`)::
 
 
     def main():
-        warehouse = Warehouse()
         Pyro4.Daemon.serveSimple(
                 {
-                    warehouse: "example.warehouse"
+                    Warehouse: "example.warehouse"
                 },
                 ns = False)
 

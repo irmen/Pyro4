@@ -9,9 +9,8 @@ if sys.version_info < (3, 0):
     input = raw_input
 
 uri = input("Enter the uri of the warehouse: ").strip()
-
-with Pyro4.Proxy(uri) as warehouse:
-    janet = Person("Janet")
-    henry = Person("Henry")
-    janet.visit(warehouse)
-    henry.visit(warehouse)
+warehouse = Pyro4.Proxy(uri)
+janet = Person("Janet")
+henry = Person("Henry")
+janet.visit(warehouse)
+henry.visit(warehouse)
