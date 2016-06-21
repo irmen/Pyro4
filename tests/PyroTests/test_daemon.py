@@ -156,8 +156,7 @@ class DaemonTests(unittest.TestCase):
         old_servertype = Pyro4.config.SERVERTYPE
         Pyro4.config.SERVERTYPE = "thread"
         with Pyro4.core.Daemon(port=0) as d:
-            sock = d.sock
-            self.assertIn(sock, d.sockets, "daemon's socketlist should contain the server socket")
+            self.assertIn(d.sock, d.sockets, "daemon's socketlist should contain the server socket")
             self.assertTrue(len(d.sockets) == 1, "daemon without connections should have just 1 socket")
         Pyro4.config.SERVERTYPE = old_servertype
 
@@ -165,8 +164,7 @@ class DaemonTests(unittest.TestCase):
         old_servertype = Pyro4.config.SERVERTYPE
         Pyro4.config.SERVERTYPE = "multiplex"
         with Pyro4.core.Daemon(port=0) as d:
-            sock = d.sock
-            self.assertIn(sock, d.sockets, "daemon's socketlist should contain the server socket")
+            self.assertIn(d.sock, d.sockets, "daemon's socketlist should contain the server socket")
             self.assertTrue(len(d.sockets) == 1, "daemon without connections should have just 1 socket")
         Pyro4.config.SERVERTYPE = old_servertype
 
@@ -215,8 +213,7 @@ class DaemonTests(unittest.TestCase):
             self.assertIn("newname", d.objectsById)
 
     def testRegisterEtc(self):
-        d = Pyro4.core.Daemon(port=0)
-        try:
+        with Pyro4.core.Daemon(port=0) as d:
             self.assertEqual(1, len(d.objectsById))
             o1 = MyObj("object1")
             o2 = MyObj("object2")
@@ -269,8 +266,17 @@ class DaemonTests(unittest.TestCase):
             uri = d.register(MyObj("xyz"), "test.register")
             self.assertEqual("test.register", uri.object)
 
-        finally:
-            d.close()
+    def testRegisterClass(self):
+        with Pyro4.core.Daemon(port=0) as d:
+            self.assertEqual(1, len(d.objectsById))
+            d.register(MyObj)
+            with self.assertRaises(DaemonError):
+                d.register(MyObj)
+            self.assertEqual(2, len(d.objectsById))
+            d.uriFor(MyObj)
+            # unregister:
+            d.unregister(MyObj)
+            self.assertEqual(1, len(d.objectsById))
 
     def testRegisterUnicode(self):
         with Pyro4.core.Daemon(port=0) as d:
@@ -544,13 +550,13 @@ class DaemonTests(unittest.TestCase):
         class TestClass:
             def __init__(self, name):
                 self.name = name
-        conn = Pyro4.socketutil.SocketConnection(socket.socket())
-        d = Pyro4.core.Daemon()
-        instance1 = d._getInstance(TestClass, conn)
-        instance2 = d._getInstance(TestClass, conn)
-        self.assertIsNot(instance1, instance2)
-        self.assertFalse(TestClass in d._pyroInstances)
-        self.assertFalse(TestClass in conn.pyroInstances)
+        with Pyro4.socketutil.SocketConnection(socket.socket()) as conn:
+            with Pyro4.core.Daemon() as d:
+                instance1 = d._getInstance(TestClass, conn)
+                instance2 = d._getInstance(TestClass, conn)
+                self.assertIsNot(instance1, instance2)
+                self.assertFalse(TestClass in d._pyroInstances)
+                self.assertFalse(TestClass in conn.pyroInstances)
 
     def testInstanceCreationWrongType(self):
         def creator(clazz):
@@ -559,10 +565,10 @@ class DaemonTests(unittest.TestCase):
         class TestClass:
             def method(self):
                 pass
-        conn = Pyro4.socketutil.SocketConnection(socket.socket())
-        d = Pyro4.core.Daemon()
-        with self.assertRaises(TypeError):
-            d._getInstance(TestClass, conn)
+        with Pyro4.socketutil.SocketConnection(socket.socket()) as conn:
+            with Pyro4.core.Daemon() as d:
+                with self.assertRaises(TypeError):
+                    d._getInstance(TestClass, conn)
 
     def testCombine(self):
         d1 = Pyro4.core.Daemon()
