@@ -105,6 +105,7 @@ to methods that are marked with ``@Pyro4.oneway`` on the server, will happen as 
 
     import Pyro4
 
+    @Pyro4.expose
     class PyroService(object):
 
         def normal_method(self, args):
@@ -132,29 +133,28 @@ To publish a regular Python object and turn it into a Pyro object,
 you have to tell Pyro about it. After that, your code has to tell Pyro to start listening for incoming
 requests and to process them. Both are handled by the *Pyro daemon*.
 
-In its most basic form, you create one or more objects that you want to publish as Pyro objects,
-you create a daemon, register the object(s) with the daemon, and then enter the daemon's request loop::
+In its most basic form, you create one or more classes that you want to publish as Pyro objects,
+you create a daemon, register the class(es) with the daemon, and then enter the daemon's request loop::
 
     import Pyro4
 
+    @Pyro4.expose
     class MyPyroThing(object):
         # ... methods that can be called go here...
         pass
 
-    thing = MyPyroThing()
     daemon = Pyro4.Daemon()
-    uri = daemon.register(thing)
+    uri = daemon.register(MyPyroThing)
     print(uri)
     daemon.requestLoop()
 
-When publising objects directly like this,  Pyro will use that single
+When publising classes directly like this,  Pyro will create an instance of it and use that single
 object to handle *all* remote method calls. You may need to consider what this
 means when your object is called concurrently from multiple threads,
 see :ref:`object_concurrency`.
 
-There's another more advanced way to register objects with Pyro, that lets you control more precisely
-when and for how long Pyro will create an instance of your Pyro class. See :ref:`server-instancemode` below,
-for more details.
+It is possible to control more precisely when and for how long Pyro will create an instance of your Pyro class.
+See :ref:`server-instancemode` below, for more details.
 
 Anyway, when you run the code printed above, the uri will be printed and the server sits waiting for requests.
 The uri that is being printed looks a bit like this: ``PYRO:obj_dcf713ac20ce4fb2a6e72acaeba57dfd@localhost:51850``
@@ -181,6 +181,14 @@ Client programs use these uris to access the specific Pyro objects.
 
     * types that don't allow custom attributes, such as the builtin types (``str`` and ``int`` for instance)
     * types with ``__slots__`` (a possible way around this is to add Pyro's custom attributes to your ``__slots__``, but that isn't very nice)
+
+.. note::
+    Most of the the time a Daemon will keep running. However it's still possible to nicely free its resources
+    when the request loop terminates by simply using it as a context manager in a ``with`` statement, like so::
+
+        with Pyro4.Daemon() as daemon:
+            daemon.register(...)
+            daemon.requestLoop()
 
 
 .. index::
@@ -254,6 +262,7 @@ The code above could also be written as::
 
     import Pyro4
 
+    @Pyro4.expose
     class MyPyroThing(object):
         pass
 
@@ -319,7 +328,7 @@ configuration. Then provide it to this function using the ``daemon`` parameter. 
     custom_daemon = Pyro4.Daemon(host="example", nathost="example")    # some additional custom configuration
     Pyro4.Daemon.serveSimple(
         {
-            MyPyroThing(): None
+            MyPyroThing: None
         },
         daemon = custom_daemon)
 
@@ -401,6 +410,7 @@ Server code::
 
     import Pyro4
 
+    @Pyro4.expose
     class Thing(object):
         def method(self, arg):
             return arg*2
@@ -414,7 +424,7 @@ Server code::
     # ------ alternatively, using serveSimple -----
     Pyro4.Daemon.serveSimple(
         {
-            Thing(): None
+            Thing: None
         },
         ns=False, verbose=True)
 
@@ -437,6 +447,7 @@ Server code::
 
     import Pyro4
 
+    @Pyro4.expose
     class Thing(object):
         def method(self, arg):
             return arg*2
@@ -444,14 +455,14 @@ Server code::
     # ------ normal code ------
     daemon = Pyro4.Daemon(host="yourhostname")
     ns = Pyro4.locateNS()
-    uri = daemon.register(Thing())
+    uri = daemon.register(Thing)
     ns.register("mythingy", uri)
     daemon.requestLoop()
 
     # ------ alternatively, using serveSimple -----
     Pyro4.Daemon.serveSimple(
         {
-            Thing(): "mythingy"
+            Thing: "mythingy"
         },
         ns=True, verbose=True, host="yourhostname")
 
