@@ -28,8 +28,8 @@ Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
 
 .. _decorating-pyro-class:
 
-Creating a Pyro class and using the Pyro4 decorators
-====================================================
+Creating a Pyro class and using the Pyro4 decorators to expose classes and methods
+==================================================================================
 
 In the spirit of being secure by default, Pyro doesn't allow remote access to anything of your class unless
 explicitly told to do so. It will never allow remote access to private methods and attributes.
@@ -89,9 +89,15 @@ Here's a piece of example code that shows how a partially exposed Pyro class may
     If you cannot (or don't want to) change your code to be compatible with the new behavior, you can set
     the ``REQUIRE_EXPOSE`` config item back to ``False`` (it is now ``True`` by default). This will restore
     the old behavior.
+
     Notice that it has been possible for a long time already for older code to utilize
-    the ``@export`` decorator and the current, safer, behavior by having ``REQUIRE_EXPOSE`` set to ``True``.
+    the ``@expose`` decorator and the current, safer, behavior by having ``REQUIRE_EXPOSE`` set to ``True``.
     That choice has now simply become the default.
+    Before upgrading to Pyro 4.46 or newer you can try setting it to ``True`` yourself and
+    then adding ``@expose`` decorators to your Pyro classes or methods as required. Once everything
+    works as it should you can then effortlessly upgrade Pyro itself.
+
+
 
 .. index:: oneway decorator
 

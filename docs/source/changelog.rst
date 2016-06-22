@@ -11,10 +11,7 @@ Change Log
 
 - Backwards incompatible behavior change: in the spirit of 'secure by default', it's now required to use ``@expose``
   on things you want to expose via Pyro. This is because the REQUIRE_EXPOSE config item is now True by default.
-  You can set it back to FALSE if you have to revert to the previous (less secure) behavior where everything is exposed.
-  But the better and future proof solution is to add @expose to your code on the classes/methods/properties
-  that must be exposed, if you haven't done that already.
-  Also, the REQUIRE_EXPOSE config item may be removed one day in a future version.
+  The server code chapter contains details about this and how you can best approach this upgrade issue.
 - blobtransfer example added.
 - improved the docs on binary data transfer a bit.
 - code now uses set literals instead of old fashioned set([...])
