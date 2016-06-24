@@ -14,7 +14,8 @@ import threading
 import uuid
 import base64
 import Pyro4.futures
-from Pyro4 import errors, threadutil, socketutil, util, constants, message
+from Pyro4 import (
+    errors, threadutil, socketutil, util, constants, message, serializers)
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 
@@ -218,7 +219,7 @@ class Proxy(object):
         self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
         self.__pyroLock = threadutil.Lock()
         self.__pyroConnLock = threadutil.RLock()   # reentrant lock because pyroInvoke (or rather, pyroRelease) may lock it from within pyroCreateConnection
-        util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
+        serializers.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
         self.__async = False
 
     @property
@@ -389,7 +390,7 @@ class Proxy(object):
         if self._pyroConnection is None:
             # rebind here, don't do it from inside the invoke because deadlock will occur
             self.__pyroCreateConnection()
-        serializer = util.get_serializer(Pyro4.config.SERIALIZER)
+        serializer = serializers.get_serializer(Pyro4.config.SERIALIZER)
         data, compressed = serializer.serializeCall(
             objectId or self._pyroConnection.objectId, methodname, vargs, kwargs,
             compress=Pyro4.config.COMPRESSION)
@@ -419,7 +420,7 @@ class Proxy(object):
                     if msg.annotations:
                         self._pyroResponseAnnotations(msg.annotations, msg.type)
                     if self._pyroRawWireResponse:
-                        return util.SerializerBase.decompress_if_needed(msg)
+                        return serializers.SerializerBase.decompress_if_needed(msg)
                     data = serializer.deserializeData(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
                     if msg.flags & message.FLAGS_EXCEPTION:
                         if sys.platform == "cli":
@@ -464,7 +465,8 @@ class Proxy(object):
                     sock = socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout, nodelay=Pyro4.config.SOCK_NODELAY)
                     conn = socketutil.SocketConnection(sock, uri.object)
                     # Do handshake.
-                    serializer = util.get_serializer(Pyro4.config.SERIALIZER)
+                    serializer = serializers.get_serializer(
+                        Pyro4.config.SERIALIZER)
                     data = {"handshake": self._pyroHandshake}
                     if Pyro4.config.METADATA:
                         # the object id is only used/needed when piggybacking the metadata on the connection response
@@ -500,7 +502,8 @@ class Proxy(object):
                 else:
                     handshake_response = "?"
                     if msg.data:
-                        serializer = util.get_serializer_by_id(msg.serializer_id)
+                        serializer = serializers.get_serializer_by_id(
+                            msg.serializer_id)
                         handshake_response = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
                     if msg.type == message.MSG_CONNECTFAIL:
                         if sys.version_info < (3, 0):
@@ -925,7 +928,9 @@ class Daemon(object):
         self.__loopstopped = threadutil.Event()
         self.__loopstopped.set()
         # assert that the configured serializers are available, and remember their ids:
-        self.__serializer_ids = {util.get_serializer(ser_name).serializer_id for ser_name in Pyro4.config.SERIALIZERS_ACCEPTED}
+        self.__serializer_ids = {
+            serializers.get_serializer(ser_name).serializer_id
+            for ser_name in Pyro4.config.SERIALIZERS_ACCEPTED}
         log.debug("accepted serializers: %s" % Pyro4.config.SERIALIZERS_ACCEPTED)
         log.debug("pyro protocol version: %d  pickle version: %d" % (constants.PROTOCOL_VERSION, Pyro4.config.PICKLE_PROTOCOL_VERSION))
         self.__pyroHmacKey = None
@@ -1053,7 +1058,7 @@ class Daemon(object):
                 current_context.correlation_id = uuid.uuid1()
             serializer_id = msg.serializer_id
             msg_seq = msg.seq
-            serializer = util.get_serializer_by_id(serializer_id)
+            serializer = serializers.get_serializer_by_id(serializer_id)
             data = serializer.deserializeData(msg.data, msg.flags & Pyro4.message.FLAGS_COMPRESSED)
             handshake_response = self.validateHandshake(conn, data["handshake"])
             if msg.flags & message.FLAGS_META_ON_CONNECT:
@@ -1072,7 +1077,7 @@ class Daemon(object):
                 flags |= message.FLAGS_COMPRESSED
         except Exception as x:
             log.debug("handshake failed, reason:", exc_info=True)
-            serializer = util.get_serializer_by_id(serializer_id)
+            serializer = serializers.get_serializer_by_id(serializer_id)
             data, compressed = serializer.serializeData(str(x), False)
             msgtype = message.MSG_CONNECTFAIL
             flags = message.FLAGS_COMPRESSED if compressed else 0
@@ -1107,7 +1112,7 @@ class Daemon(object):
         """
         request_flags = 0
         request_seq = 0
-        request_serializer_id = util.MarshalSerializer.serializer_id
+        request_serializer_id = serializers.MarshalSerializer.serializer_id
         wasBatched = False
         isCallback = False
         try:
@@ -1135,7 +1140,7 @@ class Daemon(object):
                 return
             if msg.serializer_id not in self.__serializer_ids:
                 raise errors.SerializeError("message used serializer that is not accepted: %d" % msg.serializer_id)
-            serializer = util.get_serializer_by_id(msg.serializer_id)
+            serializer = serializers.get_serializer_by_id(msg.serializer_id)
             objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
             current_context.client = conn
             current_context.client_sock_addr = conn.sock.getpeername()   # store this because on oneway calls the socket will be disconnected
@@ -1261,7 +1266,7 @@ class Daemon(object):
         exc_value._pyroTraceback = tbinfo
         if sys.platform == "cli":
             util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
-        serializer = util.get_serializer_by_id(serializer_id)
+        serializer = serializers.get_serializer_by_id(serializer_id)
         try:
             data, compressed = serializer.serializeData(exc_value)
         except:
@@ -1312,7 +1317,7 @@ class Daemon(object):
         if Pyro4.config.AUTOPROXY:
             # register a custom serializer for the type to automatically return proxies
             # we need to do this for all known serializers
-            for ser in util._serializers.values():
+            for ser in serializers._serializers.values():
                 ser.register_type_replacement(type(obj_or_class), pyroObjectToAutoProxy)
         # register the object/class in the mapping
         self.objectsById[obj_or_class._pyroId] = obj_or_class
@@ -1437,7 +1442,7 @@ try:
         # Override the default way that a Pyro URI/proxy/daemon is serialized.
         # Because it defines a __getstate__ it would otherwise just become a tuple,
         # and not be deserialized as a class.
-        d = util.SerializerBase.class_to_dict(obj)
+        d = serializers.SerializerBase.class_to_dict(obj)
         serializer.ser_builtins_dict(d, stream, level)
 
     # register the special serializers for the pyro objects with Serpent
@@ -1456,10 +1461,15 @@ def serialize_core_object_to_dict(obj):
     }
 
 
-util.SerializerBase.register_class_to_dict(URI, serialize_core_object_to_dict, serpent_too=False)
-util.SerializerBase.register_class_to_dict(Proxy, serialize_core_object_to_dict, serpent_too=False)
-util.SerializerBase.register_class_to_dict(Daemon, serialize_core_object_to_dict, serpent_too=False)
-util.SerializerBase.register_class_to_dict(Pyro4.futures._ExceptionWrapper, Pyro4.futures._ExceptionWrapper.__serialized_dict__, serpent_too=False)
+serializers.SerializerBase.register_class_to_dict(
+    URI, serialize_core_object_to_dict, serpent_too=False)
+serializers.SerializerBase.register_class_to_dict(
+    Proxy, serialize_core_object_to_dict, serpent_too=False)
+serializers.SerializerBase.register_class_to_dict(
+    Daemon, serialize_core_object_to_dict, serpent_too=False)
+serializers.SerializerBase.register_class_to_dict(
+    Pyro4.futures._ExceptionWrapper,
+    Pyro4.futures._ExceptionWrapper.__serialized_dict__, serpent_too=False)
 
 
 def _log_wiredata(logger, text, msg):

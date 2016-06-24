@@ -37,7 +37,7 @@ class ConnectionMock(object):
 
 class MessageTestsHmac(unittest.TestCase):
     def setUp(self):
-        self.ser = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
+        self.ser = Pyro4.get_serializer(Pyro4.config.SERIALIZER)
 
     def testMessage(self):
         Message(99, b"", self.ser.serializer_id, 0, 0, hmac_key=b"secret")  # doesn't check msg type here

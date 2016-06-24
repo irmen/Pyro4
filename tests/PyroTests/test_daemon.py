@@ -14,9 +14,8 @@ import Pyro4.naming
 import Pyro4.constants
 import Pyro4.socketutil
 import Pyro4.message
-from Pyro4.util import get_serializer_by_id
 from Pyro4.errors import DaemonError, PyroError
-from Pyro4 import current_context
+from Pyro4 import current_context, get_serializer_by_id
 from testsupport import *
 
 

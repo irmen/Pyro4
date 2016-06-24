@@ -12,6 +12,7 @@ except ImportError:
 import Pyro4
 from Pyro4 import threadutil
 import Pyro4.util
+from Pyro4.serializers import SerializerBase
 
 
 class VisibleRobot(robot.Robot):
@@ -256,7 +257,7 @@ class PyroDaemonThread(threadutil.Thread):
 
 
 # register the Robot class with Pyro's serializers:
-Pyro4.util.SerializerBase.register_class_to_dict(VisibleRobot, robot.Robot.robot_to_dict)
+SerializerBase.register_class_to_dict(VisibleRobot, robot.Robot.robot_to_dict)
 
 
 def main():

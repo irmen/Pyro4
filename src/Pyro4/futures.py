@@ -10,6 +10,7 @@ import sys
 import functools
 import logging
 import Pyro4.util
+import Pyro4.serializers
 from Pyro4 import threadutil
 
 
@@ -176,5 +177,5 @@ class _ExceptionWrapper(object):
         """serialized form as a dictionary"""
         return {
             "__class__": "Pyro4.futures._ExceptionWrapper",
-            "exception": Pyro4.util.SerializerBase.class_to_dict(self.exception)
+            "exception": Pyro4.serializers.SerializerBase.class_to_dict(self.exception)
         }

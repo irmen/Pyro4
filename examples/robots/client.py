@@ -3,6 +3,7 @@ import sys
 import robot
 import remote
 import Pyro4
+from Pyro4.serializers import SerializerBase
 
 
 class DrunkenGameObserver(remote.GameObserver):
@@ -62,8 +63,8 @@ observers = {
 
 
 # register the Robot class with Pyro's serializers:
-Pyro4.util.SerializerBase.register_class_to_dict(robot.Robot, robot.Robot.robot_to_dict)
-Pyro4.util.SerializerBase.register_dict_to_class("robot.Robot", robot.Robot.dict_to_robot)
+SerializerBase.register_class_to_dict(robot.Robot, robot.Robot.robot_to_dict)
+SerializerBase.register_dict_to_class("robot.Robot", robot.Robot.dict_to_robot)
 
 
 def main(args):

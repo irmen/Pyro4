@@ -28,7 +28,7 @@ except ImportError:
     import Queue as queue
 import Pyro4
 import Pyro4.errors
-from Pyro4.util import SerializerBase
+from Pyro4.serializers import SerializerBase
 from . import PYRO_MSGBUS_NAME
 
 

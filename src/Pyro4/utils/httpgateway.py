@@ -34,6 +34,7 @@ import Pyro4.errors
 import Pyro4.message
 import Pyro4.util
 import Pyro4.constants
+import Pyro4.serializers
 from Pyro4.util import json     # don't import directly, we want to use the JSON_MODULE config item
 
 
@@ -246,7 +247,7 @@ def process_pyro_request(environ, path, parameters, start_response):
         print("ERROR handling {0} with params {1}:".format(path, parameters), file=stderr)
         traceback.print_exc(file=stderr)
         start_response('500 Internal Server Error', [('Content-Type', 'application/json; charset=utf-8')])
-        reply = json.dumps(Pyro4.util.SerializerBase.class_to_dict(x)).encode("utf-8")
+        reply = json.dumps(Pyro4.serializers.SerializerBase.class_to_dict(x)).encode("utf-8")
         return [reply]
 
 
