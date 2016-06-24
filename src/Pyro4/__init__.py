@@ -67,3 +67,4 @@ from Pyro4.core import URI, Proxy, Daemon, callback, batch, async, oneway, expos
 from Pyro4.naming import locateNS, resolve
 from Pyro4.futures import Future
 from Pyro4.constants import VERSION as __version__
+from Pyro4.serializers import get_serializer, get_serializer_by_id

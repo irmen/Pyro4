@@ -1,6 +1,6 @@
 from __future__ import print_function
 import Pyro4
-from Pyro4.util import SerializerBase
+from Pyro4.serializers import SerializerBase
 import mycustomclasses
 
 # use serpent

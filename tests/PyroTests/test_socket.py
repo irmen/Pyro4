@@ -11,7 +11,7 @@ import platform
 import time
 import unittest
 import Pyro4.socketutil as SU
-from Pyro4 import threadutil, errors
+from Pyro4 import threadutil, errors, get_serializer_by_id
 from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.core import Daemon
@@ -468,7 +468,7 @@ class TestServerDOS_multiplex(unittest.TestCase):
             csock = SU.createSocket(connect=(host, port))
             conn = SU.SocketConnection(csock, "uri")
             # send the handshake/connect data
-            ser = Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
+            ser = get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
             data, _ = ser.serializeData({"handshake": "hello", "object": Pyro4.constants.DAEMON_NAME}, False)
             msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECT, data, Pyro4.message.SERIALIZER_MARSHAL, 0, 0)
             conn.send(msg.to_bytes())

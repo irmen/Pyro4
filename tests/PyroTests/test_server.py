@@ -12,7 +12,8 @@ import Pyro4.core
 import Pyro4.errors
 import Pyro4.util
 import Pyro4.message
-from Pyro4 import threadutil, current_context
+from Pyro4 import (
+    threadutil, current_context, get_serializer, get_serializer_by_id)
 from testsupport import *
 
 
@@ -112,7 +113,7 @@ class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
         # receive the client's handshake data
         msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_CONNECT], self._pyroHmacKey)
         # return a CONNECTFAIL
-        serializer = Pyro4.util.get_serializer_by_id(msg.serializer_id)
+        serializer = get_serializer_by_id(msg.serializer_id)
         data, _ = serializer.serializeData("rigged connection failure", compress=False)
         msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECTFAIL, data, serializer.serializer_id, 0, 1, hmac_key=self._pyroHmacKey)
         conn.send(msg.to_bytes())
@@ -824,7 +825,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
 
     def testSerializeConnected(self):
         # online serialization tests
-        ser = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
+        ser = get_serializer(Pyro4.config.SERIALIZER)
         proxy = Pyro4.core.Proxy(self.objectUri)
         proxy._pyroBind()
         self.assertIsNotNone(proxy._pyroConnection)

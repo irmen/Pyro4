@@ -17,6 +17,7 @@ import Pyro4.errors
 import Pyro4.core
 import Pyro4.futures
 import Pyro4.message
+import Pyro4.serializers
 from testsupport import *
 
 
@@ -26,14 +27,14 @@ class SerializeTests_pickle(unittest.TestCase):
     def setUp(self):
         self.previous_serializer = Pyro4.config.SERIALIZER
         Pyro4.config.SERIALIZER = self.SERIALIZER
-        self.ser = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
+        self.ser = Pyro4.get_serializer(Pyro4.config.SERIALIZER)
         Pyro4.config.REQUIRE_EXPOSE = True
 
     def tearDown(self):
         Pyro4.config.SERIALIZER = self.previous_serializer
 
     def testSerItself(self):
-        s = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
+        s = Pyro4.get_serializer(Pyro4.config.SERIALIZER)
         p, _ = self.ser.serializeData(s)
         s2 = self.ser.deserializeData(p)
         self.assertEqual(s, s2)
@@ -300,21 +301,21 @@ class SerializeTests_pickle(unittest.TestCase):
         if self.SERIALIZER in ("pickle", "dill"):
             self.skipTest("pickle and dill simply serialize custom classes just fine")
         o = MyThingPartlyExposed("test")
-        Pyro4.util.SerializerBase.register_class_to_dict(MyThingPartlyExposed, mything_dict)
-        Pyro4.util.SerializerBase.register_dict_to_class("CUSTOM-Mythingymabob", mything_creator)
+        Pyro4.serializers.SerializerBase.register_class_to_dict(MyThingPartlyExposed, mything_dict)
+        Pyro4.serializers.SerializerBase.register_dict_to_class("CUSTOM-Mythingymabob", mything_creator)
         s, c = self.ser.serializeData(o)
         o2 = self.ser.deserializeData(s, c)
         self.assertIsInstance(o2, MyThingPartlyExposed)
         self.assertEqual("test", o2.name)
         # unregister the deserializer
-        Pyro4.util.SerializerBase.unregister_dict_to_class("CUSTOM-Mythingymabob")
+        Pyro4.serializers.SerializerBase.unregister_dict_to_class("CUSTOM-Mythingymabob")
         try:
             self.ser.deserializeData(s, c)
             self.fail("must fail")
         except Pyro4.errors.ProtocolError:
             pass  # ok
         # unregister the serializer
-        Pyro4.util.SerializerBase.unregister_class_to_dict(MyThingPartlyExposed)
+        Pyro4.serializers.SerializerBase.unregister_class_to_dict(MyThingPartlyExposed)
         s, c = self.ser.serializeData(o)
         try:
             self.ser.deserializeData(s, c)
@@ -411,7 +412,7 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(999, e2.custom_attribute)
 
     def testSerializeSpecialException(self):
-        self.assertIn("GeneratorExit", Pyro4.util.all_exceptions)
+        self.assertIn("GeneratorExit", Pyro4.serializers.all_exceptions)
         e = GeneratorExit()
         d, c = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(d, c)
@@ -517,7 +518,7 @@ class SerializeTests_serpent(SerializeTests_pickle):
         def recreate_OrderedDict(name, values):
             self.assertEqual("collections.OrderedDict", name)
             return collections.OrderedDict(values["items"])
-        Pyro4.util.SerializerBase.register_dict_to_class("collections.OrderedDict", recreate_OrderedDict)
+        Pyro4.serializers.SerializerBase.register_dict_to_class("collections.OrderedDict", recreate_OrderedDict)
         ser, compressed = self.ser.serializeData(od)
         self.assertIn(b"collections.OrderedDict", ser)
         self.assertIn(b"[('a',1),('b',2),('c',3)]", ser)
@@ -576,16 +577,16 @@ class SerializeTests_marshal(SerializeTests_pickle):
 
 class GenericTests(unittest.TestCase):
     def testSerializersAvailable(self):
-        Pyro4.util.get_serializer("pickle")
-        Pyro4.util.get_serializer("marshal")
+        Pyro4.get_serializer("pickle")
+        Pyro4.get_serializer("marshal")
         try:
             import json
-            Pyro4.util.get_serializer("json")
+            Pyro4.get_serializer("json")
         except ImportError:
             pass
         try:
             import serpent
-            Pyro4.util.get_serializer("serpent")
+            Pyro4.get_serializer("serpent")
         except ImportError:
             pass
         try:
@@ -593,25 +594,25 @@ class GenericTests(unittest.TestCase):
             if platform.python_implementation() in ('PyPy', 'IronPython'):
                 raise ImportError('Currently dill is not supported with IronPython and PyPy')
             import dill
-            Pyro4.util.get_serializer("dill")
+            Pyro4.get_serializer("dill")
         except ImportError:
             pass
 
     def testSerializersAvailableById(self):
-        Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_PICKLE)
+        Pyro4.get_serializer_by_id(Pyro4.message.SERIALIZER_PICKLE)
         import platform
         if platform.python_implementation() not in ('PyPy', 'IronPython'):
-            Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_DILL)
-        Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
-        self.assertRaises(Pyro4.errors.ProtocolError, lambda: Pyro4.util.get_serializer_by_id(9999999))
+            Pyro4.get_serializer_by_id(Pyro4.message.SERIALIZER_DILL)
+        Pyro4.get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
+        self.assertRaises(Pyro4.errors.ProtocolError, lambda: Pyro4.get_serializer_by_id(9999999))
 
     def testDictClassFail(self):
         o = pprint.PrettyPrinter(stream="dummy", width=42)
-        d = Pyro4.util.SerializerBase.class_to_dict(o)
+        d = Pyro4.serializers.SerializerBase.class_to_dict(o)
         self.assertEqual(42, d["_width"])
         self.assertEqual("pprint.PrettyPrinter", d["__class__"])
         try:
-            _ = Pyro4.util.SerializerBase.dict_to_class(d)
+            _ = Pyro4.serializers.SerializerBase.dict_to_class(d)
             self.fail("error expected")
         except Pyro4.errors.ProtocolError:
             pass
@@ -628,49 +629,49 @@ class GenericTests(unittest.TestCase):
             expected["__class__"] = "exceptions.ZeroDivisionError"
         else:
             expected["__class__"] = "builtins.ZeroDivisionError"
-        d = Pyro4.util.SerializerBase.class_to_dict(x)
+        d = Pyro4.serializers.SerializerBase.class_to_dict(x)
         self.assertEqual(expected, d)
         x.custom_attribute = 999
         expected["attributes"] = {"custom_attribute": 999}
-        d = Pyro4.util.SerializerBase.class_to_dict(x)
+        d = Pyro4.serializers.SerializerBase.class_to_dict(x)
         self.assertEqual(expected, d)
 
     def testDictClassOk(self):
         uri = Pyro4.core.URI("PYRO:object@host:4444")
-        d = Pyro4.util.SerializerBase.class_to_dict(uri)
+        d = Pyro4.serializers.SerializerBase.class_to_dict(uri)
         self.assertEqual("Pyro4.core.URI", d["__class__"])
         self.assertIn("state", d)
-        x = Pyro4.util.SerializerBase.dict_to_class(d)
+        x = Pyro4.serializers.SerializerBase.dict_to_class(d)
         self.assertIsInstance(x, Pyro4.core.URI)
         self.assertEqual(uri, x)
         self.assertEqual(4444, x.port)
         uri = Pyro4.core.URI("PYRO:12345@./u:/tmp/socketname")
-        d = Pyro4.util.SerializerBase.class_to_dict(uri)
+        d = Pyro4.serializers.SerializerBase.class_to_dict(uri)
         self.assertEqual("Pyro4.core.URI", d["__class__"])
         self.assertIn("state", d)
-        x = Pyro4.util.SerializerBase.dict_to_class(d)
+        x = Pyro4.serializers.SerializerBase.dict_to_class(d)
         self.assertIsInstance(x, Pyro4.core.URI)
         self.assertEqual(uri, x)
         self.assertEqual("/tmp/socketname", x.sockname)
 
     def testCustomDictClass(self):
         o = MyThingPartlyExposed("test")
-        Pyro4.util.SerializerBase.register_class_to_dict(MyThingPartlyExposed, mything_dict)
-        Pyro4.util.SerializerBase.register_dict_to_class("CUSTOM-Mythingymabob", mything_creator)
-        d = Pyro4.util.SerializerBase.class_to_dict(o)
+        Pyro4.serializers.SerializerBase.register_class_to_dict(MyThingPartlyExposed, mything_dict)
+        Pyro4.serializers.SerializerBase.register_dict_to_class("CUSTOM-Mythingymabob", mything_creator)
+        d = Pyro4.serializers.SerializerBase.class_to_dict(o)
         self.assertEqual("CUSTOM-Mythingymabob", d["__class__"])
         self.assertEqual("test", d["name"])
-        x = Pyro4.util.SerializerBase.dict_to_class(d)
+        x = Pyro4.serializers.SerializerBase.dict_to_class(d)
         self.assertIsInstance(x, MyThingPartlyExposed)
         self.assertEqual("test", x.name)
         # unregister the conversion functions and try again
-        Pyro4.util.SerializerBase.unregister_class_to_dict(MyThingPartlyExposed)
-        Pyro4.util.SerializerBase.unregister_dict_to_class("CUSTOM-Mythingymabob")
-        d_orig = Pyro4.util.SerializerBase.class_to_dict(o)
+        Pyro4.serializers.SerializerBase.unregister_class_to_dict(MyThingPartlyExposed)
+        Pyro4.serializers.SerializerBase.unregister_dict_to_class("CUSTOM-Mythingymabob")
+        d_orig = Pyro4.serializers.SerializerBase.class_to_dict(o)
         clsname = d_orig["__class__"]
         self.assertTrue(clsname.endswith("testsupport.MyThingPartlyExposed"))
         try:
-            _ = Pyro4.util.SerializerBase.dict_to_class(d)
+            _ = Pyro4.serializers.SerializerBase.dict_to_class(d)
             self.fail("should crash")
         except Pyro4.errors.ProtocolError:
             pass  # ok
@@ -680,7 +681,7 @@ class GenericTests(unittest.TestCase):
                 '__exception__': True,
                 'args': ('hello', 42),
                 'attributes': {"test_attribute": 99}}
-        exc = Pyro4.util.SerializerBase.dict_to_class(data)
+        exc = Pyro4.serializers.SerializerBase.dict_to_class(data)
         self.assertIsInstance(exc, ZeroDivisionError)
         self.assertEqual("ZeroDivisionError('hello', 42)", repr(exc))
         self.assertEqual(99, exc.test_attribute)
@@ -690,7 +691,7 @@ class GenericTests(unittest.TestCase):
                 '__exception__': True,
                 'args': ('hello', 42),
                 'attributes': {"test_attribute": 99}}
-        exc = Pyro4.util.SerializerBase.dict_to_class(data)
+        exc = Pyro4.serializers.SerializerBase.dict_to_class(data)
         self.assertIsInstance(exc, ZeroDivisionError)
         self.assertEqual("ZeroDivisionError('hello', 42)", repr(exc))
         self.assertEqual(99, exc.test_attribute)
@@ -700,7 +701,7 @@ class GenericTests(unittest.TestCase):
                 'args': ('hello', 42),
                 'attributes': {}}
         with self.assertRaises(Pyro4.errors.SerializeError) as cm:
-            _ = Pyro4.util.SerializerBase.dict_to_class(data)
+            _ = Pyro4.serializers.SerializerBase.dict_to_class(data)
         self.assertEqual("unsupported serialized class: builtins.ZeroDivisionError", str(cm.exception))
 
 

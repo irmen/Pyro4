@@ -1,7 +1,7 @@
 import random
 import sys
 import Pyro4
-from Pyro4.util import SerializerBase
+from Pyro4.serializers import SerializerBase
 from workitem import Workitem
 
 
