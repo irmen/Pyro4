@@ -35,6 +35,8 @@ except ImportError:
     log.warning("json serializer is not available")
     json = None
 try:
+    if platform.python_implementation() in ('PyPy', 'IronPython'):
+        raise ImportError('Currently dill is not supported with IronPython and PyPy')
     import dill
 except ImportError:
     log.warning("dill serializer is not available")
