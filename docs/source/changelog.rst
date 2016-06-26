@@ -9,12 +9,24 @@ Change Log
     The change mentioned below about ``@expose`` now being required by default
     requires a change in your (server-)code or configuration. Read on for details.
 
-- Backwards incompatible behavior change: in the spirit of 'secure by default', it's now required to use ``@expose``
+.. note::
+    Using ``@expose(...)`` on a class to set the ``instance_mode`` or/and ``instance_creator`` for that
+    class, also exposes ALL methods of that class. That is an unintended side-effect that will be fixed
+    in the next Pyro version. You can already fix your code right now to prepare for this. Read on for details.
+
+- ``@Pyro4.behavior`` decorator added that should now be used to set instance_mode and instance_creator instead of
+  using ``@Pyro4.expose``.  You can still use ``@expose`` in this release, but its arguments will be removed
+  in the next Pyro version.  So by then you have to have updated your code or it won't run anymore.
+  The fix is simple: replace all occurences of ``@expose(...)`` *where you set the ``instance_mode`` or/and ``instance_creator``*
+  on your Pyro class, by ``@behavior(...)`` -- and add new ``@expose`` decorations to the class or the methods
+  as required to properly expose them. Also read the next bullet.
+- *Backwards incompatible behavior change:* in the spirit of 'secure by default', it's now required to use ``@expose``
   on things you want to expose via Pyro. This is because the REQUIRE_EXPOSE config item is now True by default.
-  The server code chapter contains details about this and how you can best approach this upgrade issue.
+  The "servers" chapter contains details about this and how you can best approach this upgrade issue.
 - blobtransfer example added.
 - improved the docs on binary data transfer a bit.
 - code now uses set literals instead of old fashioned set([...])
+- removed the way outdated 'upgrading from Pyro3' chapter from the documentation.
 
 
 **Pyro 4.45**

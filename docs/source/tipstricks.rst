@@ -271,7 +271,7 @@ using the internal addresses::
 
     # running on server1.lan
     d = Pyro4.Daemon(port=9999, nathost="pyro.server.com", natport=5555)
-    uri = d.register(Something(), "thing")
+    uri = d.register(Something, "thing")
     print(uri)     # "PYRO:thing@pyro.server.com:5555"
 
 As you see, the URI now contains the external address.

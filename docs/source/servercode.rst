@@ -154,10 +154,9 @@ you create a daemon, register the class(es) with the daemon, and then enter the 
     print(uri)
     daemon.requestLoop()
 
-When publising classes directly like this,  Pyro will create an instance of it and use that single
-object to handle *all* remote method calls. You may need to consider what this
-means when your object is called concurrently from multiple threads,
-see :ref:`object_concurrency`.
+When publising your class like this,  Pyro will create a single instance of it and use that
+to handle *all* remote method calls. So the object can be called concurrently from multiple connections (threads)!
+See :ref:`object_concurrency` for more details about what this means.
 
 It is possible to control more precisely when and for how long Pyro will create an instance of your Pyro class.
 See :ref:`server-instancemode` below, for more details.
@@ -195,67 +194,6 @@ Client programs use these uris to access the specific Pyro objects.
         with Pyro4.Daemon() as daemon:
             daemon.register(...)
             daemon.requestLoop()
-
-
-.. index::
-    instance modes; instance_mode
-    instance modes; instance_creator
-.. _server-instancemode:
-
-Instance modes and Instance creation
-------------------------------------
-
-Instead of registering an *object* with the daemon, you can also register a *class* instead.
-When doing that, it is Pyro itself that creates an instance (object).
-This allows for more control over when and for how long Pyro creates objects.
-It is also the preferred way of registering your code with the daemon.
-
-Controlling the instance mode and creation is done via the ``instance_mode`` and ``instance_creator``
-parameters of the ``expose`` decorator, which was described earlier.
-You can control the instance mode regardless of this setting because it only influences what methods
-and attributes of the class are exposed.
-
-By default, Pyro will create an instance of your class per *session* (=proxy connection)
-Here is an example of registering a class that will have one new instance for every single method call instead::
-
-    import Pyro4
-
-    @Pyro4.expose(instance_mode="percall")
-    class MyPyroThing(object):
-        # ... methods that can be called go here...
-        pass
-
-    daemon = Pyro4.Daemon()
-    uri = daemon.register(MyPyroThing)
-    print(uri)
-    daemon.requestLoop()
-
-There are three possible choices for the ``instance_mode`` parameter:
-
-- ``session``: (the default) a new instance is created for every new proxy connection, and is reused for
-  all the calls during that particular proxy session. Other proxy sessions will deal with a different instance.
-- ``single``: a single instance will be created and used for all method calls, regardless what proxy
-  connection we're dealing with. This is the same as creating and registering a single object yourself
-  (the old style of registering code with the deaemon). Be aware that the methods on this object can be called
-  from separate threads concurrently.
-- ``percall``: a new instance is created for every single method call, and discarded afterwards.
-
-
-**Instance creation**
-
-.. sidebar:: Instance creation is lazy
-
-    When you register a class in this way, be aware that Pyro only creates an actual
-    instance of it when it is first needed. If nobody connects to the deamon requesting
-    the services of this class, no instance will ever be created.
-
-Normally Pyro will simply use a default parameterless constructor call to create the instance.
-If you need special initialization or the class's init method requires parameters, you have to specify
-an ``instance_creator`` callable as well. Pyro will then use that to create an instance of your class.
-It will call it with the class to create an instance of as the single parameter.
-
-See the :file:`instancemode` example to learn about various ways to use this.
-See the :file:`usersession` example to learn how you could use it to build user-bound resource access without concurrency problems.
 
 
 .. index:: publishing objects oneliner, serveSimple
@@ -381,7 +319,7 @@ You can let Pyro choose a unique object id for you, or provide a more readable o
 
     Registers an object with the daemon to turn it into a Pyro object.
 
-    :param obj_or_class: the instance or class to register
+    :param obj_or_class: the singleton instance or class to register (class is the preferred way)
     :param objectId: optional custom object id (must be unique). Default is to let Pyro create one for you.
     :type objectId: str or None
     :param force: optional flag to force registration, normally Pyro checks if an object had already been registered.
@@ -423,7 +361,7 @@ Server code::
 
     # ------ normal code ------
     daemon = Pyro4.Daemon()
-    uri = daemon.register(Thing())
+    uri = daemon.register(Thing)
     print("uri=",uri)
     daemon.requestLoop()
 
@@ -572,6 +510,69 @@ This will also break out of the request loop and allows your code to neatly clea
 and will also work on the threaded server type without any other requirements.
 
 If you are using your own event loop mechanism you have to use something else, depending on your own loop.
+
+
+.. index::
+    single: @Pyro4.behavior
+    instance modes; instance_mode
+    instance modes; instance_creator
+.. _server-instancemode:
+
+Controlling Instance modes and Instance creation
+================================================
+
+While it is possible to register a single singleton *object* with the daemon,
+it is actually preferred that you register a *class* instead.
+When doing that, it is Pyro itself that creates an instance (object) when it needs it.
+This allows for more control over when and for how long Pyro creates objects.
+
+Controlling the instance mode and creation is done by decorating your class with ``Pyro4.behavior``
+and setting its ``instance_mode`` or/and ``instance_creator`` parameters. (Notice that this
+decorator can only be used on a class definition, because these behavioral settings only make
+sense at that level).
+
+By default, Pyro will create an instance of your class per *session* (=proxy connection)
+Here is an example of registering a class that will have one new instance for *every single method call* instead::
+
+    import Pyro4
+
+    @Pyro4.behavior(instance_mode="percall")
+    class MyPyroThing(object):
+        @Pyro4.expose
+        def method(self):
+            return "something"
+
+    daemon = Pyro4.Daemon()
+    uri = daemon.register(MyPyroThing)
+    print(uri)
+    daemon.requestLoop()
+
+There are three possible choices for the ``instance_mode`` parameter:
+
+- ``session``: (the default) a new instance is created for every new proxy connection, and is reused for
+  all the calls during that particular proxy session. Other proxy sessions will deal with a different instance.
+- ``single``: a single instance will be created and used for all method calls, regardless what proxy
+  connection we're dealing with. This is the same as creating and registering a single object yourself
+  (the old style of registering code with the deaemon). Be aware that the methods on this object can be called
+  from separate threads concurrently.
+- ``percall``: a new instance is created for every single method call, and discarded afterwards.
+
+
+**Instance creation**
+
+.. sidebar:: Instance creation is lazy
+
+    When you register a class in this way, be aware that Pyro only creates an actual
+    instance of it when it is first needed. If nobody connects to the deamon requesting
+    the services of this class, no instance will ever be created.
+
+Normally Pyro will simply use a default parameterless constructor call to create the instance.
+If you need special initialization or the class's init method requires parameters, you have to specify
+an ``instance_creator`` callable as well. Pyro will then use that to create an instance of your class.
+It will call it with the class to create an instance of as the single parameter.
+
+See the :file:`instancemode` example to learn about various ways to use this.
+See the :file:`usersession` example to learn how you could use it to build user-bound resource access without concurrency problems.
 
 
 .. index:: automatic proxying

@@ -40,7 +40,6 @@ Contents
    flame.rst
    tipstricks.rst
    config.rst
-   upgrading.rst
    api.rst
    alternative.rst
    pyrolite.rst
