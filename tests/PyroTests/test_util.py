@@ -275,6 +275,24 @@ class TestMeta(unittest.TestCase):
         self.assertIn("attrs", keys)
         self.assertIn("oneway", keys)
 
+    def testGetExposedCacheWorks(self):
+        class Thingy(object):
+            def method1(self):
+                pass
+            @property
+            def prop(self):
+                return 1
+            def notexposed(self):
+                pass
+        m1 = Pyro4.util.get_exposed_members(Thingy, only_exposed=False)
+        def new_method(self, arg):
+            return arg
+        Thingy.new_method = new_method
+        m2 = Pyro4.util.get_exposed_members(Thingy, only_exposed=False)
+        self.assertEqual(m1, m2, "should still be equal because result from cache")
+        m2 = Pyro4.util.get_exposed_members(Thingy, only_exposed=False, use_cache=False)
+        self.assertNotEqual(m1, m2, "should not be equal because new result not from cache")
+
     def testPrivateNotExposed(self):
         o = MyThingFullExposed("irmen")
         m = Pyro4.util.get_exposed_members(o)

@@ -895,7 +895,7 @@ class DaemonObject(object):
             constants.DAEMON_NAME, self.daemon.locationStr, self.daemon.natLocationStr,
             len(self.daemon.objectsById), self.daemon.transportServer)
 
-    def get_metadata(self, objectId, as_lists=False):  # @todo cache?
+    def get_metadata(self, objectId, as_lists=False):
         """
         Get metadata for the given object (exposed methods, oneways, attributes).
         If you get an error in your proxy saying that 'DaemonObject' has no attribute 'get_metdata',

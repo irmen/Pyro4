@@ -27,6 +27,7 @@ Change Log
 - improved the docs on binary data transfer a bit.
 - code now uses set literals instead of old fashioned set([...])
 - removed the way outdated 'upgrading from Pyro3' chapter from the documentation.
+- Pyro4.util.get_exposed_members now has a cache which speeds up determining object metadata enormously on subsequent connections.
 
 
 **Pyro 4.45**
