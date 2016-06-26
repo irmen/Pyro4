@@ -7,7 +7,8 @@ Pyro4.config.SERVERTYPE = "thread"
 database = DummyDatabase()
 
 
-@Pyro4.expose(instance_mode="single")
+@Pyro4.behavior(instance_mode="single")
+@Pyro4.expose
 class SingletonDatabase(object):
     """
     This pyro object will exhibit problems when used from multiple proxies at the same time
@@ -33,7 +34,8 @@ class SingletonDatabase(object):
         return "hi"
 
 
-@Pyro4.expose(instance_mode="session")
+@Pyro4.behavior(instance_mode="session")
+@Pyro4.expose
 class SessionboundDatabase(object):
     """
     This pyro object will work fine when used from multiple proxies at the same time

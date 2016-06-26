@@ -25,6 +25,8 @@ class TestPackage(unittest.TestCase):
         self.assertIs(Pyro4.core.oneway, Pyro4.oneway)
         self.assertIs(Pyro4.core.async, Pyro4.async)
         self.assertIs(Pyro4.core.batch, Pyro4.batch)
+        self.assertIs(Pyro4.core.expose, Pyro4.expose)
+        self.assertIs(Pyro4.core.behavior, Pyro4.behavior)
         self.assertIs(Pyro4.naming.locateNS, Pyro4.locateNS)
         self.assertIs(Pyro4.naming.resolve, Pyro4.resolve)
 

@@ -350,6 +350,7 @@ class BroadcastServer(object):
         thread.setDaemon(True)
         thread.start()
         log.debug("broadcast server loop running in own thread")
+        return thread
 
     def __requestLoop(self):
         while self.running:

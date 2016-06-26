@@ -503,10 +503,19 @@ class DaemonTests(unittest.TestCase):
             Pyro4.config.NATHOST = None
             Pyro4.config.NATPORT = 0
 
+    def testBehaviorDefaults(self):
+        class TestClass:
+            pass
+        with Pyro4.core.Daemon() as d:
+            d.register(TestClass)
+            instance_mode, instance_creator = TestClass._pyroInstancing
+            self.assertEqual("session", instance_mode)
+            self.assertIsNone(instance_creator)
+
     def testInstanceCreationSingle(self):
         def creator(clazz):
             return clazz("testname")
-        @Pyro4.core.expose(instance_mode="single", instance_creator=creator)
+        @Pyro4.core.behavior(instance_mode="single", instance_creator=creator)
         class TestClass:
             def __init__(self, name):
                 self.name = name
@@ -520,33 +529,57 @@ class DaemonTests(unittest.TestCase):
         self.assertIs(instance1, d._pyroInstances[TestClass])
         self.assertFalse(TestClass in conn.pyroInstances)
 
+    def testBehaviorDefaultsIsSession(self):
+        class ClassWithDefaults:
+            def __init__(self):
+                self.name = "yep"
+        conn1 = Pyro4.socketutil.SocketConnection(socket.socket())
+        conn2 = Pyro4.socketutil.SocketConnection(socket.socket())
+        d = Pyro4.core.Daemon()
+        d.register(ClassWithDefaults)
+        instance1a = d._getInstance(ClassWithDefaults, conn1)
+        instance1b = d._getInstance(ClassWithDefaults, conn1)
+        instance2a = d._getInstance(ClassWithDefaults, conn2)
+        instance2b = d._getInstance(ClassWithDefaults, conn2)
+        self.assertIs(instance1a, instance1b)
+        self.assertIs(instance2a, instance2b)
+        self.assertIsNot(instance1a, instance2a)
+        self.assertFalse(ClassWithDefaults in d._pyroInstances)
+        self.assertTrue(ClassWithDefaults in conn1.pyroInstances)
+        self.assertTrue(ClassWithDefaults in conn2.pyroInstances)
+        self.assertIs(instance1a, conn1.pyroInstances[ClassWithDefaults])
+        self.assertIs(instance2a, conn2.pyroInstances[ClassWithDefaults])
+
     def testInstanceCreationSession(self):
         def creator(clazz):
             return clazz("testname")
-        @Pyro4.core.expose(instance_mode="session", instance_creator=creator)
-        class TestClass:
+        @Pyro4.core.behavior(instance_mode="session", instance_creator=creator)
+        class ClassWithDecorator:
             def __init__(self, name):
                 self.name = name
         conn1 = Pyro4.socketutil.SocketConnection(socket.socket())
         conn2 = Pyro4.socketutil.SocketConnection(socket.socket())
         d = Pyro4.core.Daemon()
-        instance1a = d._getInstance(TestClass, conn1)
-        instance1b = d._getInstance(TestClass, conn1)
-        instance2a = d._getInstance(TestClass, conn2)
-        instance2b = d._getInstance(TestClass, conn2)
+        d.register(ClassWithDecorator)
+        # check the class with the decorator first
+        instance1a = d._getInstance(ClassWithDecorator, conn1)
+        instance1b = d._getInstance(ClassWithDecorator, conn1)
+        instance2a = d._getInstance(ClassWithDecorator, conn2)
+        instance2b = d._getInstance(ClassWithDecorator, conn2)
         self.assertIs(instance1a, instance1b)
         self.assertIs(instance2a, instance2b)
         self.assertIsNot(instance1a, instance2a)
-        self.assertFalse(TestClass in d._pyroInstances)
-        self.assertTrue(TestClass in conn1.pyroInstances)
-        self.assertTrue(TestClass in conn2.pyroInstances)
-        self.assertIs(instance1a, conn1.pyroInstances[TestClass])
-        self.assertIs(instance2a, conn2.pyroInstances[TestClass])
+        self.assertFalse(ClassWithDecorator in d._pyroInstances)
+        self.assertTrue(ClassWithDecorator in conn1.pyroInstances)
+        self.assertTrue(ClassWithDecorator in conn2.pyroInstances)
+        self.assertIs(instance1a, conn1.pyroInstances[ClassWithDecorator])
+        self.assertIs(instance2a, conn2.pyroInstances[ClassWithDecorator])
+
 
     def testInstanceCreationPerCall(self):
         def creator(clazz):
             return clazz("testname")
-        @Pyro4.core.expose(instance_mode="percall", instance_creator=creator)
+        @Pyro4.core.behavior(instance_mode="percall", instance_creator=creator)
         class TestClass:
             def __init__(self, name):
                 self.name = name
@@ -561,7 +594,7 @@ class DaemonTests(unittest.TestCase):
     def testInstanceCreationWrongType(self):
         def creator(clazz):
             return Pyro4.core.URI("PYRO:test@localhost:9999")
-        @Pyro4.core.expose(instance_creator=creator)
+        @Pyro4.core.behavior(instance_creator=creator)
         class TestClass:
             def method(self):
                 pass

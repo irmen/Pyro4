@@ -397,7 +397,8 @@ def make_messagebus(clazz):
         raise ValueError("invalid storagetype")
 
 
-@Pyro4.expose(instance_mode="single", instance_creator=make_messagebus)
+@Pyro4.behavior(instance_mode="single", instance_creator=make_messagebus)
+@Pyro4.expose
 class MessageBus(object):
     def __init__(self, storage=None):
         if storage is None:

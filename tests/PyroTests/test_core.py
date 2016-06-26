@@ -11,6 +11,7 @@ import sys
 import time
 import uuid
 import unittest
+import warnings
 import Pyro4.configuration
 import Pyro4.core
 import Pyro4.errors
@@ -28,6 +29,13 @@ elif sys.version_info >= (3, 4):
 
 
 class CoreTests(unittest.TestCase):
+
+    def setUp(self):
+        warnings.filterwarnings("ignore")
+
+    def tearDown(self):
+        warnings.resetwarnings()
+
     def testProxyNoHmac(self):
         # check that proxy without hmac is possible
         with Pyro4.Proxy("PYRO:object@host:9999") as p:
@@ -564,36 +572,6 @@ class CoreTests(unittest.TestCase):
         p2._pyroRelease()
         p3._pyroRelease()
 
-    def testExposeInstancemodeInvalid(self):
-        with self.assertRaises(ValueError):
-            @Pyro4.core.expose(instance_mode="kaputt")
-            class TestClass:
-                def method(self):
-                    pass
-
-    def testExposeInstancemodeDefault(self):
-        @Pyro4.core.expose()
-        class TestClass:
-            def method(self):
-                pass
-
-    def testExposeInstancecreatorInvalid(self):
-        with self.assertRaises(TypeError):
-            @Pyro4.core.expose(instance_creator=12345)
-            class TestClass:
-                def method(self):
-                    pass
-
-    def testExposeInstancing(self):
-        def creator(clazz):
-            return clazz()
-        @Pyro4.core.expose(instance_mode="percall", instance_creator=creator)
-        class TestClass:
-            def method(self):
-                pass
-        im, ic = TestClass._pyroInstancing
-        self.assertEqual("percall", im)
-        self.assertIs(creator, ic)
 
     def testCallContext(self):
         ctx = Pyro4.core.current_context
@@ -607,6 +585,127 @@ class CoreTests(unittest.TestCase):
         ctx.from_global(d)
         self.assertEqual(corr_id2, Pyro4.current_context.correlation_id)
         Pyro4.current_context.correlation_id = None
+
+
+class ExposeDecoratorTests(unittest.TestCase):  # this is testing the deprecated use of @expose(...)
+    def testExposeInstancemodeInvalid(self):
+        with self.assertRaises(ValueError):
+            @Pyro4.core.expose(instance_mode="kaputt")
+            class TestClass:
+                def method(self):
+                    pass
+
+    def testExposeInstancemodeDefault(self):
+        @Pyro4.core.expose
+        class TestClass:
+            def method(self):
+                pass
+
+    def testExposeInstancecreatorInvalid(self):
+        with self.assertRaises(TypeError):
+            @Pyro4.core.expose(instance_creator=12345)
+            class TestClass:
+                def method(self):
+                    pass
+
+    def testExposeWithParamsOnMethodInvalid(self):
+        with self.assertRaises(SyntaxError):
+            class TestClass:
+                @Pyro4.core.expose(instance_mode="~invalidmode~")
+                def method(self):
+                    pass
+        with self.assertRaises(SyntaxError):
+            class TestClass:
+                @Pyro4.core.expose(instance_mode="percall")
+                def method(self):
+                    pass
+        with self.assertRaises(SyntaxError):
+            class TestClass:
+                @Pyro4.core.expose(instance_creator=float)
+                def method(self):
+                    pass
+        class TestClass:
+            @Pyro4.core.expose()
+            def method(self):
+                pass
+
+    def testExposeInstancing(self):
+        def creator(clazz):
+            return clazz()
+        @Pyro4.core.expose(instance_mode="percall", instance_creator=creator)
+        class TestClass:
+            def method(self):
+                pass
+        im, ic = TestClass._pyroInstancing
+        self.assertEqual("percall", im)
+        self.assertIs(creator, ic)
+
+
+class BehaviorDecoratorTests(unittest.TestCase):
+    def testBehaviorInstancemodeInvalid(self):
+        with self.assertRaises(ValueError):
+            @Pyro4.core.behavior(instance_mode="kaputt")
+            class TestClass:
+                def method(self):
+                    pass
+
+    def testBehaviorRequiresParams(self):
+        with self.assertRaises(SyntaxError) as x:
+            @Pyro4.core.behavior
+            class TestClass:
+                def method(self):
+                    pass
+        self.assertIn("is missing argument", str(x.exception))
+
+    def testBehaviorInstancecreatorInvalid(self):
+        with self.assertRaises(TypeError):
+            @Pyro4.core.behavior(instance_creator=12345)
+            class TestClass:
+                def method(self):
+                    pass
+
+    def testBehaviorOnMethodInvalid(self):
+        with self.assertRaises(TypeError):
+            class TestClass:
+                @Pyro4.core.behavior(instance_mode="~invalidmode~")
+                def method(self):
+                    pass
+        with self.assertRaises(TypeError):
+            class TestClass:
+                @Pyro4.core.behavior(instance_mode="percall", instance_creator=float)
+                def method(self):
+                    pass
+        with self.assertRaises(TypeError):
+            class TestClass:
+                @Pyro4.core.behavior()
+                def method(self):
+                    pass
+
+    def testBehaviorInstancing(self):
+        @Pyro4.core.behavior(instance_mode="percall", instance_creator=float)
+        class TestClass:
+            def method(self):
+                pass
+        im, ic = TestClass._pyroInstancing
+        self.assertEqual("percall", im)
+        self.assertIs(float, ic)
+
+    def testBehaviorWithExposeKeepsCorrectValues(self):
+        @Pyro4.behavior(instance_mode="percall", instance_creator=float)
+        @Pyro4.expose
+        class TestClass:
+            pass
+        im, ic = TestClass._pyroInstancing
+        self.assertEqual("percall", im)
+        self.assertIs(float, ic)
+
+        @Pyro4.expose
+        @Pyro4.behavior(instance_mode="percall", instance_creator=float)
+        class TestClass2:
+            pass
+        im, ic = TestClass2._pyroInstancing
+        self.assertEqual("percall", im)
+        self.assertIs(float, ic)
 
 
 class RemoteMethodTests(unittest.TestCase):

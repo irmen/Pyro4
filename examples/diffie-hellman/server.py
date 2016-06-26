@@ -20,12 +20,13 @@ uri = daemon.register(SecretStuff)
 ns.register("example.dh.secretstuff", uri)
 
 
-@Pyro4.expose(instance_mode="session")
+@Pyro4.behavior(instance_mode="session")
 class KeyExchange(object):
     def __init__(self):
         print("New KeyExchange, initializing Diffie-Hellman")
         self.dh = DiffieHellman(group=14)
 
+    @Pyro4.expose
     def exchange_key(self, other_public_key):
         print("received a public key, calculating shared secret...")
         self.dh.make_shared_secret_and_key(other_public_key)

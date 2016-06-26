@@ -13,13 +13,14 @@ import time
 import threading
 import uuid
 import base64
+import warnings
 import Pyro4.futures
 from Pyro4 import errors, threadutil, socketutil, util, constants, message
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 
 
-__all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "oneway"]
+__all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "behavior", "oneway"]
 
 if sys.version_info >= (3, 0):
     basestring = str
@@ -779,21 +780,29 @@ def oneway(method):
 
 def expose(instance_mode="session", instance_creator=None):
     """
-    Decorator to mark a method or class to be exposed for remote calls (relevant if REQUIRE_EXPOSE=True)
+    Decorator to mark a method or class to be exposed for remote calls (relevant when REQUIRE_EXPOSE=True)
     It can be used in to ways:
 
-    The normal style where you (optionally) provide some parameters such as instance_mode::
-
-        @expose( instance_mode="...", instance_creator=... )
-        def method(self,...)   or   class X()...
-
-    And the older style where you directly apply it without parameters on a method or class::
+    Directly applying it to a method or class::
 
         @expose
         def method(self, ...)  or  class X()...
 
+    And the deprecated form where you provide some parameters such as instance_mode::
+
+        @expose( instance_mode="...", instance_creator=... )
+        def class X()...
+
+    Don't use the latter form in new code, as it will also immediately expose all members of
+    the class that you're setting the instance mode on. Instead, use the @behavior
+    decorator to set the intstance modes, And strictly use @expose without arguments to control what
+    parts of your class are to be exposed.
+
     """
     def _expose(method_or_class, instance_mode, instance_creator):
+        if not inspect.isclass(method_or_class):
+            if instance_creator or instance_mode not in ("single", "session"):
+                raise SyntaxError("it's not allowed to use parameters on the @expose decorator when not applying it to a class")
         if instance_mode not in ("single", "session", "percall"):
             raise ValueError("invalid instance mode: "+instance_mode)
         if instance_creator and not callable(instance_creator):
@@ -808,8 +817,11 @@ def expose(instance_mode="session", instance_creator=None):
             raise AttributeError("exposing private names (starting with _) is not allowed")
         if inspect.isclass(method_or_class):
             clazz = method_or_class
+            if hasattr(clazz, "_pyroInstancing"):
+                instance_mode, instance_creator = clazz._pyroInstancing
+            else:
+                clazz._pyroInstancing = (instance_mode, instance_creator)
             log.debug("exposing all members of %r, instancemode %s, instancecreator %r.", clazz, instance_mode, instance_creator)
-            clazz._pyroInstancing = (instance_mode, instance_creator)
             for name in clazz.__dict__:
                 if util.is_private_attribute(name):
                     continue
@@ -834,10 +846,32 @@ def expose(instance_mode="session", instance_creator=None):
     if isinstance(instance_mode, basestring):
         # new style expose with instance_mode argument etc.
         def _expose_new(method_or_class):
+            if inspect.isclass(method_or_class):
+                warnings.warn("Using @expose with instance mode arguments(s) on a class also automatically "
+                              "exposes all members, which is an unintended side-effect that will be corrected soon. "
+                              "Read the change log in the documentation for more details and what to do.")
             return _expose(method_or_class, instance_mode, instance_creator)
         return _expose_new
     # old-style expose decorator where it is directly applied to a method or class without using parameters
     return _expose(method_or_class=instance_mode, instance_mode="single", instance_creator=None)
+
+
+def behavior(instance_mode="session", instance_creator=None):
+    """
+    Decorator to specify the server behavior of your Pyro class.
+    """
+    def _behavior(clazz):
+        if not inspect.isclass(clazz):
+            raise TypeError("behavior decorator can only be used on a class")
+        if instance_mode not in ("single", "session", "percall"):
+            raise ValueError("invalid instance mode: "+instance_mode)
+        if instance_creator and not callable(instance_creator):
+            raise TypeError("instance_creator must be a callable")
+        clazz._pyroInstancing = (instance_mode, instance_creator)
+        return clazz
+    if not isinstance(instance_mode, basestring):
+        raise SyntaxError("behavior decorator is missing argument(s)")
+    return _behavior
 
 
 @expose
@@ -875,7 +909,7 @@ class DaemonObject(object):
                 # Something seems wrong: nothing is remotely exposed.
                 # Possibly because older code not using @expose is now running with a more recent Pyro version
                 # where @expose is mandatory in the default configuration. Give a hint to the user.
-                log.warn("Class %r doesn't expose any methods or attributes. Did you forget setting @expose on them?", type(obj))  # XXX
+                warnings.warn("Class %r doesn't expose any methods or attributes. Did you forget setting @expose on them?" % type(obj))
             return metadata
         else:
             log.debug("unknown object requested: %s", objectId)
