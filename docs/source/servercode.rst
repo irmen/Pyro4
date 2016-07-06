@@ -26,10 +26,11 @@ Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
     double: decorator; expose
     double: decorator; oneway
 
+
 .. _decorating-pyro-class:
 
-Creating a Pyro class and using the Pyro4 decorators to expose classes and methods
-==================================================================================
+Creating a Pyro class and exposing its methods
+==============================================
 
 In the spirit of being secure by default, Pyro doesn't allow remote access to anything of your class unless
 explicitly told to do so. It will never allow remote access to private methods and attributes.
@@ -126,6 +127,60 @@ to methods that are marked with ``@Pyro4.oneway`` on the server, will happen as 
 
 See :ref:`oneway-calls-client` for the documentation about how client code handles this.
 See the :file:`oneway` example for some code that demonstrates the use of oneway methods.
+
+
+Exposing classes and methods without changing existing source code
+==================================================================
+
+In the case where you cannot or don't want to change existing source code,
+it's not possible to use the ``@expose`` decorator to tell Pyro what methods should be exposed.
+This can happen if you're dealing with third-party library classes or perhaps a generic module that
+you don't want to 'taint' with a Pyro dependency because it's used elsewhere too.
+
+There are a few possibilities to deal with this:
+
+**Don't use @expose at all**
+
+You can disable the requirement for adding ``@expose`` to classes/methods by setting ``REQUIRE_EXPOSE`` back to False.
+This is a global setting however and will affect all your Pyro classes in the server, so be careful.
+
+**Use adapter classes**
+
+The preferred solution is to not use the classes from the third party library directly, but create an adapter class yourself
+with the appropriate ``@expose`` set on it or on its methods. Register this adapter class instead.
+Then use the class from the library from within your own adapter class.
+This way you have full control over what exactly is exposed, and what parameter and return value types
+travel over the wire.
+
+**Create exposed classes by using ``@expose`` as a function**
+
+Creating adapter classes is good but if you're looking for the most convenient solution we can do better.
+You can still use ``@expose`` to make a class a proper Pyro class with exposed methods,
+*without having to change the source code* due to adding @expose decorators, and without having
+to create extra classes yourself.
+Remember that Python decorators are just functions that return another function (or class)? This means you can also
+call them as a regular function yourself, which allows you to use classes from third party libraries like this::
+
+    from awesome_thirdparty_library import SomeClassFromLibrary
+    import Pyro4
+
+    # expose the class from the library using @expose as wrapper function:
+    ExposedClass = Pyro4.expose(SomeClassFromLibrary)
+    # you can even use instance mode tweaking if required:
+    ExposedClass = Pyro4.expose(instance_mode="percall", instance_creator=my_factory_function)(SomeClassFromLibrary)
+
+    daemon.register(ExposedClass)    # register the exposed class rather than the library class itself
+
+
+There are a few caveats when using this:
+
+#. You can only expose the class and all its methods as a whole, you can't cherrypick methods that should be exposed
+
+#. You have no control over what data is returned from the methods. It may still be required to deal with
+   serialization issues for instance when a method of the class returns an object whose type is again a class from the library.
+
+
+See the :file:`thirdpartylib` example for a little server that deals with such a third party library.
 
 
 .. index:: publishing objects

@@ -28,6 +28,8 @@ Change Log
 - code now uses set literals instead of old fashioned set([...])
 - removed the way outdated 'upgrading from Pyro3' chapter from the documentation.
 - Pyro4.util.get_exposed_members now has a cache which speeds up determining object metadata enormously on subsequent connections.
+- added paragraph to server chapter in documentation about how to expose classes without changing the source code (such as 3rd party libraries)
+- added thirdpartylib example for the above
 
 
 **Pyro 4.45**
