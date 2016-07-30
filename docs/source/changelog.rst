@@ -2,6 +2,14 @@
 Change Log
 **********
 
+**Pyro 4.47**
+
+- Name server lookup now also considers 127.0.1.1 when trying to find a name server on localhost.
+  This is convenient on some systems (Debian Linux) where 127.0.1.1 is often the address assigned
+  to the local system via the hosts file.
+
+
+
 **Pyro 4.46**
 
 .. note::
