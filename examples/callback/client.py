@@ -1,6 +1,4 @@
-from __future__ import with_statement
 import random
-
 import Pyro4
 
 
@@ -15,6 +13,7 @@ NUM_WORKERS = 5
 class CallbackHandler(object):
     workdone = 0
 
+    @Pyro4.expose
     def done(self, number):
         print("callback: worker %d reports work is done!" % number)
         CallbackHandler.workdone += 1

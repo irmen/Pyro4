@@ -4,7 +4,6 @@ Tests for the daemon.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
 import sys
 import time
 import socket
@@ -157,8 +156,7 @@ class DaemonTests(unittest.TestCase):
         old_servertype = Pyro4.config.SERVERTYPE
         Pyro4.config.SERVERTYPE = "thread"
         with Pyro4.core.Daemon(port=0) as d:
-            sock = d.sock
-            self.assertIn(sock, d.sockets, "daemon's socketlist should contain the server socket")
+            self.assertIn(d.sock, d.sockets, "daemon's socketlist should contain the server socket")
             self.assertTrue(len(d.sockets) == 1, "daemon without connections should have just 1 socket")
         Pyro4.config.SERVERTYPE = old_servertype
 
@@ -166,8 +164,7 @@ class DaemonTests(unittest.TestCase):
         old_servertype = Pyro4.config.SERVERTYPE
         Pyro4.config.SERVERTYPE = "multiplex"
         with Pyro4.core.Daemon(port=0) as d:
-            sock = d.sock
-            self.assertIn(sock, d.sockets, "daemon's socketlist should contain the server socket")
+            self.assertIn(d.sock, d.sockets, "daemon's socketlist should contain the server socket")
             self.assertTrue(len(d.sockets) == 1, "daemon without connections should have just 1 socket")
         Pyro4.config.SERVERTYPE = old_servertype
 
@@ -216,8 +213,7 @@ class DaemonTests(unittest.TestCase):
             self.assertIn("newname", d.objectsById)
 
     def testRegisterEtc(self):
-        d = Pyro4.core.Daemon(port=0)
-        try:
+        with Pyro4.core.Daemon(port=0) as d:
             self.assertEqual(1, len(d.objectsById))
             o1 = MyObj("object1")
             o2 = MyObj("object2")
@@ -270,8 +266,17 @@ class DaemonTests(unittest.TestCase):
             uri = d.register(MyObj("xyz"), "test.register")
             self.assertEqual("test.register", uri.object)
 
-        finally:
-            d.close()
+    def testRegisterClass(self):
+        with Pyro4.core.Daemon(port=0) as d:
+            self.assertEqual(1, len(d.objectsById))
+            d.register(MyObj)
+            with self.assertRaises(DaemonError):
+                d.register(MyObj)
+            self.assertEqual(2, len(d.objectsById))
+            d.uriFor(MyObj)
+            # unregister:
+            d.unregister(MyObj)
+            self.assertEqual(1, len(d.objectsById))
 
     def testRegisterUnicode(self):
         with Pyro4.core.Daemon(port=0) as d:
@@ -498,10 +503,19 @@ class DaemonTests(unittest.TestCase):
             Pyro4.config.NATHOST = None
             Pyro4.config.NATPORT = 0
 
+    def testBehaviorDefaults(self):
+        class TestClass:
+            pass
+        with Pyro4.core.Daemon() as d:
+            d.register(TestClass)
+            instance_mode, instance_creator = TestClass._pyroInstancing
+            self.assertEqual("session", instance_mode)
+            self.assertIsNone(instance_creator)
+
     def testInstanceCreationSingle(self):
         def creator(clazz):
             return clazz("testname")
-        @Pyro4.core.expose(instance_mode="single", instance_creator=creator)
+        @Pyro4.core.behavior(instance_mode="single", instance_creator=creator)
         class TestClass:
             def __init__(self, name):
                 self.name = name
@@ -515,55 +529,79 @@ class DaemonTests(unittest.TestCase):
         self.assertIs(instance1, d._pyroInstances[TestClass])
         self.assertFalse(TestClass in conn.pyroInstances)
 
+    def testBehaviorDefaultsIsSession(self):
+        class ClassWithDefaults:
+            def __init__(self):
+                self.name = "yep"
+        conn1 = Pyro4.socketutil.SocketConnection(socket.socket())
+        conn2 = Pyro4.socketutil.SocketConnection(socket.socket())
+        d = Pyro4.core.Daemon()
+        d.register(ClassWithDefaults)
+        instance1a = d._getInstance(ClassWithDefaults, conn1)
+        instance1b = d._getInstance(ClassWithDefaults, conn1)
+        instance2a = d._getInstance(ClassWithDefaults, conn2)
+        instance2b = d._getInstance(ClassWithDefaults, conn2)
+        self.assertIs(instance1a, instance1b)
+        self.assertIs(instance2a, instance2b)
+        self.assertIsNot(instance1a, instance2a)
+        self.assertFalse(ClassWithDefaults in d._pyroInstances)
+        self.assertTrue(ClassWithDefaults in conn1.pyroInstances)
+        self.assertTrue(ClassWithDefaults in conn2.pyroInstances)
+        self.assertIs(instance1a, conn1.pyroInstances[ClassWithDefaults])
+        self.assertIs(instance2a, conn2.pyroInstances[ClassWithDefaults])
+
     def testInstanceCreationSession(self):
         def creator(clazz):
             return clazz("testname")
-        @Pyro4.core.expose(instance_mode="session", instance_creator=creator)
-        class TestClass:
+        @Pyro4.core.behavior(instance_mode="session", instance_creator=creator)
+        class ClassWithDecorator:
             def __init__(self, name):
                 self.name = name
         conn1 = Pyro4.socketutil.SocketConnection(socket.socket())
         conn2 = Pyro4.socketutil.SocketConnection(socket.socket())
         d = Pyro4.core.Daemon()
-        instance1a = d._getInstance(TestClass, conn1)
-        instance1b = d._getInstance(TestClass, conn1)
-        instance2a = d._getInstance(TestClass, conn2)
-        instance2b = d._getInstance(TestClass, conn2)
+        d.register(ClassWithDecorator)
+        # check the class with the decorator first
+        instance1a = d._getInstance(ClassWithDecorator, conn1)
+        instance1b = d._getInstance(ClassWithDecorator, conn1)
+        instance2a = d._getInstance(ClassWithDecorator, conn2)
+        instance2b = d._getInstance(ClassWithDecorator, conn2)
         self.assertIs(instance1a, instance1b)
         self.assertIs(instance2a, instance2b)
         self.assertIsNot(instance1a, instance2a)
-        self.assertFalse(TestClass in d._pyroInstances)
-        self.assertTrue(TestClass in conn1.pyroInstances)
-        self.assertTrue(TestClass in conn2.pyroInstances)
-        self.assertIs(instance1a, conn1.pyroInstances[TestClass])
-        self.assertIs(instance2a, conn2.pyroInstances[TestClass])
+        self.assertFalse(ClassWithDecorator in d._pyroInstances)
+        self.assertTrue(ClassWithDecorator in conn1.pyroInstances)
+        self.assertTrue(ClassWithDecorator in conn2.pyroInstances)
+        self.assertIs(instance1a, conn1.pyroInstances[ClassWithDecorator])
+        self.assertIs(instance2a, conn2.pyroInstances[ClassWithDecorator])
+
 
     def testInstanceCreationPerCall(self):
         def creator(clazz):
             return clazz("testname")
-        @Pyro4.core.expose(instance_mode="percall", instance_creator=creator)
+        @Pyro4.core.behavior(instance_mode="percall", instance_creator=creator)
         class TestClass:
             def __init__(self, name):
                 self.name = name
-        conn = Pyro4.socketutil.SocketConnection(socket.socket())
-        d = Pyro4.core.Daemon()
-        instance1 = d._getInstance(TestClass, conn)
-        instance2 = d._getInstance(TestClass, conn)
-        self.assertIsNot(instance1, instance2)
-        self.assertFalse(TestClass in d._pyroInstances)
-        self.assertFalse(TestClass in conn.pyroInstances)
+        with Pyro4.socketutil.SocketConnection(socket.socket()) as conn:
+            with Pyro4.core.Daemon() as d:
+                instance1 = d._getInstance(TestClass, conn)
+                instance2 = d._getInstance(TestClass, conn)
+                self.assertIsNot(instance1, instance2)
+                self.assertFalse(TestClass in d._pyroInstances)
+                self.assertFalse(TestClass in conn.pyroInstances)
 
     def testInstanceCreationWrongType(self):
         def creator(clazz):
             return Pyro4.core.URI("PYRO:test@localhost:9999")
-        @Pyro4.core.expose(instance_creator=creator)
+        @Pyro4.core.behavior(instance_creator=creator)
         class TestClass:
             def method(self):
                 pass
-        conn = Pyro4.socketutil.SocketConnection(socket.socket())
-        d = Pyro4.core.Daemon()
-        with self.assertRaises(TypeError):
-            d._getInstance(TestClass, conn)
+        with Pyro4.socketutil.SocketConnection(socket.socket()) as conn:
+            with Pyro4.core.Daemon() as d:
+                with self.assertRaises(TypeError):
+                    d._getInstance(TestClass, conn)
 
     def testCombine(self):
         d1 = Pyro4.core.Daemon()
@@ -604,7 +642,7 @@ class MetaInfoTests(unittest.TestCase):
             daemon_obj = d.objectsById[Pyro4.constants.DAEMON_NAME]
             self.assertTrue(len(daemon_obj.info()) > 10)
             meta = daemon_obj.get_metadata(Pyro4.constants.DAEMON_NAME)
-            self.assertEqual(set(["get_metadata", "info", "ping", "registered"]), meta["methods"])
+            self.assertEqual({"get_metadata", "info", "ping", "registered"}, meta["methods"])
 
     def testMetaSerialization(self):
         with Pyro4.core.Daemon() as d:

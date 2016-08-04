@@ -4,7 +4,7 @@ Tests for the name server (offline/basic logic).
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement, print_function
+from __future__ import print_function
 import sys
 import os
 import unittest

@@ -7,7 +7,8 @@ Pyro4.config.SERVERTYPE = "thread"
 database = DummyDatabase()
 
 
-@Pyro4.expose(instance_mode="single")
+@Pyro4.behavior(instance_mode="single")
+@Pyro4.expose
 class SingletonDatabase(object):
     """
     This pyro object will exhibit problems when used from multiple proxies at the same time
@@ -33,7 +34,8 @@ class SingletonDatabase(object):
         return "hi"
 
 
-@Pyro4.expose(instance_mode="session")
+@Pyro4.behavior(instance_mode="session")
+@Pyro4.expose
 class SessionboundDatabase(object):
     """
     This pyro object will work fine when used from multiple proxies at the same time
@@ -56,11 +58,7 @@ class SessionboundDatabase(object):
         return "hi"
 
 
-daemon = Pyro4.Daemon()
-ns = Pyro4.locateNS()
-uri = daemon.register(SingletonDatabase)
-ns.register("example.usersession.singletondb", uri)
-uri = daemon.register(SessionboundDatabase)
-ns.register("example.usersession.sessiondb", uri)
-print("Server is ready.")
-daemon.requestLoop()
+Pyro4.Daemon.serveSimple({
+    SingletonDatabase: "example.usersession.singletondb",
+    SessionboundDatabase: "example.usersession.sessiondb"
+})

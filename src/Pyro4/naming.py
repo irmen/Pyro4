@@ -4,7 +4,6 @@ Name Server and helper functions.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
 import warnings
 import re
 import logging
@@ -61,6 +60,7 @@ class MemoryStorage(dict):
         pass
 
 
+@Pyro4.expose
 class NameServer(object):
     """
     Pyro name server. Provides a simple flat name space to map logical object names to Pyro URIs.
@@ -350,6 +350,7 @@ class BroadcastServer(object):
         thread.setDaemon(True)
         thread.start()
         log.debug("broadcast server loop running in own thread")
+        return thread
 
     def __requestLoop(self):
         while self.running:
@@ -452,19 +453,23 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
     if host is None:
         # first try localhost if we have a good chance of finding it there
         if Pyro4.config.NS_HOST in ("localhost", "::1") or Pyro4.config.NS_HOST.startswith("127."):
-            host = Pyro4.config.NS_HOST
-            if ":" in host:  # ipv6
-                host = "[%s]" % host
-            uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port or Pyro4.config.NS_PORT)
-            log.debug("locating the NS: %s", uristring)
-            proxy = core.Proxy(uristring)
-            proxy._pyroHmacKey = hmac_key
-            try:
-                proxy.ping()
-                log.debug("located NS")
-                return proxy
-            except PyroError:
-                pass
+            if ":" in Pyro4.config.NS_HOST:  # ipv6
+                hosts = ["[%s]" % Pyro4.config.NS_HOST]
+            else:
+                # Some systems (Debian Linux) have 127.0.1.1 in the hosts file assigned to the hostname,
+                # try this too for convenience sake
+                hosts = [Pyro4.config.NS_HOST] if Pyro4.config.NS_HOST == "127.0.1.1" else [Pyro4.config.NS_HOST, "127.0.1.1"]
+            for host in hosts:
+                uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port or Pyro4.config.NS_PORT)
+                log.debug("locating the NS: %s", uristring)
+                proxy = core.Proxy(uristring)
+                proxy._pyroHmacKey = hmac_key
+                try:
+                    proxy._pyroBind()
+                    log.debug("located NS")
+                    return proxy
+                except PyroError:
+                    pass
         if broadcast:
             # broadcast lookup
             if not port:
@@ -518,7 +523,7 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
     proxy = core.Proxy(uri)
     proxy._pyroHmacKey = hmac_key
     try:
-        proxy.ping()
+        proxy._pyroBind()
         log.debug("located NS")
         return proxy
     except PyroError as x:

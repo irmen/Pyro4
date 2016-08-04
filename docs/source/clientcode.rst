@@ -190,8 +190,8 @@ Changing the way your custom classes are (de)serialized
 -------------------------------------------------------
 
 .. note::
-    The information in this paragraph applies only when you're not using the pickle nor dill
-    serialization protocols.
+    The information in this paragraph is not relevant when using the pickle or dill serialization protocols,
+    they have their own ways of serializing custom classes.
 
 By default, custom classes are serialized into a dict.
 They are not deserialized back into instances of your custom class. This avoids possible security issues.
@@ -261,7 +261,7 @@ Here are some rules:
   You can do this in two ways:
 
   1. calling ``_pyroRelease()`` on the proxy.
-  2. using the proxy as a context manager in a ``with`` statement.
+  2. using the proxy as a context manager in a ``with`` statement. *This is the preffered way of creating and using Pyro proxies.*
      This ensures that when you're done with it, or an error occurs (inside the with-block),
      the connection is released::
 
@@ -477,12 +477,15 @@ stack trace (if you have logging enabled)::
     import Pyro4
 
     class Callback(object):
-    
+
+        @Pyro4.expose
         @Pyro4.callback
         def call(self):
             print("callback received from server!")
             return 1//0    # crash!
 
+Also notice that the callback method (or the whole class) has to be decorated
+with ``@Pyro4.expose`` as well to allow it to be called remotely at all.
 See the :file:`callback` example for more details and code.
 
 

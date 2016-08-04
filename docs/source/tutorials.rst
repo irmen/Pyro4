@@ -302,19 +302,20 @@ phase 2: first Pyro version
 That wasn't very exciting but you now have working code for the basics of the warehouse system.
 Now you'll use Pyro to turn the warehouse into a standalone component, that people from other
 computers can visit. You'll need to add a couple of lines to the :file:`warehouse.py` file so that it will
-start a Pyro server for the warehouse object. The easiest way to do this is to create the object
-that you want to make available as Pyro object, and register it with a 'Pyro daemon' (the server that
-listens for and processes incoming remote method calls)::
+start a Pyro server for the warehouse object. You can do this by registering your Pyro class with a 'Pyro daemon',
+the server that listens for and processes incoming remote method calls. One way to do that is like this
+(you can ignore the details about this for now)::
 
-        warehouse = Warehouse()
         Pyro4.Daemon.serveSimple(
                 {
-                    warehouse: "example.warehouse"
+                    Warehouse: "example.warehouse"
                 },
                 ns = False)
 
-For now, ignore the details of what exactly the :py:meth:`serveSimple` method call does.
-Next up is addding a little ``main`` function so it will be started correctly, which should
+Next, we have to tell Pyro what parts of the class should be remotely accessible, and what pars aren't supposed
+to be accessible. This has to do with security. We'll be adding a ``@Pyro4.expose`` decorator on the Warehouse
+class definition, which is sufficient for now.
+Finally we add a little ``main`` function so it will be started correctly, which should
 make the code now look like this (:file:`warehouse.py`)::
 
     from __future__ import print_function
@@ -322,6 +323,7 @@ make the code now look like this (:file:`warehouse.py`)::
     import person
 
 
+    @Pyro4.expose
     class Warehouse(object):
         def __init__(self):
             self.contents = ["chair", "bike", "flashlight", "laptop", "couch"]
@@ -339,10 +341,9 @@ make the code now look like this (:file:`warehouse.py`)::
 
 
     def main():
-        warehouse = Warehouse()
         Pyro4.Daemon.serveSimple(
                 {
-                    warehouse: "example.warehouse"
+                    Warehouse: "example.warehouse"
                 },
                 ns = False)
 
@@ -710,11 +711,14 @@ console windows for instance. They run autonomously without the need of a 'main'
 stockmarket
 -----------
 The :file:`stockmarket.py` gained a few print statements to see what is going on while it is running.
-*Important:* there is *a single* change in the code to make it work with Pyro. Because Pyro needs to transfer
+*Important:* there is *a single* change in the actual code to make it work with Pyro. Because Pyro needs to transfer
 objects over the network, it requires those objects to be serializable. The ``symbols`` method returned the ``keys()``
 of the dictionary of symbols in the stockmarket. While this is a normal list in Python 2, it is a ``dict_keys`` object
 in Python 3. These cannot be serialized (because it is a special iterator object). The simple solution is to
 force the method to build a list and return that: ``list(dictionary.keys())``.
+
+We had to add the ``@Pyro4.expose`` decorator on the methods that must be accessible remotely by the as well
+(``listener`` and ``symbols``, they're both called by the Aggregator).
 
 It also gained a ``run`` method that will be running inside the background thread to generate stock quote updates.
 The reason this needs to run in a thread is because the ``Stockmarket`` itself is also a Pyro object that must
@@ -725,6 +729,8 @@ thread, that doesn't matter, as long as they run independently.
 Finally it gained a ``main`` function to create a couple of stock markets as we did before.
 This time however they're registered as Pyro objects with the Pyro daemon. They're also entered in the
 name server as ``example.stockmarket.<name>`` so the ``Aggregator`` can find them easily.
+As you will see below, we're also using the Daemon and Name server objects as context managers (in a ``with``
+statement) -- this ensures they're promptly and correctly cleaned up once they're no longer used.
 
 The complete code for :file:`stockmarket.py` is now as follows::
 
@@ -753,10 +759,12 @@ The complete code for :file:`stockmarket.py` is now as follows::
             for aggregator in self.aggregators:
                 aggregator.quotes(self.name, quotes)
 
+        @Pyro4.expose
         def listener(self,aggregator):
             print("market {0} adding new aggregator".format(self.name))
             self.aggregators.append(aggregator)
 
+        @Pyro4.expose
         def symbols(self):
             return list(self.symbolmeans.keys())
 
@@ -774,17 +782,16 @@ The complete code for :file:`stockmarket.py` is now as follows::
         nasdaq = StockMarket("NASDAQ", ["AAPL", "CSCO", "MSFT", "GOOG"])
         newyork = StockMarket("NYSE", ["IBM", "HPQ", "BP"])
 
-        daemon = Pyro4.Daemon()
-        nasdaq_uri = daemon.register(nasdaq)
-        newyork_uri = daemon.register(newyork)
-        ns = Pyro4.locateNS()
-        ns.register("example.stockmarket.nasdaq", nasdaq_uri)
-        ns.register("example.stockmarket.newyork", newyork_uri)
-
-        nasdaq.run()
-        newyork.run()
-        print("Stockmarkets running.")
-        daemon.requestLoop()
+        with Pyro4.Daemon() as daemon:
+            nasdaq_uri = daemon.register(nasdaq)
+            newyork_uri = daemon.register(newyork)
+            with Pyro4.locateNS() as ns:
+                ns.register("example.stockmarket.nasdaq", nasdaq_uri)
+                ns.register("example.stockmarket.newyork", newyork_uri)
+            nasdaq.run()
+            newyork.run()
+            print("Stockmarkets running.")
+            daemon.requestLoop()
 
     if __name__ == "__main__":
         main()
@@ -797,6 +804,8 @@ The :file:`aggregator.py` also gained a print function to be able to see in its 
 when a new viewer connects. The ``main`` function creates it, and connects it as a Pyro object to the Pyro daemon.
 It also registers it with the name server as ``example.stockquote.aggregator`` so it can be easily retrieved by
 any viewer that is interested.
+
+Because an Aggregator is meant to be remotely accessible as a whole we've added ``@Pyro4.expose`` on the class as well.
 
 *How it connects to the available stock markets:* Remember that the stock market objects registered with the name server
 using a name of the form ``example.stockmarket.<name>``. It is possible to query the Pyro name server in such a way
@@ -812,6 +821,7 @@ The complete code for :file:`aggregator.py` is now as follows::
     import Pyro4
 
 
+    @Pyro4.expose
     class Aggregator(object):
         def __init__(self):
             self.viewers = {}
@@ -856,11 +866,14 @@ The complete code for :file:`aggregator.py` is now as follows::
 
 viewer
 ------
-You don't need to change the ``Viewer`` at all, besides the ``main`` function that needs to be added to start it up by itself.
+You don't need to change the actual code in the ``Viewer``, besides the ``main`` function that needs to be added to start it up by itself.
 It needs to create a viewer object and register it with a Pyro daemon to be able to receive stock quote update calls.
 You can connect it to a running aggregator simply by asking Pyro to look that up in the name server. That can be done
 by using the special ``PYRONAME:<object name>`` uri format. For the aggregator that would be: ``PYRONAME:example.stockquote.aggregator``
 (because ``example.stockquote.aggregator`` is the name the aggregator used to register itself with the name server).
+
+As with the other classes and methods from the other modules that should now be remotely accessible,
+we've decorated the ``Viewer`` class with ``@Pyro4.expose``.
 
 It is also nice to ask the user for a list of stock symbols he is interested in so do that and register the
 viewer with the aggregator, passing the list of entered stock symbols to filter on.
@@ -876,6 +889,7 @@ Finally start the daemon loop to wait for incoming calls. The code is as follows
         input = raw_input
 
 
+    @Pyro4.expose
     class Viewer(object):
         def quote(self, market, symbol, value):
             print("{0}.{1}: {2}".format(market, symbol, value))
@@ -883,15 +897,15 @@ Finally start the daemon loop to wait for incoming calls. The code is as follows
 
     def main():
         viewer = Viewer()
-        daemon = Pyro4.Daemon()
-        daemon.register(viewer)
-        aggregator = Pyro4.Proxy("PYRONAME:example.stockquote.aggregator")
-        print("Available stock symbols:", aggregator.available_symbols())
-        symbols = input("Enter symbols you want to view (comma separated):")
-        symbols = [symbol.strip() for symbol in symbols.split(",")]
-        aggregator.view(viewer, symbols)
-        print("Viewer listening on symbols", symbols)
-        daemon.requestLoop()
+        with Pyro4.Daemon() as daemon:
+            daemon.register(viewer)
+            aggregator = Pyro4.Proxy("PYRONAME:example.stockquote.aggregator")
+            print("Available stock symbols:", aggregator.available_symbols())
+            symbols = input("Enter symbols you want to view (comma separated):")
+            symbols = [symbol.strip() for symbol in symbols.split(",")]
+            aggregator.view(viewer, symbols)
+            print("Viewer listening on symbols", symbols)
+            daemon.requestLoop()
 
     if __name__ == "__main__":
         main()
@@ -984,7 +998,7 @@ For more details, refer to the chapters in this manual about the relevant Pyro c
 
         Pyro4.Daemon.serveSimple(
                 {
-                    warehouse: "example.warehouse"
+                    Warehouse: "example.warehouse"
                 },
                 host = 'your_hostname_here',
                 ns = True)

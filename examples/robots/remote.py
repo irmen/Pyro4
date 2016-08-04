@@ -3,6 +3,7 @@ import random
 import Pyro4
 
 
+@Pyro4.expose
 class GameServer(object):
     def __init__(self, engine):
         self.engine = engine
@@ -13,6 +14,7 @@ class GameServer(object):
         return robot
 
 
+@Pyro4.expose
 class RemoteBot(object):
     def __init__(self, robot, engine):
         self.robot = robot
@@ -31,6 +33,7 @@ class RemoteBot(object):
         self.engine.remove_robot(self.robot)
 
 
+@Pyro4.expose
 class LocalGameObserver(object):
     def __init__(self, name):
         self.name = name
@@ -59,6 +62,7 @@ class LocalGameObserver(object):
             print("[%s] I DIED" % self.name)
 
 
+@Pyro4.expose
 class GameObserver(object):
     def world_update(self, iteration, world, robotdata):
         pass

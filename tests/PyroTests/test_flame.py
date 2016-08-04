@@ -4,7 +4,6 @@ Tests for Pyro Flame.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
 import sys
 import unittest
 import Pyro4.utils.flame
@@ -26,11 +25,11 @@ class FlameDisabledTests(unittest.TestCase):
         with Pyro4.core.Daemon() as d:
             Pyro4.config.FLAME_ENABLED = True
             sers = Pyro4.config.SERIALIZERS_ACCEPTED
-            Pyro4.config.SERIALIZERS_ACCEPTED = set(["json", "serpent", "marshal"])
+            Pyro4.config.SERIALIZERS_ACCEPTED = {"json", "serpent", "marshal"}
             self.assertRaises(Pyro4.errors.SerializeError, Pyro4.utils.flame.start, d)  # require pickle
             Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
             self.assertRaises(Pyro4.errors.SerializeError, Pyro4.utils.flame.start, d)  # require pickle exclusively
-            Pyro4.config.SERIALIZERS_ACCEPTED = set(["pickle"])
+            Pyro4.config.SERIALIZERS_ACCEPTED = {"pickle"}
             Pyro4.utils.flame.start(d)
             Pyro4.config.SERIALIZERS_ACCEPTED = sers
             Pyro4.config.FLAME_ENABLED = False
@@ -40,7 +39,7 @@ class FlameTests(unittest.TestCase):
     def setUp(self):
         Pyro4.config.FLAME_ENABLED = True
         self._serializers = Pyro4.config.SERIALIZERS_ACCEPTED
-        Pyro4.config.SERIALIZERS_ACCEPTED = set(["pickle"])
+        Pyro4.config.SERIALIZERS_ACCEPTED = {"pickle"}
 
     def tearDown(self):
         Pyro4.config.FLAME_ENABLED = False

@@ -26,42 +26,32 @@ Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
     double: decorator; expose
     double: decorator; oneway
 
+
 .. _decorating-pyro-class:
 
-Creating a Pyro class and using the Pyro4 decorators
-====================================================
+Creating a Pyro class and exposing its methods
+==============================================
 
-**What is exposed by default, and the REQUIRE_EXPOSE config item**
+In the spirit of being secure by default, Pyro doesn't allow remote access to anything of your class unless
+explicitly told to do so. It will never allow remote access to private methods and attributes.
+(where private means that the name is starting with a single or double underscore,
+with an exception of the special 'dunder' names with double underscores such as ``__len__``)
 
-Pyro's default behavior is to expose *all* methods of your class
-(unless they are private, which means the name is starting with a single or double underscore -- with an exception of the special 'dunder' names with double underscores such as ``__len__``).
-You don't have to do anything to your server side code to make it available to remote calls, apart from
-registering the class with a Pyro daemon ofcourse.
-This is for backward compatibility and ease-of-use reasons.
-
-If you don't like this (maybe security reasons) or simply want to expose only a part of your class to the remote world,
-you can tell Pyro to *require* the explicit use of the ``@expose`` decorator (described below) on the items that you want to make
-available for remote access. If something doesn't have the decorator, it is not remotely accessible.
-This behavior can be chosen by setting the ``REQUIRE_EXPOSE`` config item to ``True``. It is set to ``False`` by default,
-because of backwards compatibility reasons.
-
-**the @expose decorator: exposing classes, methods and attributes for remote access**
-
-The ``@Pyro4.expose`` decorator lets you mark the following items to be available for remote access:
+Exposing classes, methods and properties is done using the ``@Pyro4.expose`` decorator.
+It lets you mark the following items to be available for remote access:
 
 - methods (including classmethod and staticmethod. You cannot expose a private method, i.e. name starting with underscore). You *can* expose a 'dunder' method with double underscore such as ``__len__``. There is a list of dunder methods that will never be remoted though (because they are essential to let the Pyro proxy function correctly).
 - properties (will be available as remote attributes on the proxy)
 - classes (exposing a class has the effect of exposing every method and property of the class automatically)
 
-Remember that you must set the ``REQUIRE_EXPOSE`` config item to ``True`` to let all this have any effect!
-Also because it is not possible to decorate attributes on a class, it is required to provide a @property for them
+Because it is not possible to decorate attributes on a class, it is required to provide a @property for them
 and decorate that with ``@expose``, if you want to provide a remotely accessible attribute.
+
+Anything that isn't decorated with ``@expose`` is not remotely accessible.
 
 Here's a piece of example code that shows how a partially exposed Pyro class may look like::
 
     import Pyro4
-
-    Pyro4.config.REQUIRE_EXPOSE = True      # make @expose do something
 
     class PyroService(object):
 
@@ -91,6 +81,25 @@ Here's a piece of example code that shows how a partially exposed Pyro class may
             self.value = value
 
 
+.. note::
+    Prior to Pyro version 4.46, the default behavior was different: Pyro exposed everything, no special
+    action was needed in your server side code to make it available to remote calls. Probably the easiest way
+    to make old code that was written for this model to fit the new default behavior is to add a single
+    ``@Pyro4.expose`` decorator on all of your Pyro classes. Better (safer) is to only add it to the methods
+    and properties of the classes that are accessed remotely.
+    If you cannot (or don't want to) change your code to be compatible with the new behavior, you can set
+    the ``REQUIRE_EXPOSE`` config item back to ``False`` (it is now ``True`` by default). This will restore
+    the old behavior.
+
+    Notice that it has been possible for a long time already for older code to utilize
+    the ``@expose`` decorator and the current, safer, behavior by having ``REQUIRE_EXPOSE`` set to ``True``.
+    That choice has now simply become the default.
+    Before upgrading to Pyro 4.46 or newer you can try setting it to ``True`` yourself and
+    then adding ``@expose`` decorators to your Pyro classes or methods as required. Once everything
+    works as it should you can then effortlessly upgrade Pyro itself.
+
+
+
 .. index:: oneway decorator
 
 **Specifying one-way methods using the @Pyro4.oneway decorator:**
@@ -103,6 +112,7 @@ to methods that are marked with ``@Pyro4.oneway`` on the server, will happen as 
 
     import Pyro4
 
+    @Pyro4.expose
     class PyroService(object):
 
         def normal_method(self, args):
@@ -119,6 +129,60 @@ See :ref:`oneway-calls-client` for the documentation about how client code handl
 See the :file:`oneway` example for some code that demonstrates the use of oneway methods.
 
 
+Exposing classes and methods without changing existing source code
+==================================================================
+
+In the case where you cannot or don't want to change existing source code,
+it's not possible to use the ``@expose`` decorator to tell Pyro what methods should be exposed.
+This can happen if you're dealing with third-party library classes or perhaps a generic module that
+you don't want to 'taint' with a Pyro dependency because it's used elsewhere too.
+
+There are a few possibilities to deal with this:
+
+**Don't use @expose at all**
+
+You can disable the requirement for adding ``@expose`` to classes/methods by setting ``REQUIRE_EXPOSE`` back to False.
+This is a global setting however and will affect all your Pyro classes in the server, so be careful.
+
+**Use adapter classes**
+
+The preferred solution is to not use the classes from the third party library directly, but create an adapter class yourself
+with the appropriate ``@expose`` set on it or on its methods. Register this adapter class instead.
+Then use the class from the library from within your own adapter class.
+This way you have full control over what exactly is exposed, and what parameter and return value types
+travel over the wire.
+
+**Create exposed classes by using ``@expose`` as a function**
+
+Creating adapter classes is good but if you're looking for the most convenient solution we can do better.
+You can still use ``@expose`` to make a class a proper Pyro class with exposed methods,
+*without having to change the source code* due to adding @expose decorators, and without having
+to create extra classes yourself.
+Remember that Python decorators are just functions that return another function (or class)? This means you can also
+call them as a regular function yourself, which allows you to use classes from third party libraries like this::
+
+    from awesome_thirdparty_library import SomeClassFromLibrary
+    import Pyro4
+
+    # expose the class from the library using @expose as wrapper function:
+    ExposedClass = Pyro4.expose(SomeClassFromLibrary)
+    # you can even use instance mode tweaking if required:
+    ExposedClass = Pyro4.expose(instance_mode="percall", instance_creator=my_factory_function)(SomeClassFromLibrary)
+
+    daemon.register(ExposedClass)    # register the exposed class rather than the library class itself
+
+
+There are a few caveats when using this:
+
+#. You can only expose the class and all its methods as a whole, you can't cherrypick methods that should be exposed
+
+#. You have no control over what data is returned from the methods. It may still be required to deal with
+   serialization issues for instance when a method of the class returns an object whose type is again a class from the library.
+
+
+See the :file:`thirdpartylib` example for a little server that deals with such a third party library.
+
+
 .. index:: publishing objects
 
 .. _publish-objects:
@@ -130,29 +194,27 @@ To publish a regular Python object and turn it into a Pyro object,
 you have to tell Pyro about it. After that, your code has to tell Pyro to start listening for incoming
 requests and to process them. Both are handled by the *Pyro daemon*.
 
-In its most basic form, you create one or more objects that you want to publish as Pyro objects,
-you create a daemon, register the object(s) with the daemon, and then enter the daemon's request loop::
+In its most basic form, you create one or more classes that you want to publish as Pyro objects,
+you create a daemon, register the class(es) with the daemon, and then enter the daemon's request loop::
 
     import Pyro4
 
+    @Pyro4.expose
     class MyPyroThing(object):
         # ... methods that can be called go here...
         pass
 
-    thing = MyPyroThing()
     daemon = Pyro4.Daemon()
-    uri = daemon.register(thing)
+    uri = daemon.register(MyPyroThing)
     print(uri)
     daemon.requestLoop()
 
-When publising objects directly like this,  Pyro will use that single
-object to handle *all* remote method calls. You may need to consider what this
-means when your object is called concurrently from multiple threads,
-see :ref:`object_concurrency`.
+When publising your class like this,  Pyro will create a single instance of it and use that
+to handle *all* remote method calls. So the object can be called concurrently from multiple connections (threads)!
+See :ref:`object_concurrency` for more details about what this means.
 
-There's another more advanced way to register objects with Pyro, that lets you control more precisely
-when and for how long Pyro will create an instance of your Pyro class. See :ref:`server-instancemode` below,
-for more details.
+It is possible to control more precisely when and for how long Pyro will create an instance of your Pyro class.
+See :ref:`server-instancemode` below, for more details.
 
 Anyway, when you run the code printed above, the uri will be printed and the server sits waiting for requests.
 The uri that is being printed looks a bit like this: ``PYRO:obj_dcf713ac20ce4fb2a6e72acaeba57dfd@localhost:51850``
@@ -180,67 +242,13 @@ Client programs use these uris to access the specific Pyro objects.
     * types that don't allow custom attributes, such as the builtin types (``str`` and ``int`` for instance)
     * types with ``__slots__`` (a possible way around this is to add Pyro's custom attributes to your ``__slots__``, but that isn't very nice)
 
+.. note::
+    Most of the the time a Daemon will keep running. However it's still possible to nicely free its resources
+    when the request loop terminates by simply using it as a context manager in a ``with`` statement, like so::
 
-.. index::
-    instance modes; instance_mode
-    instance modes; instance_creator
-.. _server-instancemode:
-
-Instance modes and Instance creation
-------------------------------------
-
-Instead of registering an *object* with the daemon, you can also register a *class* instead.
-When doing that, it is Pyro itself that creates an instance (object).
-This allows for more control over when and for how long Pyro creates objects.
-It is also the preferred way of registering your code with the daemon.
-
-Controlling the instance mode and creation is done via the ``instance_mode`` and ``instance_creator``
-parameters of the ``expose`` decorator, which was described earlier.
-By the way, it is *not* required to have ``REQUIRE_EXPOSE`` set to true to use these.
-You can control the instance mode regardless of this setting because it only influences what methods
-and attributes of the class are exposed.
-
-By default, Pyro will create an instance of your class per *session* (=proxy connection)
-Here is an example of registering a class that will have one new instance for every single method call instead::
-
-    import Pyro4
-
-    @Pyro4.expose(instance_mode="percall")
-    class MyPyroThing(object):
-        # ... methods that can be called go here...
-        pass
-
-    daemon = Pyro4.Daemon()
-    uri = daemon.register(MyPyroThing)
-    print(uri)
-    daemon.requestLoop()
-
-There are three possible choices for the ``instance_mode`` parameter:
-
-- ``session``: (the default) a new instance is created for every new proxy connection, and is reused for
-  all the calls during that particular proxy session. Other proxy sessions will deal with a different instance.
-- ``single``: a single instance will be created and used for all method calls, regardless what proxy
-  connection we're dealing with. This is the same as creating and registering a single object yourself
-  (the old style of registering code with the deaemon). Be aware that the methods on this object can be called
-  from separate threads concurrently.
-- ``percall``: a new instance is created for every single method call, and discarded afterwards.
-
-
-**Instance creation**
-
-.. sidebar:: Instance creation is lazy
-
-    When you register a class in this way, be aware that Pyro only creates an actual
-    instance of it when it is first needed. If nobody connects to the deamon requesting
-    the services of this class, no instance will ever be created.
-
-Normally Pyro will simply use a default parameterless constructor call to create the instance.
-If you need special initialization or the class's init method requires parameters, you have to specify
-an ``instance_creator`` callable as well. Pyro will then use that to create an instance of your class.
-It will call it with the class to create an instance of as the single parameter.
-
-See the :file:`instancemode` example to learn about various ways to use this.
-See the :file:`usersession` example to learn how you could use it to build user-bound resource access without concurrency problems.
+        with Pyro4.Daemon() as daemon:
+            daemon.register(...)
+            daemon.requestLoop()
 
 
 .. index:: publishing objects oneliner, serveSimple
@@ -253,6 +261,7 @@ The code above could also be written as::
 
     import Pyro4
 
+    @Pyro4.expose
     class MyPyroThing(object):
         pass
 
@@ -318,7 +327,7 @@ configuration. Then provide it to this function using the ``daemon`` parameter. 
     custom_daemon = Pyro4.Daemon(host="example", nathost="example")    # some additional custom configuration
     Pyro4.Daemon.serveSimple(
         {
-            MyPyroThing(): None
+            MyPyroThing: None
         },
         daemon = custom_daemon)
 
@@ -365,7 +374,7 @@ You can let Pyro choose a unique object id for you, or provide a more readable o
 
     Registers an object with the daemon to turn it into a Pyro object.
 
-    :param obj_or_class: the instance or class to register
+    :param obj_or_class: the singleton instance or class to register (class is the preferred way)
     :param objectId: optional custom object id (must be unique). Default is to let Pyro create one for you.
     :type objectId: str or None
     :param force: optional flag to force registration, normally Pyro checks if an object had already been registered.
@@ -400,20 +409,21 @@ Server code::
 
     import Pyro4
 
+    @Pyro4.expose
     class Thing(object):
         def method(self, arg):
             return arg*2
 
     # ------ normal code ------
     daemon = Pyro4.Daemon()
-    uri = daemon.register(Thing())
+    uri = daemon.register(Thing)
     print("uri=",uri)
     daemon.requestLoop()
 
     # ------ alternatively, using serveSimple -----
     Pyro4.Daemon.serveSimple(
         {
-            Thing(): None
+            Thing: None
         },
         ns=False, verbose=True)
 
@@ -436,6 +446,7 @@ Server code::
 
     import Pyro4
 
+    @Pyro4.expose
     class Thing(object):
         def method(self, arg):
             return arg*2
@@ -443,14 +454,14 @@ Server code::
     # ------ normal code ------
     daemon = Pyro4.Daemon(host="yourhostname")
     ns = Pyro4.locateNS()
-    uri = daemon.register(Thing())
+    uri = daemon.register(Thing)
     ns.register("mythingy", uri)
     daemon.requestLoop()
 
     # ------ alternatively, using serveSimple -----
     Pyro4.Daemon.serveSimple(
         {
-            Thing(): "mythingy"
+            Thing: "mythingy"
         },
         ns=True, verbose=True, host="yourhostname")
 
@@ -554,6 +565,69 @@ This will also break out of the request loop and allows your code to neatly clea
 and will also work on the threaded server type without any other requirements.
 
 If you are using your own event loop mechanism you have to use something else, depending on your own loop.
+
+
+.. index::
+    single: @Pyro4.behavior
+    instance modes; instance_mode
+    instance modes; instance_creator
+.. _server-instancemode:
+
+Controlling Instance modes and Instance creation
+================================================
+
+While it is possible to register a single singleton *object* with the daemon,
+it is actually preferred that you register a *class* instead.
+When doing that, it is Pyro itself that creates an instance (object) when it needs it.
+This allows for more control over when and for how long Pyro creates objects.
+
+Controlling the instance mode and creation is done by decorating your class with ``Pyro4.behavior``
+and setting its ``instance_mode`` or/and ``instance_creator`` parameters. (Notice that this
+decorator can only be used on a class definition, because these behavioral settings only make
+sense at that level).
+
+By default, Pyro will create an instance of your class per *session* (=proxy connection)
+Here is an example of registering a class that will have one new instance for *every single method call* instead::
+
+    import Pyro4
+
+    @Pyro4.behavior(instance_mode="percall")
+    class MyPyroThing(object):
+        @Pyro4.expose
+        def method(self):
+            return "something"
+
+    daemon = Pyro4.Daemon()
+    uri = daemon.register(MyPyroThing)
+    print(uri)
+    daemon.requestLoop()
+
+There are three possible choices for the ``instance_mode`` parameter:
+
+- ``session``: (the default) a new instance is created for every new proxy connection, and is reused for
+  all the calls during that particular proxy session. Other proxy sessions will deal with a different instance.
+- ``single``: a single instance will be created and used for all method calls, regardless what proxy
+  connection we're dealing with. This is the same as creating and registering a single object yourself
+  (the old style of registering code with the deaemon). Be aware that the methods on this object can be called
+  from separate threads concurrently.
+- ``percall``: a new instance is created for every single method call, and discarded afterwards.
+
+
+**Instance creation**
+
+.. sidebar:: Instance creation is lazy
+
+    When you register a class in this way, be aware that Pyro only creates an actual
+    instance of it when it is first needed. If nobody connects to the deamon requesting
+    the services of this class, no instance will ever be created.
+
+Normally Pyro will simply use a default parameterless constructor call to create the instance.
+If you need special initialization or the class's init method requires parameters, you have to specify
+an ``instance_creator`` callable as well. Pyro will then use that to create an instance of your class.
+It will call it with the class to create an instance of as the single parameter.
+
+See the :file:`instancemode` example to learn about various ways to use this.
+See the :file:`usersession` example to learn how you could use it to build user-bound resource access without concurrency problems.
 
 
 .. index:: automatic proxying

@@ -389,7 +389,7 @@ class SerializerBase(object):
     def recreate_classes(self, literal):
         t = type(literal)
         if t is set:
-            return set([self.recreate_classes(x) for x in literal])
+            return {self.recreate_classes(x) for x in literal}
         if t is list:
             return [self.recreate_classes(x) for x in literal]
         if t is tuple:
@@ -695,7 +695,10 @@ def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
                     exceptionObject.__dict__.update(piggyback)
 
 
-def get_exposed_members(obj, only_exposed=True, as_lists=False):
+__exposed_member_cache = {}
+
+
+def get_exposed_members(obj, only_exposed=True, as_lists=False, use_cache=True):
     """
     Return public and exposed members of the given object's class.
     You can also provide a class directly.
@@ -709,6 +712,11 @@ def get_exposed_members(obj, only_exposed=True, as_lists=False):
     """
     if not inspect.isclass(obj):
         obj = obj.__class__
+
+    cache_key = (obj, only_exposed, as_lists)
+    if use_cache and cache_key in __exposed_member_cache:
+        return __exposed_member_cache[cache_key]
+
     methods = set()  # all methods
     oneway = set()  # oneway methods
     attrs = set()  # attributes
@@ -737,11 +745,13 @@ def get_exposed_members(obj, only_exposed=True, as_lists=False):
         methods = list(methods)
         oneway = list(oneway)
         attrs = list(attrs)
-    return {
+    result = {
         "methods": methods,
         "oneway": oneway,
         "attrs": attrs
     }
+    __exposed_member_cache[cache_key] = result
+    return result
 
 
 def get_exposed_property_value(obj, propname, only_exposed=True):

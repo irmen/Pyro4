@@ -1,10 +1,9 @@
 Shows how to build a simple asynchronous pubsub message bus.
 (Note that it is NOT aiming to be a reliable high performance msgbus
 to compete with solustions such as zmq, rabbitmq, celery)
-It uses a few Pyro constructs to achieve this:
+It uses a few Pyro features to achieve this:
 
 - autoproxy  (for subscribers)
-- the expose decorator
 - instance_mode
 - auto reconnect
 

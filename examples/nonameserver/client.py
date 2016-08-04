@@ -10,7 +10,7 @@ if sys.version_info < (3, 0):
     input = raw_input
 
 uri = input("Enter the URI of the quote object: ")
-quotegen = Pyro4.core.Proxy(uri)
-print("Getting some quotes...")
-print(quotegen.quote())
-print(quotegen.quote())
+with Pyro4.core.Proxy(uri) as quotegen:
+    print("Getting some quotes...")
+    print(quotegen.quote())
+    print(quotegen.quote())

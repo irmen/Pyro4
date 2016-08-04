@@ -4,7 +4,6 @@ Tests for the core logic.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
 import copy
 import logging
 import os
@@ -12,6 +11,7 @@ import sys
 import time
 import uuid
 import unittest
+import warnings
 import Pyro4.configuration
 import Pyro4.core
 import Pyro4.errors
@@ -29,6 +29,13 @@ elif sys.version_info >= (3, 4):
 
 
 class CoreTests(unittest.TestCase):
+
+    def setUp(self):
+        warnings.filterwarnings("ignore")
+
+    def tearDown(self):
+        warnings.resetwarnings()
+
     def testProxyNoHmac(self):
         # check that proxy without hmac is possible
         with Pyro4.Proxy("PYRO:object@host:9999") as p:
@@ -46,6 +53,16 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(type(config) is dict)
         self.assertIn("COMPRESSION", config)
         self.assertEqual(Pyro4.config.COMPRESSION, config["COMPRESSION"])
+
+    def testConfigDefaults(self):
+        # some security sensitive settings:
+        Pyro4.config.reset(False)   # reset the config to default
+        self.assertTrue(Pyro4.config.REQUIRE_EXPOSE)
+        self.assertEqual("localhost", Pyro4.config.HOST)
+        self.assertEqual("localhost", Pyro4.config.NS_HOST)
+        self.assertFalse(Pyro4.config.FLAME_ENABLED)
+        self.assertEqual("serpent", Pyro4.config.SERIALIZER)
+        self.assertEqual({"json", "serpent", "marshal"}, Pyro4.config.SERIALIZERS_ACCEPTED)
 
     def testConfigValid(self):
         try:
@@ -396,8 +413,8 @@ class CoreTests(unittest.TestCase):
             self.assertIn('__hash__', dir(p))
             self.assertNotIn('ping', dir(p))
             # emulate obtaining metadata
-            p._pyroAttrs = set(['prop'])
-            p._pyroMethods = set(['ping'])
+            p._pyroAttrs = {"prop"}
+            p._pyroMethods = {"ping"}
             self.assertIn('__hash__', dir(p))
             self.assertIn('prop', dir(p))
             self.assertIn('ping', dir(p))
@@ -555,36 +572,6 @@ class CoreTests(unittest.TestCase):
         p2._pyroRelease()
         p3._pyroRelease()
 
-    def testExposeInstancemodeInvalid(self):
-        with self.assertRaises(ValueError):
-            @Pyro4.core.expose(instance_mode="kaputt")
-            class TestClass:
-                def method(self):
-                    pass
-
-    def testExposeInstancemodeDefault(self):
-        @Pyro4.core.expose()
-        class TestClass:
-            def method(self):
-                pass
-
-    def testExposeInstancecreatorInvalid(self):
-        with self.assertRaises(TypeError):
-            @Pyro4.core.expose(instance_creator=12345)
-            class TestClass:
-                def method(self):
-                    pass
-
-    def testExposeInstancing(self):
-        def creator(clazz):
-            return clazz()
-        @Pyro4.core.expose(instance_mode="percall", instance_creator=creator)
-        class TestClass:
-            def method(self):
-                pass
-        im, ic = TestClass._pyroInstancing
-        self.assertEqual("percall", im)
-        self.assertIs(creator, ic)
 
     def testCallContext(self):
         ctx = Pyro4.core.current_context
@@ -598,6 +585,127 @@ class CoreTests(unittest.TestCase):
         ctx.from_global(d)
         self.assertEqual(corr_id2, Pyro4.current_context.correlation_id)
         Pyro4.current_context.correlation_id = None
+
+
+class ExposeDecoratorTests(unittest.TestCase):  # this is testing the deprecated use of @expose(...)
+    def testExposeInstancemodeInvalid(self):
+        with self.assertRaises(ValueError):
+            @Pyro4.core.expose(instance_mode="kaputt")
+            class TestClass:
+                def method(self):
+                    pass
+
+    def testExposeInstancemodeDefault(self):
+        @Pyro4.core.expose
+        class TestClass:
+            def method(self):
+                pass
+
+    def testExposeInstancecreatorInvalid(self):
+        with self.assertRaises(TypeError):
+            @Pyro4.core.expose(instance_creator=12345)
+            class TestClass:
+                def method(self):
+                    pass
+
+    def testExposeWithParamsOnMethodInvalid(self):
+        with self.assertRaises(SyntaxError):
+            class TestClass:
+                @Pyro4.core.expose(instance_mode="~invalidmode~")
+                def method(self):
+                    pass
+        with self.assertRaises(SyntaxError):
+            class TestClass:
+                @Pyro4.core.expose(instance_mode="percall")
+                def method(self):
+                    pass
+        with self.assertRaises(SyntaxError):
+            class TestClass:
+                @Pyro4.core.expose(instance_creator=float)
+                def method(self):
+                    pass
+        class TestClass:
+            @Pyro4.core.expose()
+            def method(self):
+                pass
+
+    def testExposeInstancing(self):
+        def creator(clazz):
+            return clazz()
+        @Pyro4.core.expose(instance_mode="percall", instance_creator=creator)
+        class TestClass:
+            def method(self):
+                pass
+        im, ic = TestClass._pyroInstancing
+        self.assertEqual("percall", im)
+        self.assertIs(creator, ic)
+
+
+class BehaviorDecoratorTests(unittest.TestCase):
+    def testBehaviorInstancemodeInvalid(self):
+        with self.assertRaises(ValueError):
+            @Pyro4.core.behavior(instance_mode="kaputt")
+            class TestClass:
+                def method(self):
+                    pass
+
+    def testBehaviorRequiresParams(self):
+        with self.assertRaises(SyntaxError) as x:
+            @Pyro4.core.behavior
+            class TestClass:
+                def method(self):
+                    pass
+        self.assertIn("is missing argument", str(x.exception))
+
+    def testBehaviorInstancecreatorInvalid(self):
+        with self.assertRaises(TypeError):
+            @Pyro4.core.behavior(instance_creator=12345)
+            class TestClass:
+                def method(self):
+                    pass
+
+    def testBehaviorOnMethodInvalid(self):
+        with self.assertRaises(TypeError):
+            class TestClass:
+                @Pyro4.core.behavior(instance_mode="~invalidmode~")
+                def method(self):
+                    pass
+        with self.assertRaises(TypeError):
+            class TestClass:
+                @Pyro4.core.behavior(instance_mode="percall", instance_creator=float)
+                def method(self):
+                    pass
+        with self.assertRaises(TypeError):
+            class TestClass:
+                @Pyro4.core.behavior()
+                def method(self):
+                    pass
+
+    def testBehaviorInstancing(self):
+        @Pyro4.core.behavior(instance_mode="percall", instance_creator=float)
+        class TestClass:
+            def method(self):
+                pass
+        im, ic = TestClass._pyroInstancing
+        self.assertEqual("percall", im)
+        self.assertIs(float, ic)
+
+    def testBehaviorWithExposeKeepsCorrectValues(self):
+        @Pyro4.behavior(instance_mode="percall", instance_creator=float)
+        @Pyro4.expose
+        class TestClass:
+            pass
+        im, ic = TestClass._pyroInstancing
+        self.assertEqual("percall", im)
+        self.assertIs(float, ic)
+
+        @Pyro4.expose
+        @Pyro4.behavior(instance_mode="percall", instance_creator=float)
+        class TestClass2:
+            pass
+        im, ic = TestClass2._pyroInstancing
+        self.assertEqual("percall", im)
+        self.assertIs(float, ic)
 
 
 class RemoteMethodTests(unittest.TestCase):
@@ -825,8 +933,8 @@ class TestSimpleServe(unittest.TestCase):
 
     def testSimpleServe(self):
         with TestSimpleServe.DaemonWrapper() as d:
-            o1 = MyThing(1)
-            o2 = MyThing(2)
+            o1 = MyThingPartlyExposed(1)
+            o2 = MyThingPartlyExposed(2)
             objects = {o1: "test.o1", o2: None}
             Pyro4.core.Daemon.serveSimple(objects, daemon=d, ns=False, verbose=False)
             self.assertEqual(3, len(d.objectsById))
@@ -836,9 +944,9 @@ class TestSimpleServe(unittest.TestCase):
 
     def testSimpleServeSameNames(self):
         with TestSimpleServe.DaemonWrapper() as d:
-            o1 = MyThing(1)
-            o2 = MyThing(2)
-            o3 = MyThing(3)
+            o1 = MyThingPartlyExposed(1)
+            o2 = MyThingPartlyExposed(2)
+            o3 = MyThingPartlyExposed(3)
             objects = {o1: "test.name", o2: "test.name", o3: "test.othername"}
             with self.assertRaises(Pyro4.errors.DaemonError):
                 Pyro4.core.Daemon.serveSimple(objects, daemon=d, ns=False, verbose=False)

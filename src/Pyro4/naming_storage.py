@@ -4,7 +4,6 @@ Name Server persistent storage implementations.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
 import re
 import logging
 import sys

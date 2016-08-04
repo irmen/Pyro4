@@ -6,7 +6,6 @@ Flame requires the pickle serializer to be used.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
 import sys
 import types
 import code
@@ -159,6 +158,7 @@ class RemoteInteractiveConsole(object):
         self.close()
 
 
+@Pyro4.expose
 class InteractiveConsole(code.InteractiveConsole):
     """Interactive console wrapper that saves output written to stdout so it can be returned as value"""
 
@@ -194,7 +194,7 @@ class Flame(object):
     """
 
     def __init__(self):
-        if set(Pyro4.config.SERIALIZERS_ACCEPTED) != set(["pickle"]):
+        if set(Pyro4.config.SERIALIZERS_ACCEPTED) != {"pickle"}:
             raise RuntimeError("flame requires the pickle serializer exclusively")
 
     def module(self, name):
@@ -301,7 +301,7 @@ def start(daemon):
     Be *very* cautious before starting this: it allows the clients full access to everything on your system.
     """
     if Pyro4.config.FLAME_ENABLED:
-        if set(Pyro4.config.SERIALIZERS_ACCEPTED) != set(["pickle"]):
+        if set(Pyro4.config.SERIALIZERS_ACCEPTED) != {"pickle"}:
             raise Pyro4.errors.SerializeError("Flame requires the pickle serializer exclusively")
         return daemon.register(Flame(), Pyro4.constants.FLAME_NAME)
     else:

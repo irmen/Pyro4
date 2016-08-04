@@ -13,6 +13,7 @@ else:
     current_thread = threadutil.current_thread
 
 
+@Pyro4.expose
 class Server(object):
     def __init__(self):
         self.callcount = 0
@@ -50,10 +51,7 @@ if servertype == "t":
 else:
     Pyro4.config.SERVERTYPE = "multiplex"
 
-daemon = Pyro4.core.Daemon()
-obj = Server()
-uri = daemon.register(obj)
-ns = Pyro4.naming.locateNS()
-ns.register("example.servertypes", uri)
-print("Server is ready.")
-daemon.requestLoop()
+
+Pyro4.Daemon.serveSimple({
+    Server: "example.servertypes"
+})

@@ -4,6 +4,7 @@ import time
 import Pyro4
 
 
+@Pyro4.expose
 class Thingy(object):
     def divide(self, a, b):
         print("dividing {0} by {1} after a slight delay".format(a, b))
@@ -19,8 +20,6 @@ class Thingy(object):
         return value + increase
 
 
-d = Pyro4.Daemon()
-uri = d.register(Thingy(), "example.async")
-print("server object uri:", uri)
-print("async server running.")
-d.requestLoop()
+Pyro4.Daemon.serveSimple({
+    Thingy: "example.async"
+}, ns=False)

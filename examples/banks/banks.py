@@ -1,3 +1,6 @@
+import Pyro4
+
+
 # Unrestricted account.
 class Account(object):
     def __init__(self):
@@ -23,6 +26,7 @@ class RestrictedAccount(Account):
 
 
 # Abstract bank.
+@Pyro4.expose
 class Bank(object):
     def __init__(self):
         self.accounts = {}
@@ -65,6 +69,7 @@ class Bank(object):
 
 
 # Special bank: Rabobank. It has unrestricted accounts.
+@Pyro4.expose
 class Rabobank(Bank):
     def name(self):
         return 'Rabobank'
@@ -76,6 +81,7 @@ class Rabobank(Bank):
 
 
 # Special bank: ABN. It has restricted accounts.
+@Pyro4.expose
 class ABN(Bank):
     def name(self):
         return 'ABN bank'

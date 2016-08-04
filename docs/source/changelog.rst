@@ -2,17 +2,46 @@
 Change Log
 **********
 
-**Pyro 4.4x threadpool branch**
+**Pyro 4.47**
 
 - threaded socket server now adapts the number of threads dynamically depending on connection count
 - THREADPOOL_SIZE_MIN config item added to specify the min number of threads (defaults to 4)
 - THREADPOOL_ALLOW_QUEUE config item removed, it is no longer relevant
   @todo docs
+- Name server lookup now also considers 127.0.1.1 when trying to find a name server on localhost.
+  This is convenient on some systems (Debian Linux) where 127.0.1.1 is often the address assigned
+  to the local system via the hosts file.
+
 
 
 **Pyro 4.46**
 
-- ...
+.. note::
+    Compatibility issue:
+    The change mentioned below about ``@expose`` now being required by default
+    requires a change in your (server-)code or configuration. Read on for details.
+
+.. note::
+    Using ``@expose(...)`` on a class to set the ``instance_mode`` or/and ``instance_creator`` for that
+    class, also exposes ALL methods of that class. That is an unintended side-effect that will be fixed
+    in the next Pyro version. You can already fix your code right now to prepare for this. Read on for details.
+
+- ``@Pyro4.behavior`` decorator added that should now be used to set instance_mode and instance_creator instead of
+  using ``@Pyro4.expose``.  You can still use ``@expose`` in this release, but its arguments will be removed
+  in the next Pyro version.  So by then you have to have updated your code or it won't run anymore.
+  The fix is simple: replace all occurences of ``@expose(...)`` *where you set the ``instance_mode`` or/and ``instance_creator``*
+  on your Pyro class, by ``@behavior(...)`` -- and add new ``@expose`` decorations to the class or the methods
+  as required to properly expose them. Also read the next bullet.
+- *Backwards incompatible behavior change:* in the spirit of 'secure by default', it's now required to use ``@expose``
+  on things you want to expose via Pyro. This is because the REQUIRE_EXPOSE config item is now True by default.
+  The "servers" chapter contains details about this and how you can best approach this upgrade issue.
+- blobtransfer example added.
+- improved the docs on binary data transfer a bit.
+- code now uses set literals instead of old fashioned set([...])
+- removed the way outdated 'upgrading from Pyro3' chapter from the documentation.
+- Pyro4.util.get_exposed_members now has a cache which speeds up determining object metadata enormously on subsequent connections.
+- added paragraph to server chapter in documentation about how to expose classes without changing the source code (such as 3rd party libraries)
+- added thirdpartylib example for the above
 
 
 **Pyro 4.45**

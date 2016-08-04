@@ -7,6 +7,7 @@ import Pyro4
 
 
 class QuoteGen(object):
+    @Pyro4.expose
     def quote(self):
         try:
             quote = os.popen('fortune').read()
@@ -17,16 +18,16 @@ class QuoteGen(object):
             return "This system knows no witty quotes :-("
 
 
-daemon = Pyro4.core.Daemon()
-quote1 = QuoteGen()
-quote2 = QuoteGen()
+with Pyro4.core.Daemon() as daemon:
+    quote1 = QuoteGen()
+    quote2 = QuoteGen()
 
-uri1 = daemon.register(quote1)  # let Pyro create a unique name for this one
-uri2 = daemon.register(quote2, "example.quotegen")  # provide a logical name ourselves
+    uri1 = daemon.register(quote1)  # let Pyro create a unique name for this one
+    uri2 = daemon.register(quote2, "example.quotegen")  # provide a logical name ourselves
 
-print("QuoteGen is ready, not using the Name Server.")
-print("You can use the following two URIs to connect to me:")
-print(uri1)
-print(uri2)
+    print("QuoteGen is ready, not using the Name Server.")
+    print("You can use the following two URIs to connect to me:")
+    print(uri1)
+    print(uri2)
 
-daemon.requestLoop()
+    daemon.requestLoop()

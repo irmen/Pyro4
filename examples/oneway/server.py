@@ -9,6 +9,7 @@ import Pyro4
 Pyro4.config.ONEWAY_THREADED = True
 
 
+@Pyro4.expose
 class Server(object):
     def __init__(self):
         self.busy = False
@@ -44,5 +45,5 @@ class Server(object):
 # main program
 
 Pyro4.Daemon.serveSimple({
-    Server(): "example.oneway"
+    Server: "example.oneway"
 })

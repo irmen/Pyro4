@@ -10,10 +10,13 @@ fmt = '%Y-%m-%d %H:%M:%S %Z%z'
 Pyro4.config.SERIALIZERS_ACCEPTED = {"pickle", "marshal", "json", "serpent"}
 
 
+@Pyro4.expose
 class Server(object):
     def echo(self, date):
-        print("ECHO: ", date.isoformat())
-        print("      ", repr(date))
+        print("ECHO:")
+        print(" [raw] ", repr(date))
+        if hasattr(date, "isoformat"):
+            print(" [iso] ", date.isoformat())
         return date
 
     def pytz(self):
@@ -27,5 +30,5 @@ class Server(object):
 # main program
 
 Pyro4.Daemon.serveSimple({
-    Server(): "example.timezones"
-})
+    Server: "example.timezones"
+}, ns=False)

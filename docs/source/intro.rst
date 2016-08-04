@@ -28,8 +28,11 @@ Here's a quick overview of Pyro's features:
 - defaults to a safe serializer (`serpent <https://pypi.python.org/pypi/serpent>`_) that supports many Python data types.
 - supports different serializers (serpent, json, marshal, pickle, dill).
 - support for all Python data types that are serializable when using the 'pickle' or 'dill' serializers [1]_.
-- runs on normal Python 2.x, Python **3.x**, IronPython, Pypy.
-- works between systems on different architectures and operating systems (64-bit, 32-bit, Intel, PowerPC, Windows, Linux, OSX...)
+- runs on Python 2.7, Python 3.x, IronPython, Pypy.
+- works between different system architectures and operating systems
+- able to communicate between different Python versions transparantly
+- can use IPv4, IPv6 and Unix domain sockets.
+- lightweight client library available for .NET and Java native code ('Pyrolite', provided separately).
 - designed to be very easy to use and get out of your way as much as possible, but still provide a lot of flexibility when you do need it
 - name server that keeps track of your object's actual locations so you can move them around transparently.
 - yellow-pages type lookups possible, based on metadata tags on registrations in the name server
@@ -40,14 +43,12 @@ Here's a quick overview of Pyro's features:
 - you can define timeouts on network communications to prevent a call blocking forever if there's something wrong.
 - asynchronous invocations if you want to get the results 'at some later moment in time'. Pyro will take care of gathering the result values in the background.
 - remote exceptions will be raised in the caller, as if they were local. You can extract detailed remote traceback information.
+- http gateway available for clients wanting to use http+json (such as browser scripts).
 - stable network communication code that works reliably on many platforms.
 - possibility to use Pyro's own event loop, or integrate it into your own (or third party) event loop.
 - three different possible instance modes for your remote objects (singleton, one per session, one per call)
 - many simple examples included to show various features and techniques.
 - large amount of unit tests and high test coverage.
-- lightweight native client library available for .NET and Java (provided separately, called Pyrolite).
-- http gateway available for clients wanting to use http+json (such as browser scripts).
-- can use IPv4, IPv6 and Unix domain sockets.
 - reliable and established: built upon more than 15 years of existing Pyro history, with ongoing support and development.
 
 
@@ -59,23 +60,23 @@ I started working on the first Pyro version in 1998, when remote method invocati
 and CORBA were quite popular. I wanted something like that in Python and there was nothing available, so I decided
 to write my own. Over the years it slowly gained features till it reached version 3.10 or so.
 At that point it was clear that the code base had become quite ancient and couldn't reliably support any new features,
-so Pyro4 was born in early 2010, written from scratch. See :doc:`upgrading` for more information on the different
-versions and how to upgrade old code to Pyro4.
+so Pyro4 was born in early 2010, written from scratch.
 
 ``Pyro`` is the package name of the old and no longer supported 3.x version of Pyro.
 ``Pyro4`` is the package name of the current version. Its concepts are similar to Pyro 3.x but it is not
 backwards compatible. To avoid conflicts, this version has a different package name.
 
 If you're somehow still interested in the old version, here is `its git repo <https://github.com/irmen/Pyro3>`_
-and it is also `available on PyPi <http://pypi.python.org/pypi/Pyro/>`_.
+and it is also still `available on PyPi <http://pypi.python.org/pypi/Pyro/>`_ -- but don't use it unless
+you really have to.
 
 
 .. index:: usage
 
-What can you use it for?
-========================
+What can you use Pyro for?
+==========================
 
-Essentially, Pyro can be used to distribute various kinds of resources or responsibilities:
+Essentially, Pyro can be used to distribute and integrate various kinds of resources or responsibilities:
 computational (hardware) resources (cpu, storage, printers),
 informational resources (data, privileged information)
 and business logic (departments, domains).
@@ -101,9 +102,9 @@ that represent the privileged information or logic.
 Other programs running with normal privileges can talk to those Pyro objects to
 perform those specific tasks with higher privileges in a controlled manner.
 
-On a lower level Pyro is just a form of inter-process communication. So everywhere you would otherwise have
-used a more primitive form of IPC (such as plain TCP/IP sockets) between Python components, you could consider to use
-Pyro instead.
+Finally, Pyro can be a communication glue library to easily integrate various pars of a heterogeneous system,
+consisting of many different parts and pieces. As long as you have a working (and supported) Python version
+running on it, you should be able to talk to it using Pyro from any other part of the system.
 
 Have a look at the :file:`examples` directory in the source archive, perhaps one of the many example
 programs in there gives even more inspiration of possibilities.
@@ -122,6 +123,7 @@ First let's see the server code::
     # saved as greeting-server.py
     import Pyro4
 
+    @Pyro4.expose
     class GreetingMaker(object):
         def get_fortune(self, name):
             return "Hello, {0}. Here is your fortune message:\n" \
@@ -173,6 +175,7 @@ We'll have to modify a few lines in :file:`greeting-server.py` to make it regist
     # saved as greeting-server.py
     import Pyro4
 
+    @Pyro4.expose
     class GreetingMaker(object):
         def get_fortune(self, name):
             return "Hello, {0}. Here is your fortune message:\n" \

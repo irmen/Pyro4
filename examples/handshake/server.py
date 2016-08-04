@@ -23,8 +23,8 @@ class CustomDaemon(Pyro4.Daemon):
         print("Daemon client disconnects:", conn.sock.getpeername())
 
 
-daemon = CustomDaemon()
-print("Server is ready. You can use the following URI to connect:")
-print(daemon.uriFor(Pyro4.constants.DAEMON_NAME))
-print("When asked, enter the following secret code: ", secret_code)
-daemon.requestLoop()
+with CustomDaemon() as daemon:
+    print("Server is ready. You can use the following URI to connect:")
+    print(daemon.uriFor(Pyro4.constants.DAEMON_NAME))
+    print("When asked, enter the following secret code: ", secret_code)
+    daemon.requestLoop()

@@ -5,12 +5,9 @@ to integrate Pyro's event loop into the Tkinter GUI mainloop.
 No threads are used. The Pyro event callback is called every so often
 to check if there are Pyro events to handle, and handles them synchronously.
 """
-from __future__ import with_statement
 import time
 import select
-
 import Pyro4
-
 
 try:
     from tkinter import *
@@ -97,6 +94,7 @@ class PyroGUI(object):
         self.msg.config(text="\n".join(self.serveroutput))
 
 
+@Pyro4.expose
 class MessagePrinter(object):
     """
     The Pyro object that interfaces with the GUI application.

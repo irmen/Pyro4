@@ -6,11 +6,12 @@ import Pyro4
 # until the message went full-circle: then it exits.
 
 class Chain(object):
-    def __init__(self, name, next):
+    def __init__(self, name, next_node):
         self.name = name
-        self.nextName = next
+        self.nextName = next_node
         self.next = None
 
+    @Pyro4.expose
     def process(self, message):
         if self.next is None:
             self.next = Pyro4.core.Proxy("PYRONAME:example.chain." + self.nextName)

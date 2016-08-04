@@ -5,7 +5,7 @@ Uses the best available selector (kqueue, poll, select).
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement, print_function
+from __future__ import print_function
 import socket
 import sys
 import logging

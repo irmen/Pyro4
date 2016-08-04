@@ -8,6 +8,7 @@ import Pyro4
 #  You can get a lot more info about scripting iTunes here:
 #  http://dougscripts.com/itunes/
 
+@Pyro4.expose
 class ITunes(object):
     def __init__(self):
         # start itunes

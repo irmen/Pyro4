@@ -1,9 +1,9 @@
-from __future__ import with_statement
 import Pyro4
 
 
 # Chat box administration server.
 # Handles logins, logouts, channels and nicknames, and the chatting.
+@Pyro4.expose
 class ChatBox(object):
     def __init__(self):
         self.channels = {}  # registered channels { channel --> (nick, client callback) list }
@@ -59,10 +59,6 @@ class ChatBox(object):
                     print('Removed dead listener %s %s' % (n, c))
 
 
-with Pyro4.core.Daemon() as daemon:
-    with Pyro4.naming.locateNS() as ns:
-        uri = daemon.register(ChatBox())
-        ns.register("example.chatbox.server", uri)
-    # enter the service loop.
-    print('Chatbox open.')
-    daemon.requestLoop()
+Pyro4.Daemon.serveSimple({
+    ChatBox: "example.chatbox.server"
+})

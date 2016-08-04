@@ -436,6 +436,12 @@ class SocketConnection(object):
     def __del__(self):
         self.close()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def send(self, data):
         sendData(self.sock, data)
 
@@ -445,11 +451,11 @@ class SocketConnection(object):
     def close(self):
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
-        except (OSError, socket.error):
+        except:
             pass
         try:
             self.sock.close()
-        except AttributeError:
+        except:
             pass
         self.pyroInstances = {}   # force releasing the session instances
 

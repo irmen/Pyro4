@@ -5,6 +5,7 @@ import Pyro4
 from shoppingcart import ShoppingCart
 
 
+@Pyro4.expose
 class Shop(object):
     inventory = {
         "paper": 1.25,
@@ -74,5 +75,5 @@ class Shop(object):
 # main program
 
 Pyro4.Daemon.serveSimple({
-    Shop(): "example.shop"
+    Shop: "example.shop"
 })

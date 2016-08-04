@@ -1,4 +1,5 @@
 import pickle
+import Pyro4
 
 
 class UnserializableError(Exception):
@@ -6,6 +7,7 @@ class UnserializableError(Exception):
         raise pickle.PicklingError("make this nonpickleable")
 
 
+@Pyro4.expose
 class TestClass(object):
     def div(self, arg1, arg2):
         return arg1 / arg2

@@ -1,14 +1,19 @@
 from __future__ import print_function
 import Pyro4
 import datetime
+import sys
 
+if sys.version_info < (3, 0):
+    input = raw_input
+
+
+uri = input("What is the server uri? ").strip()
 fmt = '%Y-%m-%d %H:%M:%S %Z%z'
-
 print("local time without timezone: ", datetime.datetime.now().strftime(fmt))
 
 
 def test():
-    with Pyro4.core.Proxy("PYRONAME:example.timezones") as serv:
+    with Pyro4.core.Proxy(uri) as serv:
         print("\nFIRST: no timezone")
         date1 = serv.echo(datetime.datetime.now())
         print("{0}\n  {1} ({2})".format(date1, repr(date1), type(date1)))

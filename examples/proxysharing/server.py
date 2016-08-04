@@ -4,6 +4,7 @@ import time
 import Pyro4
 
 
+@Pyro4.expose
 class RemoteObject(object):
     def __init__(self):
         self.amount = 0
@@ -24,5 +25,5 @@ class RemoteObject(object):
 
 
 Pyro4.Daemon.serveSimple({
-    RemoteObject(): "example.proxysharing"
+    RemoteObject: "example.proxysharing"
 })

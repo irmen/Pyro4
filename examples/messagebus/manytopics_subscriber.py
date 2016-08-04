@@ -13,7 +13,7 @@ from messagebus.messagebus import Subscriber
 Pyro4.config.AUTOPROXY = True
 
 
-@Pyro4.expose()
+@Pyro4.expose
 class Subber(Subscriber):
     def init_counters(self, topics):
         self.message_counter = {}

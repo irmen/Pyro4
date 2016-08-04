@@ -1,10 +1,8 @@
-from __future__ import print_function
 import time
-
 import Pyro4
-from Pyro4.socketutil import getIpAddress
 
 
+@Pyro4.expose
 class Thingy(object):
     def multiply(self, a, b):
         return a * b
@@ -27,8 +25,6 @@ class Thingy(object):
         return 0
 
 
-d = Pyro4.Daemon(host=getIpAddress("", workaround127=True), port=0)
-uri = d.register(Thingy(), "example.batched")
-print("server object uri:", uri)
-print("batched calls server running.")
-d.requestLoop()
+Pyro4.Daemon.serveSimple({
+    Thingy: "example.batched"
+}, ns=False)

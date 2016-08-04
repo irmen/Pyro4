@@ -4,7 +4,6 @@ Tests for the name server (online/running).
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
 import time
 import unittest
 import Pyro4.core
@@ -205,7 +204,7 @@ class NameServerTests0000(unittest.TestCase):
         host_check = self.nsUri.host
         self.assertEqual("0.0.0.0", host_check, "for hostname \"\" the resulting ip must be 0.0.0.0 (or ipv6 equivalent)")
         self.assertIsNotNone(self.bcserver, "expected a BC server to be running")
-        self.bcserver.runInThread()
+        self.bcthread = self.bcserver.runInThread()
         self.old_bcPort = Pyro4.config.NS_BCPORT
         self.old_nsPort = Pyro4.config.NS_PORT
         self.old_nsHost = Pyro4.config.NS_HOST
@@ -217,6 +216,7 @@ class NameServerTests0000(unittest.TestCase):
         time.sleep(0.01)
         self.nameserver.shutdown()
         self.bcserver.close()
+        self.bcthread.join()
         Pyro4.config.NS_HOST = self.old_nsHost
         Pyro4.config.NS_PORT = self.old_nsPort
         Pyro4.config.NS_BCPORT = self.old_bcPort

@@ -6,7 +6,7 @@ Uses a single worker thread per client connection.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement, print_function
+from __future__ import print_function
 import socket
 import logging
 import sys
@@ -93,7 +93,7 @@ class ClientConnectionJob(object):
         self.csock.close()
 
     def denyConnection(self, reason):
-        log.warn("client connection was denied: "+reason)
+        log.warning("client connection was denied: "+reason)
         # return failed handshake
         self.daemon._handshake(self.csock, denied_reason=reason)
         self.csock.close()

@@ -12,7 +12,6 @@ For this example, the mainloop runs a callback function every so often
 to check for new work in that Queue and will process it if the Pyro worker
 thread has put something in it.
 """
-from __future__ import with_statement
 import time
 
 try:
@@ -103,6 +102,7 @@ class PyroGUI(object):
         self.msg.config(text="\n".join(self.serveroutput))
 
 
+@Pyro4.expose
 class MessagePrinter(object):
     """
     The Pyro object that interfaces with the GUI application.

@@ -151,8 +151,7 @@ It may still be required to specify the pickle or dill protocol version though, 
 For instance, Python 3.4 introduced version 4 of the pickle protocol and as such won't be able to talk to Python 3.3 which is stuck
 on version 3 pickle protocol. You'll have to tell the Python 3.4 side to step down to protocol 3. There is a config item for that. The same will apply for dill protocol versions.
 
-
-The implementation independent serialization protocols (serpent or json) don't have any of these issues.
+The implementation independent serialization protocols serpent and json don't have these limitations.
 
 
 
@@ -272,7 +271,7 @@ using the internal addresses::
 
     # running on server1.lan
     d = Pyro4.Daemon(port=9999, nathost="pyro.server.com", natport=5555)
-    uri = d.register(Something(), "thing")
+    uri = d.register(Something, "thing")
     print(uri)     # "PYRO:thing@pyro.server.com:5555"
 
 As you see, the URI now contains the external address.
@@ -328,12 +327,13 @@ Sometimes it can be because you configured Pyro wrong. A checklist to follow to 
 
 Binary data transfer
 ====================
-Pyro is not meant as a tool to transfer large amounts of binary data (images, sound files, video clips).
-Its wire protocol is not optimized for these kinds of data. The occasional transmission of such data
+Pyro is not meant to transfer large amounts of binary data (images, sound files, video clips):
+the protocol is not designed nor optimized for these kinds of data. The occasional transmission of such data
 is fine (:doc:`flame` even provides a convenience method for that, if you like:
-:meth:`Pyro4.utils.flame.Flame.sendfile`) but usually it is better to use something else to do
-the actual data transfer (file share+file copy, ftp, scp, rsync).
-Also, Pyro has a 2 gigabyte message size limitation at this time.
+:meth:`Pyro4.utils.flame.Flame.sendfile`) but if you're dealing with a lot of them or with big files,
+it is usually better to use something else to do the actual data transfer (file share+file copy, ftp, http, scp, rsync).
+Also, Pyro has a 2 gigabyte message size limitation at this time (if your Python implementation and
+system memory even allow the process to reach this size).
 
 .. note:: Serpent and binary data:
     If you do transfer binary data using the serpent serializer, you have to be aware of the following.
@@ -345,24 +345,24 @@ Also, Pyro has a 2 gigabyte message size limitation at this time.
 
 
 The following table is an indication of the relative speeds when dealing with large amounts
-of binary data. It lists the results of the :file:`hugetransfer` example, using python 3.3,
-over a 100 mbit lan connection:
+of binary data. It lists the results of the :file:`hugetransfer` example, using python 3.5,
+over a 1000 Mbps LAN connection:
 
 ========== ========== ============= ================
 serializer str mb/sec bytes mb/sec  bytearray mb/sec
 ========== ========== ============= ================
-pickle     30.9       32.8          31.8
-marshal    30.0       28.8          32.4
-serpent    12.5       9.1           9.1
-json       22.5       not supported not supported
+pickle     70.8       72.7          64.9
+marshal    71.0       65.0          65.2
+serpent    25.0       14.1          14.3
+json       31.5       not supported not supported
 ========== ========== ============= ================
 
-The json serializer can't deal with actual binary data at all because it can't serialize these types.
-The serpent serializer is inefficient when dealing with binary data, because
-it has to encode and decode it as a base-64 string (this is by design).
+The json serializer only works with strings, it can't serialize binary data at all.
+The serpent serializer can, but read the note above about why it's quite inefficent there.
+Marshal and pickle are relatively efficient, speed-wise. But beware, when using ``pickle``,
+there's quite a difference in dealing with various types:
 
-Marshal and pickle are relatively efficient. But here is a short overview of the ``pickle``
-wire protocol overhead for the possible binary types:
+**pickle datatype differences**
 
 ``str``
     *Python 2.x:* efficient; directly encoded as a byte sequence, because that's what it is.
@@ -381,6 +381,27 @@ wire protocol overhead for the possible binary types:
 
 ``numpy arrays``
     usually cannot be transferred directly, see :ref:`numpy`.
+
+
+**integrating raw socket transfer in a Pyro server**
+
+For comparison, here are the results of the ``blobserver`` example over the same connection,
+tweaked to use in-memory blobs and a single thread to make it similar to the example above.
+It prepares a big amount of binary data and uses a raw socket connection rather than a normal
+Pyro call to transfer it to the client. As you can see the transfer speed then approaches the
+limits (~100 Mb/sec) of my 1000 Mbps LAN connection.
+
+============== ============== =========================
+protocol       transfer speed cpu time
+============== ============== =========================
+pyro (serpent) 13.4 Mb/sec    7.9 sec out of 15.3 (51%)
+raw sockets    91.1 Mb/sec    0.9 sec out of 8.7  (10%)
+============== ============== =========================
+
+It's quite a bit more work to set up (extra socket server and event loop, integrate with Pyro)
+and you'll have to code on the raw socket API.  Don't do this until you have done a performance
+analysis of a normal Pyro-only approach.
+
 
 .. index:: MSG_WAITALL
 

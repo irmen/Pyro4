@@ -23,10 +23,12 @@ class StockMarket(object):
         for aggregator in self.aggregators:
             aggregator.quotes(self.name, quotes)
 
+    @Pyro4.expose
     def listener(self, aggregator):
         print("market {0} adding new aggregator".format(self.name))
         self.aggregators.append(aggregator)
 
+    @Pyro4.expose
     def symbols(self):
         return list(self.symbolmeans.keys())
 
@@ -45,17 +47,16 @@ def main():
     nasdaq = StockMarket("NASDAQ", ["AAPL", "CSCO", "MSFT", "GOOG"])
     newyork = StockMarket("NYSE", ["IBM", "HPQ", "BP"])
 
-    daemon = Pyro4.Daemon()
-    nasdaq_uri = daemon.register(nasdaq)
-    newyork_uri = daemon.register(newyork)
-    ns = Pyro4.locateNS()
-    ns.register("example.stockmarket.nasdaq", nasdaq_uri)
-    ns.register("example.stockmarket.newyork", newyork_uri)
-
-    nasdaq.run()
-    newyork.run()
-    print("Stockmarkets running.")
-    daemon.requestLoop()
+    with Pyro4.Daemon() as daemon:
+        nasdaq_uri = daemon.register(nasdaq)
+        newyork_uri = daemon.register(newyork)
+        with Pyro4.locateNS() as ns:
+            ns.register("example.stockmarket.nasdaq", nasdaq_uri)
+            ns.register("example.stockmarket.newyork", newyork_uri)
+        nasdaq.run()
+        newyork.run()
+        print("Stockmarkets running.")
+        daemon.requestLoop()
 
 
 if __name__ == "__main__":

@@ -68,7 +68,7 @@ SerializerBase.register_class_to_dict(Message, Message.to_dict)
 SerializerBase.register_dict_to_class("Pyro4.utils.messagebus.message", Message.from_dict)
 
 
-@Pyro4.expose()
+@Pyro4.expose
 class Subscriber(object):
     def __init__(self, auto_consume=True, max_queue_size=5000):
         self.bus = Pyro4.Proxy("PYRONAME:"+PYRO_MSGBUS_NAME)
@@ -397,7 +397,8 @@ def make_messagebus(clazz):
         raise ValueError("invalid storagetype")
 
 
-@Pyro4.expose(instance_mode="single", instance_creator=make_messagebus)
+@Pyro4.behavior(instance_mode="single", instance_creator=make_messagebus)
+@Pyro4.expose
 class MessageBus(object):
     def __init__(self, storage=None):
         if storage is None:

@@ -1,16 +1,10 @@
 from __future__ import print_function
 import Pyro4
-import sys
+import Pyro4.socketutil
 import bench
 
-
-if sys.version_info < (3, 0):
-    input = raw_input
-
-host = input("Hostname to bind on? ").strip()
-
-obj = bench.bench()
-daemon = Pyro4.Daemon(host=host)
-uri = daemon.register(obj, "example.benchmark")
-print("Server running, uri = %s" % uri)
-daemon.requestLoop()
+Pyro4.Daemon.serveSimple({
+        bench.bench: "example.benchmark"
+    },
+    daemon=Pyro4.Daemon(host=Pyro4.socketutil.getIpAddress("")),
+    ns=False)

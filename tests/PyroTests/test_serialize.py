@@ -4,7 +4,6 @@ Tests for the data serializer.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-from __future__ import with_statement
 import sys
 import collections
 import copy
@@ -28,6 +27,7 @@ class SerializeTests_pickle(unittest.TestCase):
         self.previous_serializer = Pyro4.config.SERIALIZER
         Pyro4.config.SERIALIZER = self.SERIALIZER
         self.ser = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
+        Pyro4.config.REQUIRE_EXPOSE = True
 
     def tearDown(self):
         Pyro4.config.SERIALIZER = self.previous_serializer
@@ -239,12 +239,12 @@ class SerializeTests_pickle(unittest.TestCase):
         daemon2 = Pyro4.core.Daemon()
         daemon2.__setstate_from_dict__(state)
 
-    def testAutoProxy(self):
+    def testAutoProxyPartlyExposed(self):
         if self.SERIALIZER == "marshal":
             self.skipTest("marshal can't serialize custom objects")
-        self.ser.register_type_replacement(MyThing, Pyro4.core.pyroObjectToAutoProxy)
-        t1 = MyThing("1")
-        t2 = MyThing("2")
+        self.ser.register_type_replacement(MyThingPartlyExposed, Pyro4.core.pyroObjectToAutoProxy)
+        t1 = MyThingPartlyExposed("1")
+        t2 = MyThingPartlyExposed("2")
         with Pyro4.core.Daemon() as d:
             d.register(t1, "thingy1")
             d.register(t2, "thingy2")
@@ -258,9 +258,32 @@ class SerializeTests_pickle(unittest.TestCase):
             self.assertIsInstance(p2, Pyro4.core.Proxy)
             self.assertEqual("thingy1", p1._pyroUri.object)
             self.assertEqual("thingy2", p2._pyroUri.object)
-            self.assertEqual(set(["prop1", "prop2", "readonly_prop1"]), p1._pyroAttrs)
-            self.assertEqual(set(['classmethod', 'method', 'oneway', 'staticmethod', 'exposed', "__dunder__"]), p1._pyroMethods)
-            self.assertEqual(set(['oneway']), p1._pyroOneway)
+            self.assertEqual({"prop1", "readonly_prop1"}, p1._pyroAttrs)
+            self.assertEqual({"exposed", "oneway"}, p1._pyroMethods)
+            self.assertEqual({'oneway'}, p1._pyroOneway)
+
+    def testAutoProxyFullExposed(self):
+        if self.SERIALIZER == "marshal":
+            self.skipTest("marshal can't serialize custom objects")
+        self.ser.register_type_replacement(MyThingPartlyExposed, Pyro4.core.pyroObjectToAutoProxy)
+        t1 = MyThingFullExposed("1")
+        t2 = MyThingFullExposed("2")
+        with Pyro4.core.Daemon() as d:
+            d.register(t1, "thingy1")
+            d.register(t2, "thingy2")
+            data = [t1, ["apple", t2]]
+            s, c = self.ser.serializeData(data)
+            data = self.ser.deserializeData(s, c)
+            self.assertEqual("apple", data[1][0])
+            p1 = data[0]
+            p2 = data[1][1]
+            self.assertIsInstance(p1, Pyro4.core.Proxy)
+            self.assertIsInstance(p2, Pyro4.core.Proxy)
+            self.assertEqual("thingy1", p1._pyroUri.object)
+            self.assertEqual("thingy2", p2._pyroUri.object)
+            self.assertEqual({"prop1", "prop2", "readonly_prop1"}, p1._pyroAttrs)
+            self.assertEqual({'classmethod', 'method', 'oneway', 'staticmethod', 'exposed', "__dunder__"}, p1._pyroMethods)
+            self.assertEqual({'oneway'}, p1._pyroOneway)
 
     def testCustomClassFail(self):
         if self.SERIALIZER in ("pickle", "dill"):
@@ -276,12 +299,12 @@ class SerializeTests_pickle(unittest.TestCase):
     def testCustomClassOk(self):
         if self.SERIALIZER in ("pickle", "dill"):
             self.skipTest("pickle and dill simply serialize custom classes just fine")
-        o = MyThing("test")
-        Pyro4.util.SerializerBase.register_class_to_dict(MyThing, mything_dict)
+        o = MyThingPartlyExposed("test")
+        Pyro4.util.SerializerBase.register_class_to_dict(MyThingPartlyExposed, mything_dict)
         Pyro4.util.SerializerBase.register_dict_to_class("CUSTOM-Mythingymabob", mything_creator)
         s, c = self.ser.serializeData(o)
         o2 = self.ser.deserializeData(s, c)
-        self.assertIsInstance(o2, MyThing)
+        self.assertIsInstance(o2, MyThingPartlyExposed)
         self.assertEqual("test", o2.name)
         # unregister the deserializer
         Pyro4.util.SerializerBase.unregister_dict_to_class("CUSTOM-Mythingymabob")
@@ -291,15 +314,15 @@ class SerializeTests_pickle(unittest.TestCase):
         except Pyro4.errors.ProtocolError:
             pass  # ok
         # unregister the serializer
-        Pyro4.util.SerializerBase.unregister_class_to_dict(MyThing)
+        Pyro4.util.SerializerBase.unregister_class_to_dict(MyThingPartlyExposed)
         s, c = self.ser.serializeData(o)
         try:
             self.ser.deserializeData(s, c)
             self.fail("must fail")
         except Pyro4.errors.SerializeError as x:
             msg = str(x)
-            self.assertIn(msg, ["unsupported serialized class: testsupport.MyThing",
-                                "unsupported serialized class: PyroTests.testsupport.MyThing"])
+            self.assertIn(msg, ["unsupported serialized class: testsupport.MyThingPartlyExposed",
+                                "unsupported serialized class: PyroTests.testsupport.MyThingPartlyExposed"])
 
     def testData(self):
         data = [42, "hello"]
@@ -311,7 +334,7 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(data, data2)
 
     def testSet(self):
-        data = set([111, 222, 333])
+        data = {111, 222, 333}
         ser, compressed = self.ser.serializeData(data)
         data2 = self.ser.deserializeData(ser, compressed=compressed)
         self.assertEqual(data, data2)
@@ -470,7 +493,7 @@ class SerializeTests_serpent(SerializeTests_pickle):
 
     def testSet(self):
         # serpent serializes a set into a tuple on older python versions, so we override this
-        data = set([111, 222, 333])
+        data = {111, 222, 333}
         ser, compressed = self.ser.serializeData(data)
         data2 = self.ser.deserializeData(ser, compressed=compressed)
         if serpent.can_use_set_literals:
@@ -525,7 +548,7 @@ class SerializeTests_json(SerializeTests_pickle):
 
     def testSet(self):
         # json serializes a set into a list, so we override this
-        data = set([111, 222, 333])
+        data = {111, 222, 333}
         ser, compressed = self.ser.serializeData(data)
         data2 = self.ser.deserializeData(ser, compressed=compressed)
         self.assertEqual(list(data), data2)
@@ -631,21 +654,21 @@ class GenericTests(unittest.TestCase):
         self.assertEqual("/tmp/socketname", x.sockname)
 
     def testCustomDictClass(self):
-        o = MyThing("test")
-        Pyro4.util.SerializerBase.register_class_to_dict(MyThing, mything_dict)
+        o = MyThingPartlyExposed("test")
+        Pyro4.util.SerializerBase.register_class_to_dict(MyThingPartlyExposed, mything_dict)
         Pyro4.util.SerializerBase.register_dict_to_class("CUSTOM-Mythingymabob", mything_creator)
         d = Pyro4.util.SerializerBase.class_to_dict(o)
         self.assertEqual("CUSTOM-Mythingymabob", d["__class__"])
         self.assertEqual("test", d["name"])
         x = Pyro4.util.SerializerBase.dict_to_class(d)
-        self.assertIsInstance(x, MyThing)
+        self.assertIsInstance(x, MyThingPartlyExposed)
         self.assertEqual("test", x.name)
         # unregister the conversion functions and try again
-        Pyro4.util.SerializerBase.unregister_class_to_dict(MyThing)
+        Pyro4.util.SerializerBase.unregister_class_to_dict(MyThingPartlyExposed)
         Pyro4.util.SerializerBase.unregister_dict_to_class("CUSTOM-Mythingymabob")
         d_orig = Pyro4.util.SerializerBase.class_to_dict(o)
         clsname = d_orig["__class__"]
-        self.assertTrue(clsname.endswith("testsupport.MyThing"))
+        self.assertTrue(clsname.endswith("testsupport.MyThingPartlyExposed"))
         try:
             _ = Pyro4.util.SerializerBase.dict_to_class(d)
             self.fail("should crash")
@@ -691,7 +714,7 @@ def mything_dict(obj):
 def mything_creator(classname, d):
     assert classname == "CUSTOM-Mythingymabob"
     assert d["__class__"] == "CUSTOM-Mythingymabob"
-    return MyThing(d["name"])
+    return MyThingPartlyExposed(d["name"])
 
 
 if __name__ == "__main__":
