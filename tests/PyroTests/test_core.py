@@ -597,9 +597,18 @@ class ExposeDecoratorTests(unittest.TestCase):  # this is testing the deprecated
 
     def testExposeInstancemodeDefault(self):
         @Pyro4.core.expose
-        class TestClass:
+        class TestClassOne:
             def method(self):
                 pass
+        class TestClassTwo:
+            @Pyro4.core.expose
+            def method(self):
+                pass
+        with Pyro4.core.Daemon() as daemon:
+            daemon.register(TestClassOne)
+            daemon.register(TestClassTwo)
+            self.assertEqual(("single", None), TestClassOne._pyroInstancing)     # XXX will become session as well?
+            self.assertEqual(("session", None), TestClassTwo._pyroInstancing)
 
     def testExposeInstancecreatorInvalid(self):
         with self.assertRaises(TypeError):
@@ -632,7 +641,7 @@ class ExposeDecoratorTests(unittest.TestCase):  # this is testing the deprecated
     def testExposeInstancing(self):
         def creator(clazz):
             return clazz()
-        @Pyro4.core.expose(instance_mode="percall", instance_creator=creator)
+        @Pyro4.core.expose(instance_mode="percall", instance_creator=creator)    # deprecated, use @behavior
         class TestClass:
             def method(self):
                 pass
