@@ -1048,8 +1048,9 @@ class Daemon(object):
         def shutdown_thread():
             time.sleep(0.05)
             self.__mustshutdown.set()
-            self.transportServer.wakeup()
-            time.sleep(0.05)
+            if self.transportServer:
+                self.transportServer.wakeup()
+                time.sleep(0.05)
             self.close()
             self.__loopstopped.wait(timeout=5)  # use timeout to avoid deadlock situations
             log.info("daemon %s shut down", self.locationStr)
