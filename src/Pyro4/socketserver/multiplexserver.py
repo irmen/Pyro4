@@ -18,6 +18,8 @@ except ImportError:
 from Pyro4 import socketutil, errors, util
 import Pyro4.constants
 
+from .threadpoolserver import interruptSocket
+
 log = logging.getLogger("Pyro4.multiplexserver")
 
 
@@ -34,7 +36,7 @@ class SocketServer_Multiplex(object):
         bind_location = unixsocket if unixsocket else (host, port)
         self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True, nodelay=Pyro4.config.SOCK_NODELAY)
         self.daemon = daemon
-        sockaddr = self.sock.getsockname()
+        self._socketaddr = sockaddr = self.sock.getsockname()
         if not unixsocket and sockaddr[0].startswith("127."):
             if host is None or host.lower() != "localhost" and not host.startswith("127."):
                 log.warning("weird DNS setup: %s resolves to localhost (127.x.x.x)", host)
@@ -138,7 +140,7 @@ class SocketServer_Multiplex(object):
 
     def wakeup(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
-        socketutil.triggerSocket(self.sock)
+        interruptSocket(self._socketaddr)
 
     def handleRequest(self, conn):
         """Handles a single connection request event and returns if the connection is still active"""
