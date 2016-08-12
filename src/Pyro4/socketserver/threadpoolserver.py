@@ -209,18 +209,4 @@ class SocketServer_Threadpool(object):
         raise TypeError("threadpool server doesn't have multiplexing selector")
 
     def wakeup(self):
-        interruptSocket(self._socketaddr)
-
-
-def interruptSocket(address):
-    """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
-    try:
-        sock = socketutil.createSocket(connect=address, keepalive=False, timeout=None)
-        socketutil.triggerSocket(sock)
-        try:
-            sock.shutdown(socket.SHUT_RDWR)
-        except (OSError, socket.error):
-            pass
-        sock.close()
-    except socket.error:
-        pass
+        socketutil.interruptSocket(self._socketaddr)

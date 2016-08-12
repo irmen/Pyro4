@@ -513,3 +513,17 @@ def triggerSocket(sock):
         sock.sendall(b"!" * 16)
     except (socket.error, AttributeError):
         pass
+
+
+def interruptSocket(address):
+    """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
+    try:
+        sock = createSocket(connect=address, keepalive=False, timeout=None)
+        triggerSocket(sock)
+        try:
+            sock.shutdown(socket.SHUT_RDWR)
+        except (OSError, socket.error):
+            pass
+        sock.close()
+    except socket.error:
+        pass

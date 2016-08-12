@@ -18,8 +18,6 @@ except ImportError:
 from Pyro4 import socketutil, errors, util
 import Pyro4.constants
 
-from .threadpoolserver import interruptSocket
-
 log = logging.getLogger("Pyro4.multiplexserver")
 
 
@@ -140,7 +138,7 @@ class SocketServer_Multiplex(object):
 
     def wakeup(self):
         """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
-        interruptSocket(self._socketaddr)
+        socketutil.interruptSocket(self._socketaddr)
 
     def handleRequest(self, conn):
         """Handles a single connection request event and returns if the connection is still active"""
