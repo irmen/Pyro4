@@ -18,9 +18,6 @@ Change Log
 - fixed multiplex server shutdown sometimes hanging
 - fixed crash that sometimes occurred in daemon shutdown
 
-  @TODO DOC UPDATE ABOUT @expose
-
-
 
 **Pyro 4.46**
 
