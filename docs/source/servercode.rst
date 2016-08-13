@@ -166,8 +166,6 @@ call them as a regular function yourself, which allows you to use classes from t
 
     # expose the class from the library using @expose as wrapper function:
     ExposedClass = Pyro4.expose(SomeClassFromLibrary)
-    # you can even use instance mode tweaking if required:
-    ExposedClass = Pyro4.expose(instance_mode="percall", instance_creator=my_factory_function)(SomeClassFromLibrary)
 
     daemon.register(ExposedClass)    # register the exposed class rather than the library class itself
 
@@ -209,12 +207,11 @@ you create a daemon, register the class(es) with the daemon, and then enter the 
     print(uri)
     daemon.requestLoop()
 
-When publising your class like this,  Pyro will create a single instance of it and use that
-to handle *all* remote method calls. So the object can be called concurrently from multiple connections (threads)!
-See :ref:`object_concurrency` for more details about what this means.
-
-It is possible to control more precisely when and for how long Pyro will create an instance of your Pyro class.
-See :ref:`server-instancemode` below, for more details.
+Once a client connects, Pyro will create an instance of the class and use that single object
+to handle the remote method calls during one client proxy session. The object is removed once
+the client disconnects. Another client will cause another instance to be created for its session.
+You can control more precisely when, how, and for how long Pyro will create an instance of your Pyro class.
+See :ref:`server-instancemode` below for more details.
 
 Anyway, when you run the code printed above, the uri will be printed and the server sits waiting for requests.
 The uri that is being printed looks a bit like this: ``PYRO:obj_dcf713ac20ce4fb2a6e72acaeba57dfd@localhost:51850``
@@ -582,9 +579,8 @@ When doing that, it is Pyro itself that creates an instance (object) when it nee
 This allows for more control over when and for how long Pyro creates objects.
 
 Controlling the instance mode and creation is done by decorating your class with ``Pyro4.behavior``
-and setting its ``instance_mode`` or/and ``instance_creator`` parameters. (Notice that this
-decorator can only be used on a class definition, because these behavioral settings only make
-sense at that level).
+and setting its ``instance_mode`` or/and ``instance_creator`` parameters. It can only be used
+on a class definition, because these behavioral settings only make sense at that level.
 
 By default, Pyro will create an instance of your class per *session* (=proxy connection)
 Here is an example of registering a class that will have one new instance for *every single method call* instead::
@@ -619,7 +615,7 @@ There are three possible choices for the ``instance_mode`` parameter:
 
     When you register a class in this way, be aware that Pyro only creates an actual
     instance of it when it is first needed. If nobody connects to the deamon requesting
-    the services of this class, no instance will ever be created.
+    the services of this class, no instance is ever created.
 
 Normally Pyro will simply use a default parameterless constructor call to create the instance.
 If you need special initialization or the class's init method requires parameters, you have to specify

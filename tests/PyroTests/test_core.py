@@ -587,14 +587,7 @@ class CoreTests(unittest.TestCase):
         Pyro4.current_context.correlation_id = None
 
 
-class ExposeDecoratorTests(unittest.TestCase):  # this is testing the deprecated use of @expose(...)
-    def testExposeInstancemodeInvalid(self):
-        with self.assertRaises(ValueError):
-            @Pyro4.core.expose(instance_mode="kaputt")
-            class TestClass:
-                def method(self):
-                    pass
-
+class ExposeDecoratorTests(unittest.TestCase):
     def testExposeInstancemodeDefault(self):
         @Pyro4.core.expose
         class TestClassOne:
@@ -604,50 +597,16 @@ class ExposeDecoratorTests(unittest.TestCase):  # this is testing the deprecated
             @Pyro4.core.expose
             def method(self):
                 pass
+        class TestClassThree:
+            def method(self):
+                pass
         with Pyro4.core.Daemon() as daemon:
             daemon.register(TestClassOne)
             daemon.register(TestClassTwo)
-            self.assertEqual(("single", None), TestClassOne._pyroInstancing)     # XXX will become session as well?
+            daemon.register(TestClassThree)
+            self.assertEqual(("session", None), TestClassOne._pyroInstancing)
             self.assertEqual(("session", None), TestClassTwo._pyroInstancing)
-
-    def testExposeInstancecreatorInvalid(self):
-        with self.assertRaises(TypeError):
-            @Pyro4.core.expose(instance_creator=12345)
-            class TestClass:
-                def method(self):
-                    pass
-
-    def testExposeWithParamsOnMethodInvalid(self):
-        with self.assertRaises(SyntaxError):
-            class TestClass:
-                @Pyro4.core.expose(instance_mode="~invalidmode~")
-                def method(self):
-                    pass
-        with self.assertRaises(SyntaxError):
-            class TestClass:
-                @Pyro4.core.expose(instance_mode="percall")
-                def method(self):
-                    pass
-        with self.assertRaises(SyntaxError):
-            class TestClass:
-                @Pyro4.core.expose(instance_creator=float)
-                def method(self):
-                    pass
-        class TestClass:
-            @Pyro4.core.expose()
-            def method(self):
-                pass
-
-    def testExposeInstancing(self):
-        def creator(clazz):
-            return clazz()
-        @Pyro4.core.expose(instance_mode="percall", instance_creator=creator)    # deprecated, use @behavior
-        class TestClass:
-            def method(self):
-                pass
-        im, ic = TestClass._pyroInstancing
-        self.assertEqual("percall", im)
-        self.assertIs(creator, ic)
+            self.assertEqual(("session", None), TestClassThree._pyroInstancing)
 
 
 class BehaviorDecoratorTests(unittest.TestCase):

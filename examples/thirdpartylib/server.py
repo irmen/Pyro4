@@ -7,9 +7,6 @@ import Pyro4
 # expose the class from the library using @expose as wrapper function:
 ExposedClass = Pyro4.expose(AwesomeClass)
 
-# you can even use instance mode tweaking if required:
-# ExposedClass = Pyro4.expose(instance_mode="percall", instance_creator=my_factory_function)(AwesomeClass)
-
 
 with Pyro4.Daemon() as daemon:
     # register the wrapped class instead of the library class itself:
