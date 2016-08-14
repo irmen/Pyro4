@@ -2,6 +2,15 @@
 Change Log
 **********
 
+**Pyro 4.48**
+
+- threaded socket server now adapts the number of threads dynamically depending on connection count
+- THREADPOOL_SIZE_MIN config item added to specify the min number of threads (defaults to 4)
+- THREADPOOL_ALLOW_QUEUE config item removed, it is no longer relevant
+
+  @TODO docs
+
+
 **Pyro 4.47**
 
 - *Backwards incompatible change:* As announced in the previous version, the instance_mode and instance_creator
@@ -12,10 +21,6 @@ Change Log
   If your code really requires the pyro object to be a singleton, add an explicit
   @behavior(instance_mode="single") to that class. You can already start doing this while still using Pyro 4.46 and
   then upgrade the library once you've converted everything.
-- threaded socket server now adapts the number of threads dynamically depending on connection count
-- THREADPOOL_SIZE_MIN config item added to specify the min number of threads (defaults to 4)
-- THREADPOOL_ALLOW_QUEUE config item removed, it is no longer relevant
-  @todo docs
 - Name server lookup now also considers 127.0.1.1 when trying to find a name server on localhost.
   This is convenient on some systems (Debian Linux) where 127.0.1.1 is often the address assigned
   to the local system via the hosts file.
