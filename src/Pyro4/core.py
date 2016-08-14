@@ -778,82 +778,42 @@ def oneway(method):
     return method
 
 
-def expose(instance_mode="session", instance_creator=None):
+def expose(method_or_class):
     """
     Decorator to mark a method or class to be exposed for remote calls (relevant when REQUIRE_EXPOSE=True)
-    It can be used in to ways:
-
-    Directly applying it to a method or class::
-
-        @expose
-        def method(self, ...)  or  class X()...
-
-    And the deprecated form where you provide some parameters such as instance_mode::
-
-        @expose( instance_mode="...", instance_creator=... )
-        def class X()...
-
-    Don't use the latter form in new code, as it will also immediately expose all members of
-    the class that you're setting the instance mode on. Instead, use the @behavior
-    decorator to set the intstance modes, And strictly use @expose without arguments to control what
-    parts of your class are to be exposed.
-
+    You can apply it to a method or a class as a whole.
+    If you need to change the default instance mode or instance creator, also use a @behavior decorator.
     """
-    def _expose(method_or_class, instance_mode, instance_creator):
-        if not inspect.isclass(method_or_class):
-            if instance_creator or instance_mode not in ("single", "session"):
-                raise SyntaxError("it's not allowed to use parameters on the @expose decorator when not applying it to a class")
-        if instance_mode not in ("single", "session", "percall"):
-            raise ValueError("invalid instance mode: "+instance_mode)
-        if instance_creator and not callable(instance_creator):
-            raise TypeError("instance_creator must be a callable")
-        if inspect.isdatadescriptor(method_or_class):
-            func = method_or_class.fget or method_or_class.fset or method_or_class.fdel
-            if util.is_private_attribute(func.__name__):
-                raise AttributeError("exposing private names (starting with _) is not allowed")
-            func._pyroExposed = True
-            return method_or_class
-        if util.is_private_attribute(method_or_class.__name__):
+    if inspect.isdatadescriptor(method_or_class):
+        func = method_or_class.fget or method_or_class.fset or method_or_class.fdel
+        if util.is_private_attribute(func.__name__):
             raise AttributeError("exposing private names (starting with _) is not allowed")
-        if inspect.isclass(method_or_class):
-            clazz = method_or_class
-            if hasattr(clazz, "_pyroInstancing"):
-                instance_mode, instance_creator = clazz._pyroInstancing
-            else:
-                clazz._pyroInstancing = (instance_mode, instance_creator)
-            log.debug("exposing all members of %r, instancemode %s, instancecreator %r.", clazz, instance_mode, instance_creator)
-            for name in clazz.__dict__:
-                if util.is_private_attribute(name):
-                    continue
-                thing = getattr(clazz, name)
-                if inspect.isfunction(thing):
-                    thing._pyroExposed = True
-                elif inspect.ismethod(thing):
-                    thing.__func__._pyroExposed = True
-                elif inspect.isdatadescriptor(thing):
-                    if getattr(thing, "fset", None):
-                        thing.fset._pyroExposed = True
-                    if getattr(thing, "fget", None):
-                        thing.fget._pyroExposed = True
-                    if getattr(thing, "fdel", None):
-                        thing.fdel._pyroExposed = True
-            clazz._pyroExposed = True
-            return clazz
-        if instance_creator is not None:
-            raise ValueError("instance_creator only allowed when exposing a class")
-        method_or_class._pyroExposed = True
+        func._pyroExposed = True
         return method_or_class
-    if isinstance(instance_mode, basestring):
-        # new style expose with instance_mode argument etc.
-        def _expose_new(method_or_class):
-            if inspect.isclass(method_or_class):
-                warnings.warn("Using @expose with instance mode arguments(s) on a class also automatically "
-                              "exposes all members, which is an unintended side-effect that will be corrected soon. "
-                              "Read the change log in the documentation for more details and what to do.")
-            return _expose(method_or_class, instance_mode, instance_creator)
-        return _expose_new
-    # old-style expose decorator where it is directly applied to a method or class without using parameters
-    return _expose(method_or_class=instance_mode, instance_mode="single", instance_creator=None)
+    if util.is_private_attribute(method_or_class.__name__):
+        raise AttributeError("exposing private names (starting with _) is not allowed")
+    if inspect.isclass(method_or_class):
+        clazz = method_or_class
+        log.debug("exposing all members of %r", clazz)
+        for name in clazz.__dict__:
+            if util.is_private_attribute(name):
+                continue
+            thing = getattr(clazz, name)
+            if inspect.isfunction(thing):
+                thing._pyroExposed = True
+            elif inspect.ismethod(thing):
+                thing.__func__._pyroExposed = True
+            elif inspect.isdatadescriptor(thing):
+                if getattr(thing, "fset", None):
+                    thing.fset._pyroExposed = True
+                if getattr(thing, "fget", None):
+                    thing.fget._pyroExposed = True
+                if getattr(thing, "fdel", None):
+                    thing.fdel._pyroExposed = True
+        clazz._pyroExposed = True
+        return clazz
+    method_or_class._pyroExposed = True
+    return method_or_class
 
 
 def behavior(instance_mode="session", instance_creator=None):
@@ -1048,8 +1008,9 @@ class Daemon(object):
         def shutdown_thread():
             time.sleep(0.05)
             self.__mustshutdown.set()
-            self.transportServer.wakeup()
-            time.sleep(0.05)
+            if self.transportServer:
+                self.transportServer.wakeup()
+                time.sleep(0.05)
             self.close()
             self.__loopstopped.wait(timeout=5)  # use timeout to avoid deadlock situations
             log.info("daemon %s shut down", self.locationStr)

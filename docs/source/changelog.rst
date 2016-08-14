@@ -4,6 +4,14 @@ Change Log
 
 **Pyro 4.47**
 
+- *Backwards incompatible change:* As announced in the previous version, the instance_mode and instance_creator
+  parameters have now been removed from the @expose decorator.  Use @behavior to specify them instead on your classes.
+- The default instance mode when using @expose on the class and not using @behavior, is now also 'session'
+  (was 'single').   Note that when you used @behavior with its default argument or only @expose on methods,
+  the instance mode of the class already was 'session'.
+  If your code really requires the pyro object to be a singleton, add an explicit
+  @behavior(instance_mode="single") to that class. You can already start doing this while still using Pyro 4.46 and
+  then upgrade the library once you've converted everything.
 - threaded socket server now adapts the number of threads dynamically depending on connection count
 - THREADPOOL_SIZE_MIN config item added to specify the min number of threads (defaults to 4)
 - THREADPOOL_ALLOW_QUEUE config item removed, it is no longer relevant
@@ -11,14 +19,8 @@ Change Log
 - Name server lookup now also considers 127.0.1.1 when trying to find a name server on localhost.
   This is convenient on some systems (Debian Linux) where 127.0.1.1 is often the address assigned
   to the local system via the hosts file.
-- The default instance mode when using @expose on the class and not using @behavior, is now also 'session'
-  (was 'single').   Note that when you used @behavior with its default argument or only @expose on methods,
-  the instance mode of the class already was 'session'.
-
-  If your code really requires the pyro object to be a singleton, add an explicit
-  @behavior(instance_mode="single") to that class.
-
-      @TODO  change this behavior and fix the docs! ^^^^
+- fixed multiplex server shutdown sometimes hanging
+- fixed crash that sometimes occurred in daemon shutdown
 
 
 **Pyro 4.46**
