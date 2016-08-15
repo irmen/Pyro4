@@ -26,6 +26,7 @@ Change Log
   to the local system via the hosts file.
 - fixed multiplex server shutdown sometimes hanging
 - fixed crash that sometimes occurred in daemon shutdown
+- fixed crash that sometimes occurred when releasing and reconnecting the proxy from different threads
 
 
 **Pyro 4.46**

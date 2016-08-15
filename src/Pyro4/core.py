@@ -199,7 +199,7 @@ class Proxy(object):
         ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri",
          "_pyroOneway", "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq", "_pyroHmacKey",
          "_pyroRawWireResponse", "_pyroHandshake", "_pyroMaxRetries", "_Proxy__async",
-         "_Proxy__pyroHmacKey", "_Proxy__pyroTimeout", "_Proxy__pyroLock", "_Proxy__pyroConnLock"])
+         "_Proxy__pyroHmacKey", "_Proxy__pyroTimeout", "_Proxy__pyroConnLock"])
 
     def __init__(self, uri):
         if isinstance(uri, basestring):
@@ -217,8 +217,7 @@ class Proxy(object):
         self._pyroMaxRetries = Pyro4.config.MAX_RETRIES
         self.__pyroHmacKey = None
         self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
-        self.__pyroLock = threadutil.Lock()
-        self.__pyroConnLock = threadutil.RLock()   # reentrant lock because pyroInvoke (or rather, pyroRelease) may lock it from within pyroCreateConnection
+        self.__pyroConnLock = threadutil.RLock()
         util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
         self.__async = False
 
@@ -315,8 +314,7 @@ class Proxy(object):
         self._pyroConnection = None
         self._pyroSeq = 0
         self._pyroRawWireResponse = False
-        self.__pyroLock = threadutil.Lock()
-        self.__pyroConnLock = threadutil.Lock()
+        self.__pyroConnLock = threadutil.RLock()
         self.__async = False
 
     def __copy__(self):
@@ -387,18 +385,18 @@ class Proxy(object):
 
     def _pyroInvoke(self, methodname, vargs, kwargs, flags=0, objectId=None):
         """perform the remote method call communication"""
-        if self._pyroConnection is None:
-            # rebind here, don't do it from inside the invoke because deadlock will occur
-            self.__pyroCreateConnection()
-        serializer = util.get_serializer(Pyro4.config.SERIALIZER)
-        data, compressed = serializer.serializeCall(
-            objectId or self._pyroConnection.objectId, methodname, vargs, kwargs,
-            compress=Pyro4.config.COMPRESSION)
-        if compressed:
-            flags |= Pyro4.message.FLAGS_COMPRESSED
-        if methodname in self._pyroOneway:
-            flags |= Pyro4.message.FLAGS_ONEWAY
-        with self.__pyroLock:
+        with self.__pyroConnLock:
+            if self._pyroConnection is None:
+                # rebind here, don't do it from inside the invoke because deadlock will occur
+                self.__pyroCreateConnection()
+            serializer = util.get_serializer(Pyro4.config.SERIALIZER)
+            data, compressed = serializer.serializeCall(
+                objectId or self._pyroConnection.objectId, methodname, vargs, kwargs,
+                compress=Pyro4.config.COMPRESSION)
+            if compressed:
+                flags |= Pyro4.message.FLAGS_COMPRESSED
+            if methodname in self._pyroOneway:
+                flags |= Pyro4.message.FLAGS_ONEWAY
             self._pyroSeq = (self._pyroSeq + 1) & 0xffff
             msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
             if Pyro4.config.LOGWIRE:
@@ -458,75 +456,74 @@ class Proxy(object):
             conn = None
             log.debug("connecting to %s", uri)
             connect_location = uri.sockname or (uri.host, uri.port)
-            with self.__pyroLock:
-                try:
-                    if self._pyroConnection is not None:
-                        return False  # already connected
-                    sock = socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout, nodelay=Pyro4.config.SOCK_NODELAY)
-                    conn = socketutil.SocketConnection(sock, uri.object)
-                    # Do handshake.
-                    serializer = util.get_serializer(Pyro4.config.SERIALIZER)
-                    data = {"handshake": self._pyroHandshake}
-                    if Pyro4.config.METADATA:
-                        # the object id is only used/needed when piggybacking the metadata on the connection response
-                        # make sure to pass the resolved object id instead of the logical id
-                        data["object"] = uri.object
-                        flags = Pyro4.message.FLAGS_META_ON_CONNECT
-                    else:
-                        flags = 0
-                    data, compressed = serializer.serializeData(data, Pyro4.config.COMPRESSION)
-                    if compressed:
-                        flags |= Pyro4.message.FLAGS_COMPRESSED
-                    msg = message.Message(message.MSG_CONNECT, data, serializer.serializer_id, flags, self._pyroSeq,
-                                          annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
-                    if Pyro4.config.LOGWIRE:
-                        _log_wiredata(log, "proxy connect sending", msg)
-                    conn.send(msg.to_bytes())
-                    msg = message.Message.recv(conn, [message.MSG_CONNECTOK, message.MSG_CONNECTFAIL], hmac_key=self._pyroHmacKey)
-                    if Pyro4.config.LOGWIRE:
-                        _log_wiredata(log, "proxy connect response received", msg)
-                except Exception:
-                    x = sys.exc_info()[1]
-                    if conn:
-                        conn.close()
-                    err = "cannot connect: %s" % x
-                    log.error(err)
-                    if isinstance(x, errors.CommunicationError):
-                        raise
-                    else:
-                        ce = errors.CommunicationError(err)
-                        if sys.version_info >= (3, 0):
-                            ce.__cause__ = x
-                        raise ce
+            try:
+                if self._pyroConnection is not None:
+                    return False  # already connected
+                sock = socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout, nodelay=Pyro4.config.SOCK_NODELAY)
+                conn = socketutil.SocketConnection(sock, uri.object)
+                # Do handshake.
+                serializer = util.get_serializer(Pyro4.config.SERIALIZER)
+                data = {"handshake": self._pyroHandshake}
+                if Pyro4.config.METADATA:
+                    # the object id is only used/needed when piggybacking the metadata on the connection response
+                    # make sure to pass the resolved object id instead of the logical id
+                    data["object"] = uri.object
+                    flags = Pyro4.message.FLAGS_META_ON_CONNECT
                 else:
-                    handshake_response = "?"
-                    if msg.data:
-                        serializer = util.get_serializer_by_id(msg.serializer_id)
-                        handshake_response = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
-                    if msg.type == message.MSG_CONNECTFAIL:
-                        if sys.version_info < (3, 0):
-                            error = "connection rejected, reason: " + handshake_response.decode()
-                        else:
-                            error = "connection rejected, reason: " + handshake_response
-                        conn.close()
-                        log.error(error)
-                        raise errors.CommunicationError(error)
-                    elif msg.type == message.MSG_CONNECTOK:
-                        if msg.flags & message.FLAGS_META_ON_CONNECT:
-                            self.__processMetadata(handshake_response["meta"])
-                            handshake_response = handshake_response["handshake"]
-                        self._pyroConnection = conn
-                        if replaceUri:
-                            self._pyroUri = uri
-                        self._pyroValidateHandshake(handshake_response)
-                        log.debug("connected to %s", self._pyroUri)
-                        if msg.annotations:
-                            self._pyroResponseAnnotations(msg.annotations, msg.type)
+                    flags = 0
+                data, compressed = serializer.serializeData(data, Pyro4.config.COMPRESSION)
+                if compressed:
+                    flags |= Pyro4.message.FLAGS_COMPRESSED
+                msg = message.Message(message.MSG_CONNECT, data, serializer.serializer_id, flags, self._pyroSeq,
+                                      annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
+                if Pyro4.config.LOGWIRE:
+                    _log_wiredata(log, "proxy connect sending", msg)
+                conn.send(msg.to_bytes())
+                msg = message.Message.recv(conn, [message.MSG_CONNECTOK, message.MSG_CONNECTFAIL], hmac_key=self._pyroHmacKey)
+                if Pyro4.config.LOGWIRE:
+                    _log_wiredata(log, "proxy connect response received", msg)
+            except Exception:
+                x = sys.exc_info()[1]
+                if conn:
+                    conn.close()
+                err = "cannot connect: %s" % x
+                log.error(err)
+                if isinstance(x, errors.CommunicationError):
+                    raise
+                else:
+                    ce = errors.CommunicationError(err)
+                    if sys.version_info >= (3, 0):
+                        ce.__cause__ = x
+                    raise ce
+            else:
+                handshake_response = "?"
+                if msg.data:
+                    serializer = util.get_serializer_by_id(msg.serializer_id)
+                    handshake_response = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
+                if msg.type == message.MSG_CONNECTFAIL:
+                    if sys.version_info < (3, 0):
+                        error = "connection rejected, reason: " + handshake_response.decode()
                     else:
-                        conn.close()
-                        err = "connect: invalid msg type %d received" % msg.type
-                        log.error(err)
-                        raise errors.ProtocolError(err)
+                        error = "connection rejected, reason: " + handshake_response
+                    conn.close()
+                    log.error(error)
+                    raise errors.CommunicationError(error)
+                elif msg.type == message.MSG_CONNECTOK:
+                    if msg.flags & message.FLAGS_META_ON_CONNECT:
+                        self.__processMetadata(handshake_response["meta"])
+                        handshake_response = handshake_response["handshake"]
+                    self._pyroConnection = conn
+                    if replaceUri:
+                        self._pyroUri = uri
+                    self._pyroValidateHandshake(handshake_response)
+                    log.debug("connected to %s", self._pyroUri)
+                    if msg.annotations:
+                        self._pyroResponseAnnotations(msg.annotations, msg.type)
+                else:
+                    conn.close()
+                    err = "connect: invalid msg type %d received" % msg.type
+                    log.error(err)
+                    raise errors.ProtocolError(err)
             if Pyro4.config.METADATA:
                 # obtain metadata if this feature is enabled, and the metadata is not known yet
                 if self._pyroMethods or self._pyroAttrs:
