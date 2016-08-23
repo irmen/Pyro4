@@ -4,8 +4,12 @@ Change Log
 
 **Pyro 4.48**
 
-- threaded socket server now adapts the number of threads dynamically depending on connection count
+- The threaded socket server now adapts the number of threads dynamically depending on connection count.
+  This resolves the problem where your clients freeze because the server ran out of free connections
+  (until you hit the max threadpool size again, but it is now okay to set this to a high number
+  without having your Pyro server eat up a lot of resources all the time even when it is not used)
 - THREADPOOL_SIZE_MIN config item added to specify the min number of threads (defaults to 4)
+- THREADPOOL_SIZE increased to 40 (was 16, and no longer allocates all these threads upfront)
 - THREADPOOL_ALLOW_QUEUE config item removed, it is no longer relevant
 
   @TODO docs
