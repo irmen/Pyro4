@@ -669,18 +669,23 @@ appropriate. If in doubt, go with the default setting.
     double: server type; threaded
 
 1. threaded server (servertype ``"thread"``, this is the default)
-    This server uses a thread pool to handle incoming proxy connections.
-    The size of the pool is configurable via various config items.
+    This server uses a dynamically adjusted thread pool to handle incoming proxy connections.
+    If the max size of the thread pool is too small for the number of proxy connections, new proxy connections
+    will fail with an exception.
+    The size of the pool is configurable via some config items:
+
+        - ``THREADPOOL_SIZE``         this is the maximum number of threads that Pyro will use
+        - ``THREADPOOL_SIZE_MIN``     this is the minimum number of threads that must remain standby
+
     Every proxy on a client that connects to the daemon will be assigned to a thread to handle
     the remote method calls. This way multiple calls can potentially be processed concurrently.
-    This means your Pyro object may have to be made *thread-safe*!
+    *This means your Pyro object may have to be made thread-safe*!
     If you registered the pyro object's class with instance mode ``single``, that single instance
     will be called concurrently from different threads. If you used instance mode ``session`` or ``percall``,
     the instance will not be called from different threads because a new one is made per connection or even per call.
     But in every case, if you access a shared resource from your Pyro object,
     you may need to take thread locking measures such as using Queues.
-    If the thread pool is too small for the number of proxy connections, new proxy connections will
-    be put to wait until another proxy disconnects from the server.
+
 
 .. index::
     double: server type; multiplex
