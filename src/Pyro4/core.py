@@ -125,7 +125,7 @@ class URI(object):
         return self.asString()
 
     def __repr__(self):
-        return "<%s.%s at 0x%x, %s>" % (self.__class__.__module__, self.__class__.__name__, id(self), str(self))
+        return "<%s.%s at 0x%x; %s>" % (self.__class__.__module__, self.__class__.__name__, id(self), str(self))
 
     def __eq__(self, other):
         if not isinstance(other, URI):
@@ -190,15 +190,22 @@ class Proxy(object):
     .. automethod:: _pyroValidateHandshake
     .. autoattribute:: _pyroTimeout
     .. autoattribute:: _pyroHmacKey
-    .. attribute:: _pyroHandshake
     .. attribute:: _pyroMaxRetries
+
+        Number of retries to perform on communication calls by this proxy, allows you to override the default setting.
+
+    .. attribute:: _pyroSerializer
+
+        Name of the serializer to use by this proxy, allows you to override the default setting.
+
+    .. attribute:: _pyroHandshake
 
         The data object that should be sent in the initial connection handshake message. Can be any serializable object.
     """
     __pyroAttributes = frozenset(
         ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri",
          "_pyroOneway", "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq", "_pyroHmacKey",
-         "_pyroRawWireResponse", "_pyroHandshake", "_pyroMaxRetries", "_Proxy__async",
+         "_pyroRawWireResponse", "_pyroHandshake", "_pyroMaxRetries", "_pyroSerializer", "_Proxy__async",
          "_Proxy__pyroHmacKey", "_Proxy__pyroTimeout", "_Proxy__pyroConnLock"])
 
     def __init__(self, uri):
@@ -208,6 +215,7 @@ class Proxy(object):
             raise TypeError("expected Pyro URI")
         self._pyroUri = uri
         self._pyroConnection = None
+        self._pyroSerializer = None  # can be set to the name of a serializer to override the global one per-proxy
         self._pyroMethods = set()  # all methods of the remote object, gotten from meta-data
         self._pyroAttrs = set()  # attributes of the remote object, gotten from meta-data
         self._pyroOneway = set()  # oneway-methods of the remote object, gotten from meta-data
@@ -271,7 +279,7 @@ class Proxy(object):
 
     def __repr__(self):
         connected = "connected" if self._pyroConnection else "not connected"
-        return "<%s.%s at 0x%x, %s, for %s>" % (self.__class__.__module__, self.__class__.__name__,
+        return "<%s.%s at 0x%x; %s; for %s>" % (self.__class__.__module__, self.__class__.__name__,
                                                 id(self), connected, self._pyroUri)
 
     def __unicode__(self):
@@ -283,7 +291,7 @@ class Proxy(object):
             encodedHmac = "b64:"+(base64.b64encode(self._pyroHmacKey).decode("ascii"))
         # for backwards compatibility reasons we also put the timeout and maxretries into the state
         return self._pyroUri.asString(), tuple(self._pyroOneway), tuple(self._pyroMethods), tuple(self._pyroAttrs),\
-            self.__pyroTimeout, encodedHmac, self._pyroHandshake, self._pyroMaxRetries
+            self.__pyroTimeout, encodedHmac, self._pyroHandshake, self._pyroMaxRetries, self._pyroSerializer
 
     def __setstate_from_dict__(self, state):
         uri = URI(state[0])
@@ -294,21 +302,24 @@ class Proxy(object):
         hmac_key = state[5]
         handshake = state[6]
         max_retries = state[7]
+        serializer = None if len(state) < 9 else state[8]
         if hmac_key:
             if hmac_key.startswith("b64:"):
                 hmac_key = base64.b64decode(hmac_key[4:].encode("ascii"))
             else:
                 raise errors.ProtocolError("hmac encoding error")
-        self.__setstate__((uri, oneway, methods, attrs, timeout, hmac_key, handshake, max_retries))
+        self.__setstate__((uri, oneway, methods, attrs, timeout, hmac_key, handshake, max_retries, serializer))
 
     def __getstate__(self):
         # for backwards compatibility reasons we also put the timeout and maxretries into the state
-        return self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout, self._pyroHmacKey, self._pyroHandshake, self._pyroMaxRetries
+        return self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout,\
+               self._pyroHmacKey, self._pyroHandshake, self._pyroMaxRetries, self._pyroSerializer
 
     def __setstate__(self, state):
         # Note that the timeout and maxretries are also part of the state (for backwards compatibility reasons),
         # but we're not using them here. Instead we get the configured values from the 'local' config.
-        self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, _, self._pyroHmacKey, self._pyroHandshake, _ = state
+        self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, _, self._pyroHmacKey, self._pyroHandshake = state[:7]
+        self._pyroSerializer = None if len(state) < 9 else state[8]
         self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
         self._pyroMaxRetries = Pyro4.config.MAX_RETRIES
         self._pyroConnection = None
@@ -323,6 +334,7 @@ class Proxy(object):
         p._pyroOneway = set(self._pyroOneway)
         p._pyroMethods = set(self._pyroMethods)
         p._pyroAttrs = set(self._pyroAttrs)
+        p._pyroSerializer = self._pyroSerializer
         p._pyroTimeout = self._pyroTimeout
         p._pyroHandshake = self._pyroHandshake
         p._pyroHmacKey = self._pyroHmacKey
@@ -389,7 +401,7 @@ class Proxy(object):
             if self._pyroConnection is None:
                 # rebind here, don't do it from inside the invoke because deadlock will occur
                 self.__pyroCreateConnection()
-            serializer = util.get_serializer(Pyro4.config.SERIALIZER)
+            serializer = util.get_serializer(self._pyroSerializer or Pyro4.config.SERIALIZER)
             data, compressed = serializer.serializeCall(
                 objectId or self._pyroConnection.objectId, methodname, vargs, kwargs,
                 compress=Pyro4.config.COMPRESSION)
@@ -462,7 +474,7 @@ class Proxy(object):
                 sock = socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout, nodelay=Pyro4.config.SOCK_NODELAY)
                 conn = socketutil.SocketConnection(sock, uri.object)
                 # Do handshake.
-                serializer = util.get_serializer(Pyro4.config.SERIALIZER)
+                serializer = util.get_serializer(self._pyroSerializer or Pyro4.config.SERIALIZER)
                 data = {"handshake": self._pyroHandshake}
                 if Pyro4.config.METADATA:
                     # the object id is only used/needed when piggybacking the metadata on the connection response
@@ -1399,7 +1411,7 @@ class Daemon(object):
         self.transportServer.combine_loop(daemon.transportServer)
 
     def __repr__(self):
-        return "<%s.%s at 0x%x, %s, %d objects>" % (self.__class__.__module__, self.__class__.__name__,
+        return "<%s.%s at 0x%x; %s; %d objects>" % (self.__class__.__module__, self.__class__.__name__,
                                                     id(self), self.locationStr, len(self.objectsById))
 
     def __enter__(self):

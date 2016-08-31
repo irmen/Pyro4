@@ -115,7 +115,7 @@ class CoreTests(unittest.TestCase):
         uri = "PYRONAME:some_obj_name@host.com:8888"
         p = Pyro4.core.URI(uri)
         self.assertEqual(uri, str(p))
-        expected = "<Pyro4.core.URI at 0x%x, PYRONAME:some_obj_name@host.com:8888>" % id(p)
+        expected = "<Pyro4.core.URI at 0x%x; PYRONAME:some_obj_name@host.com:8888>" % id(p)
         self.assertEqual(expected, repr(p))
         uri = "PYRO:12345@host.com:9999"
         p = Pyro4.core.URI(uri)
@@ -244,11 +244,11 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("weirdchars" + unichr(0x20AC), pu.object)
         if sys.version_info <= (3, 0):
             self.assertEqual("PYRO:weirdchars?@host?.com:4444", pu.__str__())
-            expected = "<Pyro4.core.URI at 0x%x, PYRO:weirdchars?@host?.com:4444>" % id(pu)
+            expected = "<Pyro4.core.URI at 0x%x; PYRO:weirdchars?@host?.com:4444>" % id(pu)
             self.assertEqual(expected, repr(pu))
         else:
             self.assertEqual("PYRO:weirdchars" + unichr(0x20ac) + "@host" + unichr(0x20ac) + ".com:4444", pu.__str__())
-            expected = ("<Pyro4.core.URI at 0x%x, PYRO:weirdchars" + unichr(0x20ac) + "@host" + unichr(0x20ac) + ".com:4444>") % id(pu)
+            expected = ("<Pyro4.core.URI at 0x%x; PYRO:weirdchars" + unichr(0x20ac) + "@host" + unichr(0x20ac) + ".com:4444>") % id(pu)
             self.assertEqual(expected, repr(pu))
         self.assertEqual("PYRO:weirdchars" + unichr(0x20ac) + "@host" + unichr(0x20ac) + ".com:4444", pu.asString())
         self.assertEqual("PYRO:weirdchars" + unichr(0x20ac) + "@host" + unichr(0x20ac) + ".com:4444", unicode(pu))
@@ -380,9 +380,33 @@ class CoreTests(unittest.TestCase):
     def testProxyRepr(self):
         with Pyro4.core.Proxy("PYRO:9999@localhost:15555") as p:
             address = id(p)
-            expected = "<Pyro4.core.Proxy at 0x%x, not connected, for PYRO:9999@localhost:15555>" % address
+            expected = "<Pyro4.core.Proxy at 0x%x; not connected; for PYRO:9999@localhost:15555>" % address
             self.assertEqual(expected, repr(p))
             self.assertEqual(unicode(expected), unicode(p))
+
+    def testProxySerializerOverride(self):
+        serializer = Pyro4.config.SERIALIZER
+        try:
+            Pyro4.config.SERIALIZER = "~invalid~"
+            _ = Pyro4.core.Proxy("PYRO:obj@localhost:5555")
+            self.fail("must raise exception")
+        except Pyro4.errors.SerializeError as x:
+            self.assertIn("~invalid~", str(x))
+            self.assertIn("unknown", str(x))
+        finally:
+            Pyro4.config.SERIALIZER = serializer
+        try:
+            proxy = Pyro4.core.Proxy("PYRO:obj@localhost:5555")
+            proxy._pyroSerializer = "~invalidoverride~"
+            proxy._pyroConnection = "FAKE"
+            proxy.methodcall()
+            self.fail("must raise exception")
+        except Pyro4.errors.SerializeError as x:
+            self.assertIn("~invalidoverride~", str(x))
+            self.assertIn("unknown", str(x))
+        finally:
+            proxy._pyroConnection = None
+            Pyro4.config.SERIALIZER = serializer
 
     def testProxyDir(self):
         # PyPy tries to call deprecated __members__ and __methods__

@@ -161,6 +161,10 @@ If you're using pickle or dill, and need to control the protocol version that is
 you can do so with the ``PICKLE_PROTOCOL_VERSION`` or ``DILL_PROTOCOL_VERSION`` config items.
 By default Pyro will use the highest one available.
 
+It is possible to override the serializer on a particular proxy. This allows you to connect to one server
+using the default serpent serializer and use another proxy to connect to a different server using the json
+serializer, for instance. Set the desired serializer name in ``proxy._pyroSerializer`` to override.
+
 .. note::
     Since Pyro 4.20 the default serializer is "``serpent``". Serpent is secure but cannot
     serialize all types (by design). Some types are serialized into a different form such as

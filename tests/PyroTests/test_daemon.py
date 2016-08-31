@@ -105,7 +105,7 @@ class DaemonTests(unittest.TestCase):
             self.assertIn(Pyro4.constants.DAEMON_NAME, d.objectsById)
             self.assertEqual("PYRO:" + Pyro4.constants.DAEMON_NAME + "@" + d.locationStr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
             # check the string representations
-            expected = "<Pyro4.core.Daemon at 0x%x, %s, 1 objects>" % (id(d), d.locationStr)
+            expected = "<Pyro4.core.Daemon at 0x%x; %s; 1 objects>" % (id(d), d.locationStr)
             self.assertEqual(expected, str(d))
             self.assertEqual(expected, unicode(d))
             self.assertEqual(expected, repr(d))
@@ -133,7 +133,7 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(locationstr, d.locationStr)
             self.assertEqual("PYRO:" + Pyro4.constants.DAEMON_NAME + "@" + locationstr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
             # check the string representations
-            expected = "<Pyro4.core.Daemon at 0x%x, %s, 1 objects>" % (id(d), locationstr)
+            expected = "<Pyro4.core.Daemon at 0x%x; %s; 1 objects>" % (id(d), locationstr)
             self.assertEqual(expected, str(d))
             self.assertEqual(SOCKNAME, d.sock.getsockname())
             self.assertEqual(socket.AF_UNIX, d.sock.family)
@@ -146,7 +146,7 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(locationstr, d.locationStr)
             self.assertEqual("PYRO:" + Pyro4.constants.DAEMON_NAME + "@" + locationstr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
             # check the string representations
-            expected = "<Pyro4.core.Daemon at 0x%x, %s, 1 objects>" % (id(d), locationstr)
+            expected = "<Pyro4.core.Daemon at 0x%x; %s; 1 objects>" % (id(d), locationstr)
             self.assertEqual(expected, str(d))
             sn_bytes = tobytes(SOCKNAME)
             self.assertEqual(sn_bytes, d.sock.getsockname())

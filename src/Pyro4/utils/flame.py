@@ -89,7 +89,7 @@ class FlameModule(object):
         self.flameserver._pyroRelease()
 
     def __repr__(self):
-        return "<%s.%s at 0x%x, module '%s' at %s>" % (self.__class__.__module__, self.__class__.__name__,
+        return "<%s.%s at 0x%x; module '%s' at %s>" % (self.__class__.__module__, self.__class__.__name__,
                                                        id(self), self.module, self.flameserver._pyroUri.location)
 
 
@@ -111,7 +111,7 @@ class FlameBuiltin(object):
         self.flameserver._pyroRelease()
 
     def __repr__(self):
-        return "<%s.%s at 0x%x, builtin '%s' at %s>" % (self.__class__.__module__, self.__class__.__name__,
+        return "<%s.%s at 0x%x; builtin '%s' at %s>" % (self.__class__.__module__, self.__class__.__name__,
                                                         id(self), self.builtin, self.flameserver._pyroUri.location)
 
 
@@ -148,7 +148,7 @@ class RemoteInteractiveConsole(object):
         self.close()
 
     def __repr__(self):
-        return "<%s.%s at 0x%x, for %s>" % (self.__class__.__module__, self.__class__.__name__,
+        return "<%s.%s at 0x%x; for %s>" % (self.__class__.__module__, self.__class__.__name__,
                                             id(self), self.remoteconsole._pyroUri.location)
 
     def __enter__(self):

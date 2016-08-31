@@ -104,7 +104,7 @@ class Message(object):
             raise errors.MessageTooLargeError("max message size exceeded (%d where max=%d)" % (self.data_size + self.annotations_size, Pyro4.config.MAX_MESSAGE_SIZE))
 
     def __repr__(self):
-        return "<%s.%s at %x, type=%d flags=%d seq=%d datasize=%d #ann=%d>" % (self.__module__, self.__class__.__name__, id(self), self.type, self.flags, self.seq, self.data_size, len(self.annotations))
+        return "<%s.%s at %x; type=%d flags=%d seq=%d datasize=%d #ann=%d>" % (self.__module__, self.__class__.__name__, id(self), self.type, self.flags, self.seq, self.data_size, len(self.annotations))
 
     def to_bytes(self):
         """creates a byte stream containing the header followed by annotations (if any) followed by the data"""

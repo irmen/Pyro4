@@ -50,7 +50,7 @@ class SocketServer_Multiplex(object):
         self.selector.register(self.sock, selectors.EVENT_READ, self)
 
     def __repr__(self):
-        return "<%s on %s, %d connections>" % (self.__class__.__name__, self.locationStr, len(self.selector.get_map())-1)
+        return "<%s on %s; %d connections>" % (self.__class__.__name__, self.locationStr, len(self.selector.get_map())-1)
 
     def __del__(self):
         if self.sock is not None:

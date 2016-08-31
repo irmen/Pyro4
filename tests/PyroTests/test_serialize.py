@@ -183,6 +183,7 @@ class SerializeTests_pickle(unittest.TestCase):
         proxy._pyroHmacKey = b"secret"
         proxy._pyroHandshake = "apples"
         proxy._pyroMaxRetries = 78
+        proxy._pyroSerializer = "serializer"
         s, c = self.ser.serializeData(proxy)
         x = self.ser.deserializeData(s, c)
         self.assertIsInstance(x, Pyro4.core.Proxy)
@@ -192,6 +193,7 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(set("ghi"), x._pyroOneway)
         self.assertEqual(b"secret", x._pyroHmacKey)
         self.assertEqual("apples", x._pyroHandshake)
+        self.assertEqual("serializer", x._pyroSerializer)
         self.assertEqual(0, x._pyroTimeout, "must be reset to defaults")
         self.assertEqual(0, x._pyroMaxRetries, "must be reset to defaults")
         daemon = Pyro4.core.Daemon()
@@ -219,9 +221,10 @@ class SerializeTests_pickle(unittest.TestCase):
         proxy._pyroHmacKey = b"secret"
         proxy._pyroHandshake = "apples"
         proxy._pyroMaxRetries = 78
+        proxy._pyroSerializer = "serializer"
         state = proxy.__getstate_for_dict__()
         b64_secret = "b64:"+base64.b64encode(b"secret").decode("utf-8")
-        self.assertEqual(('PYRO:object@host:4444', tuple(set("ghi")), tuple(set("def")), tuple(set("abc")), 42, b64_secret, "apples", 78), state)
+        self.assertEqual(('PYRO:object@host:4444', tuple(set("ghi")), tuple(set("def")), tuple(set("abc")), 42, b64_secret, "apples", 78, "serializer"), state)
         proxy2 = Pyro4.core.Proxy("PYRONAME:xxx")
         proxy2.__setstate_from_dict__(state)
         self.assertEqual(proxy, proxy2)
@@ -231,6 +234,7 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(proxy._pyroOneway, proxy2._pyroOneway)
         self.assertEqual(proxy._pyroHmacKey, proxy2._pyroHmacKey)
         self.assertEqual(proxy._pyroHandshake, proxy2._pyroHandshake)
+        self.assertEqual(proxy._pyroSerializer, proxy2._pyroSerializer)
         self.assertEqual(0, proxy2._pyroTimeout, "must be reset to defaults")
         self.assertEqual(0, proxy2._pyroMaxRetries, "must be reset to defaults")
         daemon = Pyro4.core.Daemon()
@@ -238,6 +242,21 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(tuple(), state)
         daemon2 = Pyro4.core.Daemon()
         daemon2.__setstate_from_dict__(state)
+
+    def testProxySerializationCompat(self):
+        proxy = Pyro4.core.Proxy("PYRO:object@host:4444")
+        proxy._pyroSerializer = "serializer"
+        pickle_state = proxy.__getstate__()
+        self.assertEqual(9, len(pickle_state))
+        pickle_state = pickle_state[:8]
+        proxy.__setstate__(pickle_state)
+        self.assertIsNone(proxy._pyroSerializer)
+        proxy._pyroSerializer = "serializer"
+        serpent_state = proxy.__getstate_for_dict__()
+        self.assertEqual(9, len(serpent_state))
+        serpent_state = serpent_state[:8]
+        proxy.__setstate_from_dict__(serpent_state)
+        self.assertIsNone(proxy._pyroSerializer)
 
     def testAutoProxyPartlyExposed(self):
         if self.SERIALIZER == "marshal":

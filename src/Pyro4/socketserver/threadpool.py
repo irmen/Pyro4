@@ -94,7 +94,7 @@ class Pool(object):
                 busy.pop().join(timeout=0.1)
 
     def __repr__(self):
-        return "<%s.%s at 0x%x, %d busy workers, %d idle workers>" % \
+        return "<%s.%s at 0x%x; %d busy workers; %d idle workers>" % \
                (self.__class__.__module__, self.__class__.__name__, id(self), len(self.busy), len(self.idle))
 
     def num_workers(self):

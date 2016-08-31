@@ -10,6 +10,10 @@ Change Log
 - THREADPOOL_SIZE_MIN config item added to specify the min number of threads (defaults to 4)
 - THREADPOOL_SIZE increased to 40 (was 16, and no longer allocates all these threads upfront)
 - THREADPOOL_ALLOW_QUEUE config item removed, it is no longer relevant
+- made the repr strings use semicolons instead of comma as separator to avoid confusion when printed in lists
+- added per proxy serializer override by setting proxy._pyroSerializer
+
+    @todo  test serializer override against 4.47 version by sending serialized proxy objects!
 
 
 **Pyro 4.47**

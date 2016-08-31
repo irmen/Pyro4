@@ -135,7 +135,7 @@ class SocketServer_Threadpool(object):
             self.pool = None
 
     def __repr__(self):
-        return "<%s on %s, %d workers>" % (self.__class__.__name__, self.locationStr, self.pool.num_workers())
+        return "<%s on %s; %d workers>" % (self.__class__.__name__, self.locationStr, self.pool.num_workers())
 
     def loop(self, loopCondition=lambda: True):
         log.debug("threadpool server requestloop")
