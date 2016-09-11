@@ -180,13 +180,13 @@ class DaemonTests(unittest.TestCase):
             d.register(o1)
             with self.assertRaises(DaemonError) as x:
                 d.register(o1)
-            self.assertEqual("object already has a Pyro id", str(x.exception))
+            self.assertEqual("object or class already has a Pyro id", str(x.exception))
             d.unregister(o1)
             d.register(o1, "samename")
             o2 = MyObj("object2")
             with self.assertRaises(DaemonError) as x:
                 d.register(o2, "samename")
-            self.assertEqual("an object was already registered with that id", str(x.exception))
+            self.assertEqual("an object or class is already registered with that id", str(x.exception))
             self.assertTrue(hasattr(o1, "_pyroId"))
             self.assertTrue(hasattr(o1, "_pyroDaemon"))
             d.unregister(o1)
@@ -195,7 +195,7 @@ class DaemonTests(unittest.TestCase):
             o1._pyroId = "FOOBAR"
             with self.assertRaises(DaemonError) as x:
                 d.register(o1)
-            self.assertEqual("object already has a Pyro id", str(x.exception))
+            self.assertEqual("object or class already has a Pyro id", str(x.exception))
             o1._pyroId = ""
             d.register(o1)  # with empty-string _pyroId register should work
 
