@@ -13,8 +13,6 @@ Change Log
 - made the repr strings use semicolons instead of comma as separator to avoid confusion when printed in lists
 - added per proxy serializer override by setting proxy._pyroSerializer
 
-    @todo  test serializer override against 4.47 version by sending serialized proxy objects!
-
 
 **Pyro 4.47**
 
