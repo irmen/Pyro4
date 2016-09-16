@@ -47,7 +47,7 @@ def raw_socket(uri):
             print("thread {0} retrieving blob using raw socket...".format(name))
             blob_address = blobs[file_id]
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect(blob_address)
+            sock.connect(tuple(blob_address))
             sock.sendall(file_id.encode())
             size = 0
             chunk = "dummy"
