@@ -16,8 +16,7 @@ docs:
 	$(PYTHON) setup.py build_sphinx
 
 upload: upload_docs
-	$(PYTHON) setup.py sdist upload
-	$(PYTHON) setup.py bdist_wheel upload
+	$(PYTHON) setup.py sdist bdist_wheel upload
 	
 upload_docs: docs
 	$(PYTHON) setup.py upload_docs --upload-dir=build/sphinx/html

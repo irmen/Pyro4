@@ -6,13 +6,14 @@ import platform
 from server import Mandelbrot
 
 res_x = 100
-res_y = 60
+res_y = 40
 
 
 def screen(start, width):
     mandel = Mandelbrot()
     dr = width / res_x
     di = dr*(res_x/res_y)
+    di *= 0.8   # aspect ratio correction
     lines = mandel.calc_lines(start, res_x, dr, di, 0, res_y)
     return "\n".join(x[1] for x in lines)
 

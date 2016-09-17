@@ -1,5 +1,5 @@
 This is an ascii-animation of zooming in on the Mandelbrot fractal set (z=z^2+c).
-The animation runs at 100x60 resolution so make sure your console window is large enough.
+The animation runs at 100x40 resolution so make sure your console window is large enough.
 
 
 The 'normal' code simply runs the calculation in a single Python process.

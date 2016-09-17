@@ -9,7 +9,7 @@ import Pyro4
 
 class MandelZoomer(object):
     res_x = 100
-    res_y = 60
+    res_y = 40
 
     def __init__(self):
         self.num_lines_lock = threading.Lock()
@@ -38,6 +38,7 @@ class MandelZoomer(object):
     def screen(self, start, width):
         dr = width / self.res_x
         di = dr*(self.res_x/self.res_y)
+        di *= 0.8   # aspect ratio correction
         self.num_lines_ready = 0
         self.all_lines_ready.clear()
         self.result = ["?"] * self.res_y
