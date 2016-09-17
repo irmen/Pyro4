@@ -12,6 +12,7 @@ Change Log
 - THREADPOOL_ALLOW_QUEUE config item removed, it is no longer relevant
 - made the repr strings use semicolons instead of comma as separator to avoid confusion when printed in lists
 - added per proxy serializer override by setting proxy._pyroSerializer
+- added distributed-mandelbrot example that shows ascii animation of zooming in on the mandelbrot fractal set
 
 
 **Pyro 4.47**
