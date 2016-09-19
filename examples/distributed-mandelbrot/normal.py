@@ -18,14 +18,20 @@ def screen(start, width):
     return "\n".join(x[1] for x in lines)
 
 
+def cls():
+    if platform.platform().startswith("Windows"):
+        os.system("cls")
+    else:
+        print(chr(27)+"[2J"+chr(27)+"[1;1H", end="")  # ansi clear screen
+    
+
 def zoom():
     start = -2.0-1.0j
     width = 3.0
     duration = 30.0
     wallclock_start = time.time()
     frames = 0
-    clear_cmd = "cls" if platform.platform().startswith("Windows") else "clear"
-    os.system(clear_cmd)
+    cls()
     print("This is a mandelbrot zoom animation running without Pyro, in a single Python process.")
     time.sleep(2)
     while True:
@@ -35,7 +41,7 @@ def zoom():
         actual_width = width * (1-time_passed/duration/1.1)
         actual_start = start + (0.06-0.002j)*time_passed
         frame = screen(actual_start, actual_width)
-        os.system(clear_cmd)
+        cls()
         fps = frames/time_passed if time_passed > 0 else 0
         print("%.1f FPS time=%.2f width=%.2f" % (fps, time_passed, actual_width))
         print(frame)

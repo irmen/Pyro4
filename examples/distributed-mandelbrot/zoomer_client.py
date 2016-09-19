@@ -51,6 +51,12 @@ class MandelZoomer(object):
         self.all_lines_ready.wait(timeout=5)
         return "\n".join(self.result)
 
+    def cls(self):
+        if platform.platform().startswith("Windows"):
+            os.system("cls")
+        else:
+            print(chr(27)+"[2J"+chr(27)+"[1;1H", end="")  # ansi clear screen
+
 
 if __name__ == "__main__":
     start = -2.0-1.0j
@@ -58,10 +64,9 @@ if __name__ == "__main__":
     duration = 30.0
     wallclock_start = time.time()
     frames = 0
-    clear_cmd = "cls" if platform.platform().startswith("Windows") else "clear"
-    os.system(clear_cmd)
-    print("This is a mandelbrot zoom animation running using Pyro, it will use all calculation server processes that are available.")
     zoomer = MandelZoomer()
+    zoomer.cls()
+    print("This is a mandelbrot zoom animation running using Pyro, it will use all calculation server processes that are available.")
     while True:
         time_passed = time.time() - wallclock_start
         if time_passed >= duration:
@@ -69,7 +74,7 @@ if __name__ == "__main__":
         actual_width = width * (1-time_passed/duration/1.1)
         actual_start = start + (0.06-0.002j)*time_passed
         frame = zoomer.screen(actual_start, actual_width)
-        os.system(clear_cmd)
+        zoomer.cls()
         fps = frames/time_passed if time_passed > 0 else 0
         print("%.1f FPS time=%.2f width=%.2f" % (fps, time_passed, actual_width))
         print(frame)
