@@ -16,9 +16,9 @@ class MandelZoomer(object):
         self.num_lines_ready = 0
         self.all_lines_ready = threading.Event()
         self.result = []
-        ns = Pyro4.locateNS()
-        mandels = ns.list(metadata_any={"class:mandelbrot_calc"})
-        mandels = list(mandels.items())
+        with Pyro4.locateNS() as ns:
+            mandels = ns.list(metadata_any={"class:mandelbrot_calc"})
+            mandels = list(mandels.items())
         print("{0} mandelbrot calculation servers found.".format(len(mandels)))
         if not mandels:
             raise ValueError("launch at least one mandelbrot calculation server before starting this")

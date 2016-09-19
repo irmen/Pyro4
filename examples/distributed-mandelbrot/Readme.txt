@@ -8,7 +8,7 @@ On my computer it runs at about 3 frames per second using CPython 3.5 and at abo
 when using Pypy 5.4. This is in a windows console and will only use one CPU core.
 
 
-The 'zoomer_client' program uses Pyro to offload the calculations to whatever
+The 'client_asciizoom' program uses Pyro to offload the calculations to whatever
 mandelbrot server processes that are available.
 It discovers the available servers by using the metadata in the name sever.
 To distribute the load evenly, it hands out the calculation of a single line in the
@@ -20,3 +20,12 @@ that are merged into the final animation frame, which is then printed to the scr
 On my machine with 4 cpu cores, when starting 4 mandelbrot servers using Pypy 5.4,
 the animation now runs at about 15 fps instead. It uses all 4 cores of the machine
 at about 80% load. I guess the rest is I/O time spent printing the frames to the console.
+
+
+
+The graphics version is interesting too because it shows a nice picture at the end :)
+The single core normal version takes 43 seconds on my machine (20 with pypy). The Pyro
+version only takes 12 seconds, when using 4 mandelbrot calculation servers.
+(It only takes 6 seconds when those servers are being run on Pypy!)
+
+It submits a single line to a mandelbrot server per call.
