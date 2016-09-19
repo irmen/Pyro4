@@ -21,7 +21,7 @@ class MandelWindow(object):
         self.img = tkinter.PhotoImage(width=res_x, height=res_y)
         canvas.create_image((res_x/2, res_y/2), image=self.img, state="normal")
         self.start_time = time.time()
-        self.root.after(100, lambda: self.draw_line(0))
+        self.root.after(1000, lambda: self.draw_line(0))
         self.mandel = MandelbrotColorPixels()
         tkinter.mainloop()
 
@@ -32,7 +32,7 @@ class MandelWindow(object):
             self.root.after_idle(lambda: self.draw_line(y+1))
         else:
             duration = time.time() - self.start_time
-            print("Calcuation took: %d seconds" % duration)
+            print("Calculation took: %d seconds" % duration)
 
 
 if __name__ == "__main__":

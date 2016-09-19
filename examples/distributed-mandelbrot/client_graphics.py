@@ -27,7 +27,7 @@ class MandelWindow(object):
             raise ValueError("launch at least one mandelbrot calculation server before starting this")
         self.mandels = [Pyro4.async(Pyro4.Proxy(uri)) for _, uri in mandels]
         self.lines = list(reversed(range(res_y)))
-        self.root.after(100, self.draw_lines)
+        self.root.after(1000, self.draw_lines)
         tkinter.mainloop()
 
     def draw_lines(self):
@@ -49,7 +49,7 @@ class MandelWindow(object):
             self.calc_new_line()
         else:
             duration = time.time() - self.start_time
-            print("Calcuation took: %d seconds" % duration)
+            print("Calculation took: %d seconds" % duration)
 
 
 if __name__ == "__main__":
