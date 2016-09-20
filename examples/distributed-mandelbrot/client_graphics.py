@@ -2,10 +2,15 @@
 from __future__ import print_function, division
 import time
 try:
+    from queue import Queue, Empty
+except ImportError:
+    from Queue import Queue, Empty
+try:
     import tkinter
 except ImportError:
     import Tkinter as tkinter
 import Pyro4
+
 
 res_x = 1000
 res_y = 800
@@ -27,6 +32,7 @@ class MandelWindow(object):
             raise ValueError("launch at least one mandelbrot calculation server before starting this")
         self.mandels = [Pyro4.async(Pyro4.Proxy(uri)) for _, uri in mandels]
         self.lines = list(reversed(range(res_y)))
+        self.draw_data = Queue()
         self.root.after(1000, self.draw_lines)
         tkinter.mainloop()
 
@@ -36,6 +42,23 @@ class MandelWindow(object):
         self.start_time = time.time()
         for _ in range(len(self.mandels)):
             self.calc_new_line()
+        self.draw_results()
+        
+    def draw_results(self):
+        # we do the drawing of the results in the gui main thread
+        # otherwise strange things may happen such as freezes
+        try:
+            while True:
+                y, pixeldata = self.draw_data.get(block=False)
+                if pixeldata:
+                    self.img.put(pixeldata, (0, y))
+                else:
+                    # end reached
+                    duration = time.time() - self.start_time
+                    print("Calculation took: %d seconds" % duration)
+                    break
+        except Empty:
+            self.root.after(100, self.draw_results)
 
     def calc_new_line(self):
         y = self.lines.pop()
@@ -43,13 +66,12 @@ class MandelWindow(object):
         server.calc_photoimage_line(y, res_x, res_y).then(self.process_result)
 
     def process_result(self, result):
-        y, pixeldata = result
-        self.img.put(pixeldata, (0, y))
+        self.draw_data.put(result)  # drawing should be done by the main gui thread
+        # self.img.put(pixeldata, (0, y))
         if self.lines:
             self.calc_new_line()
         else:
-            duration = time.time() - self.start_time
-            print("Calculation took: %d seconds" % duration)
+            self.draw_data.put((None,None))  # end-sentinel
 
 
 if __name__ == "__main__":
