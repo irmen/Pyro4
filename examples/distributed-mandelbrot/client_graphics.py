@@ -31,6 +31,8 @@ class MandelWindow(object):
         if not mandels:
             raise ValueError("launch at least one mandelbrot calculation server before starting this")
         self.mandels = [Pyro4.async(Pyro4.Proxy(uri)) for _, uri in mandels]
+        for proxy in self.mandels:
+            proxy._pyroBind()
         self.lines = list(reversed(range(res_y)))
         self.draw_data = Queue()
         self.root.after(1000, self.draw_lines)
@@ -39,9 +41,9 @@ class MandelWindow(object):
     def draw_lines(self):
         # start by putting each of the found servers to work on a single line,
         # the other lines will be done in turn when the results come back.
-        self.start_time = time.time()
         for _ in range(len(self.mandels)):
             self.calc_new_line()
+        self.start_time = time.time()
         self.draw_results()
         
     def draw_results(self):
@@ -55,7 +57,7 @@ class MandelWindow(object):
                 else:
                     # end reached
                     duration = time.time() - self.start_time
-                    print("Calculation took: %d seconds" % duration)
+                    print("Calculation took: %.2f seconds" % duration)
                     break
         except Empty:
             self.root.after(100, self.draw_results)
@@ -67,11 +69,10 @@ class MandelWindow(object):
 
     def process_result(self, result):
         self.draw_data.put(result)  # drawing should be done by the main gui thread
-        # self.img.put(pixeldata, (0, y))
         if self.lines:
             self.calc_new_line()
         else:
-            self.draw_data.put((None,None))  # end-sentinel
+            self.draw_data.put((None, None))  # end-sentinel
 
 
 if __name__ == "__main__":
