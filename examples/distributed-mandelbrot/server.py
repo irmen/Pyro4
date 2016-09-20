@@ -47,10 +47,10 @@ class MandelbrotColorPixels(object):
         return y, "{"+" ".join("#%02x%02x%02x" % rgb for rgb in line)+"}"
 
     def mandel_iterate(self, x, y, res_x, res_y):
-        zi = (x/res_x - 0.5) * 1 - 0.3
-        zr = (y/res_y - 0.5) * 1 - 0.9
-        zr *= res_y/res_x  # aspect correction
-        z = complex(zi, zr)
+        zr = (x/res_x - 0.5) * 1 - 0.3
+        zi = (y/res_y - 0.5) * 1 - 0.9
+        zi *= res_y/res_x  # aspect correction
+        z = complex(zr, zi)
         c = z
         for iters in range(self.maxiters+1):
             if abs(z) > 2:
