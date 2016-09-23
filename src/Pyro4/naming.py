@@ -457,8 +457,12 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
                 hosts = ["[%s]" % Pyro4.config.NS_HOST]
             else:
                 # Some systems (Debian Linux) have 127.0.1.1 in the hosts file assigned to the hostname,
-                # try this too for convenience sake
-                hosts = [Pyro4.config.NS_HOST] if Pyro4.config.NS_HOST == "127.0.1.1" else [Pyro4.config.NS_HOST, "127.0.1.1"]
+                # try this too for convenience sake (only if it's actually used as a valid ip address)
+                try:
+                    socket.gethostbyaddr("127.0.1.1")
+                    hosts = [Pyro4.config.NS_HOST] if Pyro4.config.NS_HOST == "127.0.1.1" else [Pyro4.config.NS_HOST, "127.0.1.1"]
+                except socket.error:
+                    hosts = [Pyro4.config.NS_HOST]
             for host in hosts:
                 uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port or Pyro4.config.NS_PORT)
                 log.debug("locating the NS: %s", uristring)
