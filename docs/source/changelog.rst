@@ -14,6 +14,7 @@ Change Log
 - added per proxy serializer override by setting proxy._pyroSerializer
 - added distributed-mandelbrot example that shows ascii animation and picture of the mandelbrot fractal set
 - fixed timeout when locating name server on 127.0.1.1 on systems that don't use that address (osx)
+- fixed ResourceWarning in socketutil.createSocket; socket that could not be connected is properly closed now
 
 
 **Pyro 4.47**
