@@ -311,16 +311,10 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
                     if sock in sw:
                         break  # yay, writable now, connect() completed
                     elif sock in se:
-                        try:
-                            sock.close()  # close the socket that refused to connect
-                        except socket.error:
-                            pass
+                        sock.close()  # close the socket that refused to connect
                         raise socket.error("connect failed")
             else:
-                try:
-                    sock.close()  # close the socket that refused to connect
-                except socket.error:
-                    pass
+                sock.close()  # close the socket that refused to connect
                 raise
     if keepalive:
         setKeepalive(sock)
