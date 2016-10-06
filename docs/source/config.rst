@@ -104,8 +104,8 @@ THREADPOOL_SIZE         int     40             For the thread pool server: maxim
 THREADPOOL_SIZE_MIN     int     4              For the thread pool server: minimum number of threads running
 FLAME_ENABLED           bool    False          Should Pyro Flame be enabled on the server
 SERIALIZER              str     serpent        The wire protocol serializer to use for clients/proxies (one of: serpent, json, marshal, pickle, dill)
-SERIALIZERS_ACCEPTED    set     json,marshal,  The wire protocol serializers accepted in the server/daemon.
-                                serpent        Use comma separated string for initial config, will be a set after initialization.
+SERIALIZERS_ACCEPTED    set     json,marshal,  The wire protocol serializers accepted in the server/daemon. In your code it should be a set of strings,
+                                serpent        use a comma separated string instead when setting the shell environment variable.
 PICKLE_PROTOCOL_VERSION int     highest poss   The pickle protocol version to use, if pickle is selected as serializer. Defaults to pickle.HIGHEST_PROTOCOL
 DILL_PROTOCOL_VERSION   int     highest poss   The dill protocol version to use, if dill is selected as serializer. Defaults to `-1` (highest protocol).
 JSON_MODULE             string  json           The json module to use for the json serializer. (json is included in the stdlib, simplejson is a possible 3rd party alternative).
