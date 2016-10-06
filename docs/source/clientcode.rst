@@ -183,7 +183,7 @@ serializer, for instance. Set the desired serializer name in ``proxy._pyroSerial
 .. note::
     Because the name server is just a regular Pyro server as well, you will have to tell
     it to allow the pickle or dill serializers if your client code uses them.
-    See :ref:`nameserver-pickle` and :ref:`nameserver-dill`.
+    See :ref:`nameserver-pickle`.
 
 
 .. index:: deserialization, serializing custom classes, deserializing custom classes

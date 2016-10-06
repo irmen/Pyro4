@@ -477,7 +477,6 @@ You can control its behavior by setting certain Pyro config items before startin
     double: name server; dill
 
 .. _nameserver-pickle:
-.. _nameserver-dill:
 
 Using the name server with pickle or dill serializers
 =====================================================

@@ -467,7 +467,7 @@ So if you want to use them with Pyro, and pass them over the wire, you'll have t
 #.  Don't return arrays at all. Redesign your API so that you might perhaps only return a single element from it.
 #.  Tell Pyro to use :py:mod:`pickle` or :py:mod:`dill` as serializer. Pickle and Dill can deal with numpy datatypes. However they have security implications.
     See :doc:`security`. If you choose to use pickle or dill anyway, also be aware that you must tell your name server
-    about it as well, see :ref:`nameserver-pickle` or :ref:`nameserver-dill`.
+    about it as well, see :ref:`nameserver-pickle`.
 
 
 .. index::
