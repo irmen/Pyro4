@@ -649,7 +649,7 @@ individual annotation cannot be larger than 64 Kb.
 .. sidebar:: reserved annotation chunks
 
     The following annotation chunks are used by Pyro internally and should not be touched:
-    ``CORR`` and ``HMAC``.
+    ``CORR``, ``HMAC`` and ``STRM``.
 
 An annotation is a low level datastructure (to optimize the generation of network messages):
 a chunk identifier string of exactly 4 characters (such as "CODE"), and its value, a byte sequence.

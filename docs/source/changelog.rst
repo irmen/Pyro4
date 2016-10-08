@@ -8,8 +8,6 @@ Change Log
   call or even call a remote generator function, and iterate over it in the client.
   Items will be retrieved on demand from the server.
 - new ITER_STREAMING config item to disable or enable streaming support in the server (default=enabled)
-- new StreamResultError exception added that will be raised when something is wrong with
-  streaming (for instance the server config disabled it and you still try to return an iterator).
 
   @todo docs (+add item to feature overview), unittests
   @todo simplify stockmarket example to use iters instead of callbacks?

@@ -433,14 +433,14 @@ class Proxy(object):
                     if self._pyroRawWireResponse:
                         return util.SerializerBase.decompress_if_needed(msg)
                     data = serializer.deserializeData(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
+                    if msg.flags & message.FLAGS_ITEMSTREAMRESULT:
+                        streamId = msg.annotations.get("STRM", b"").decode()
+                        if not streamId:
+                            raise errors.ProtocolError("result of call is an iterator, but the server is not configured to allow streaming")
+                        return _StreamResultIterator(streamId, self)
                     if msg.flags & message.FLAGS_EXCEPTION:
                         if sys.platform == "cli":
                             util.fixIronPythonExceptionForPickle(data, False)
-                        if isinstance(data, errors.StreamResultError):
-                            exc_message, streamId = data.args
-                            if streamId:
-                                return _StreamResultIterator(streamId, self)
-                            raise errors.StreamResultError("result of call is a generator or iterator, but the server is not configured to allow streaming")
                         raise data
                     else:
                         return data
@@ -917,8 +917,8 @@ class DaemonObject(object):
             raise errors.DaemonError("unknown object")
 
     def get_next_stream_item(self, streamId):
-        # XXX if streamId not in self.daemon.streaming_responses:
-        #    raise errors.StreamResultError("item stream terminated")
+        if streamId not in self.daemon.streaming_responses:
+            raise errors.PyroError("item stream terminated")
         client, timestamp, stream = self.daemon.streaming_responses[streamId]
         try:
             return next(stream)
@@ -1237,8 +1237,12 @@ class Daemon(object):
                             if not request_flags & Pyro4.message.FLAGS_ONEWAY:
                                 isStream, data = self._streamResponse(data, conn)
                                 if isStream:
-                                    exc = Pyro4.errors.StreamResultError("result of call is a generator or iterator", data)
-                                    self._sendExceptionResponse(conn, request_seq, serializer.serializer_id, exc, None)
+                                    # throw an exception as well as setting message flags
+                                    # this way, it is backwards compatible with older pyro versions.
+                                    exc = Pyro4.errors.ProtocolError("result of call is an iterator")
+                                    ann = {"STRM": data.encode()} if data else {}
+                                    self._sendExceptionResponse(conn, request_seq, serializer.serializer_id, exc, None,
+                                                                annotations=ann, flags=message.FLAGS_ITEMSTREAMRESULT)
                                     return
             else:
                 log.debug("unknown object requested: %s", objId)

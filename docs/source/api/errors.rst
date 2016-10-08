@@ -10,7 +10,6 @@ The exception hierarchy is as follows::
             +-- NamingError
             +-- DaemonError
             +-- SecurityError
-            +-- StreamResultError
             +-- CommunicationError
                   |
                   +-- ConnectionClosedError
