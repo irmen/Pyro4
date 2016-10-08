@@ -74,7 +74,7 @@ class Configuration(object):
         self.USE_MSG_WAITALL = hasattr(socket, "MSG_WAITALL") and platform.system() != "Windows"      # not reliable on windows even though it is defined
         self.JSON_MODULE = "json"
         self.MAX_RETRIES = 0
-        self.STREAMING = False
+        self.STREAMING = True
 
         if useenvironment:
             # process environment variables

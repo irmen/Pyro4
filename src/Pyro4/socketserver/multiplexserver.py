@@ -71,7 +71,7 @@ class SocketServer_Multiplex(object):
                 active = self.handleRequest(s)
                 if not active:
                     try:
-                        self.daemon.clientDisconnect(s)
+                        self.daemon._clientDisconnect(s)
                     except Exception as x:
                         log.warning("Error in clientDisconnect: " + str(x))
                     self.selector.unregister(s)

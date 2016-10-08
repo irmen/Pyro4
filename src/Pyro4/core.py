@@ -438,12 +438,9 @@ class Proxy(object):
                             util.fixIronPythonExceptionForPickle(data, False)
                         if isinstance(data, errors.StreamResultError):
                             exc_message, streamId = data.args
-                            if Pyro4.config.STREAMING:
-                                print(msg.annotations)  # XXX
-                                if not streamId:
-                                    raise errors.StreamResultError("call returned an iterator but the server is not configured to allow streaming")
+                            if streamId:
                                 return _StreamResultIterator(streamId, self)
-                            data = errors.StreamResultError(exc_message)
+                            raise errors.StreamResultError("result of call is a generator or iterator, but the server is not configured to allow streaming")
                         raise data
                     else:
                         return data
@@ -662,18 +659,22 @@ class _StreamResultIterator(object):
     def __iter__(self):
         return self
 
+    def next(self):
+        # python 2.x support
+        return self.__next__()
+
     def __next__(self):
-        if self.proxy._pyroConnection is not None:
-            return self.proxy._pyroInvoke("get_next_stream_item", [self.streamId], {}, objectId=constants.DAEMON_NAME)
-        else:
-            raise errors.ConnectionClosedError("the proxy for this stream result has already been closed")
+        if self.proxy._pyroConnection is None:
+            raise errors.ConnectionClosedError("the proxy for this stream result has been closed")
+        return self.proxy._pyroInvoke("get_next_stream_item", [self.streamId], {}, objectId=constants.DAEMON_NAME)
 
     def __del__(self):
         self.close()
 
     def close(self):
-        if self.proxy._pyroConnection is not None:
+        if self.proxy and self.proxy._pyroConnection is not None:
             self.proxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
+        self.proxy = None
 
 
 class _BatchedRemoteMethod(object):
@@ -1133,6 +1134,14 @@ class Daemon(object):
         conn.send(msg.to_bytes())
         return msg.type == message.MSG_CONNECTOK
 
+    def _clientDisconnect(self, conn):
+        # client goes away, close any streams it had open as well
+        for streamId in list(self.streaming_responses):
+            client, timestamp, stream = self.streaming_responses[streamId]
+            if client is conn:
+                del self.streaming_responses[streamId]
+        self.clientDisconnect(conn)  # user overridable hook
+
     def validateHandshake(self, conn, data):
         """
         Override this to create a connection validator for new client connections.
@@ -1146,7 +1155,6 @@ class Daemon(object):
         Override this to handle a client disconnect.
         Conn is the SocketConnection object that was disconnected.
         """
-        print("CLIENT DISCONNECTS", conn)   # XXX   remove streams
         pass
 
     def handleRequest(self, conn):
@@ -1215,7 +1223,7 @@ class Daemon(object):
                             break  # stop processing the rest of the batch
                         else:
                             if Pyro4.config.STREAMING:
-                                raise NotImplementedError("streaming support not yet supported for batched calls")  # XXX
+                                raise NotImplementedError("streaming support not yet supported for batched calls")
                             data.append(result)
                     wasBatched = True
                 else:
@@ -1238,9 +1246,7 @@ class Daemon(object):
                                 isStream, data = self._streamResponse(data, conn)
                                 if isStream:
                                     exc = Pyro4.errors.StreamResultError("result of call is a generator or iterator", data)
-                                    ann = {"STRM": data.encode()} if data else {}
-                                    self._sendExceptionResponse(conn, request_seq, serializer.serializer_id, exc,
-                                                                None, annotations=ann, flags=Pyro4.message.FLAGS_STREAM)
+                                    self._sendExceptionResponse(conn, request_seq, serializer.serializer_id, exc, None, flags=Pyro4.message.FLAGS_STREAM)
                                     return
             else:
                 log.debug("unknown object requested: %s", objId)
