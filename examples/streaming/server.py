@@ -3,10 +3,10 @@ import time
 import Pyro4
 
 
-if Pyro4.config.STREAMING:
-    print("Note: Streaming has been enabled in the Pyro config.")
+if Pyro4.config.ITER_STREAMING:
+    print("Note: iter-streaming has been enabled in the Pyro config.")
 else:
-    print("Note: Streaming has not been enabled in the Pyro config (PYRO_STREAMING).")
+    print("Note: iter-streaming has not been enabled in the Pyro config (PYRO_ITER_STREAMING).")
 
 
 @Pyro4.expose

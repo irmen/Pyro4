@@ -1501,7 +1501,7 @@ class Daemon(object):
 
     def _streamResponse(self, data, client):
         if isinstance(data, collections.Iterator) or inspect.isgenerator(data):
-            if Pyro4.config.STREAMING:
+            if Pyro4.config.ITER_STREAMING:
                 if type(data) in self.__lazy_dict_iterator_types:
                     raise errors.PyroError("won't serialize or stream lazy dict iterators, convert to list yourself")
                 stream_id = str(uuid.uuid1())
