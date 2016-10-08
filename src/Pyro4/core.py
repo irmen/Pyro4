@@ -1222,9 +1222,7 @@ class Daemon(object):
                             data.append(Pyro4.futures._ExceptionWrapper(xv))
                             break  # stop processing the rest of the batch
                         else:
-                            if Pyro4.config.STREAMING:
-                                raise NotImplementedError("streaming support not yet supported for batched calls")
-                            data.append(result)
+                            data.append(result)    # note that we don't support streaming results in batch mode
                     wasBatched = True
                 else:
                     # normal single method call
@@ -1246,7 +1244,7 @@ class Daemon(object):
                                 isStream, data = self._streamResponse(data, conn)
                                 if isStream:
                                     exc = Pyro4.errors.StreamResultError("result of call is a generator or iterator", data)
-                                    self._sendExceptionResponse(conn, request_seq, serializer.serializer_id, exc, None, flags=Pyro4.message.FLAGS_STREAM)
+                                    self._sendExceptionResponse(conn, request_seq, serializer.serializer_id, exc, None)
                                     return
             else:
                 log.debug("unknown object requested: %s", objId)
@@ -1496,9 +1494,16 @@ class Daemon(object):
     def __setstate_from_dict__(self, state):
         pass
 
+    if sys.version_info < (3, 0):
+        __lazy_dict_iterator_types = (type({}.iterkeys()), type({}.itervalues()), type({}.iteritems()))
+    else:
+        __lazy_dict_iterator_types = (type({}.keys()), type({}.values()), type({}.items()))
+
     def _streamResponse(self, data, client):
         if isinstance(data, collections.Iterator) or inspect.isgenerator(data):
             if Pyro4.config.STREAMING:
+                if type(data) in self.__lazy_dict_iterator_types:
+                    raise errors.PyroError("won't serialize or stream lazy dict iterators, convert to list yourself")
                 stream_id = str(uuid.uuid1())
                 self.streaming_responses[stream_id] = (client, time.time(), data)
                 return True, stream_id

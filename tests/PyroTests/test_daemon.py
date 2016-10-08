@@ -642,7 +642,8 @@ class MetaInfoTests(unittest.TestCase):
             daemon_obj = d.objectsById[Pyro4.constants.DAEMON_NAME]
             self.assertTrue(len(daemon_obj.info()) > 10)
             meta = daemon_obj.get_metadata(Pyro4.constants.DAEMON_NAME)
-            self.assertEqual({"get_metadata", "info", "ping", "registered"}, meta["methods"])
+            self.assertEqual({"get_metadata", "get_next_stream_item", "close_stream",
+                              "info", "ping", "registered"}, meta["methods"])
 
     def testMetaSerialization(self):
         with Pyro4.core.Daemon() as d:
