@@ -387,7 +387,7 @@ class DaemonTests(unittest.TestCase):
             start = time.time()
             d.requestLoop(loopCondition=condition)  # this should return almost immediately
             duration = time.time() - start
-            self.assertAlmostEqual(0.0, duration, places=1)
+            self.assertLess(duration, 0.4)
 
     def testSimpleHandshake(self):
         conn = ConnectionMock()

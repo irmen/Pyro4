@@ -878,7 +878,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             self.assertRaises(Pyro4.errors.TimeoutError, p.delay, 1)
             duration = time.time() - start
             if sys.platform != "cli":
-                self.assertAlmostEqual(0.1, duration, places=1)
+                self.assertLess(duration, 0.3)
             else:
                 # ironpython's time is weird
                 self.assertTrue(0.0 < duration < 0.7)
