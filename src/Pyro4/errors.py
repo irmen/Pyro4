@@ -56,3 +56,8 @@ class SecurityError(PyroError):
 class SerializeError(ProtocolError):
     """Something went wrong while (de)serializing data."""
     pass
+
+
+class StreamResultError(PyroError):
+    """The result of a Pyro call is a stream."""
+    pass

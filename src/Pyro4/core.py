@@ -5,6 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import inspect
+import collections
 import re
 import logging
 import sys
@@ -435,6 +436,14 @@ class Proxy(object):
                     if msg.flags & message.FLAGS_EXCEPTION:
                         if sys.platform == "cli":
                             util.fixIronPythonExceptionForPickle(data, False)
+                        if isinstance(data, errors.StreamResultError):
+                            exc_message, streamId = data.args
+                            if Pyro4.config.STREAMING:
+                                print(msg.annotations)  # XXX
+                                if not streamId:
+                                    raise errors.StreamResultError("call returned an iterator but the server is not configured to allow streaming")
+                                return _StreamResultIterator(streamId, self)
+                            data = errors.StreamResultError(exc_message)
                         raise data
                     else:
                         return data
@@ -643,6 +652,28 @@ class Proxy(object):
         Raise an exception if something is wrong and the connection should not be made.
         """
         return
+
+
+class _StreamResultIterator(object):
+    def __init__(self, streamId, proxy):
+        self.streamId = streamId
+        self.proxy = proxy
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.proxy._pyroConnection is not None:
+            return self.proxy._pyroInvoke("get_next_stream_item", [self.streamId], {}, objectId=constants.DAEMON_NAME)
+        else:
+            raise errors.ConnectionClosedError("the proxy for this stream result has already been closed")
+
+    def __del__(self):
+        self.close()
+
+    def close(self):
+        if self.proxy._pyroConnection is not None:
+            self.proxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
 
 
 class _BatchedRemoteMethod(object):
@@ -884,6 +915,18 @@ class DaemonObject(object):
             log.debug("unknown object requested: %s", objectId)
             raise errors.DaemonError("unknown object")
 
+    def get_next_stream_item(self, streamId):
+        client, timestamp, stream = self.daemon.streaming_responses[streamId]
+        try:
+            return next(stream)
+        except Exception:
+            del self.daemon.streaming_responses[streamId]
+            raise
+
+    def close_stream(self, streamId):
+        if streamId in self.daemon.streaming_responses:
+            del self.daemon.streaming_responses[streamId]
+
 
 class Daemon(object):
     """
@@ -933,6 +976,7 @@ class Daemon(object):
         log.debug("pyro protocol version: %d  pickle version: %d" % (constants.PROTOCOL_VERSION, Pyro4.config.PICKLE_PROTOCOL_VERSION))
         self.__pyroHmacKey = None
         self._pyroInstances = {}   # pyro objects for instance_mode=single (singletons, just one per daemon)
+        self.streaming_responses = {}   # stream_id -> (client, creation_timestamp, stream)
 
     @property
     def _pyroHmacKey(self):
@@ -1013,6 +1057,7 @@ class Daemon(object):
     def shutdown(self):
         """Cleanly terminate a daemon that is running in the requestloop."""
         log.debug("daemon shutting down")
+        self.streaming_responses = None
 
         def shutdown_thread():
             time.sleep(0.05)
@@ -1101,6 +1146,7 @@ class Daemon(object):
         Override this to handle a client disconnect.
         Conn is the SocketConnection object that was disconnected.
         """
+        print("CLIENT DISCONNECTS", conn)   # XXX   remove streams
         pass
 
     def handleRequest(self, conn):
@@ -1168,6 +1214,8 @@ class Daemon(object):
                             data.append(Pyro4.futures._ExceptionWrapper(xv))
                             break  # stop processing the rest of the batch
                         else:
+                            if Pyro4.config.STREAMING:
+                                raise NotImplementedError("streaming support not yet supported for batched calls")  # XXX
                             data.append(result)
                     wasBatched = True
                 else:
@@ -1186,6 +1234,14 @@ class Daemon(object):
                         else:
                             isCallback = getattr(method, "_pyroCallback", False)
                             data = method(*vargs, **kwargs)  # this is the actual method call to the Pyro object
+                            if not request_flags & Pyro4.message.FLAGS_ONEWAY:
+                                isStream, data = self._streamResponse(data, conn)
+                                if isStream:
+                                    exc = Pyro4.errors.StreamResultError("result of call is a generator or iterator", data)
+                                    ann = {"STRM": data.encode()} if data else {}
+                                    self._sendExceptionResponse(conn, request_seq, serializer.serializer_id, exc,
+                                                                None, annotations=ann, flags=Pyro4.message.FLAGS_STREAM)
+                                    return
             else:
                 log.debug("unknown object requested: %s", objId)
                 raise errors.DaemonError("unknown object")
@@ -1260,7 +1316,7 @@ class Daemon(object):
         else:
             raise errors.DaemonError("invalid instancemode in registered class")
 
-    def _sendExceptionResponse(self, connection, seq, serializer_id, exc_value, tbinfo):
+    def _sendExceptionResponse(self, connection, seq, serializer_id, exc_value, tbinfo, flags=0, annotations={}):
         """send an exception back including the local traceback info"""
         exc_value._pyroTraceback = tbinfo
         if sys.platform == "cli":
@@ -1277,10 +1333,12 @@ class Daemon(object):
             if sys.platform == "cli":
                 util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
             data, compressed = serializer.serializeData(exc_value)
-        flags = Pyro4.message.FLAGS_EXCEPTION
+        flags |= Pyro4.message.FLAGS_EXCEPTION
         if compressed:
             flags |= Pyro4.message.FLAGS_COMPRESSED
-        msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
+        ann = self.annotations()
+        ann.update(annotations or {})
+        msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq, annotations=ann, hmac_key=self._pyroHmacKey)
         if Pyro4.config.LOGWIRE:
             _log_wiredata(log, "daemon wiredata sending (error response)", msg)
         connection.send(msg.to_bytes())
@@ -1386,6 +1444,7 @@ class Daemon(object):
     def close(self):
         """Close down the server and release resources"""
         log.debug("daemon closing")
+        self.streaming_responses = None
         if self.transportServer:
             self.transportServer.close()
             self.transportServer = None
@@ -1430,6 +1489,15 @@ class Daemon(object):
 
     def __setstate_from_dict__(self, state):
         pass
+
+    def _streamResponse(self, data, client):
+        if isinstance(data, collections.Iterator) or inspect.isgenerator(data):
+            if Pyro4.config.STREAMING:
+                stream_id = str(uuid.uuid1())
+                self.streaming_responses[stream_id] = (client, time.time(), data)
+                return True, stream_id
+            return True, None
+        return False, data
 
 
 # serpent serializer initialization

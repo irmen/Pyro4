@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.49**
+
+- ...
+
+
 **Pyro 4.48**
 
 - The threaded socket server now adapts the number of threads dynamically depending on connection count.

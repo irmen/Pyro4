@@ -502,7 +502,6 @@ class MarshalSerializer(SerializerBase):
         def loads(self, data):
             return self.recreate_classes(marshal.loads(data))
 
-
     @classmethod
     def register_type_replacement(cls, object_type, replacement_function):
         pass  # marshal serializer doesn't support per-type hooks
