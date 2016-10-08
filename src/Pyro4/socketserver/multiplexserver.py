@@ -76,6 +76,7 @@ class SocketServer_Multiplex(object):
                         log.warning("Error in clientDisconnect: " + str(x))
                     self.selector.unregister(s)
                     s.close()
+        self.daemon._housekeeping()
 
     def _handleConnection(self, sock):
         try:
@@ -178,6 +179,8 @@ class SocketServer_Multiplex(object):
                         events_per_server[key.data].append(key.fileobj)
                 for server, fileobjs in events_per_server.items():
                     server.events(fileobjs)
+                if not events_per_server:
+                    self.daemon._housekeeping()
             except socket.timeout:
                 pass  # just continue the loop on a timeout
             except KeyboardInterrupt:

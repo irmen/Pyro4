@@ -56,6 +56,7 @@ class ClientConnectionJob(object):
                         msg = "error during handleRequest: %s; %s" % (ex_v, "".join(tb))
                         log.warning(msg)
                         break
+                    self.daemon._housekeeping()
             finally:
                 with _client_disconnect_lock:
                     try:
@@ -178,6 +179,7 @@ class SocketServer_Threadpool(object):
                 job.denyConnection("no free workers, increase server threadpool size")
         except socket.timeout:
             pass  # just continue the loop on a timeout on accept
+        self.daemon._housekeeping()
 
     def close(self):
         log.debug("closing threadpool server")

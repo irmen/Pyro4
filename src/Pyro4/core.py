@@ -917,6 +917,8 @@ class DaemonObject(object):
             raise errors.DaemonError("unknown object")
 
     def get_next_stream_item(self, streamId):
+        # XXX if streamId not in self.daemon.streaming_responses:
+        #    raise errors.StreamResultError("item stream terminated")
         client, timestamp, stream = self.daemon.streaming_responses[streamId]
         try:
             return next(stream)
@@ -1134,14 +1136,6 @@ class Daemon(object):
         conn.send(msg.to_bytes())
         return msg.type == message.MSG_CONNECTOK
 
-    def _clientDisconnect(self, conn):
-        # client goes away, close any streams it had open as well
-        for streamId in list(self.streaming_responses):
-            client, timestamp, stream = self.streaming_responses[streamId]
-            if client is conn:
-                del self.streaming_responses[streamId]
-        self.clientDisconnect(conn)  # user overridable hook
-
     def validateHandshake(self, conn, data):
         """
         Override this to create a connection validator for new client connections.
@@ -1278,6 +1272,26 @@ class Daemon(object):
                         self._sendExceptionResponse(conn, request_seq, request_serializer_id, xv, tblines)
             if isCallback or isinstance(xv, (errors.CommunicationError, errors.SecurityError)):
                 raise  # re-raise if flagged as callback, communication or security error.
+
+    def _clientDisconnect(self, conn):
+        # client goes away, close any streams it had open as well
+        for streamId in list(self.streaming_responses):
+            info = self.streaming_responses.get(streamId, None)
+            if info and info[0] is conn:
+                del self.streaming_responses[streamId]
+        self.clientDisconnect(conn)  # user overridable hook
+
+    def _housekeeping(self):
+        """
+        Perform periodical housekeeping actions (cleanups etc)
+        """
+        if Pyro4.config.ITER_STREAM_LIFETIME > 0:
+            # cleanup iter streams that are past their lifetime
+            now = time.time()
+            for streamId in list(self.streaming_responses.keys()):
+                info = self.streaming_responses.get(streamId, None)
+                if info and now - info[1] > Pyro4.config.ITER_STREAM_LIFETIME:
+                    del self.streaming_responses[streamId]
 
     def _getInstance(self, clazz, conn):
         """

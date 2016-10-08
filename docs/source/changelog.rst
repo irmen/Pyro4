@@ -11,7 +11,10 @@ Change Log
 - new StreamResultError exception added that will be raised when something is wrong with
   streaming (for instance the server config disabled it and you still try to return an iterator).
 
-  @todo docs, unittests
+  @todo docs (+add item to feature overview), unittests
+  @todo simplify stockmarket example to use iters instead of callbacks?
+  @tod add iterator suppor to pyrolite?
+  @todo optional stream max time to live in daemon
 
 
 

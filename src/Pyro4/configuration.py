@@ -24,7 +24,7 @@ class Configuration(object):
                  "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
                  "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
                  "METADATA", "REQUIRE_EXPOSE", "USE_MSG_WAITALL", "JSON_MODULE",
-                 "MAX_RETRIES", "DILL_PROTOCOL_VERSION", "ITER_STREAMING")
+                 "MAX_RETRIES", "DILL_PROTOCOL_VERSION", "ITER_STREAMING", "ITER_STREAM_LIFETIME")
 
     def __init__(self):
         self.reset()
@@ -75,6 +75,7 @@ class Configuration(object):
         self.JSON_MODULE = "json"
         self.MAX_RETRIES = 0
         self.ITER_STREAMING = True
+        self.ITER_STREAM_LIFETIME = 0
 
         if useenvironment:
             # process environment variables
