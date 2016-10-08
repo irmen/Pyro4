@@ -17,9 +17,16 @@ docs:
 
 upload: upload_docs
 	$(PYTHON) setup.py sdist bdist_wheel upload
+	@echo "Don't forget to package and upload the documentation!"
 	
 upload_docs: docs
-	$(PYTHON) setup.py upload_docs --upload-dir=build/sphinx/html
+	#  $(PYTHON) setup.py upload_docs --upload-dir=build/sphinx/html
+	rm -f build/sphinx/docs.zip
+	cd build/sphinx/html && zip -qr ../docs.zip .
+	@echo
+	@echo "@todo the setuptools upload_docs command / pypi doc upload have problems lately."
+	@echo "Upload build/sphinx/docs.zip manually at the bottom of this page:"
+	@echo "https://pypi.python.org/pypi?:action=pkg_edit&name=Pyro4"
 
 install:
 	$(PYTHON) setup.py install
