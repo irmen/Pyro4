@@ -51,8 +51,8 @@ def main():
         nasdaq_uri = daemon.register(nasdaq)
         newyork_uri = daemon.register(newyork)
         with Pyro4.locateNS() as ns:
-            ns.register("example.stockmarket.nasdaq", nasdaq_uri)
-            ns.register("example.stockmarket.newyork", newyork_uri)
+            ns.register("example.stockmarket-old.nasdaq", nasdaq_uri)
+            ns.register("example.stockmarket-old.newyork", newyork_uri)
         nasdaq.run()
         newyork.run()
         print("Stockmarkets running.")

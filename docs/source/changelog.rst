@@ -8,11 +8,11 @@ Change Log
   call or even call a remote generator function, and iterate over it in the client.
   Items will be retrieved on demand from the server.
 - new ITER_STREAMING config item to disable or enable streaming support in the server (default=enabled)
+- new ITER_STREAM_LIFETIME config item to be able to set a maximum lifetime for item streams (default=no limit)
 
   @todo docs (+add item to feature overview), unittests
   @todo simplify stockmarket example to use iters instead of callbacks?
   @tod add iterator suppor to pyrolite?
-  @todo optional stream max time to live in daemon
 
 
 

@@ -30,8 +30,8 @@ def main():
     daemon = Pyro4.Daemon()
     agg_uri = daemon.register(aggregator)
     ns = Pyro4.locateNS()
-    ns.register("example.stockquote.aggregator", agg_uri)
-    for market, market_uri in ns.list(prefix="example.stockmarket.").items():
+    ns.register("example.stockquote-old.aggregator", agg_uri)
+    for market, market_uri in ns.list(prefix="example.stockmarket-old.").items():
         print("joining market", market)
         stockmarket = Pyro4.Proxy(market_uri)
         stockmarket.listener(aggregator)

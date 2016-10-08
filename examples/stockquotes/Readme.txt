@@ -1,5 +1,7 @@
-This example is the code from the Pyro tutorial where we build a simple
-stock quote system.
+This example is the OLD code from the Pyro tutorial where a simple stock quote
+system was built.  It is based on callbacks instead of iterators.
+For the new version (which is a lot easier) look at the 'stockquotes' example.
+
 
 The idea is that we have multiple stock markets producing stock symbol
 quotes. There is an aggregator that combines the quotes from all stock
