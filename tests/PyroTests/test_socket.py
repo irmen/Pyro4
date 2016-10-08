@@ -358,6 +358,9 @@ class ServerCallback(object):
             print("unhandled message type", msg.type)
             connection.close()
 
+    def _housekeeping(self):
+        pass
+
 
 class ServerCallback_BrokenHandshake(ServerCallback):
     def _handshake(self, connection):
