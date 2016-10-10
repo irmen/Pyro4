@@ -56,10 +56,19 @@ class TestEchoserver(unittest.TestCase):
             try:
                 echo.error()
                 self.fail("expected exception")
-            except:
+            except Exception as x:
                 tb = "".join(Pyro4.util.getPyroTraceback())
                 self.assertIn("Remote traceback", tb)
-                self.assertIn("ZeroDivisionError", tb)
+                self.assertIn("ValueError", tb)
+                self.assertEqual("", str(x))
+            try:
+                echo.error_with_text()
+                self.fail("expected exception")
+            except Exception as x:
+                tb = "".join(Pyro4.util.getPyroTraceback())
+                self.assertIn("Remote traceback", tb)
+                self.assertIn("ValueError", tb)
+                self.assertEqual("the message of the error", str(x))
         finally:
             echo.shutdown()
 
