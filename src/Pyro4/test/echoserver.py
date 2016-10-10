@@ -38,10 +38,16 @@ class EchoServer(object):
         return message
 
     def error(self):
-        """generates a simple exception (division by zero)"""
+        """generates a simple exception without text"""
         if self._verbose:
             print("%s - error: generating exception" % time.asctime())
-        return 1 // 0  # division by zero error
+        raise ValueError()
+
+    def error_with_text(self):
+        """generates a simple exception with message"""
+        if self._verbose:
+            print("%s - error: generating exception" % time.asctime())
+        raise ValueError("the message of the error")
 
     @Pyro4.oneway
     def oneway_echo(self, message):

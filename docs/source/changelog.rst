@@ -9,11 +9,11 @@ Change Log
   Items will be retrieved on demand from the server.
 - new ITER_STREAMING config item to disable or enable streaming support in the server (default=enabled)
 - new ITER_STREAM_LIFETIME config item to be able to set a maximum lifetime for item streams (default=no limit)
+- the iter streaming is supported for Java and .NET in Pyrolite 4.14 as well
 - new simplified stockquotes example using generators instead of callbacks
 
   @todo docs (+add item to feature overview), unittests
-  @todo simplify stockmarket example in tutorial chapter
-  @tod add iterator suppor to pyrolite?
+  @todo simplify stockmarket example in tutorial chapter in docs
 
 
 

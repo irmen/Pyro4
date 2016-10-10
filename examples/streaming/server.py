@@ -26,8 +26,8 @@ class Streamer(object):
     def slow_generator(self):
         i = 1
         while i < 10:
-            yield i
             time.sleep(0.5)
+            yield i
             i += 1
 
 
