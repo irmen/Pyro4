@@ -30,7 +30,13 @@ Also if your OS supports the os.sendfile() function (usually on Linux, BSD and O
 but not Windows) you'll benefit even more from optimized data transfer.
 
 
-Note: the only "security" on the raw socket interface is that you have to know
+Note:
+Performance of the download via iterator is almost identical to the normal transfer
+speed of regular python/pyro calls.
+
+
+Note:
+the only "security" on the raw socket interface is that you have to know
 the id of a data file that you want to obtain. It's not advised to use this
 example as-is in a production environment.
 

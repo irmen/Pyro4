@@ -28,6 +28,10 @@ serializer | performance (string) | performance (bytes)
   serpent  |     13358 kb/sec     |    9066 kb/sec
 
 
+Performance of the download via iterator is almost identical to
+the normal transfer speed.
+
+
 Note:
 For a possible approach on transferring large amounts of binary data
 *efficiently*, see the 'blobserver' example.  It works with a raw socket

@@ -12,13 +12,13 @@ if sys.version_info < (3, 0):
 
 def regular_pyro(uri):
     blobsize = 10*1024*1024
-    num_blobs = 20
+    num_blobs = 10
     total_size = 0
     start = time.time()
     name = threading.currentThread().name
     with Pyro4.core.Proxy(uri) as p:
         for _ in range(num_blobs):
-            print("thread {0} getting a blob using regular Pyro call...".format(name, num_blobs, blobsize/1024.0/1024.0))
+            print("thread {0} getting a blob using regular Pyro call...".format(name))
             data = p.get_with_pyro(blobsize)
             data = serpent.tobytes(data)   # in case of serpent encoded bytes
             total_size += len(data)
@@ -27,9 +27,26 @@ def regular_pyro(uri):
     print("thread {0} done, {1} Mb/sec.".format(name, total_size/1024.0/1024.0/duration))
 
 
+def via_iterator(uri):
+    blobsize = 10*1024*1024
+    num_blobs = 10
+    total_size = 0
+    start = time.time()
+    name = threading.currentThread().name
+    with Pyro4.core.Proxy(uri) as p:
+        for _ in range(num_blobs):
+            print("thread {0} getting a blob using remote iterators...".format(name))
+            for chunk in p.iterator(blobsize):
+                chunk = serpent.tobytes(chunk)   # in case of serpent encoded bytes
+                total_size += len(chunk)
+    assert total_size == blobsize*num_blobs
+    duration = time.time() - start
+    print("thread {0} done, {1} Mb/sec.".format(name, total_size/1024.0/1024.0/duration))
+
+
 def raw_socket(uri):
     blobsize = 40*1024*1024
-    num_blobs = 20
+    num_blobs = 10
     total_size = 0
     name = threading.currentThread().name
     with Pyro4.core.Proxy(uri) as p:
@@ -64,6 +81,14 @@ if __name__ == "__main__":
     print("\n\n**** regular pyro calls ****\n")
     t1 = threading.Thread(target=regular_pyro, args=(uri, ))
     t2 = threading.Thread(target=regular_pyro, args=(uri, ))
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+    input("enter to continue:")
+    print("\n\n**** transfer via iterators ****\n")
+    t1 = threading.Thread(target=via_iterator, args=(uri, ))
+    t2 = threading.Thread(target=via_iterator, args=(uri, ))
     t1.start()
     t2.start()
     t1.join()

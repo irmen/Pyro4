@@ -4,6 +4,7 @@ import time
 import warnings
 
 import Pyro4
+import serpent
 
 
 warnings.filterwarnings("ignore")
@@ -24,20 +25,35 @@ def do_test(data):
     assert len(data) == datasize
     totalsize = 0
 
-    obj = Pyro4.core.Proxy(uri)
-    obj._pyroBind()
+    with Pyro4.core.Proxy(uri) as obj:
+        obj._pyroBind()
 
-    begin = time.time()
-    for i in range(10):
-        print("transferring %d bytes" % datasize)
-        size = obj.transfer(data)
-        assert size == datasize
-        totalsize += datasize
-    duration = time.time() - begin
+        begin = time.time()
+        for i in range(10):
+            print("transferring %d bytes" % datasize)
+            size = obj.transfer(data)
+            assert size == datasize
+            totalsize += datasize
+        duration = time.time() - begin
 
-    totalsize = float(totalsize)
-    print("It took %.2f seconds to transfer %d mb." % (duration, totalsize / 1024 / 1024))
-    print("That is %.0f kb/sec. = %.1f mb/sec. (serializer: %s)" % (totalsize / 1024 / duration, totalsize / 1024 / 1024 / duration, Pyro4.config.SERIALIZER))
+        totalsize = float(totalsize)
+        print("It took %.2f seconds to transfer %d mb." % (duration, totalsize / 1024 / 1024))
+        print("That is %.0f kb/sec. = %.1f mb/sec. (serializer: %s)" % (totalsize / 1024 / duration, totalsize / 1024 / 1024 / duration, Pyro4.config.SERIALIZER))
+
+
+def do_test_chunks():
+    with Pyro4.core.Proxy(uri) as p:
+        totalsize = 0
+        begin = time.time()
+        for chunk in p.download_chunks(datasize*10):
+            chunk = serpent.tobytes(chunk)  # in case of serpent encoded bytes
+            totalsize += len(chunk)
+            print(".", end="", flush=True)
+        assert totalsize == datasize*10
+        duration = time.time() - begin
+        totalsize = float(totalsize)
+        print("It took %.2f seconds to transfer %d mb." % (duration, totalsize / 1024 / 1024))
+        print("That is %.0f kb/sec. = %.1f mb/sec. (serializer: %s)" % (totalsize / 1024 / duration, totalsize / 1024 / 1024 / duration, Pyro4.config.SERIALIZER))
 
 
 data = 'x' * datasize
@@ -49,3 +65,6 @@ do_test(data)
 data = bytearray(b'x' * datasize)
 print("\n\n----test with bytearray data----")
 do_test(data)
+print("\n\n----test download via iterator----")
+do_test_chunks()
+print()

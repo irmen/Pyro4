@@ -21,6 +21,15 @@ class BlobServer(object):
         data = b"x" * size
         return data
 
+    def iterator(self, size):
+        chunksize = size//100
+        print("sending %d bytes via iterator, chunks of %d bytes" % (size, chunksize))
+        data = b"x" * size
+        i = 0
+        while i < size:
+            yield data[i:i+chunksize]
+            i += chunksize
+
     def prepare_file_blob(self, size):
         print("preparing file-based blob of size %d" % size)
         file_id = str(uuid.uuid4())
