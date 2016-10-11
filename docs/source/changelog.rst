@@ -11,6 +11,7 @@ Change Log
 - new ITER_STREAM_LIFETIME config item to be able to set a maximum lifetime for item streams (default=no limit)
 - the iter streaming is supported for Java and .NET in Pyrolite 4.14 as well
 - new simplified stockquotes example using generators instead of callbacks
+- serpent library dependency updated to 1.15
 
   @todo docs (+add item to feature overview), unittests
   @todo simplify stockmarket example in tutorial chapter in docs
