@@ -343,7 +343,9 @@ system memory even allow the process to reach this size).
     This means on the receiving side, instead of the raw bytes, you get a little dictionary
     like this instead: ``{'data': 'aXJtZW4gZGUgam9uZw==', 'encoding': 'base64'}``
     Your client code needs to be aware of this and to get the original binary data back, it has to base-64
-    decode the data element by itself.
+    decode the data element by itself.  This is perhaps done the easiest by using the
+    ``serpent.tobytes`` helper function from the ``serpent`` library, which will convert
+    the result to actual bytes if needed.
 
 
 The following table is an indication of the relative speeds when dealing with large amounts

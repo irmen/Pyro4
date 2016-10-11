@@ -90,7 +90,7 @@ class BlobServerDaemon(Pyro4.core.Daemon):
                     sent = os.sendfile(out_fn, in_fn, offset, 512000)
                     offset += sent
             else:
-                print("...from file using plain old read()")
+                print("...from file using plain old read(); your os doesn't have sendfile()")
                 while True:
                     chunk = data.read(512000)
                     if not chunk:
