@@ -36,6 +36,7 @@ class TestEchoserver(unittest.TestCase):
         self.echoserverthread.echodaemon.shutdown()
         time.sleep(0.02)
         self.echoserverthread.join()
+        Pyro4.config.SERVERTYPE = "thread"
 
     def testExposed(self):
         e = Pyro4.test.echoserver.EchoServer()

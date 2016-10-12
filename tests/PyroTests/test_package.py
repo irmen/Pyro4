@@ -29,6 +29,7 @@ class TestPackage(unittest.TestCase):
         self.assertIs(Pyro4.core.behavior, Pyro4.behavior)
         self.assertIs(Pyro4.naming.locateNS, Pyro4.locateNS)
         self.assertIs(Pyro4.naming.resolve, Pyro4.resolve)
+        self.assertIsInstance(Pyro4.current_context, Pyro4.core._CallContext)
 
 
 if __name__ == "__main__":

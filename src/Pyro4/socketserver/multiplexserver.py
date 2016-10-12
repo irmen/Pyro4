@@ -7,6 +7,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import print_function
 import socket
+import time
 import sys
 import logging
 import os
@@ -26,6 +27,7 @@ class SocketServer_Multiplex(object):
     def __init__(self):
         self.sock = self.daemon = self.locationStr = None
         self.selector = selectors.DefaultSelector()
+        self.shutting_down = False
 
     def init(self, daemon, host, port, unixsocket=None):
         log.info("starting multiplexed socketserver")
@@ -61,6 +63,8 @@ class SocketServer_Multiplex(object):
     def events(self, eventsockets):
         """handle events that occur on one of the sockets of this server"""
         for s in eventsockets:
+            if self.shutting_down:
+                return
             if s is self.sock:
                 # server socket, means new connection
                 conn = self._handleConnection(self.sock)
@@ -113,8 +117,14 @@ class SocketServer_Multiplex(object):
             csock.close()
         return None
 
+    def shutdown(self):
+        self.shutting_down = True
+        self.wakeup()
+        time.sleep(0.05)
+        self.close()
+        self.sock = None
+
     def close(self):
-        log.debug("closing socketserver")
         self.selector.close()
         if self.sock:
             sockname = None
@@ -186,7 +196,6 @@ class SocketServer_Multiplex(object):
             except KeyboardInterrupt:
                 log.debug("stopping on break signal")
                 break
-        log.debug("exit select-based requestloop")
 
     def combine_loop(self, server):
         for sock in server.sockets:

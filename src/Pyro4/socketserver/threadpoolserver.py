@@ -10,8 +10,8 @@ from __future__ import print_function
 import socket
 import logging
 import sys
+import time
 import os
-import struct
 import Pyro4.util
 from Pyro4 import socketutil, errors
 from .threadpool import Pool, NoFreeWorkersError
@@ -78,21 +78,6 @@ class ClientConnectionJob(object):
             self.csock.close()
         return False
 
-    def interrupt(self):
-        """attempt to interrupt the worker's request loop"""
-        try:
-            self.csock.sock.shutdown(socket.SHUT_RDWR)
-            self.csock.sock.setblocking(False)
-        except (OSError, socket.error):
-            pass
-        if hasattr(socket, "SO_RCVTIMEO"):
-            # setting a recv timeout seems to break the blocking call to recv() on some systems
-            try:
-                self.csock.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, struct.pack("ii", 1, 1))
-            except socket.error:
-                pass
-        self.csock.close()
-
     def denyConnection(self, reason):
         log.warning("client connection was denied: "+reason)
         # return failed handshake
@@ -105,6 +90,7 @@ class SocketServer_Threadpool(object):
 
     def __init__(self):
         self.daemon = self.sock = self._socketaddr = self.locationStr = self.pool = None
+        self.shutting_down = False
 
     def init(self, daemon, host, port, unixsocket=None):
         log.info("starting thread pool socketserver")
@@ -140,7 +126,7 @@ class SocketServer_Threadpool(object):
 
     def loop(self, loopCondition=lambda: True):
         log.debug("threadpool server requestloop")
-        while (self.sock is not None) and loopCondition():
+        while (self.sock is not None) and not self.shutting_down and loopCondition():
             try:
                 self.events([self.sock])
             except socket.error:
@@ -157,7 +143,6 @@ class SocketServer_Threadpool(object):
             except KeyboardInterrupt:
                 log.debug("stopping on break signal")
                 break
-        log.debug("threadpool server exits requestloop")
 
     def combine_loop(self, server):
         raise TypeError("You can't use the loop combiner on the threadpool server type")
@@ -169,6 +154,9 @@ class SocketServer_Threadpool(object):
         assert self.sock in eventsockets
         try:
             csock, caddr = self.sock.accept()
+            if self.shutting_down:
+                csock.close()
+                return
             log.debug("connected %s", caddr)
             if Pyro4.config.COMMTIMEOUT:
                 csock.settimeout(Pyro4.config.COMMTIMEOUT)
@@ -181,8 +169,14 @@ class SocketServer_Threadpool(object):
             pass  # just continue the loop on a timeout on accept
         self.daemon._housekeeping()
 
+    def shutdown(self):
+        self.shutting_down = True
+        self.wakeup()
+        time.sleep(0.05)
+        self.close()
+        self.sock = None
+
     def close(self):
-        log.debug("closing threadpool server")
         if self.sock:
             sockname = None
             try:

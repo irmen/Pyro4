@@ -29,9 +29,13 @@ The various servers in Pyro4.socketserver implement this.
         Called from external event loops: let the server handle events that occur on one of the sockets of this server.
         eventsockets is a sequence of all the sockets for which an event occurred.
 
+    .. py:method:: shutdown()
+
+        Initiate shutdown of a running socket server, and close it.
+
     .. py:method:: close()
 
-        Release the connections and close the server. It can no longer be used after calling this,
+        Release resources and close a stopped server. It can no longer be used after calling this,
         until you call initServer again.
 
     .. py:method:: wakeup()

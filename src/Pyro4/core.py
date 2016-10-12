@@ -1061,22 +1061,17 @@ class Daemon(object):
         """Cleanly terminate a daemon that is running in the requestloop."""
         log.debug("daemon shutting down")
         self.streaming_responses = None
+        time.sleep(0.02)
+        self.__mustshutdown.set()
+        if self.transportServer:
+            self.transportServer.shutdown()
+            time.sleep(0.02)
+        self.close()
+        self.__loopstopped.wait(timeout=5)  # use timeout to avoid deadlock situations
 
-        def shutdown_thread():
-            time.sleep(0.05)
-            self.__mustshutdown.set()
-            if self.transportServer:
-                self.transportServer.wakeup()
-                time.sleep(0.05)
-            self.close()
-            self.__loopstopped.wait(timeout=5)  # use timeout to avoid deadlock situations
-            log.info("daemon %s shut down", self.locationStr)
-
-        # We do the actual shutdown from a separate thread so that any Pyro method
-        # that may be calling this, can return its response normally without directly
-        # severing the socket and causing a ConnectionClosedError on the proxy.
-        thread = threadutil.Thread(target=shutdown_thread)
-        thread.start()
+    @property
+    def _shutting_down(self):
+        return self.__mustshutdown.is_set()
 
     def _handshake(self, conn, denied_reason=None):
         """
@@ -1465,9 +1460,9 @@ class Daemon(object):
 
     def close(self):
         """Close down the server and release resources"""
-        log.debug("daemon closing")
         self.streaming_responses = None
         if self.transportServer:
+            log.debug("daemon closing")
             self.transportServer.close()
             self.transportServer = None
 

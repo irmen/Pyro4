@@ -477,12 +477,13 @@ def findProbablyUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
     """Returns an unused port that should be suitable for binding (likely, but not guaranteed).
     This code is copied from the stdlib's test.test_support module."""
     tempsock = socket.socket(family, socktype)
-    port = bindOnUnusedPort(tempsock)
-    tempsock.close()
-    del tempsock
-    if sys.platform == "cli":
-        return port + 1  # the actual port is somehow still in use by the socket when using IronPython
-    return port
+    try:
+        port = bindOnUnusedPort(tempsock)
+        if sys.platform == "cli":
+            return port + 1  # the actual port is somehow still in use by the socket when using IronPython
+        return port
+    finally:
+        tempsock.close()
 
 
 def bindOnUnusedPort(sock, host='localhost'):
@@ -509,19 +510,14 @@ def bindOnUnusedPort(sock, host='localhost'):
     return sock.getsockname()[1]
 
 
-def triggerSocket(sock):
-    """send a small data packet over the socket, to trigger it"""
-    try:
-        sock.sendall(b"!" * 16)
-    except (socket.error, AttributeError):
-        pass
-
-
 def interruptSocket(address):
     """bit of a hack to trigger a blocking server to get out of the loop, useful at clean shutdowns"""
     try:
         sock = createSocket(connect=address, keepalive=False, timeout=None)
-        triggerSocket(sock)
+        try:
+            sock.sendall(b"!" * 16)
+        except (socket.error, AttributeError):
+            pass
         try:
             sock.shutdown(socket.SHUT_RDWR)
         except (OSError, socket.error):
