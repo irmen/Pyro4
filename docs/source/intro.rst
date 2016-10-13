@@ -40,6 +40,7 @@ Here's a quick overview of Pyro's features:
 - automatic proxy-ing of Pyro objects which means you can return references to remote objects just as if it were normal objects.
 - one-way invocations for enhanced performance.
 - batched invocations for greatly enhanced performance of many calls on the same object.
+- remote iterator on-demand item streaming avoids having to create large collections upfront and transfer them as a whole.
 - you can define timeouts on network communications to prevent a call blocking forever if there's something wrong.
 - asynchronous invocations if you want to get the results 'at some later moment in time'. Pyro will take care of gathering the result values in the background.
 - remote exceptions will be raised in the caller, as if they were local. You can extract detailed remote traceback information.

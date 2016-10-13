@@ -652,6 +652,11 @@ class Proxy(object):
 
 
 class _StreamResultIterator(object):
+    """
+    Pyro returns this as a result of a remote call which returns an iterator or generator.
+    It is a normal iterable and produces elements on demand from the remote iterator.
+    You can simply use it in for loops, list comprehensions etc.
+    """
     def __init__(self, streamId, proxy):
         self.streamId = streamId
         self.proxy = proxy

@@ -66,6 +66,12 @@ class EchoServer(object):
             print("%s - slow: returning result" % time.asctime())
         return "Finally, an answer!"
 
+    def generator(self):
+        """a generator function that returns some elements on demand"""
+        yield "one"
+        yield "two"
+        yield "three"
+
     @Pyro4.oneway
     def oneway_slow(self):
         """prints a message after a certain delay, and returns; but the client won't wait for it"""

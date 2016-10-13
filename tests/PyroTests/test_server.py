@@ -78,6 +78,14 @@ class ServerTestObject(object):
     def dictionary(self):
         return self._dictionary
 
+    def iterator(self):
+        return iter(["one", "two", "three"])
+
+    def generator(self):
+        yield "one"
+        yield "two"
+        yield "three"
+
 
 class NotEverythingExposedClass(object):
     def __init__(self, name):
@@ -277,7 +285,7 @@ class ServerTestsOnce(unittest.TestCase):
             p._pyroBind()
             self.assertEqual({'value', 'dictionary'}, p._pyroAttrs)
             self.assertEqual({'echo', 'getDict', 'divide', 'nonserializableException', 'ping', 'oneway_delay', 'delayAndId', 'delay', 'testargs',
-                                  'multiply', 'oneway_multiply', 'getDictAttr'}, p._pyroMethods)
+                                  'multiply', 'oneway_multiply', 'getDictAttr', 'iterator', 'generator'}, p._pyroMethods)
             self.assertEqual({'oneway_multiply', 'oneway_delay'}, p._pyroOneway)
             p._pyroAttrs = None
             p._pyroGetMetadata()
@@ -660,6 +668,35 @@ class ServerTestsOnce(unittest.TestCase):
             except Pyro4.errors.ProtocolError:
                 pass
             Pyro4.config.MAX_MESSAGE_SIZE = 0
+
+    def testIterator(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            iterator = p.iterator()
+            self.assertIsInstance(iterator, Pyro4.core._StreamResultIterator)
+            self.assertEqual("one", next(iterator))
+            self.assertEqual("two", next(iterator))
+            self.assertEqual("three", next(iterator))
+            with self.assertRaises(StopIteration):
+                next(iterator)
+            iterator.close()
+
+    def testGenerator(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            generator = p.generator()
+            self.assertIsInstance(generator, Pyro4.core._StreamResultIterator)
+            self.assertEqual("one", next(generator))
+            self.assertEqual("two", next(generator))
+            self.assertEqual("three", next(generator))
+            with self.assertRaises(StopIteration):
+                next(generator)
+            generator.close()
+
+    def testGeneratorProxyClose(self):
+        p = Pyro4.core.Proxy(self.objectUri)
+        generator = p.generator()
+        p._pyroRelease()
+        with self.assertRaises(Pyro4.errors.ConnectionClosedError):
+            next(generator)
 
     def testCleanup(self):
         p1 = Pyro4.core.Proxy(self.objectUri)

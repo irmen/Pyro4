@@ -369,6 +369,59 @@ This is some simple code doing an asynchronous batch::
 See the :file:`batchedcalls` example for more details.
 
 
+.. index:: remote iterators
+
+.. _remote-iterators:
+
+Remote iterators/generators
+===========================
+
+Since Pyro 4.49 it is possible to simply iterate over a remote iterator or generator function as if it
+was a perfectly normal Python iterable. Pyro will fetch the items one by one from the server that is
+running the remote iterator until all elements have been consumed or the client disconnects.
+
+.. sidebar::
+    *Filter on the server*
+
+    If you plan to filter the items that are returned from the iterator,
+    it is strongly suggested to do that on the server and not in your client.
+    Because otherwise it is possible that you first have
+    to serialize and transfer all possible items from the server only to select
+    a few out of them, which is very inefficient.
+
+    *Beware of many small items*
+
+    Pyro has to do a remote call to get every next item from the iterable.
+    If your iterator produces lots of small individual items, this can be quite
+    inefficient (many small network calls). Either chunk them up a bit or
+    use larger individual items.
+
+
+So you can write in your client::
+
+    proxy = Pyro4.Proxy("...")
+    for item in proxy.things():
+        print(item)
+
+The implementation of the ``things`` method can ofcourse return a normal list but can
+also return an iterator or even be a generator function itself. This has the usual benefits of "lazy" generators:
+no need to create the full collection upfront which can take a lot of memory, possibility
+of infinite sequences, and spreading computation load more evenly.
+
+By default the remote item streaming is enabled in the server and there is no time limit set
+for how long iterators and generators can be 'alive' in the server. You can configure this however
+if you want to restrict resource usage or disable this feature altogether, via the
+``ITER_STREAMING`` and ``ITER_STREAM_LIFETIME`` config items.
+
+Notice that you can also use this in your Java or .NET/C# programs that connect to Python via
+Pyrolite!  Version 4.14 or newer of that library supports  Pyro item streaming. It returns normal
+Java and .NET iterables to your code that you can loop over normally with foreach or other things.
+
+There are several examples that use the remote iterator feature.
+Have a look at the :file:`stockquotes` tutorial example, or the :file:`blobserver` example.
+
+
+
 .. index:: async call, future, call chaining
 
 .. _async-calls:

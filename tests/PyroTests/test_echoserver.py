@@ -73,6 +73,16 @@ class TestEchoserver(unittest.TestCase):
         finally:
             echo.shutdown()
 
+    def testGenerator(self):
+        with Pyro4.Proxy(self.uri) as echo:
+            remotegenerator = echo.generator()
+            self.assertIsInstance(remotegenerator, Pyro4.core._StreamResultIterator)
+            next(remotegenerator)
+            next(remotegenerator)
+            next(remotegenerator)
+            with self.assertRaises(StopIteration):
+                next(remotegenerator)
+
 
 if __name__ == "__main__":
     unittest.main()

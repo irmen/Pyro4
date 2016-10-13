@@ -20,6 +20,9 @@ print("\ngot back from the server: %s" % response)
 response = echoserver.echo([1, 2, 3, 4])
 print("got back from the server: %s" % response)
 
+for element in echoserver.generator():
+    print("got element from remote iterator:", element)
+
 try:
     echoserver.error()
 except:

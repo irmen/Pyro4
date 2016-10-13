@@ -75,7 +75,7 @@ class Configuration(object):
         self.JSON_MODULE = "json"
         self.MAX_RETRIES = 0
         self.ITER_STREAMING = True
-        self.ITER_STREAM_LIFETIME = 0
+        self.ITER_STREAM_LIFETIME = 0.0
 
         if useenvironment:
             # process environment variables
