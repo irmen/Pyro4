@@ -836,4 +836,4 @@ Ok, what's next?
 and a stock market simulation system consisting of various independent components that talk to each other using Pyro.
 The Pyro distribution archive contains a truckload of example programs with short descriptions that you could
 study to see how to use the various features that Pyro has to offer. Or just browse the manual for more detailed
-information. Please consider joining the Pyro mailing list (see :doc:`front page <index>`). Happy remote object programming!
+information. Happy remote object programming!
