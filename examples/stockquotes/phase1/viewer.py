@@ -1,42 +1,32 @@
 from __future__ import print_function
 from stockmarket import StockMarket
-from aggregator import Aggregator
 
 
 class Viewer(object):
     def __init__(self):
-        self.agg = None
-        self.filter_symbols = set()
+        self.markets = set()
+        self.symbols = set()
 
-    def aggregator(self, aggregator, symbols):
-        self.agg = aggregator
-        self.filter_symbols.update(symbols)
-
-    def print_quotes(self):
-        print("viewed quotes:", self.filter_symbols)
-        aggregated_quotes = self.agg.quotes()
+    def start(self):
+        print("Shown quotes:", self.symbols)
+        quote_sources = {
+            market.name: market.quotes() for market in self.markets
+        }
         while True:
-            agg_quotes = next(aggregated_quotes)
-            for marketname, quotes in agg_quotes.items():
-                for symbol, value in quotes:
-                    if symbol in self.filter_symbols:
-                        print("{0}.{1}: {2}".format(marketname, symbol, value))
+            for market, quote_source in quote_sources.items():
+                quote = next(quote_source)  # get a new stock quote from the source
+                symbol, value = quote
+                if symbol in self.symbols:
+                    print("{0}.{1}: {2}".format(market, symbol, value))
 
 
 def main():
     nasdaq = StockMarket("NASDAQ", ["AAPL", "CSCO", "MSFT", "GOOG"])
     newyork = StockMarket("NYSE", ["IBM", "HPQ", "BP"])
-
-    agg = Aggregator()
-    agg.add_market(nasdaq)
-    agg.add_symbols(nasdaq.symbols)
-    agg.add_market(newyork)
-    agg.add_symbols(newyork.symbols)
-    print("aggregated symbols:", agg.symbols)
-
-    view = Viewer()
-    view.aggregator(agg, ["IBM", "AAPL", "MSFT"])
-    view.print_quotes()
+    viewer = Viewer()
+    viewer.markets = {nasdaq, newyork}
+    viewer.symbols = {"IBM", "AAPL", "MSFT"}
+    viewer.start()
 
 
 if __name__ == "__main__":

@@ -10,6 +10,12 @@ class StockMarket(object):
         self._name = marketname
         self._symbols = symbols
 
+    def quotes(self):
+        while True:
+            symbol = random.choice(self.symbols)
+            yield symbol, round(random.uniform(5, 150), 2)
+            time.sleep(random.random()/2.0)
+
     @property
     def name(self):
         return self._name
@@ -17,12 +23,6 @@ class StockMarket(object):
     @property
     def symbols(self):
         return self._symbols
-
-    def quotes(self):
-        while True:
-            symbol = random.choice(self.symbols)
-            yield symbol, round(random.uniform(5, 150), 2)
-            time.sleep(random.random()/2.0)
 
 
 if __name__ == "__main__":
