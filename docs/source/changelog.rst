@@ -14,9 +14,6 @@ Change Log
 - changed daemon shutdown mechanism again to not use separate thread anymore, fixes thread leak
 - serpent library dependency updated to 1.15
 
-  @todo simplify stockmarket example in tutorial chapter in docs
-
-
 
 **Pyro 4.48**
 

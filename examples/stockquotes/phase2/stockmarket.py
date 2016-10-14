@@ -28,6 +28,7 @@ class StockMarket(object):
 if __name__ == "__main__":
     nasdaq = StockMarket("NASDAQ", ["AAPL", "CSCO", "MSFT", "GOOG"])
     newyork = StockMarket("NYSE", ["IBM", "HPQ", "BP"])
+    # for example purposes we will access the daemon and name server ourselves and not use serveSimple
     with Pyro4.Daemon() as daemon:
         nasdaq_uri = daemon.register(nasdaq)
         newyork_uri = daemon.register(newyork)

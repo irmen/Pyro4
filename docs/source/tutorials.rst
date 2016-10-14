@@ -523,20 +523,23 @@ Building a Stock market simulator
 
 .. hint:: All of the code of this part of the tutorial can be found in the :file:`examples/stockquotes` directory.
 
-You'll build a simple stock quote system.
-The idea is that we have multiple stock markets producing stock symbol
-quotes. There is an aggregator that combines the quotes from all stock
-markets. Finally there are multiple viewers that can register themselves
-by the aggregator and let it know what stock symbols they're interested in.
-The viewers will then receive near-real-time stock quote updates for the
-symbols they selected.  (Everything is fictional, of course):
+.. sidebar:: simplified example
 
-============= ====== ========== ====== ========
-Stockmarket 1 |rarr|            |rarr| Viewer 1
-Stockmarket 2 |rarr| Aggregator |rarr| Viewer 2
-     ...                                 ...
-Stockmarket N |rarr|            |rarr| Viewer N
-============= ====== ========== ====== ========
+    The tutorial here is a simplified version of a stock quote simulation example.
+    There's a more elaborate example available called :file:`examples/stockquotes-old`
+    (it used to be this example in older versions of the documentation)
+
+We'll build a simple stock quote system.
+The idea is that we have multiple stock markets producing stock symbol
+quotes. There are viewers that aggregate and filter all stock quotes from the
+markets and display those from the companies we are interested in.
+
+============= ====== ======= ======
+Stockmarket 1 |rarr|         Viewer
+Stockmarket 2 |rarr| |rarr|  Viewer
+Stockmarket 3 |rarr|         Viewer
+...                          ...
+============= ====== ======= ======
 
 
 phase 1: simple prototype
@@ -547,414 +550,221 @@ This simple prototype will be functional but everything will be running in a sin
 It contains no Pyro code at all, but shows what the system is going to look like later on.
 
 First create a file :file:`stockmarket.py` that will simulate a stock market that is producing
-stock quotes for registered companies. You should be able to add a 'listener' to it that will
-be receiving stock quote updates. It should be able to report the stock symbols that are being
-traded in this market as well. The code is as follows::
+stock quotes for registered companies. For simplicity we will use a generator function that
+produces individual random stock quotes. The code is as follows::
 
     # stockmarket.py
     import random
+    import time
+
 
     class StockMarket(object):
         def __init__(self, marketname, symbols):
             self.name = marketname
-            self.symbolmeans = {}
-            for symbol in symbols:
-                self.symbolmeans[symbol] = random.uniform(20, 200)
-            self.aggregators = []
+            self.symbols = symbols
 
-        def generate(self):
-            quotes = {}
-            for symbol, mean in self.symbolmeans.items():
-                if random.random() < 0.2:
-                    quotes[symbol] = round(random.normalvariate(mean, 20), 2)
-            for aggregator in self.aggregators:
-                aggregator.quotes(self.name, quotes)
-
-        def listener(self,aggregator):
-            self.aggregators.append(aggregator)
-
-        def symbols(self):
-            return self.symbolmeans.keys()
+        def quotes(self):
+            while True:
+                symbol = random.choice(self.symbols)
+                yield symbol, round(random.uniform(5, 150), 2)
+                time.sleep(random.random()/2.0)
 
 
-Then we need an :file:`aggregator.py` that combines all stock symbol quotes from all stockmarkets into one 'stream'
-(this is the object that will be the 'listener' for the stock markets).
-It should be possible to register one or more 'viewers' with the stock symbols that viewer is interested in, so
-that every viewer is only receiving the stock symbols it wants. The code is like this::
-
-    # aggregator.py
-    class Aggregator(object):
-        def __init__(self):
-            self.viewers = {}
-            self.symbols = []
-
-        def add_symbols(self, symbols):
-            self.symbols.extend(symbols)
-
-        def available_symbols(self):
-            return self.symbols
-
-        def view(self, viewer, symbols):
-            self.viewers[viewer] = symbols
-
-        def quotes(self, market, stockquotes):
-            for symbol, value in stockquotes.items():
-                for viewer, symbols in self.viewers.items():
-                    if symbol in symbols:
-                        viewer.quote(market, symbol, value)
-
-
-The :file:`viewer.py` itself is an extremely simple object that just prints out the stock symbol quotes it receives::
+For the actual viewer application we create a new file :file:`viewer.py` that iterates over
+the symbols produced by various stock markets. It prints the symbols from the companies we're
+interested in::
 
     # viewer.py
     from __future__ import print_function
+    from stockmarket import StockMarket
+
 
     class Viewer(object):
-        def quote(self, market, symbol, value):
-            print("{0}.{1}: {2}".format(market, symbol, value))
+        def __init__(self):
+            self.markets = set()
+            self.symbols = set()
 
+        def start(self):
+            print("Shown quotes:", self.symbols)
+            quote_sources = {
+                market.name: market.quotes() for market in self.markets
+            }
+            while True:
+                for market, quote_source in quote_sources.items():
+                    quote = next(quote_source)  # get a new stock quote from the source
+                    symbol, value = quote
+                    if symbol in self.symbols:
+                        print("{0}.{1}: {2}".format(market, symbol, value))
 
-Finally you need to write a :file:`main.py` that imports the above modules, creates all objects, creates a few
-companies that are traded on the market, connects them together, and contains a loop that drives the stock market quote generation.
-Because we are not yet using Pyro here, it just creates two ``Stockmarket`` objects (with a name and the companies being traded).
-A single ``Aggregator`` object is registered with both markets, to receive all updates.
-A ``Viewer`` object is created and connected to the ``Aggregator`` with a few companies that the viewer wants to receive quotes from.
-The code is like this::
-
-    # main.py
-    from __future__ import print_function
-    import time
-    from stockmarket import StockMarket
-    from aggregator import Aggregator
-    from viewer import Viewer
 
     def main():
         nasdaq = StockMarket("NASDAQ", ["AAPL", "CSCO", "MSFT", "GOOG"])
         newyork = StockMarket("NYSE", ["IBM", "HPQ", "BP"])
+        viewer = Viewer()
+        viewer.markets = {nasdaq, newyork}
+        viewer.symbols = {"IBM", "AAPL", "MSFT"}
+        viewer.start()
 
-        agg = Aggregator()
-        agg.add_symbols(nasdaq.symbols())
-        agg.add_symbols(newyork.symbols())
-        print("aggregated symbols:", agg.available_symbols())
-
-        nasdaq.listener(agg)
-        newyork.listener(agg)
-
-        view = Viewer()
-        agg.view(view, ["IBM", "AAPL", "MSFT"])
-        print("")
-        while True:
-            nasdaq.generate()
-            newyork.generate()
-            time.sleep(0.5)
 
     if __name__ == "__main__":
         main()
 
 
-If you now run :file:`main.py` it will print a stream of stock symbol quote updates that are being generated by the two
+If you run this file :file:`viewer.py` it will print a stream of stock symbol quote updates that are being generated by the two
 stock markets (but only the few symbols that the viewer wants to see)::
 
-    $ python main.py
-    aggregated symbols: ['GOOG', 'AAPL', 'CSCO', 'MSFT', 'HPQ', 'BP', 'IBM']
-
-    NYSE.IBM: 74.31
-    NYSE.IBM: 108.68
-    NASDAQ.AAPL: 64.17
-    NYSE.IBM: 83.19
-    NYSE.IBM: 92.5
-    NASDAQ.AAPL: 63.09
-    NASDAQ.MSFT: 161.3
+    $ python viewer.py
+    Shown quotes: {'MSFT', 'IBM', 'AAPL'}
+    NYSE.IBM: 19.59
+    NASDAQ.MSFT: 25.06
+    NYSE.IBM: 89.54
+    NYSE.IBM: 44.08
+    NASDAQ.MSFT: 9.73
+    NYSE.IBM: 80.57
     ....
 
-phase 2: separation
-^^^^^^^^^^^^^^^^^^^
 
-.. note:: For brevity, the code for this phase of the stockquote tutorial is not shown. If you want to see it,
-   have a look at the :file:`stockquotes` example, :file:`phase2`.
-
-This phase still contains no Pyro code, but you can already make the three components more autonomous than they were in phase 1.
-This step is optional, you can skip it and continue with `phase 3: Pyro version`_ below if you want.
-
-In this phase, every component of our stock market system now has a main function that starts up the component and connects
-it to the other component(s). As the stock market is the source of the data, you create a daemon thread in :file:`stockmarket.py` for it
-so that all markets produces stock quote changes in the background.
-:file:`main.py` is a lot simpler now: it only starts the various components and then sits to wait for an exit signal.
-
-The idea in this phase is that you tweak the existing code a little to make it suitable to be split up in different,
-autonomous components:
-
-- it helps to add a few debug print or log statements so that you can see what is going on in each component
-- each component will need some form of a 'main' or 'startup' function to create and launch it
-- the main program just needs to make sure the components are started.
-
-phase 3: Pyro version
+phase 2: Pyro version
 ^^^^^^^^^^^^^^^^^^^^^
-Finally you use Pyro to make the various components fully distributed. Pyro is used to make them talk to each other.
-The actual code for each component class hasn't changed since phase 1, it is just the plumbing that you need to write to
+Now you use Pyro to make the various components fully distributed. Pyro is used to make them talk to each other.
+The actual code for each component class hasn't really changed since phase 1, it is just the plumbing that you need to write to
 glue them together. Pyro is making this a matter of just a few lines of code that is Pyro-specific, the rest of the
 code is needed anyway to start up and configure the system. To be able to see the final result, the code is listed
-once more with comments on what changed with respect to the version in phase 1 (phase 2 is optional, it just makes
-for an easier transition).
-
-.. note::
-    This time we won't be using :py:meth:`serveSimple` to publish the objects and start the Daemon.
-    Instead, a daemon is created manually, we register our own objects,
-    and start the request loop ourselves. This needs more code but gives you more control.
-
-
-main
-----
-There's no :file:`main.py` anymore. This is because you now start every component by itself, in separate
-console windows for instance. They run autonomously without the need of a 'main' program to start it all up in one place.
+once more with comments on what changed with respect to the version in phase 1.
 
 stockmarket
 -----------
-The :file:`stockmarket.py` gained a few print statements to see what is going on while it is running.
-*Important:* there is *a single* change in the actual code to make it work with Pyro. Because Pyro needs to transfer
-objects over the network, it requires those objects to be serializable. The ``symbols`` method returned the ``keys()``
-of the dictionary of symbols in the stockmarket. While this is a normal list in Python 2, it is a ``dict_keys`` object
-in Python 3. These cannot be serialized (because it is a special iterator object). The simple solution is to
-force the method to build a list and return that: ``list(dictionary.keys())``.
+The :file:`stockmarket.py` is changed slightly. You have to add the ``@Pyro4.expose`` decorator on the methods
+(or class) that must be accessible remotely.  Also, to access the ``name`` and ``symbols`` attributes of the class
+you have to turn them into real Python properties. Finally there is now a bit of startup logic to create
+some stock markets and make them available as Pyro objects. Notice that we gave each market their own
+defined name, this will be used in the viewer application later.
 
-We had to add the ``@Pyro4.expose`` decorator on the methods that must be accessible remotely by the as well
-(``listener`` and ``symbols``, they're both called by the Aggregator).
+For sake of example we are not using the ``serveSimple`` method here to publish our objects via Pyro. Rather,
+the daemon and name server are accessed by our own code. Notice that to ensure tidy cleanup of connectoin resources,
+they are both used as context managers in a ``with`` statement.
 
-It also gained a ``run`` method that will be running inside the background thread to generate stock quote updates.
-The reason this needs to run in a thread is because the ``Stockmarket`` itself is also a Pyro object that must
-listen to remote method calls (in this case, of the ``Aggregator`` object(s) that want to listen to it).
-You can also choose to run the Pyro daemon loop in a background thread and generate stock quotes update in the main
-thread, that doesn't matter, as long as they run independently.
+Also notice that we can leave the generator function in the stockmarket class as-is; since version 4.49 Pyro is able
+to turn it into a remote generator without your client program ever noticing.
 
-Finally it gained a ``main`` function to create a couple of stock markets as we did before.
-This time however they're registered as Pyro objects with the Pyro daemon. They're also entered in the
-name server as ``example.stockmarket.<name>`` so the ``Aggregator`` can find them easily.
-As you will see below, we're also using the Daemon and Name server objects as context managers (in a ``with``
-statement) -- this ensures they're promptly and correctly cleaned up once they're no longer used.
-
-The complete code for :file:`stockmarket.py` is now as follows::
+The complete code for the Pyro version of :file:`stockmarket.py` is as follows::
 
     # stockmarket.py
     from __future__ import print_function
     import random
-    import threading
     import time
     import Pyro4
 
 
+    @Pyro4.expose
     class StockMarket(object):
         def __init__(self, marketname, symbols):
-            self.name = marketname
-            self.symbolmeans = {}
-            for symbol in symbols:
-                self.symbolmeans[symbol] = random.uniform(20, 200)
-            self.aggregators = []
+            self._name = marketname
+            self._symbols = symbols
 
-        def generate(self):
-            quotes = {}
-            for symbol, mean in self.symbolmeans.items():
-                if random.random() < 0.2:
-                    quotes[symbol] = round(random.normalvariate(mean, 20), 2)
-            print("new quotes generated for", self.name)
-            for aggregator in self.aggregators:
-                aggregator.quotes(self.name, quotes)
+        def quotes(self):
+            while True:
+                symbol = random.choice(self.symbols)
+                yield symbol, round(random.uniform(5, 150), 2)
+                time.sleep(random.random()/2.0)
 
-        @Pyro4.expose
-        def listener(self,aggregator):
-            print("market {0} adding new aggregator".format(self.name))
-            self.aggregators.append(aggregator)
+        @property
+        def name(self):
+            return self._name
 
-        @Pyro4.expose
+        @property
         def symbols(self):
-            return list(self.symbolmeans.keys())
-
-        def run(self):
-            def generate_symbols():
-                while True:
-                    time.sleep(random.random())
-                    self.generate()
-            thread = threading.Thread(target=generate_symbols)
-            thread.setDaemon(True)
-            thread.start()
+            return self._symbols
 
 
-    def main():
+    if __name__ == "__main__":
         nasdaq = StockMarket("NASDAQ", ["AAPL", "CSCO", "MSFT", "GOOG"])
         newyork = StockMarket("NYSE", ["IBM", "HPQ", "BP"])
-
+        # for example purposes we will access the daemon and name server ourselves and not use serveSimple
         with Pyro4.Daemon() as daemon:
             nasdaq_uri = daemon.register(nasdaq)
             newyork_uri = daemon.register(newyork)
             with Pyro4.locateNS() as ns:
                 ns.register("example.stockmarket.nasdaq", nasdaq_uri)
                 ns.register("example.stockmarket.newyork", newyork_uri)
-            nasdaq.run()
-            newyork.run()
-            print("Stockmarkets running.")
+            print("Stockmarkets available.")
             daemon.requestLoop()
-
-    if __name__ == "__main__":
-        main()
-
-
-aggregator
-----------
-
-The :file:`aggregator.py` also gained a print function to be able to see in its console window what is going on
-when a new viewer connects. The ``main`` function creates it, and connects it as a Pyro object to the Pyro daemon.
-It also registers it with the name server as ``example.stockquote.aggregator`` so it can be easily retrieved by
-any viewer that is interested.
-
-Because an Aggregator is meant to be remotely accessible as a whole we've added ``@Pyro4.expose`` on the class as well.
-
-*How it connects to the available stock markets:* Remember that the stock market objects registered with the name server
-using a name of the form ``example.stockmarket.<name>``. It is possible to query the Pyro name server in such a way
-that it returns a list of all objects matching a name pattern. This is exactly what the aggregator does, it asks
-for all names starting with ``example.stockmarket.`` and for each of those, creates a Pyro proxy to that stock market.
-It then registers itself as a listener with that remote stock market object.
-Finally it starts the daemon loop to wait for incoming calls from any interested viewers.
-
-The complete code for :file:`aggregator.py` is now as follows::
-
-    # aggregator.py
-    from __future__ import print_function
-    import Pyro4
-
-
-    @Pyro4.expose
-    class Aggregator(object):
-        def __init__(self):
-            self.viewers = {}
-            self.symbols = []
-
-        def add_symbols(self, symbols):
-            self.symbols.extend(symbols)
-
-        def available_symbols(self):
-            return self.symbols
-
-        def view(self, viewer, symbols):
-            print("aggregator gets a new viewer, for symbols:", symbols)
-            self.viewers[viewer] = symbols
-
-        def quotes(self, market, stockquotes):
-            for symbol, value in stockquotes.items():
-                for viewer, symbols in self.viewers.items():
-                    if symbol in symbols:
-                        viewer.quote(market, symbol, value)
-
-
-    def main():
-        aggregator = Aggregator()
-        daemon = Pyro4.Daemon()
-        agg_uri = daemon.register(aggregator)
-        ns = Pyro4.locateNS()
-        ns.register("example.stockquote.aggregator", agg_uri)
-        for market, market_uri in ns.list(prefix="example.stockmarket.").items():
-            print("joining market", market)
-            stockmarket = Pyro4.Proxy(market_uri)
-            stockmarket.listener(aggregator)
-            aggregator.add_symbols(stockmarket.symbols())
-        if not aggregator.available_symbols():
-            raise ValueError("no symbols found! (have you started the stock market first?)")
-        print("Aggregator running. Symbols:", aggregator.available_symbols())
-        daemon.requestLoop()
-
-    if __name__ == "__main__":
-        main()
 
 
 viewer
 ------
-You don't need to change the actual code in the ``Viewer``, besides the ``main`` function that needs to be added to start it up by itself.
-It needs to create a viewer object and register it with a Pyro daemon to be able to receive stock quote update calls.
-You can connect it to a running aggregator simply by asking Pyro to look that up in the name server. That can be done
-by using the special ``PYRONAME:<object name>`` uri format. For the aggregator that would be: ``PYRONAME:example.stockquote.aggregator``
-(because ``example.stockquote.aggregator`` is the name the aggregator used to register itself with the name server).
+You don't need to change the actual code in the ``Viewer``, other than how to tell it what stock market objects it should use.
+Rather than hard coding the fixed set of stockmarket names, it is more flexible to utilize Pyro's name sever and ask
+that to return all stock markets it knows about.  The ``Viewer`` class itself remains unchanged::
 
-As with the other classes and methods from the other modules that should now be remotely accessible,
-we've decorated the ``Viewer`` class with ``@Pyro4.expose``.
-
-It is also nice to ask the user for a list of stock symbols he is interested in so do that and register the
-viewer with the aggregator, passing the list of entered stock symbols to filter on.
-
-Finally start the daemon loop to wait for incoming calls. The code is as follows::
 
     # viewer.py
     from __future__ import print_function
-    import sys
     import Pyro4
 
-    if sys.version_info < (3,0):
-        input = raw_input
 
-
-    @Pyro4.expose
     class Viewer(object):
-        def quote(self, market, symbol, value):
-            print("{0}.{1}: {2}".format(market, symbol, value))
+        def __init__(self):
+            self.markets = set()
+            self.symbols = set()
+
+        def start(self):
+            print("Shown quotes:", self.symbols)
+            quote_sources = {
+                market.name: market.quotes() for market in self.markets
+            }
+            while True:
+                for market, quote_source in quote_sources.items():
+                    quote = next(quote_source)  # get a new stock quote from the source
+                    symbol, value = quote
+                    if symbol in self.symbols:
+                        print("{0}.{1}: {2}".format(market, symbol, value))
+
+
+    def find_stockmarkets():
+        # You can hardcode the stockmarket names for nasdaq and newyork, but it
+        # is more flexible if we just look for every available stockmarket.
+        markets = []
+        with Pyro4.locateNS() as ns:
+            for market, market_uri in ns.list(prefix="example.stockmarket.").items():
+                print("found market", market)
+                markets.append(Pyro4.Proxy(market_uri))
+        if not markets:
+            raise ValueError("no markets found! (have you started the stock markets first?)")
+        return markets
 
 
     def main():
         viewer = Viewer()
-        with Pyro4.Daemon() as daemon:
-            daemon.register(viewer)
-            aggregator = Pyro4.Proxy("PYRONAME:example.stockquote.aggregator")
-            print("Available stock symbols:", aggregator.available_symbols())
-            symbols = input("Enter symbols you want to view (comma separated):")
-            symbols = [symbol.strip() for symbol in symbols.split(",")]
-            aggregator.view(viewer, symbols)
-            print("Viewer listening on symbols", symbols)
-            daemon.requestLoop()
+        viewer.markets = find_stockmarkets()
+        viewer.symbols = {"IBM", "AAPL", "MSFT"}
+        viewer.start()
+
 
     if __name__ == "__main__":
         main()
 
 
-running the final program
--------------------------
+running the program
+-------------------
 To run the final stock quote system you need to do the following:
 
-- Open a new console window and start the Pyro name server (:command:`python -m Pyro4.naming`, or simply: :command:`pyro4-ns`).
+- open a new console window and start the Pyro name server (:command:`python -m Pyro4.naming`, or simply: :command:`pyro4-ns`).
+- open another console window and start the stock market server
+- open another console window and start the viewer
 
-After that, start the following, each in a separate console window (so they run in parallel, and don't mix up eachother's output):
-
-- start the stock market
-- start the aggregator
-- start one or more of the viewers.
-
-The output of the stock market looks like this::
-
-    $ python stockmarket.py
-    Stockmarkets running.
-    new quotes generated for NASDAQ
-    new quotes generated for NASDAQ
-    new quotes generated for NYSE
-    new quotes generated for NASDAQ
-    ...
-
-The output of the aggregator looks like this::
-
-    $ python aggregator.py
-    joining market example.stockmarket.newyork
-    joining market example.stockmarket.nasdaq
-    Aggregator running. Symbols: ['HPQ', 'BP', 'IBM', 'GOOG', 'AAPL', 'CSCO', 'MSFT']
-    aggregator gets a new viewer, for symbols: ['GOOG', 'CSCO', 'BP']
-
-The output of the viewer looks like this::
+The stock market program doesn't print much by itself but it sends stock quotes to the viewer, which prints them::
 
     $ python viewer.py
-    Available stock symbols: ['HPQ', 'BP', 'IBM', 'GOOG', 'AAPL', 'CSCO', 'MSFT']
-    Enter symbols you want to view (comma separated):GOOG,CSCO,BP    # <---- typed in
-    Viewer listening on symbols ['GOOG', 'CSCO', 'BP']
-    NYSE.BP: 88.96
-    NASDAQ.GOOG: -9.61
-    NYSE.BP: 113.8
-    NASDAQ.CSCO: 125.11
-    NYSE.BP: 77.43
-    NASDAQ.GOOG: 17.64
-    NASDAQ.CSCO: 157.21
-    NASDAQ.GOOG: 7.59
+    found market example.stockmarket.newyork
+    found market example.stockmarket.nasdaq
+    Shown quotes: {'AAPL', 'IBM', 'MSFT'}
+    NASDAQ.AAPL: 82.58
+    NYSE.IBM: 85.22
+    NYSE.IBM: 124.68
+    NASDAQ.AAPL: 88.55
+    NYSE.IBM: 40.97
+    NASDAQ.MSFT: 38.83
     ...
 
 If you're interested to see what the name server now contains, type :command:`python -m Pyro4.nsc list` (or simply: :command:`pyro4-nsc list`)::
@@ -962,9 +772,9 @@ If you're interested to see what the name server now contains, type :command:`py
     $ pyro4-nsc list
     --------START LIST
     Pyro.NameServer --> PYRO:Pyro.NameServer@localhost:9090
-    example.stockmarket.nasdaq --> PYRO:obj_fc742f1656bd4c7e80bee17c33787147@localhost:50510
-    example.stockmarket.newyork --> PYRO:obj_6bd09853979f4d13a73263e51a9c266b@localhost:50510
-    example.stockquote.aggregator --> PYRO:obj_2c7a4f5341b1464c8cc6091f3997230f@localhost:50512
+        metadata: ['class:Pyro4.naming.NameServer']
+    example.stockmarket.nasdaq --> PYRO:obj_3896de2eb38b4bed9d12ba91703539a4@localhost:51479
+    example.stockmarket.newyork --> PYRO:obj_1ab1a322e5c14f9e984a0065cd080f56@localhost:51479
     --------END LIST
 
 
@@ -1003,9 +813,9 @@ For more details, refer to the chapters in this manual about the relevant Pyro c
                 host = 'your_hostname_here',
                 ns = True)
 
-*Stock market servers*
+*Stock market server*
     This example already creates a daemon object instead of using the :py:meth:`serveSimple` call.
-    You'll have to modify the three source files because they all create a daemon.
+    You'll have to modify the stockmarket source file because that is the one creating a daemon.
     But you'll only have to add the proper ``host`` argument to the construction of the Daemon,
     to set it to your machine name instead of the default of localhost.
     Ofcourse you could also change the ``HOST`` config item (either in the code itself,
