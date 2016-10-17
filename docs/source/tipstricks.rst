@@ -355,14 +355,14 @@ The following table is an indication of the relative speeds when dealing with la
 of binary data. It lists the results of the :file:`hugetransfer` example, using python 3.5,
 over a 1000 Mbps LAN connection:
 
-========== ========== ============= ================
-serializer str mb/sec bytes mb/sec  bytearray mb/sec
-========== ========== ============= ================
-pickle     70.8       72.7          64.9
-marshal    71.0       65.0          65.2
-serpent    25.0       14.1          14.3
-json       31.5       not supported not supported
-========== ========== ============= ================
+========== ========== ============= ================ ====================
+serializer str mb/sec bytes mb/sec  bytearray mb/sec bytearray w/iterator
+========== ========== ============= ================ ====================
+pickle     77.8       79.6          69.9             35.0
+marshal    71.0       73.0          73.0             37.8
+serpent    25.0       14.1          13.5             13.5
+json       31.5       not supported not supported    not supported
+========== ========== ============= ================ ====================
 
 The json serializer only works with strings, it can't serialize binary data at all.
 The serpent serializer can, but read the note above about why it's quite inefficent there.
@@ -392,22 +392,10 @@ there's quite a difference in dealing with various types:
 
 **integrating raw socket transfer in a Pyro server**
 
-For comparison, here are the results of the ``blobserver`` example over the same connection,
-tweaked to use in-memory blobs and a single thread to make it similar to the example above.
-It prepares a big amount of binary data and uses a raw socket connection rather than a normal
-Pyro call to transfer it to the client. As you can see the transfer speed then approaches the
-limits (~100 Mb/sec) of my 1000 Mbps LAN connection.
-
-============== ============== =========================
-protocol       transfer speed cpu time
-============== ============== =========================
-pyro (serpent) 13.4 Mb/sec    7.9 sec out of 15.3 (51%)
-raw sockets    91.1 Mb/sec    0.9 sec out of 8.7  (10%)
-============== ============== =========================
-
-It's quite a bit more work to set up (extra socket server and event loop, integrate with Pyro)
-and you'll have to code on the raw socket API.  Don't do this until you have done a performance
-analysis of a normal Pyro-only approach.
+Have a look at the ``blobserver`` example to see an alternative for large binary transfers
+where it is still mostly Pyro that does the job. But the actual data transfer is done over a
+temporary raw socket connection. The transfer speed approaches the limits of my network adapter
+in this case.
 
 
 .. index:: MSG_WAITALL

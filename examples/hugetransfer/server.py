@@ -19,15 +19,13 @@ class Testclass(object):
     @Pyro4.expose
     def download_chunks(self, size):
         print("client requests a 'streaming' download of %d bytes" % size)
-        data = b"x" * size
+        data = bytearray(size)
         i = 0
         chunksize = 200000
         print("  using chunks of size", chunksize)
         while i < size:
             yield data[i:i+chunksize]
             i += chunksize
-
-
 
 
 Pyro4.Daemon.serveSimple(
