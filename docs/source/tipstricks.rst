@@ -323,19 +323,22 @@ Sometimes it can be because you configured Pyro wrong. A checklist to follow to 
 - can you obtain a few bytes from the wire using netcat, see :ref:`wireprotocol`.
 
 
-.. index:: binary data transfer
+.. index:: binary data transfer, file transfer
 
 .. _binarytransfer:
 
-Binary data transfer
-====================
+Binary data transfer / file transfer
+====================================
 Pyro is not meant to transfer large amounts of binary data (images, sound files, video clips):
 the protocol is not designed nor optimized for these kinds of data. The occasional transmission of such data
 is fine (:doc:`flame` even provides a convenience method for that, if you like:
 :meth:`Pyro4.utils.flame.Flame.sendfile`) but if you're dealing with a lot of them or with big files,
 it is usually better to use something else to do the actual data transfer (file share+file copy, ftp, http, scp, rsync).
+
 Also, Pyro has a 2 gigabyte message size limitation at this time (if your Python implementation and
-system memory even allow the process to reach this size).
+system memory even allow the process to reach this size).  You can avoid this problem if you use
+the remote iterator feature (return chunks via an iterator or generator function and consume them
+on demand in your client).
 
 .. note:: Serpent and binary data:
     If you do transfer binary data using the serpent serializer, you have to be aware of the following.
@@ -345,7 +348,7 @@ system memory even allow the process to reach this size).
     Your client code needs to be aware of this and to get the original binary data back, it has to base-64
     decode the data element by itself.  This is perhaps done the easiest by using the
     ``serpent.tobytes`` helper function from the ``serpent`` library, which will convert
-    the result to actual bytes if needed.
+    the result to actual bytes if needed (and leave it untouched if it is already in bytes form)
 
 
 The following table is an indication of the relative speeds when dealing with large amounts
