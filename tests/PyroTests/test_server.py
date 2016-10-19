@@ -843,6 +843,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 Pyro4.config.ONEWAY_THREADED = True  # the default
                 now = time.time()
                 p.oneway_delay(1)  # oneway so we should continue right away
+                time.sleep(0.01)
                 self.assertTrue(time.time() - now < 0.2, "delay should be running as oneway")
                 now = time.time()
                 self.assertEqual(55, p.multiply(5, 11), "expected a normal result from a non-oneway call")
@@ -852,6 +853,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 Pyro4.config.ONEWAY_THREADED = False
                 now = time.time()
                 p.oneway_delay(1)  # oneway so we should continue right away
+                time.sleep(0.01)
                 self.assertTrue(time.time() - now < 0.2, "delay should be running as oneway")
                 now = time.time()
                 self.assertEqual(55, p.multiply(5, 11), "expected a normal result from a non-oneway call")

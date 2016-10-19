@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.49**
 
-- added item streaming support. It is now possible to return iterators from a remote
+- added iterator item streaming support. It is now possible to return iterators from a remote
   call or even call a remote generator function, and iterate over it in the client.
   Items will be retrieved on demand from the server.
 - new ITER_STREAMING config item to disable or enable streaming support in the server (default=enabled)
