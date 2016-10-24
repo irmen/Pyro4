@@ -369,9 +369,7 @@ This is some simple code doing an asynchronous batch::
 See the :file:`batchedcalls` example for more details.
 
 
-.. index:: remote iterators
-
-.. _remote-iterators:
+.. index:: remote iterators/generators
 
 Remote iterators/generators
 ===========================

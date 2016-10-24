@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.50**
+
+...
+
+
 **Pyro 4.49**
 
 - added iterator item streaming support. It is now possible to return iterators from a remote
