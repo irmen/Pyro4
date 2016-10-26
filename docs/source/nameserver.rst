@@ -483,7 +483,7 @@ Using the name server with pickle or dill serializers
 If you find yourself in the unfortunate situation where you absolutely have to use the pickle
 or dill serializers, you have to pay attention when also using the name server.
 Because pickle and dill are disabled by default, the name server will not reply to messages from clients
-that are using these serializers, unless you enable them in the name server as well.
+that are using those serializers, unless you enable them in the name server as well.
 
 The symptoms are usually that your client code seems unable to contact the name server::
 

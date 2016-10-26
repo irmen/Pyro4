@@ -265,4 +265,4 @@ Experiment with the ``benchmark``, ``batchedcalls`` and ``hugetransfer`` example
     Pyro does have some security measures in place to mitigate this risk somewhat.
     They are described in the :doc:`security` chapter. It is strongly advised to read it.
     By default, Pyro is configured to use the safe `serpent` serializer, so you won't have
-    to deal with these issues unless you configure it explicitly to use these serializers.
+    to deal with these issues unless you configure it explicitly to use one of the other serializers.
