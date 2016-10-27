@@ -1028,6 +1028,27 @@ class TestFutures(unittest.TestCase):
         result = f(4, 5).then(futurestestfunc, 6).then(futurestestfunc, 7).then(futurestestfunc, 8).then(futurestestfunc, 9).then(futurestestfunc, 10)
         value = result.value
         self.assertEqual(4 + 5 + 6 + 7 + 8 + 9 + 10, value)
+        with self.assertRaises(RuntimeError):
+            f(4, 5)   # cannot evaluate the same future more than once
+
+    def testFutureDelay(self):
+        f = Pyro4.Future(futurestestfunc)
+        f.delay(0)
+        begin = time.time()
+        f(4, 5).value
+        duration = time.time() - begin
+        self.assertLess(duration, 0.1)
+        f = Pyro4.Future(futurestestfunc)
+        f.delay(1)
+        begin = time.time()
+        r = f(4, 5)
+        duration = time.time() - begin
+        self.assertLess(duration, 0.1)
+        begin = time.time()
+        r.value
+        duration = time.time() - begin
+        self.assertGreaterEqual(duration, 1)
+        self.assertLess(duration, 1.1)
 
 
 if __name__ == "__main__":

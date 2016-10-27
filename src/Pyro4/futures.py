@@ -7,6 +7,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import sys
+import time
 import functools
 import logging
 import Pyro4.util
@@ -30,12 +31,15 @@ class Future(object):
         self.callable = somecallable
         self.chain = []
         self.exceptionhandler = None
+        self.call_delay = 0
 
     def __call__(self, *args, **kwargs):
         """
         Start the future call with the provided arguments.
         Control flow returns immediately, with a FutureResult object.
         """
+        if not hasattr(self, "chain"):
+            raise RuntimeError("the future has already been evaluated")
         chain = self.chain
         del self.chain  # make it impossible to add new calls to the chain once we started executing it
         result = FutureResult()  # notice that the call chain doesn't sit on the result object
@@ -45,6 +49,8 @@ class Future(object):
         return result
 
     def __asynccall(self, asyncresult, chain, args, kwargs):
+        if self.call_delay > 0:
+            time.sleep(self.call_delay)
         try:
             value = self.callable(*args, **kwargs)
             # now walk the callchain, passing on the previous value as first argument
@@ -56,6 +62,12 @@ class Future(object):
             if self.exceptionhandler:
                 self.exceptionhandler(x)
             asyncresult.value = _ExceptionWrapper(sys.exc_info()[1])
+
+    def delay(self, seconds):
+        """
+        Delay the evaluation of the future for the given number of seconds.
+        """
+        self.call_delay = seconds
 
     def then(self, call, *args, **kwargs):
         """

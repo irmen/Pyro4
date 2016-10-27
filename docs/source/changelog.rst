@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.50**
 
-...
+- Future can now be given a delay before it is evaluated
 
 
 **Pyro 4.49**
