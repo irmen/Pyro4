@@ -117,6 +117,7 @@ USE_MSG_WAITALL         bool    True (False if Some systems have broken socket M
 MAX_RETRIES             int     0              Automatically retry network operations for some exceptions (timeout / connection closed), be careful to use when remote functions have a side effect (e.g.: calling twice results in error)
 ITER_STREAMING          bool    True           Should iterator item streaming support be enabled in the server (default=True)
 ITER_STREAM_LIFETIME    float   0.0            Maximum lifetime in seconds for item streams (default=0, no limit - iterator only stops when exhausted or client disconnects)
+ITER_STREAM_LINGER      float   30.0           Linger time in seconds to keep an item stream alive after proxy disconnects (allows to reconnect to stream)
 ======================= ======= ============== =======
 
 .. index::

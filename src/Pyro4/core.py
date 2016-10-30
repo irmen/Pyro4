@@ -20,7 +20,6 @@ from Pyro4 import errors, threadutil, socketutil, util, constants, message
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 
-
 __all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "behavior", "oneway"]
 
 if sys.version_info >= (3, 0):
@@ -988,6 +987,7 @@ class Daemon(object):
         self.__pyroHmacKey = None
         self._pyroInstances = {}   # pyro objects for instance_mode=single (singletons, just one per daemon)
         self.streaming_responses = {}   # stream_id -> (client, creation_timestamp, linger_timestamp, stream)
+        self.housekeeper_lock = threadutil.Lock()
 
     @property
     def _pyroHmacKey(self):
@@ -1287,7 +1287,6 @@ class Daemon(object):
                 info = self.streaming_responses.get(streamId, None)
                 if info and info[0] is conn:
                     _, timestamp, _, stream = info
-                    print("LINGER", streamId)    # XXX
                     self.streaming_responses[streamId] = (None, timestamp, time.time(), stream)
         else:
             # client goes away, close any streams it had open as well
@@ -1301,28 +1300,27 @@ class Daemon(object):
         """
         Perform periodical housekeeping actions (cleanups etc)
         """
-        # @todo when using thread server, add housekeeping thread that triggers every min(POLLTIMEOUT, max(COMMTIMEOUT,5))
-        print("HOUSEKEEPING!")  # XXX
-        if Pyro4.config.ITER_STREAM_LIFETIME > 0:
-            # cleanup iter streams that are past their lifetime
-            for streamId in list(self.streaming_responses.keys()):
-                info = self.streaming_responses.get(streamId, None)
-                if info:
-                    last_use_period = time.time() - info[1]
-                    print("H1.STREAM",streamId,"AGE",last_use_period)  # XXX
-                    if 0 < Pyro4.config.ITER_STREAM_LIFETIME < last_use_period:
-                        print("H1.DELETE STREAM BECAUSE > LIFETIME", Pyro4.config.ITER_STREAM_LIFETIME)  # XXX
-                        del self.streaming_responses[streamId]
-        if Pyro4.config.ITER_STREAM_LINGER > 0:
-            # cleanup iter streams that are past their linger time
-            for streamId in list(self.streaming_responses.keys()):
-                info = self.streaming_responses.get(streamId, None)
-                if info and info[2]:
-                    linger_period = time.time() - info[2]
-                    print("H2.STREAM",streamId,"LINGERED",linger_period)  # XXX
-                    if linger_period > Pyro4.config.ITER_STREAM_LINGER:
-                        print("H2.DELETE STREAM BECAUSE > LINGER TIME", Pyro4.config.ITER_STREAM_LINGER)  # XXX
-                        del self.streaming_responses[streamId]
+        if self._shutting_down:
+            return
+        if self.streaming_responses is None:
+            return
+        with self.housekeeper_lock:
+            if Pyro4.config.ITER_STREAM_LIFETIME > 0:
+                # cleanup iter streams that are past their lifetime
+                for streamId in list(self.streaming_responses.keys()):
+                    info = self.streaming_responses.get(streamId, None)
+                    if info:
+                        last_use_period = time.time() - info[1]
+                        if 0 < Pyro4.config.ITER_STREAM_LIFETIME < last_use_period:
+                            del self.streaming_responses[streamId]
+            if Pyro4.config.ITER_STREAM_LINGER > 0:
+                # cleanup iter streams that are past their linger time
+                for streamId in list(self.streaming_responses.keys()):
+                    info = self.streaming_responses.get(streamId, None)
+                    if info and info[2]:
+                        linger_period = time.time() - info[2]
+                        if linger_period > Pyro4.config.ITER_STREAM_LINGER:
+                            del self.streaming_responses[streamId]
 
     def _getInstance(self, clazz, conn):
         """
@@ -1492,6 +1490,7 @@ class Daemon(object):
 
     def close(self):
         """Close down the server and release resources"""
+        self.__mustshutdown.set()
         self.streaming_responses = None
         if self.transportServer:
             log.debug("daemon closing")

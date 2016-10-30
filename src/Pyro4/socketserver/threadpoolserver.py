@@ -15,7 +15,7 @@ import os
 import Pyro4.util
 from Pyro4 import socketutil, errors
 from .threadpool import Pool, NoFreeWorkersError
-from ..threadutil import Lock
+from ..threadutil import Lock, Thread, Event
 
 log = logging.getLogger("Pyro4.threadpoolserver")
 _client_disconnect_lock = Lock()
@@ -56,7 +56,6 @@ class ClientConnectionJob(object):
                         msg = "error during handleRequest: %s; %s" % (ex_v, "".join(tb))
                         log.warning(msg)
                         break
-                    self.daemon._housekeeping()
             finally:
                 with _client_disconnect_lock:
                     try:
@@ -85,12 +84,28 @@ class ClientConnectionJob(object):
         self.csock.close()
 
 
+class Housekeeper(Thread):
+    def __init__(self, daemon):
+        super(Housekeeper, self).__init__(name="housekeeper")
+        self.pyroDaemon = daemon
+        self.stop = Event()
+        self.daemon = True
+        self.waittime = min(Pyro4.config.POLLTIMEOUT or 0, max(Pyro4.config.COMMTIMEOUT or 0, 5))
+
+    def run(self):
+        while True:
+            if self.stop.wait(self.waittime):
+                break
+            self.pyroDaemon._housekeeping()
+
+
 class SocketServer_Threadpool(object):
     """transport server for socket connections, worker thread pool version."""
 
     def __init__(self):
         self.daemon = self.sock = self._socketaddr = self.locationStr = self.pool = None
         self.shutting_down = False
+        self.housekeeper = None
 
     def init(self, daemon, host, port, unixsocket=None):
         log.info("starting thread pool socketserver")
@@ -112,6 +127,8 @@ class SocketServer_Threadpool(object):
             else:
                 self.locationStr = "%s:%d" % (host, port)
         self.pool = Pool()
+        self.housekeeper = Housekeeper(daemon)
+        self.housekeeper.start()
 
     def __del__(self):
         if self.sock is not None:
@@ -120,6 +137,10 @@ class SocketServer_Threadpool(object):
         if self.pool is not None:
             self.pool.close()
             self.pool = None
+        if self.housekeeper:
+            self.housekeeper.stop.set()
+            self.housekeeper.join()
+            self.housekeeper = None
 
     def __repr__(self):
         return "<%s on %s; %d workers>" % (self.__class__.__name__, self.locationStr, self.pool.num_workers())
@@ -167,7 +188,6 @@ class SocketServer_Threadpool(object):
                 job.denyConnection("no free workers, increase server threadpool size")
         except socket.timeout:
             pass  # just continue the loop on a timeout on accept
-        self.daemon._housekeeping()
 
     def shutdown(self):
         self.shutting_down = True
@@ -177,6 +197,10 @@ class SocketServer_Threadpool(object):
         self.sock = None
 
     def close(self):
+        if self.housekeeper:
+            self.housekeeper.stop.set()
+            self.housekeeper.join()
+            self.housekeeper = None
         if self.sock:
             sockname = None
             try:

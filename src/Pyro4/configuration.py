@@ -77,7 +77,7 @@ class Configuration(object):
         self.MAX_RETRIES = 0
         self.ITER_STREAMING = True
         self.ITER_STREAM_LIFETIME = 0.0
-        self.ITER_STREAM_LINGER = 0.0
+        self.ITER_STREAM_LINGER = 30.0
 
         if useenvironment:
             # process environment variables
