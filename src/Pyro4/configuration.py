@@ -24,7 +24,8 @@ class Configuration(object):
                  "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
                  "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
                  "METADATA", "REQUIRE_EXPOSE", "USE_MSG_WAITALL", "JSON_MODULE",
-                 "MAX_RETRIES", "DILL_PROTOCOL_VERSION", "ITER_STREAMING", "ITER_STREAM_LIFETIME")
+                 "MAX_RETRIES", "DILL_PROTOCOL_VERSION", "ITER_STREAMING", "ITER_STREAM_LIFETIME",
+                 "ITER_STREAM_LINGER")
 
     def __init__(self):
         self.reset()
@@ -76,6 +77,7 @@ class Configuration(object):
         self.MAX_RETRIES = 0
         self.ITER_STREAMING = True
         self.ITER_STREAM_LIFETIME = 0.0
+        self.ITER_STREAM_LINGER = 0.0
 
         if useenvironment:
             # process environment variables
@@ -98,6 +100,7 @@ class Configuration(object):
                         else:
                             envvalue = valuetype(envvalue)  # just cast the value to the appropriate type
                     setattr(self, symbol, envvalue)
+
         self.SERIALIZERS_ACCEPTED = set(self.SERIALIZERS_ACCEPTED.split(','))
 
     def asDict(self):

@@ -30,6 +30,12 @@ class Streamer(object):
             yield i
             i += 1
 
+    def fibonacci(self):
+        a, b = 0, 1
+        while True:
+            yield a
+            a, b = b, a + b
+
 
 Pyro4.Daemon.serveSimple({
         Streamer: "example.streamer"

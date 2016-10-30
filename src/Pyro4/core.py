@@ -924,7 +924,10 @@ class DaemonObject(object):
     def get_next_stream_item(self, streamId):
         if streamId not in self.daemon.streaming_responses:
             raise errors.PyroError("item stream terminated")
-        client, timestamp, stream = self.daemon.streaming_responses[streamId]
+        client, timestamp, linger_timestamp, stream = self.daemon.streaming_responses[streamId]
+        if client is None:
+            # reset client connection association (can be None if proxy disconnected)
+            self.daemon.streaming_responses[streamId] = (current_context.client, timestamp, 0, stream)
         try:
             return next(stream)
         except Exception:
@@ -984,7 +987,7 @@ class Daemon(object):
         log.debug("pyro protocol version: %d  pickle version: %d" % (constants.PROTOCOL_VERSION, Pyro4.config.PICKLE_PROTOCOL_VERSION))
         self.__pyroHmacKey = None
         self._pyroInstances = {}   # pyro objects for instance_mode=single (singletons, just one per daemon)
-        self.streaming_responses = {}   # stream_id -> (client, creation_timestamp, stream)
+        self.streaming_responses = {}   # stream_id -> (client, creation_timestamp, linger_timestamp, stream)
 
     @property
     def _pyroHmacKey(self):
@@ -1278,24 +1281,48 @@ class Daemon(object):
                 raise  # re-raise if flagged as callback, communication or security error.
 
     def _clientDisconnect(self, conn):
-        # client goes away, close any streams it had open as well
-        for streamId in list(self.streaming_responses):
-            info = self.streaming_responses.get(streamId, None)
-            if info and info[0] is conn:
-                del self.streaming_responses[streamId]
+        if Pyro4.config.ITER_STREAM_LINGER > 0:
+            # client goes away, keep streams around for a bit longer (allow reconnect)
+            for streamId in list(self.streaming_responses):
+                info = self.streaming_responses.get(streamId, None)
+                if info and info[0] is conn:
+                    _, timestamp, _, stream = info
+                    print("LINGER", streamId)    # XXX
+                    self.streaming_responses[streamId] = (None, timestamp, time.time(), stream)
+        else:
+            # client goes away, close any streams it had open as well
+            for streamId in list(self.streaming_responses):
+                info = self.streaming_responses.get(streamId, None)
+                if info and info[0] is conn:
+                    del self.streaming_responses[streamId]
         self.clientDisconnect(conn)  # user overridable hook
 
     def _housekeeping(self):
         """
         Perform periodical housekeeping actions (cleanups etc)
         """
+        # @todo when using thread server, add housekeeping thread that triggers every min(POLLTIMEOUT, max(COMMTIMEOUT,5))
+        print("HOUSEKEEPING!")  # XXX
         if Pyro4.config.ITER_STREAM_LIFETIME > 0:
             # cleanup iter streams that are past their lifetime
-            now = time.time()
             for streamId in list(self.streaming_responses.keys()):
                 info = self.streaming_responses.get(streamId, None)
-                if info and now - info[1] > Pyro4.config.ITER_STREAM_LIFETIME:
-                    del self.streaming_responses[streamId]
+                if info:
+                    last_use_period = time.time() - info[1]
+                    print("H1.STREAM",streamId,"AGE",last_use_period)  # XXX
+                    if 0 < Pyro4.config.ITER_STREAM_LIFETIME < last_use_period:
+                        print("H1.DELETE STREAM BECAUSE > LIFETIME", Pyro4.config.ITER_STREAM_LIFETIME)  # XXX
+                        del self.streaming_responses[streamId]
+        if Pyro4.config.ITER_STREAM_LINGER > 0:
+            # cleanup iter streams that are past their linger time
+            for streamId in list(self.streaming_responses.keys()):
+                info = self.streaming_responses.get(streamId, None)
+                if info and info[2]:
+                    linger_period = time.time() - info[2]
+                    print("H2.STREAM",streamId,"LINGERED",linger_period)  # XXX
+                    if linger_period > Pyro4.config.ITER_STREAM_LINGER:
+                        print("H2.DELETE STREAM BECAUSE > LINGER TIME", Pyro4.config.ITER_STREAM_LINGER)  # XXX
+                        del self.streaming_responses[streamId]
 
     def _getInstance(self, clazz, conn):
         """
@@ -1522,8 +1549,8 @@ class Daemon(object):
             if Pyro4.config.ITER_STREAMING:
                 if type(data) in self.__lazy_dict_iterator_types:
                     raise errors.PyroError("won't serialize or stream lazy dict iterators, convert to list yourself")
-                stream_id = str(uuid.uuid1())
-                self.streaming_responses[stream_id] = (client, time.time(), data)
+                stream_id = str(uuid.uuid4())
+                self.streaming_responses[stream_id] = (client, time.time(), 0, data)
                 return True, stream_id
             return True, None
         return False, data
