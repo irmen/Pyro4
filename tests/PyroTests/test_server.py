@@ -691,57 +691,6 @@ class ServerTestsOnce(unittest.TestCase):
                 next(generator)
             generator.close()
 
-    def testGeneratorProxyClose(self):
-        p = Pyro4.core.Proxy(self.objectUri)
-        generator = p.generator()
-        p._pyroRelease()
-        with self.assertRaises(Pyro4.errors.ConnectionClosedError):
-            next(generator)
-
-    def testGeneratorLinger(self):
-        orig_linger = Pyro4.config.ITER_STREAM_LINGER
-        orig_commt = Pyro4.config.COMMTIMEOUT
-        orig_pollt = Pyro4.config.POLLTIMEOUT
-        try:
-            Pyro4.config.ITER_STREAM_LINGER = 0.5
-            Pyro4.config.COMMTIMEOUT = 0.2
-            Pyro4.config.POLLTIMEOUT = 0.2
-            p = Pyro4.core.Proxy(self.objectUri)
-            generator = p.generator()
-            self.assertEqual("one", next(generator))
-            p._pyroRelease()
-            with self.assertRaises(Pyro4.errors.ConnectionClosedError):
-                next(generator)
-            p._pyroReconnect()
-            self.assertEqual("two", next(generator), "generator should resume after reconnect")
-            # check that after the linger time passes, the generator *is* gone
-            p._pyroRelease()
-            time.sleep(2)
-            p._pyroReconnect()
-            with self.assertRaises(Pyro4.errors.PyroError):  # should not be resumable anymore
-                next(generator)
-        finally:
-            Pyro4.config.ITER_STREAM_LINGER = orig_linger
-            Pyro4.config.COMMTIMEOUT = orig_commt
-            Pyro4.config.POLLTIMEOUT = orig_pollt
-
-    def testGeneratorNoLinger(self):
-        orig_linger = Pyro4.config.ITER_STREAM_LINGER
-        try:
-            p = Pyro4.core.Proxy(self.objectUri)
-            Pyro4.config.ITER_STREAM_LINGER = 0   # disable linger
-            generator = p.generator()
-            self.assertEqual("one", next(generator))
-            p._pyroRelease()
-            with self.assertRaises(Pyro4.errors.ConnectionClosedError):
-                next(generator)
-            p._pyroReconnect()
-            with self.assertRaises(Pyro4.errors.PyroError):  # should not be resumable after reconnect
-                next(generator)
-            generator.close()
-        finally:
-            Pyro4.config.ITER_STREAM_LINGER = orig_linger
-
     def testCleanup(self):
         p1 = Pyro4.core.Proxy(self.objectUri)
         p2 = Pyro4.core.Proxy(self.objectUri)
@@ -1072,6 +1021,57 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             # thread based server does execute calls in parallel,
             # so 6 threads taking 0.5 seconds =~ 0.5 seconds passed
             self.assertTrue(0.4 < duration < 0.9)
+
+    def testGeneratorProxyClose(self):
+        p = Pyro4.core.Proxy(self.objectUri)
+        generator = p.generator()
+        p._pyroRelease()
+        with self.assertRaises(Pyro4.errors.ConnectionClosedError):
+            next(generator)
+
+    def testGeneratorLinger(self):
+        orig_linger = Pyro4.config.ITER_STREAM_LINGER
+        orig_commt = Pyro4.config.COMMTIMEOUT
+        orig_pollt = Pyro4.config.POLLTIMEOUT
+        try:
+            Pyro4.config.ITER_STREAM_LINGER = 0.5
+            Pyro4.config.COMMTIMEOUT = 0.2
+            Pyro4.config.POLLTIMEOUT = 0.2
+            p = Pyro4.core.Proxy(self.objectUri)
+            generator = p.generator()
+            self.assertEqual("one", next(generator))
+            p._pyroRelease()
+            with self.assertRaises(Pyro4.errors.ConnectionClosedError):
+                next(generator)
+            p._pyroReconnect()
+            self.assertEqual("two", next(generator), "generator should resume after reconnect")
+            # check that after the linger time passes, the generator *is* gone
+            p._pyroRelease()
+            time.sleep(2)
+            p._pyroReconnect()
+            with self.assertRaises(Pyro4.errors.PyroError):  # should not be resumable anymore
+                next(generator)
+        finally:
+            Pyro4.config.ITER_STREAM_LINGER = orig_linger
+            Pyro4.config.COMMTIMEOUT = orig_commt
+            Pyro4.config.POLLTIMEOUT = orig_pollt
+
+    def testGeneratorNoLinger(self):
+        orig_linger = Pyro4.config.ITER_STREAM_LINGER
+        try:
+            p = Pyro4.core.Proxy(self.objectUri)
+            Pyro4.config.ITER_STREAM_LINGER = 0  # disable linger
+            generator = p.generator()
+            self.assertEqual("one", next(generator))
+            p._pyroRelease()
+            with self.assertRaises(Pyro4.errors.ConnectionClosedError):
+                next(generator)
+            p._pyroReconnect()
+            with self.assertRaises(Pyro4.errors.PyroError):  # should not be resumable after reconnect
+                next(generator)
+            generator.close()
+        finally:
+            Pyro4.config.ITER_STREAM_LINGER = orig_linger
 
 
 class ServerTestsMultiplexNoTimeout(ServerTestsThreadNoTimeout):
