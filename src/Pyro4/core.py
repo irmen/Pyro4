@@ -1068,7 +1068,7 @@ class Daemon(object):
     def shutdown(self):
         """Cleanly terminate a daemon that is running in the requestloop."""
         log.debug("daemon shutting down")
-        self.streaming_responses = None
+        self.streaming_responses = {}
         time.sleep(0.02)
         self.__mustshutdown.set()
         if self.transportServer:
@@ -1302,7 +1302,7 @@ class Daemon(object):
         """
         if self._shutting_down:
             return
-        if self.streaming_responses is None:
+        if not self.streaming_responses:
             return
         with self.housekeeper_lock:
             if Pyro4.config.ITER_STREAM_LIFETIME > 0:
@@ -1491,7 +1491,7 @@ class Daemon(object):
     def close(self):
         """Close down the server and release resources"""
         self.__mustshutdown.set()
-        self.streaming_responses = None
+        self.streaming_responses = {}
         if self.transportServer:
             log.debug("daemon closing")
             self.transportServer.close()
