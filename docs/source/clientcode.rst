@@ -411,6 +411,15 @@ for how long iterators and generators can be 'alive' in the server. You can conf
 if you want to restrict resource usage or disable this feature altogether, via the
 ``ITER_STREAMING`` and ``ITER_STREAM_LIFETIME`` config items.
 
+Lingering when disconnected: the ``ITER_STREAM_LINGER`` config item controls the number of seconds
+a remote generator is kept alive when a disconnect happens. It defaults to 30 seconds. This allows
+you to reconnect the proxy and continue using the remote generator as if nothing happened
+(see :py:meth:`Pyro4.core.Proxy._pyroReconnect` or even :ref:`reconnecting`). If you reconnect the
+proxy and continue iterating again *after* the lingering timeout period expired, an exception is thrown
+because the remote generator has been discarded in the meantime.
+Lingering can be disabled completely by setting the value to 0, then all remote generators from a proxy will
+immediately be discarded in the server if the proxy gets disconnected or closed.
+
 Notice that you can also use this in your Java or .NET/C# programs that connect to Python via
 Pyrolite!  Version 4.14 or newer of that library supports  Pyro item streaming. It returns normal
 Java and .NET iterables to your code that you can loop over normally with foreach or other things.
@@ -611,6 +620,8 @@ See the :file:`autoretry` example for more details.
 
 .. index::
     double: reconnecting; automatic
+
+.. _reconnecting:
 
 Automatic reconnecting
 ----------------------
