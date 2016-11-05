@@ -316,6 +316,9 @@ class AutoCleaner(Thread):
     Takes care of checking every registration in the name server.
     If it cannot be contacted anymore, it will be removed after ~20 seconds.
     """
+    max_unreachable_time = 20.0
+    loop_delay = 2.0
+
     def __init__(self, nameserver):
         assert Pyro4.config.NS_AUTOCLEAN > 0
         super(AutoCleaner, self).__init__()
@@ -327,7 +330,7 @@ class AutoCleaner(Thread):
 
     def run(self):
         while not self.stop:
-            time.sleep(2)
+            time.sleep(self.loop_delay)
             time_since_last_autoclean = time.time() - self.last_cleaned
             if time_since_last_autoclean < Pyro4.config.NS_AUTOCLEAN:
                 continue
@@ -336,21 +339,20 @@ class AutoCleaner(Thread):
                     continue
                 try:
                     uri_obj = Pyro4.URI(uri)
-                    sock = socketutil.createSocket(connect=(uri_obj.host, uri_obj.port), timeout=5)
+                    timeout = Pyro4.config.COMMTIMEOUT or 5
+                    sock = socketutil.createSocket(connect=(uri_obj.host, uri_obj.port), timeout=timeout)
                     sock.close()
                     # if we get here, the listed server is still answering on its port
                     if name in self.unreachable:
                         del self.unreachable[name]
                 except socket.error:
-                    if name in self.unreachable:
-                        max_unreachable_time = 20
-                        if time.time() - self.unreachable[name] >= max_unreachable_time:
-                            log.info("autoclean: unregistering %s; cannot connect uri %s for %d sec", name, uri, max_unreachable_time)
-                            self.nameserver.remove(name)
-                            del self.unreachable[name]
-                            continue
-                    else:
+                    if name not in self.unreachable:
                         self.unreachable[name] = time.time()
+                    if time.time() - self.unreachable[name] >= self.max_unreachable_time:
+                        log.info("autoclean: unregistering %s; cannot connect uri %s for %d sec", name, uri, self.max_unreachable_time)
+                        self.nameserver.remove(name)
+                        del self.unreachable[name]
+                        continue
             self.last_cleaned = time.time()
             if self.unreachable:
                 log.debug("autoclean: %d/%d names currently unreachable", len(self.unreachable), self.nameserver.count())

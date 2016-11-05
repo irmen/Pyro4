@@ -196,6 +196,28 @@ class NameServerTests(unittest.TestCase):
         self.assertIsNone(ns._pyroConnection)
         Pyro4.config.METADATA = old_metadata
 
+    def testAutoClean(self):
+        try:
+            Pyro4.config.NS_AUTOCLEAN = 0.0
+            Pyro4.config.COMMTIMEOUT = 0.5
+            Pyro4.naming.AutoCleaner.max_unreachable_time = 1
+            Pyro4.naming.AutoCleaner.loop_delay = 0.5
+            with Pyro4.naming.NameServerDaemon(port=0) as ns:
+                self.assertIsNone(ns.cleaner_thread)
+            Pyro4.config.NS_AUTOCLEAN = 0.2
+            with Pyro4.naming.NameServerDaemon(port=0) as ns:
+                self.assertIsNotNone(ns.cleaner_thread)
+                ns.nameserver.register("test", "PYRO:test@localhost:59999")
+                self.assertEqual(2, ns.nameserver.count())
+                time.sleep(4)
+                self.assertEqual(1, ns.nameserver.count(), "registration should be cleaned up")
+            self.assertIsNone(ns.cleaner_thread)
+        finally:
+            Pyro4.naming.AutoCleaner.max_unreachable_time = 20
+            Pyro4.naming.AutoCleaner.loop_delay = 2
+            Pyro4.config.NS_AUTOCLEAN = 0.0
+            Pyro4.config.COMMTIMEOUT = 0.0
+
 
 class NameServerTests0000(unittest.TestCase):
     def setUp(self):

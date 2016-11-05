@@ -9,7 +9,7 @@ Change Log
 - new ITER_STREAM_LINGER config item to keep streams alive for a given period after proxy disconnect (defaults to 30 sec.)
 - new NS_AUTOCLEAN config item to set a recurring period in seconds where the Name server checks its registrations.
   It will then auto cleanup registrations after a short while if they're no longer available. (defaults to 0.0 - disabled).
-  @todo docs,unittest?
+  @todo docs
 
 
 **Pyro 4.49**
