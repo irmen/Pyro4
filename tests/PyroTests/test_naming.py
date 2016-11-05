@@ -202,6 +202,7 @@ class NameServerTests(unittest.TestCase):
             Pyro4.config.COMMTIMEOUT = 0.5
             Pyro4.naming.AutoCleaner.max_unreachable_time = 1
             Pyro4.naming.AutoCleaner.loop_delay = 0.5
+            Pyro4.naming.AutoCleaner.override_autoclean_min = True
             with Pyro4.naming.NameServerDaemon(port=0) as ns:
                 self.assertIsNone(ns.cleaner_thread)
             Pyro4.config.NS_AUTOCLEAN = 0.2
@@ -213,6 +214,7 @@ class NameServerTests(unittest.TestCase):
                 self.assertEqual(1, ns.nameserver.count(), "registration should be cleaned up")
             self.assertIsNone(ns.cleaner_thread)
         finally:
+            Pyro4.naming.AutoCleaner.override_autoclean_min = False
             Pyro4.naming.AutoCleaner.max_unreachable_time = 20
             Pyro4.naming.AutoCleaner.loop_delay = 2
             Pyro4.config.NS_AUTOCLEAN = 0.0

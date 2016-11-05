@@ -267,6 +267,8 @@ class NameServerDaemon(core.Daemon):
         metadata = {"class:Pyro4.naming.NameServer"}
         self.nameserver.register(Pyro4.constants.NAMESERVER_NAME, self.uriFor(self.nameserver), metadata=metadata)
         if Pyro4.config.NS_AUTOCLEAN > 0:
+            if not AutoCleaner.override_autoclean_min and Pyro4.config.NS_AUTOCLEAN < AutoCleaner.min_autoclean_value:
+                raise ValueError("NS_AUTOCLEAN cannot be smaller than " + str(AutoCleaner.min_autoclean_value))
             log.debug("autoclean enabled")
             self.cleaner_thread = AutoCleaner(self.nameserver)
             self.cleaner_thread.start()
@@ -316,11 +318,15 @@ class AutoCleaner(Thread):
     Takes care of checking every registration in the name server.
     If it cannot be contacted anymore, it will be removed after ~20 seconds.
     """
+    min_autoclean_value = 3
     max_unreachable_time = 20.0
     loop_delay = 2.0
+    override_autoclean_min = False   # only for unit test purposes
 
     def __init__(self, nameserver):
         assert Pyro4.config.NS_AUTOCLEAN > 0
+        if not self.override_autoclean_min and Pyro4.config.NS_AUTOCLEAN < self.min_autoclean_value:
+            raise ValueError("NS_AUTOCLEAN cannot be smaller than "+str(self.min_autoclean_value))
         super(AutoCleaner, self).__init__()
         self.nameserver = nameserver
         self.stop = False

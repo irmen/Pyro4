@@ -177,6 +177,7 @@ NS_BCHOST          the hostname or ip address of the name server's broadcast res
 NS_BCPORT          the port number of the name server's broadcast responder. Used by the server and for locating in clients.
 NATHOST            the external hostname in case of NAT. Used only by the server.
 NATPORT            the external port in case of NAT. Used only by the server.
+NS_AUTOCLEAN       a recurring period in seconds where the Name server checks its registrations, and removes the ones that are no longer available. Defaults to 0.0 (off).
 ================== ===========
 
 
@@ -436,6 +437,14 @@ the following method on the name server proxy:
     :type safe: bool
 
 You can unregister objects as well using the :py:meth:`unregister` method.
+The name server also supports automatically checking for registrations that are no longer available,
+for instance because the server process crashed or a network problem occurs. It will then automatically
+remove those registrations after a certain timeout period.
+This feature is disabled by default (it potentially requires the NS to periodically create a lot of
+network connections to check for each of the registrations if it is still available). You can enable it
+by setting the ``NS_AUTOCLEAN`` config item to a non zero value; it then specifies the recurring period
+in seconds for the nameserver to check all its registrations. Choose an appropriately large value, the minimum
+allowed is 3.
 
 
 .. index:: scaling Name Server connections
