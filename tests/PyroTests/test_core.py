@@ -1033,13 +1033,15 @@ class TestFutures(unittest.TestCase):
 
     def testFutureDelay(self):
         f = Pyro4.Future(futurestestfunc)
-        f.delay(0)
+        b = f.delay(0)
+        self.assertTrue(b)
         begin = time.time()
         f(4, 5).value
         duration = time.time() - begin
         self.assertLess(duration, 0.1)
         f = Pyro4.Future(futurestestfunc)
-        f.delay(1)
+        b = f.delay(1)
+        self.assertTrue(b)
         begin = time.time()
         r = f(4, 5)
         duration = time.time() - begin
@@ -1049,6 +1051,31 @@ class TestFutures(unittest.TestCase):
         duration = time.time() - begin
         self.assertGreaterEqual(duration, 1)
         self.assertLess(duration, 1.1)
+        self.assertFalse(f.delay(10))
+
+    def testFutureCancel(self):
+        f = Pyro4.Future(futurestestfunc)
+        f.delay(10)
+        b = f.cancel()
+        self.assertTrue(b)
+        with self.assertRaises(RuntimeError) as x:
+            f(4, 5)
+        self.assertTrue("cancelled" in str(x.exception))
+        f = Pyro4.Future(futurestestfunc)
+        f.delay(10)
+        result = f(4, 5)
+        b = f.cancel()
+        self.assertTrue(b)
+        success = result.wait(3)
+        self.assertTrue(success)
+        with self.assertRaises(RuntimeError) as x:
+            result.value
+        self.assertTrue("cancelled" in str(x.exception))
+        f = Pyro4.Future(futurestestfunc)
+        result = f(4, 5)
+        result.value
+        b = f.cancel()
+        self.assertFalse(b)
 
 
 if __name__ == "__main__":

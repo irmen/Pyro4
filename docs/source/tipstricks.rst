@@ -243,6 +243,10 @@ There's also a :py:meth:`Pyro4.futures.Future.iferror` method that allows you to
 when an exception occurs. This method also exists on the ``FutureResult`` class.
 See the :file:`futures` example for more details and example code.
 
+You can delay the execution of the future for a number of seconds via the :py:meth:`Pyro4.futures.Future.delay` method,
+and you can cancel it altogether via the :py:meth:`Pyro4.futures.Future.cancel` method (which only works if the future
+hasn't been evaluated yet).
+
 
 .. index:: DNS
 

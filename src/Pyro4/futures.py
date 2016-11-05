@@ -25,6 +25,7 @@ class Future(object):
     result value some time in the future.
     This is a more general implementation than the AsyncRemoteMethod, which
     only works with Pyro proxies (and provides a bit different syntax).
+    This class has a few extra features as well (delay, canceling).
     """
 
     def __init__(self, somecallable):
@@ -32,14 +33,18 @@ class Future(object):
         self.chain = []
         self.exceptionhandler = None
         self.call_delay = 0
+        self.cancelled = False
+        self.completed = False
 
     def __call__(self, *args, **kwargs):
         """
         Start the future call with the provided arguments.
         Control flow returns immediately, with a FutureResult object.
         """
-        if not hasattr(self, "chain"):
+        if self.completed or not hasattr(self, "chain"):
             raise RuntimeError("the future has already been evaluated")
+        if self.cancelled:
+            raise RuntimeError("the future has been cancelled")
         chain = self.chain
         del self.chain  # make it impossible to add new calls to the chain once we started executing it
         result = FutureResult()  # notice that the call chain doesn't sit on the result object
@@ -49,9 +54,17 @@ class Future(object):
         return result
 
     def __asynccall(self, asyncresult, chain, args, kwargs):
-        if self.call_delay > 0:
-            time.sleep(self.call_delay)
+        while self.call_delay > 0 and not self.cancelled:
+            delay = min(self.call_delay, 2)
+            time.sleep(delay)
+            self.call_delay -= delay
+        if self.cancelled:
+            self.completed = True
+            asyncresult.set_cancelled()
+            return
         try:
+            self.completed = True
+            self.cancelled = False
             value = self.callable(*args, **kwargs)
             # now walk the callchain, passing on the previous value as first argument
             for call, args, kwargs in chain:
@@ -66,8 +79,23 @@ class Future(object):
     def delay(self, seconds):
         """
         Delay the evaluation of the future for the given number of seconds.
+        Return True if succesful otherwise False if the future has already been evaluated.
         """
+        if self.completed:
+            return False
         self.call_delay = seconds
+        return True
+
+    def cancel(self):
+        """
+        Cancels the execution of the future altogether.
+        If the execution hasn't been started yet, the cancellation is succesful and returns True.
+        Otherwise, it failed and returns False.
+        """
+        if self.completed:
+            return False
+        self.cancelled = True
+        return True
 
     def then(self, call, *args, **kwargs):
         """
@@ -92,7 +120,9 @@ class Future(object):
 
 class FutureResult(object):
     """
-    The result object for asynchronous calls.
+    The result object for asynchronous Pyro calls.
+    Unfortunatley it should be similar to the more general Future class but
+    it is still somewhat limited (no delay, no canceling).
     """
 
     def __init__(self):
@@ -141,6 +171,9 @@ class FutureResult(object):
             self.__ready.set()
 
     value = property(get_value, set_value, None, "The result value of the call. Reading it will block if not available yet.")
+
+    def set_cancelled(self):
+        self.set_value(_ExceptionWrapper(RuntimeError("future has been cancelled")))
 
     def then(self, call, *args, **kwargs):
         """

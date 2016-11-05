@@ -478,10 +478,6 @@ This object means 'the result of this will be available at some moment in the fu
     If no exception handler is set, any exception result will be silently ignored (unless
     you explicitly ask for the value). Returns self so you can easily chain other calls.
 
-.. py:method:: delay(seconds)
-
-    Delay the evaluation of the future for the given number of seconds.
-
 
 A simple piece of code showing an asynchronous method call::
 
