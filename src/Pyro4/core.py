@@ -1125,6 +1125,9 @@ class Daemon(object):
             msgtype = message.MSG_CONNECTOK
             if compressed:
                 flags |= message.FLAGS_COMPRESSED
+        except errors.ConnectionClosedError:
+            log.debug("handshake failed, connection closed early")
+            return False
         except Exception as x:
             log.debug("handshake failed, reason:", exc_info=True)
             serializer = util.get_serializer_by_id(serializer_id)

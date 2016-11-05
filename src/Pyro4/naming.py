@@ -9,6 +9,7 @@ import re
 import logging
 import socket
 import sys
+import time
 from Pyro4.threadutil import RLock, Thread
 from Pyro4.errors import NamingError, PyroError, ProtocolError
 from Pyro4 import core, socketutil
@@ -265,6 +266,13 @@ class NameServerDaemon(core.Daemon):
         self.register(self.nameserver, Pyro4.constants.NAMESERVER_NAME)
         metadata = {"class:Pyro4.naming.NameServer"}
         self.nameserver.register(Pyro4.constants.NAMESERVER_NAME, self.uriFor(self.nameserver), metadata=metadata)
+        if Pyro4.config.NS_AUTOCLEAN > 0:
+            log.debug("autoclean enabled")
+            self.cleaner_thread = AutoCleaner(self.nameserver)
+            self.cleaner_thread.start()
+        else:
+            log.debug("autoclean not enabled")
+            self.cleaner_thread = None
         log.info("nameserver daemon created")
 
     def close(self):
@@ -272,6 +280,10 @@ class NameServerDaemon(core.Daemon):
         if self.nameserver is not None:
             self.nameserver.storage.close()
             self.nameserver = None
+        if self.cleaner_thread:
+            self.cleaner_thread.stop = True
+            self.cleaner_thread.join()
+            self.cleaner_thread = None
 
     def __enter__(self):
         if not self.nameserver:
@@ -282,6 +294,10 @@ class NameServerDaemon(core.Daemon):
         if self.nameserver is not None:
             self.nameserver.storage.close()
         self.nameserver = None
+        if self.cleaner_thread:
+            self.cleaner_thread.stop = True
+            self.cleaner_thread.join()
+            self.cleaner_thread = None
         return super(NameServerDaemon, self).__exit__(exc_type, exc_value, traceback)
 
     def handleRequest(self, conn):
@@ -293,6 +309,51 @@ class NameServerDaemon(core.Daemon):
             # a lot to immediately see what is going wrong.
             warnings.warn("Pyro protocol error occurred: " + str(x))
             raise
+
+
+class AutoCleaner(Thread):
+    """
+    Takes care of checking every registration in the name server.
+    If it cannot be contacted anymore, it will be removed after ~20 seconds.
+    """
+    def __init__(self, nameserver):
+        assert Pyro4.config.NS_AUTOCLEAN > 0
+        super(AutoCleaner, self).__init__()
+        self.nameserver = nameserver
+        self.stop = False
+        self.daemon = True
+        self.last_cleaned = time.time()
+        self.unreachable = {}   # name->since when
+
+    def run(self):
+        while not self.stop:
+            time.sleep(2)
+            time_since_last_autoclean = time.time() - self.last_cleaned
+            if time_since_last_autoclean < Pyro4.config.NS_AUTOCLEAN:
+                continue
+            for name, uri in self.nameserver.list().items():
+                if name in (Pyro4.constants.DAEMON_NAME, Pyro4.constants.NAMESERVER_NAME):
+                    continue
+                try:
+                    uri_obj = Pyro4.URI(uri)
+                    sock = socketutil.createSocket(connect=(uri_obj.host, uri_obj.port), timeout=5)
+                    sock.close()
+                    # if we get here, the listed server is still answering on its port
+                    if name in self.unreachable:
+                        del self.unreachable[name]
+                except socket.error:
+                    if name in self.unreachable:
+                        max_unreachable_time = 20
+                        if time.time() - self.unreachable[name] >= max_unreachable_time:
+                            log.info("autoclean: unregistering %s; cannot connect uri %s for %d sec", name, uri, max_unreachable_time)
+                            self.nameserver.remove(name)
+                            del self.unreachable[name]
+                            continue
+                    else:
+                        self.unreachable[name] = time.time()
+            self.last_cleaned = time.time()
+            if self.unreachable:
+                log.debug("autoclean: %d/%d names currently unreachable", len(self.unreachable), self.nameserver.count())
 
 
 class BroadcastServer(object):

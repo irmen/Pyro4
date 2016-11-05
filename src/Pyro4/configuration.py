@@ -16,7 +16,7 @@ import Pyro4.constants
 
 
 class Configuration(object):
-    __slots__ = ("HOST", "NS_HOST", "NS_PORT", "NS_BCPORT", "NS_BCHOST",
+    __slots__ = ("HOST", "NS_HOST", "NS_PORT", "NS_BCPORT", "NS_BCHOST", "NS_AUTOCLEAN",
                  "COMPRESSION", "SERVERTYPE", "COMMTIMEOUT",
                  "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
                  "DETAILED_TRACEBACK", "SOCK_REUSE", "SOCK_NODELAY", "PREFER_IP_VERSION",
@@ -40,6 +40,7 @@ class Configuration(object):
         self.NS_PORT = 9090  # tcp
         self.NS_BCPORT = 9091  # udp
         self.NS_BCHOST = None
+        self.NS_AUTOCLEAN = 0.0
         self.NATHOST = None
         self.NATPORT = 0
         self.COMPRESSION = False
