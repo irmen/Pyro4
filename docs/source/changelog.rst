@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.51**
+
+...
+
+
 **Pyro 4.50**
 
 - new ITER_STREAM_LINGER config item to keep streams alive for a given period after proxy disconnect (defaults to 30 sec.)

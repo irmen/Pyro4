@@ -159,7 +159,11 @@ class SocketServer_Multiplex(object):
         except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
             # client went away or caused a security error.
             # close the connection silently.
-            log.debug("disconnected %s", conn.sock.getpeername())
+            try:
+                peername = conn.sock.getpeername()
+                log.debug("disconnected %s", peername)
+            except socket.error:
+                log.debug("disconnected a client")
             return False
         except errors.TimeoutError as x:
             # for timeout errors we're not really interested in detailed traceback info
