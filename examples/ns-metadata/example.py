@@ -78,3 +78,16 @@ print("\nall resource types:")
 devices = ns.list(metadata_all={"class:resources.Resource"})
 for name, uri in devices.items():
     print("   {} -> {}".format(name, uri))
+
+
+print("\n\nPYROMETA protocol for easy yellow-pages lookup:\n")
+nameserver = Pyro4.Proxy("PYROMETA:class:Pyro4.naming.NameServer")
+print("Proxy to look up 'any nameserver' via its class metadata:")
+print("    ", nameserver)
+nameserver._pyroBind()
+print("Proxy for 'any namesever' bound to candidate:")
+print("    ", nameserver._pyroUri)
+printer = Pyro4.Proxy("PYROMETA:resource:printer,performance:slow")
+print("Proxy for 'any slow printer':")
+print("    ", printer)
+print("(this example doesn't actually implement these objects so we leave it at that)")

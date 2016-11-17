@@ -5,6 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import warnings
+import random
 import re
 import logging
 import socket
@@ -608,7 +609,7 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
 
 def resolve(uri, hmac_key=None):
     """
-    Resolve a 'magic' uri (PYRONAME) into the direct PYRO uri.
+    Resolve a 'magic' uri (PYRONAME, PYROMETA) into the direct PYRO uri.
     It finds a name server, and use that to resolve a PYRONAME uri into the direct PYRO uri pointing to the named object.
     If uri is already a PYRO uri, it is returned unmodified.
     You can consider this a shortcut function so that you don't have to locate and use a name server proxy yourself.
@@ -623,10 +624,16 @@ def resolve(uri, hmac_key=None):
         return uri
     log.debug("resolving %s", uri)
     if uri.protocol == "PYRONAME":
-        nameserver = locateNS(uri.host, uri.port, hmac_key=hmac_key)
-        uri = nameserver.lookup(uri.object)
-        nameserver._pyroRelease()
-        return uri
+        with locateNS(uri.host, uri.port, hmac_key=hmac_key) as nameserver:
+            return nameserver.lookup(uri.object)
+    elif uri.protocol == "PYROMETA":
+        with locateNS(uri.host, uri.port, hmac_key=hmac_key) as nameserver:
+            candidates = nameserver.list(metadata_all=uri.object)
+            if candidates:
+                candidate = random.choice(list(candidates.values()))
+                log.debug("resolved to candidate %s", candidate)
+                return core.URI(candidate)
+            raise NamingError("no registrations available with desired metadata properties %s" % uri.object)
     else:
         raise PyroError("invalid uri protocol")
 

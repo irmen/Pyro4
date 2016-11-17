@@ -38,6 +38,8 @@ class URI(object):
 
     There is also a 'Magic format' for simple name resolution using Name server:
       ``PYRONAME:objectname[@location]``  (optional name server location, can also omit location port)
+    And one that looks up things in the name server by metadata:
+      ``PYROMETA:meta1,meta2,...[@location]``  (optional name server location, can also omit location port)
 
     You can write the protocol in lowercase if you like (``pyro:...``) but it will
     automatically be converted to uppercase internally.
@@ -60,11 +62,13 @@ class URI(object):
         location = match.group("location")
         if self.protocol == "PYRONAME":
             self._parseLocation(location, Pyro4.config.NS_PORT)
-            return
-        if self.protocol == "PYRO":
+        elif self.protocol == "PYRO":
             if not location:
                 raise errors.PyroError("invalid uri")
             self._parseLocation(location, None)
+        elif self.protocol == "PYROMETA":
+            self.object = set(m.strip() for m in self.object.split(","))
+            self._parseLocation(location, Pyro4.config.NS_PORT)
         else:
             raise errors.PyroError("invalid uri (protocol)")
 
@@ -109,7 +113,10 @@ class URI(object):
 
     def asString(self):
         """the string representation of this object"""
-        result = self.protocol + ":" + self.object
+        if self.protocol == "PYROMETA":
+            result = "PYROMETA:" + ",".join(self.object)
+        else:
+            result = self.protocol + ":" + self.object
         location = self.location
         if location:
             result += "@" + location
@@ -136,7 +143,7 @@ class URI(object):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash((self.protocol, self.object, self.sockname, self.host, self.port))
+        return hash((self.protocol, str(self.object), self.sockname, self.host, self.port))
 
     # note: getstate/setstate are not needed if we use pickle protocol 2,
     # but this way it helps pickle to make the representation smaller by omitting all attribute names.
