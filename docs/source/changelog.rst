@@ -5,7 +5,7 @@ Change Log
 **Pyro 4.51**
 
 - added PYROMETA magic URI protocol, to look up an object with the given metadata tags (yellow-page lookup rather than by name)
-  @todo docs
+  Example: ``Pyro4.Proxy("PYROMETA:metatag1,metatag2")``
 - fixed unlikely but possible crash in logging statement when client disconnects from multiplex server
 
 

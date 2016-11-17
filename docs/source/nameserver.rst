@@ -334,8 +334,8 @@ a broadcast too try to find the name server.
 .. index:: PYRONAME protocol type
 .. _nameserver-pyroname:
 
-The 'magical' PYRONAME protocol type
-====================================
+The PYRONAME protocol type
+==========================
 To create a proxy and connect to a Pyro object, Pyro needs an URI so it can find the object.
 Because it is so convenient, the name server logic has been integrated into Pyro's URI mechanism
 by means of the special ``PYRONAME`` protocol type (rather than the normal ``PYRO`` protocol type).
@@ -377,6 +377,33 @@ See the :file:`autoreconnect` example for more details about this.
     bind it to a fixed PYRO uri instead.
 
 
+.. index:: PYROMETA protocol type
+.. _nameserver-pyrometa:
+
+The PYROMETA protocol type
+==========================
+Next to the ``PYRONAME`` protocol type there is another 'magic' protocol ``PYROMETA``.
+This protocol type tells Pyro to treat the URI as metadata tags, and Pyro will
+ask the name server for any (randomly chosen) object that has the given metadata tags.
+The form of a PYROMETA uri is::
+
+    PYROMETA:metatag
+    PYROMETA:metatag1,metatag2,metatag3
+    PYROMETA:metatag@nshostname           # with optional host name
+    PYROMETA:metatag@nshostname:nsport    # with optional host name + port
+
+So you can write this to connect to any random printer (given that all Pyro objects representing a printer
+have been registered in the name server with the ``resource.printer`` metadata tag)::
+
+    proxy=Pyro4.Proxy("PYROMETA:resource.printer")
+    proxy.printstuff()
+
+You have to explicitly add metadata tags when registering objects with the name server, see :ref:`nameserver-yellowpages`.
+Objects without metadata tags cannot be found via ``PYROMETA`` obviously.
+All metadata tags can be listed if you query the name server for registrations.
+
+
+
 .. index:: resolving object names, PYRONAME protocol type
 
 Resolving object names
@@ -409,6 +436,12 @@ So, resolving a logical name can be done in several ways:
     # uri now is the resolved 'objectname'
     obj = Pyro4.Proxy(uri)
     obj.method()
+
+#. use a ``PYROMETA`` URI and resolve it using the ``resolve`` utility function :func:`Pyro4.naming.resolve` (also available as :func:`Pyro4.resolve`)::
+
+    uri = Pyro4.resolve("PYROMETA:metatag1,metatag2")
+    # uri is now randomly chosen from all objects having the given meta tags
+    obj = Pyro4.Proxy(uri)
 
 
 .. index::
@@ -525,6 +558,8 @@ the accepted serializers.
     double: name server; Yellow-pages
     double: name server; Metadata
 
+.. _nameserver-yellowpages:
+
 Yellow-pages ability of the Name Server (metadata tags)
 =======================================================
 Since Pyro 4.40, it is possible to tag object registrations in the name server with one or more Metadata tags.
@@ -608,6 +643,18 @@ to allow you do do this: ``metadata_all`` and ``metadata_any``.
 
     ns.list(metadata_any={"storage", "printer", "communication"})
     # returns: {'printer.secondfloor': 'PYRO:printer1@host:1234'}
+
+
+**Querying on metadata via ``PYROMETA`` uri (Yellow-page lookup in uri)**
+
+As a convenience, similar to the ``PYRONAME`` uri protocol, you can use the ``PYROMETA`` uri protocol
+to let Pyro do the lookup for you. It only supports ``metadata_all`` lookup, but it allows you to
+conveniently get a proxy like this::
+
+    Pyro4.Proxy("PYROMETA:resource.printer,performance.fast")
+
+this will connect to a (randomly chosen) object with both the ``resource.printer`` and ``performance.fast`` metadata tags.
+Also see :ref:`nameserver-pyrometa`.
 
 
 You can find some code that uses the metadata API in the :file:`ns-metadata` example.

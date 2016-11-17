@@ -24,6 +24,9 @@ the actual object. This is done by creating an appropriate URI, which contains a
 others the object name and the location where it can be found.
 You can create it in a number of ways.
 
+
+.. index:: PYRO protocol type
+
 * directly use the object name and location.
     This is the easiest way and you write an URI directly like this: ``PYRO:someobjectid@servername:9999``
     It requires that you already know the object id, servername, and port number.
@@ -67,6 +70,17 @@ You can create it in a number of ways.
     You can use this URI everywhere you would normally use a normal uri (using ``PYRO``).
     Everytime Pyro encounters the ``PYRONAME`` uri it will use the name server automatically
     to look up the object for you. [#pyroname]_
+
+* use object metadata tagging to look it up (yellow-pages style lookup).
+    You can do this directly via the name server for maximum control, or use the ``PYROMETA`` protocol type.
+    See :ref:`nameserver-pyrometa`. This means you can write::
+
+        uri_string = "PYROMETA:metatag1,metatag2"
+        # or Pyro4.URI("PYROMETA:metatag1,metatag2") for an URI object
+
+    You can use this URI everywhere you would normally use a normal uri.
+    Everytime Pyro encounters the ``PYROMETA`` uri it will use the name server automatically
+    to find a random object for you with the given metadata tags. [#pyroname]_
 
 .. [#pyroname] this is not very efficient if it occurs often. Have a look at the :doc:`tipstricks`
    chapter for some hints about this.
