@@ -6,6 +6,7 @@ Change Log
 
 - added PYROMETA magic URI protocol, to look up an object with the given metadata tags (yellow-page lookup rather than by name)
   Example: ``Pyro4.Proxy("PYROMETA:metatag1,metatag2")``
+- added distributed-computing3 example to show simple work load distribution using PYROMETA object discovery
 - fixed unlikely but possible crash in logging statement when client disconnects from multiplex server
 
 
