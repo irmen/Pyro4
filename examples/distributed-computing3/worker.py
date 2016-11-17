@@ -14,8 +14,10 @@ if sys.version_info < (3, 0):
 class Worker(object):
     @Pyro4.expose
     def factorize(self, n):
-        print("factorize request recieved for", n)
-        return self._factorize(n)
+        print("factorize request received for", n)
+        result = self._factorize(n)
+        print("    -->", result)
+        return result
 
     def _factorize(self, n):
         """simple algorithm to find the prime factorials of the given number n"""
@@ -28,7 +30,7 @@ class Worker(object):
         candidate = 2
         while not primes and candidate in candidates:
             if n % candidate == 0 and isPrime(candidate):
-                primes = primes + [candidate] + self.factorize(n // candidate)
+                primes = primes + [candidate] + self._factorize(n // candidate)
             candidate += 1
         return primes
 
