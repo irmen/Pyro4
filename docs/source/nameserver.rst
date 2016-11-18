@@ -400,7 +400,11 @@ have been registered in the name server with the ``resource.printer`` metadata t
 
 You have to explicitly add metadata tags when registering objects with the name server, see :ref:`nameserver-yellowpages`.
 Objects without metadata tags cannot be found via ``PYROMETA`` obviously.
-All metadata tags can be listed if you query the name server for registrations.
+Note that the name server supports more advanced metadata features than what ``PYROMETA`` provides:
+in a PYROMETA uri you cannot use white spaces, and you cannot ask for an object that has one or more
+of the given tags -- multiple tags means that the object must have all of them.
+
+Metadata tags can be listed if you query the name server for registrations.
 
 
 
