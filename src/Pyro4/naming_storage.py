@@ -154,8 +154,9 @@ class SqlStorage(MutableMapping):
                 db.execute("PRAGMA foreign_keys=ON")
                 db.execute("DELETE FROM pyro_metadata")
                 db.execute("DELETE FROM pyro_names")
-                db.execute("VACUUM")
                 db.commit()
+            with closing(sqlite3.connect(self.dbfile, isolation_level=None)) as db:
+                db.execute("VACUUM")  # this cannot run inside a transaction.
         except sqlite3.DatabaseError as e:
             raise NamingError("sqlite error in clear: "+str(e))
 

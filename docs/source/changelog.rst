@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.52**
+
+- fixed Python 3.6 compatibility issue in name server when using sqlite storage ("cannot VACUUM from within a transaction")
+
+
 **Pyro 4.51**
 
 - added PYROMETA magic URI protocol, to look up an object with the given metadata tags (yellow-page lookup rather than by name)
