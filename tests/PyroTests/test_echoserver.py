@@ -43,17 +43,16 @@ class TestEchoserver(unittest.TestCase):
         self.assertTrue(hasattr(e, "_pyroExposed"))
 
     def testEcho(self):
-        echo = Pyro4.Proxy(self.uri)
-        try:
-            self.assertEqual("hello", echo.echo("hello"))
-            self.assertEqual(None, echo.echo(None))
-            self.assertEqual([1, 2, 3], echo.echo([1, 2, 3]))
-        finally:
-            echo.shutdown()
+        with Pyro4.Proxy(self.uri) as echo:
+            try:
+                self.assertEqual("hello", echo.echo("hello"))
+                self.assertEqual(None, echo.echo(None))
+                self.assertEqual([1, 2, 3], echo.echo([1, 2, 3]))
+            finally:
+                echo.shutdown()
 
     def testError(self):
-        try:
-            echo = Pyro4.Proxy(self.uri)
+        with Pyro4.Proxy(self.uri) as echo:
             try:
                 echo.error()
                 self.fail("expected exception")
@@ -70,8 +69,6 @@ class TestEchoserver(unittest.TestCase):
                 self.assertIn("Remote traceback", tb)
                 self.assertIn("ValueError", tb)
                 self.assertEqual("the message of the error", str(x))
-        finally:
-            echo.shutdown()
 
     def testGenerator(self):
         with Pyro4.Proxy(self.uri) as echo:

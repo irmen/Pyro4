@@ -14,6 +14,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import sys
 import time
+from optparse import OptionParser
 from Pyro4 import threadutil
 from Pyro4 import naming
 import Pyro4
@@ -133,7 +134,6 @@ def startNameServer(host, hmac=None):
 
 
 def main(args=None, returnWithoutLooping=False):
-    from optparse import OptionParser
     parser = OptionParser()
     parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=%default)")
     parser.add_option("-p", "--port", type="int", default=0, help="port to bind server on")

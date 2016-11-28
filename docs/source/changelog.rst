@@ -5,6 +5,7 @@ Change Log
 **Pyro 4.52**
 
 - fixed Python 3.6 compatibility issue in name server when using sqlite storage ("cannot VACUUM from within a transaction")
+- fixed Python 3.6 ResourceWarning in unit test
 
 
 **Pyro 4.51**
