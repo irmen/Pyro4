@@ -6,6 +6,8 @@ Change Log
 
 - fixed Python 3.6 compatibility issue in name server when using sqlite storage ("cannot VACUUM from within a transaction")
 - fixed Python 3.6 ResourceWarning in unit test
+- Python 3.6 added to travis CI build
+- fixed possible crash on Python 2.x when shutting down a daemon from within a Pyro server object itself (because it tried to join its own thread)
 
 
 **Pyro 4.51**

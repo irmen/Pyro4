@@ -88,10 +88,17 @@ class Pool(object):
             time.sleep(0.1)
             idle, self.idle = self.idle, set()
             busy, self.busy = self.busy, set()
+            # check if the threads that are joined are not the current thread,
+            # otherwise Python 2.x crashes with "cannot join current thread".
+            current_thread = Pyro4.threadutil.current_thread()
             while idle:
-                idle.pop().join(timeout=0.1)
+                p = idle.pop()
+                if p is not current_thread:
+                    p.join(timeout=0.1)
             while busy:
-                busy.pop().join(timeout=0.1)
+                p = busy.pop()
+                if p is not current_thread:
+                    p.join(timeout=0.1)
 
     def __repr__(self):
         return "<%s.%s at 0x%x; %d busy workers; %d idle workers>" % \
