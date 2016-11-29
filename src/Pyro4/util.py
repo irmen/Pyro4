@@ -696,6 +696,10 @@ def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
 
 __exposed_member_cache = {}
 
+def reset_exposed_members(obj, only_exposed=True, as_lists=False):
+    """Delete any cached exposed members forcing recalculation on next request"""
+    cache_key = (obj, only_exposed, as_lists)
+    __exposed_member_cache.pop(cache_key, None)
 
 def get_exposed_members(obj, only_exposed=True, as_lists=False, use_cache=True):
     """
