@@ -1488,7 +1488,7 @@ class Daemon(object):
         # can only be cached if registered, else no-op
         if uri.objectOrId in self.objectsById:
             registered_object = self.objectsById[uri.object]
-            # Clear cache regardless of how it is accessed (as_lists seems to be used inconsistently)
+            # Clear cache regardless of how it is accessed
             util.reset_exposed_members(registered_object, Pyro4.config.REQUIRE_EXPOSE, as_lists=True)
             util.reset_exposed_members(registered_object, Pyro4.config.REQUIRE_EXPOSE, as_lists=False)
 
