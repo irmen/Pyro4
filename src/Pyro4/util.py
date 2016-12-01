@@ -698,6 +698,8 @@ __exposed_member_cache = {}
 
 def reset_exposed_members(obj, only_exposed=True, as_lists=False):
     """Delete any cached exposed members forcing recalculation on next request"""
+    if not inspect.isclass(obj):
+        obj = obj.__class__
     cache_key = (obj, only_exposed, as_lists)
     __exposed_member_cache.pop(cache_key, None)
 
