@@ -17,7 +17,7 @@ import Pyro4.message
 from Pyro4.util import get_serializer_by_id
 from Pyro4.errors import DaemonError, PyroError
 from Pyro4 import current_context
-from testsupport import *
+from testsupport import ConnectionMock, basestring, unicode, unichr
 
 
 class MyObj(object):
@@ -36,19 +36,6 @@ class CustomDaemonInterface(Pyro4.core.DaemonObject):
 
     def custom_daemon_method(self):
         return 42
-
-
-class ConnectionMock(object):
-    def __init__(self, initial_msg=None):
-        self.received = initial_msg.to_bytes() if initial_msg else b""
-
-    def send(self, data):
-        self.received += data
-
-    def recv(self, datasize):
-        chunk = self.received[:datasize]
-        self.received = self.received[datasize:]
-        return chunk
 
 
 class DaemonTests(unittest.TestCase):
@@ -402,7 +389,7 @@ class DaemonTests(unittest.TestCase):
     def testHandshakeDenied(self):
         class HandshakeFailDaemon(Pyro4.core.Daemon):
             def validateHandshake(self, conn, data):
-                raise ValueError("handshake fail")
+                raise ValueError("handshake fail validation error")
         conn = ConnectionMock()
         with HandshakeFailDaemon(port=0) as d:
             self.sendHandshakeMessage(conn)
@@ -411,7 +398,15 @@ class DaemonTests(unittest.TestCase):
             msg = Pyro4.message.Message.recv(conn, hmac_key=d._pyroHmacKey)
             self.assertEqual(Pyro4.message.MSG_CONNECTFAIL, msg.type)
             self.assertEqual(99, msg.seq)
-            self.assertTrue(b"handshake fail" in msg.data)
+            self.assertTrue(b"handshake fail validation error" in msg.data)
+        with Pyro4.Daemon(port=0) as d:
+            self.sendHandshakeMessage(conn)
+            success = d._handshake(conn, denied_reason="no way, handshake denied")
+            self.assertFalse(success)
+            msg = Pyro4.message.Message.recv(conn, hmac_key=d._pyroHmacKey)
+            self.assertEqual(Pyro4.message.MSG_CONNECTFAIL, msg.type)
+            self.assertEqual(99, msg.seq)
+            self.assertTrue(b"no way, handshake denied" in msg.data)
 
     def testCustomHandshake(self):
         conn = ConnectionMock()

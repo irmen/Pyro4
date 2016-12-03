@@ -1103,6 +1103,7 @@ class Daemon(object):
         msg_seq = 0
         try:
             msg = message.Message.recv(conn, [message.MSG_CONNECT], hmac_key=self._pyroHmacKey)
+            msg_seq = msg.seq
             if denied_reason:
                 raise Exception(denied_reason)
             if Pyro4.config.LOGWIRE:
@@ -1114,7 +1115,6 @@ class Daemon(object):
             else:
                 current_context.correlation_id = uuid.uuid1()
             serializer_id = msg.serializer_id
-            msg_seq = msg.seq
             serializer = util.get_serializer_by_id(serializer_id)
             data = serializer.deserializeData(msg.data, msg.flags & Pyro4.message.FLAGS_COMPRESSED)
             handshake_response = self.validateHandshake(conn, data["handshake"])

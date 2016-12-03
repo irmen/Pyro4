@@ -12,6 +12,7 @@ from Pyro4.message import Message
 import Pyro4.constants
 import Pyro4.util
 import Pyro4.errors
+from testsupport import ConnectionMock
 
 
 def pyrohmac(data, hmac_key, annotations={}):
@@ -20,19 +21,6 @@ def pyrohmac(data, hmac_key, annotations={}):
         if k != "HMAC":
             mac.update(v)
     return mac.digest()
-
-
-class ConnectionMock(object):
-    def __init__(self, data=b""):
-        self.received = data
-
-    def send(self, data):
-        self.received += data
-
-    def recv(self, datasize):
-        chunk = self.received[:datasize]
-        self.received = self.received[datasize:]
-        return chunk
 
 
 class MessageTestsHmac(unittest.TestCase):

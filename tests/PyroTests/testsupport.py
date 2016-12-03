@@ -8,10 +8,11 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import sys
 import pickle
 import Pyro4
+import Pyro4.errors
 
 __all__ = ["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO",
            "NonserializableError", "MyThingPartlyExposed", "MyThingFullExposed",
-           "MyThingExposedSub", "MyThingPartlyExposedSub"]
+           "MyThingExposedSub", "MyThingPartlyExposedSub", "ConnectionMock"]
 
 
 Pyro4.config.reset(False)   # reset the config to default
@@ -209,3 +210,23 @@ class MyThingPartlyExposedSub(MyThingPartlyExposed):
     @Pyro4.oneway
     def oneway2(self):
         pass
+
+
+class ConnectionMock(object):
+    def __init__(self, initial_msg=None):
+        if not initial_msg:
+            self.received = b""
+        elif isinstance(initial_msg, bytes):
+            self.received = initial_msg
+        else:
+            self.received = initial_msg.to_bytes()   # it's probably a Message object
+
+    def send(self, data):
+        self.received += data
+
+    def recv(self, datasize):
+        chunk = self.received[:datasize]
+        self.received = self.received[datasize:]
+        if len(chunk) < datasize:
+            raise Pyro4.errors.ConnectionClosedError("receiving: not enough data")
+        return chunk

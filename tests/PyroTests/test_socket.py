@@ -344,7 +344,7 @@ class TestSocketutil(unittest.TestCase):
 
 
 class ServerCallback(object):
-    def _handshake(self, connection):
+    def _handshake(self, connection, denied_reason=None):
         raise RuntimeError("this handshake method should never be called")
 
     def handleRequest(self, connection):
@@ -363,7 +363,7 @@ class ServerCallback(object):
 
 
 class ServerCallback_BrokenHandshake(ServerCallback):
-    def _handshake(self, connection):
+    def _handshake(self, connection, denied_reason=None):
         raise ZeroDivisionError("handshake crashed (on purpose)")
 
 

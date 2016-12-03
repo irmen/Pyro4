@@ -9,6 +9,8 @@ import time
 import random
 import unittest
 from Pyro4.socketserver.threadpool import Pool, PoolError, NoFreeWorkersError
+from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
+import Pyro4.socketutil
 import Pyro4.threadutil
 
 
@@ -93,6 +95,50 @@ class PoolTests(unittest.TestCase):
             time.sleep(JOB_TIME*1.5)
             self.assertEqual(0, len(p.busy))
             self.assertEqual(Pyro4.config.THREADPOOL_SIZE_MIN, len(p.idle))
+
+
+class ServerCallback(object):
+    def __init__(self):
+        self.received_denied_reason = None
+
+    def _handshake(self, connection, denied_reason=None):
+        self.received_denied_reason = denied_reason  # store the denied reason
+        return True
+
+    def handleRequest(self, connection):
+        raise ValueError    # not dealing with this
+
+    def _housekeeping(self):
+        pass
+
+
+class ThreadPoolServerTests(unittest.TestCase):
+    def setUp(self):
+        Pyro4.config.THREADPOOL_SIZE_MIN = 1
+        Pyro4.config.THREADPOOL_SIZE = 1
+        Pyro4.config.POLLTIMEOUT = 0.5
+        Pyro4.config.COMMTIMEOUT = 0.5
+
+    def tearDown(self):
+        Pyro4.config.reset()
+
+    def testServerPoolFull(self):
+        port = Pyro4.socketutil.findProbablyUnusedPort()
+        serv = SocketServer_Threadpool()
+        daemon = ServerCallback()
+        serv.init(daemon, "localhost", port)
+        serversock = serv.sock.getsockname()
+        csock1 = Pyro4.socketutil.createSocket(connect=serversock)
+        csock2 = Pyro4.socketutil.createSocket(connect=serversock)
+        try:
+            serv.events([serv.sock])
+            self.assertIsNone(daemon.received_denied_reason)
+            serv.events([serv.sock])
+            self.assertEqual("no free workers, increase server threadpool size", daemon.received_denied_reason)
+        finally:
+            csock1.close()
+            csock2.close()
+            serv.shutdown()
 
 
 if __name__ == "__main__":
