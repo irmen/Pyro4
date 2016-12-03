@@ -1104,7 +1104,7 @@ class Daemon(object):
         try:
             msg = message.Message.recv(conn, [message.MSG_CONNECT], hmac_key=self._pyroHmacKey)
             if denied_reason:
-                raise errors.ConnectionClosedError(denied_reason)
+                raise Exception(denied_reason)
             if Pyro4.config.LOGWIRE:
                 _log_wiredata(log, "daemon handshake received", msg)
             if msg.serializer_id not in self.__serializer_ids:

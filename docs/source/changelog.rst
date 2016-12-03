@@ -8,6 +8,7 @@ Change Log
 - fixed Python 3.6 ResourceWarning in unit test
 - Python 3.6 added to travis CI build
 - fixed possible crash on Python 2.x when shutting down a daemon from within a Pyro server object itself (because it tried to join its own thread)
+- sensible error is raised again in client when threadpool server can't accept any more new connections (regression since 4.50)
 
 
 **Pyro 4.51**
@@ -16,7 +17,6 @@ Change Log
   Example: ``Pyro4.Proxy("PYROMETA:metatag1,metatag2")``
 - added distributed-computing3 example to show simple work load distribution using PYROMETA object discovery
 - fixed unlikely but possible crash in logging statement when client disconnects from multiplex server
-
 
 **Pyro 4.50**
 
