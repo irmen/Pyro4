@@ -17,7 +17,7 @@ import Pyro4.message
 from Pyro4.util import get_serializer_by_id
 from Pyro4.errors import DaemonError, PyroError
 from Pyro4 import current_context
-from testsupport import ConnectionMock, basestring, unicode, unichr
+from testsupport import *
 
 
 class MyObj(object):
@@ -125,9 +125,9 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(SOCKNAME, d.sock.getsockname())
             self.assertEqual(socket.AF_UNIX, d.sock.family)
 
-    @unittest.skipUnless(hasattr(socket, "AF_UNIX") and sys.platform.startswith("linux"), "linux and unix domain sockets required")
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX") and sys.platform.startswith("linux"), "unix domain sockets required and linux os")
     def testDaemonUnixSocketAbstractNS(self):
-        SOCKNAME = "\0test_unixsocket"  # mind the \0 at the start
+        SOCKNAME = "\0test_unixsocket"  # mind the \0 at the start, for a Linux abstract namespace socket
         with Pyro4.core.Daemon(unixsocket=SOCKNAME) as d:
             locationstr = "./u:" + SOCKNAME
             self.assertEqual(locationstr, d.locationStr)
