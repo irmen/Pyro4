@@ -1482,11 +1482,11 @@ class Daemon(object):
         return URI("PYRO:%s@%s" % (objectOrId, loc))
 
     def resetMetadataCache(self, objectOrId, nat=True):
-        '''Reset cache of metadata when a Daemon has available methods/attributes
-        dynamically updated.  Clients will have to get a new proxy to see changes'''
+        """Reset cache of metadata when a Daemon has available methods/attributes
+        dynamically updated.  Clients will have to get a new proxy to see changes"""
         uri = self.uriFor(objectOrId, nat)
         # can only be cached if registered, else no-op
-        if uri.objectOrId in self.objectsById:
+        if uri.object in self.objectsById:
             registered_object = self.objectsById[uri.object]
             # Clear cache regardless of how it is accessed
             util.reset_exposed_members(registered_object, Pyro4.config.REQUIRE_EXPOSE, as_lists=True)

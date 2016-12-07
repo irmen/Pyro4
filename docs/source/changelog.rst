@@ -9,6 +9,7 @@ Change Log
 - Python 3.6 added to travis CI build
 - fixed possible crash on Python 2.x when shutting down a daemon from within a Pyro server object itself (because it tried to join its own thread)
 - sensible error is raised again in client when threadpool server can't accept any more new connections (regression since 4.50)
+- daemon has new ``resetMetadataCache`` method to be used when the set of exposed members of your Pyro class changes during runtime
 - better testcases for properly handling handshake error reasons
 
 

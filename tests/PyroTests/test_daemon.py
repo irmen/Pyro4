@@ -653,6 +653,29 @@ class MetaInfoTests(unittest.TestCase):
                 data = serializer.dumps(meta)
                 _ = serializer.loads(data)
 
+    def testMetaResetCache(self):
+        class Dummy:
+            @Pyro4.expose
+            def method(self):
+                pass
+        with Pyro4.core.Daemon() as d:
+            dummy = Dummy()
+            uri = d.register(dummy)
+            daemon_obj = d.objectsById[Pyro4.constants.DAEMON_NAME]
+            meta = daemon_obj.get_metadata(uri.object)
+            self.assertNotIn("newly_added_method", meta["methods"])
+            self.assertNotIn("newly_added_method_two", meta["methods"])
+            Dummy.newly_added_method = Pyro4.expose(lambda self: None)
+            meta = daemon_obj.get_metadata(uri.object)
+            self.assertNotIn("newly_added_method", meta["methods"])
+            d.resetMetadataCache(uri.object)
+            meta = daemon_obj.get_metadata(uri.object)
+            self.assertIn("newly_added_method", meta["methods"])
+            Dummy.newly_added_method_two = Pyro4.expose(lambda self: None)
+            d.resetMetadataCache(dummy)
+            meta = daemon_obj.get_metadata(uri.object)
+            self.assertIn("newly_added_method_two", meta["methods"])
+
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

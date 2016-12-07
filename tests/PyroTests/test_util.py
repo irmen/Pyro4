@@ -275,6 +275,17 @@ class TestMeta(unittest.TestCase):
         self.assertIn("attrs", keys)
         self.assertIn("oneway", keys)
 
+    def testResetExposedCache(self):
+        o = MyThingFullExposed("irmen")
+        m1 = Pyro4.util.get_exposed_members(o)
+        self.assertNotIn("newly_added_method", m1["methods"])
+        MyThingFullExposed.newly_added_method = Pyro4.expose(lambda self: None)
+        m2 = Pyro4.util.get_exposed_members(o)
+        self.assertNotIn("newly_added_method", m2["methods"])
+        Pyro4.util.reset_exposed_members(o)
+        m3 = Pyro4.util.get_exposed_members(o)
+        self.assertIn("newly_added_method", m3["methods"])
+
     def testGetExposedCacheWorks(self):
         class Thingy(object):
             def method1(self):
