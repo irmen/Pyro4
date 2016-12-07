@@ -97,16 +97,16 @@ class PoolTests(unittest.TestCase):
             self.assertEqual(Pyro4.config.THREADPOOL_SIZE_MIN, len(p.idle))
 
 
-class ServerCallback(object):
+class ServerCallback(Pyro4.core.Daemon):
     def __init__(self):
-        self.received_denied_reason = None
+        self.received_denied_reasons = []
 
     def _handshake(self, connection, denied_reason=None):
-        self.received_denied_reason = denied_reason  # store the denied reason
+        self.received_denied_reasons.append(denied_reason)  # store the denied reason
         return True
 
     def handleRequest(self, connection):
-        pass
+        time.sleep(0.05)
 
     def _housekeeping(self):
         pass
@@ -129,12 +129,17 @@ class ThreadPoolServerTests(unittest.TestCase):
         serv.init(daemon, "localhost", port)
         serversock = serv.sock.getsockname()
         csock1 = Pyro4.socketutil.createSocket(connect=serversock)
+        time.sleep(0.1) # XXX
         csock2 = Pyro4.socketutil.createSocket(connect=serversock)
+        time.sleep(0.1) # XXX
         try:
             serv.events([serv.sock])
-            self.assertIsNone(daemon.received_denied_reason)
+            time.sleep(0.2)
+            self.assertEqual([None], daemon.received_denied_reasons)
             serv.events([serv.sock])
-            self.assertEqual("no free workers, increase server threadpool size", daemon.received_denied_reason)
+            time.sleep(0.2)
+            self.assertEqual(2, len(daemon.received_denied_reasons))
+            self.assertIn("no free workers, increase server threadpool size", daemon.received_denied_reasons)
         finally:
             csock1.close()
             csock2.close()
