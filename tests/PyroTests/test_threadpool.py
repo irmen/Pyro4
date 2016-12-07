@@ -106,7 +106,7 @@ class ServerCallback(object):
         return True
 
     def handleRequest(self, connection):
-        raise ValueError    # not dealing with this
+        pass
 
     def _housekeeping(self):
         pass
