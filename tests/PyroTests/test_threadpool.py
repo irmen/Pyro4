@@ -129,9 +129,7 @@ class ThreadPoolServerTests(unittest.TestCase):
         serv.init(daemon, "localhost", port)
         serversock = serv.sock.getsockname()
         csock1 = Pyro4.socketutil.createSocket(connect=serversock)
-        time.sleep(0.1) # XXX
         csock2 = Pyro4.socketutil.createSocket(connect=serversock)
-        time.sleep(0.1) # XXX
         try:
             serv.events([serv.sock])
             time.sleep(0.2)
