@@ -910,9 +910,9 @@ class DaemonObject(object):
     def get_metadata(self, objectId, as_lists=False):
         """
         Get metadata for the given object (exposed methods, oneways, attributes).
-        If you get an error in your proxy saying that 'DaemonObject' has no attribute 'get_metdata',
+        If you get an error in your proxy saying that 'DaemonObject' has no attribute 'get_metadata',
         you're probably connecting to an older Pyro version (4.26 or earlier).
-        Either upgrade the Pyro version or set METDATA config item to False in your client code.
+        Either upgrade the Pyro version or set METADATA config item to False in your client code.
         """
         obj = self.daemon.objectsById.get(objectId)
         if obj is not None:
