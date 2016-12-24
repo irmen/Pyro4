@@ -636,8 +636,8 @@ try:
     else:
         ver = serpent.__version__
     ver = tuple(map(int, ver.split(".")))
-    if ver < (1, 15):
-        raise RuntimeError("requires serpent 1.15 or better")
+    if ver < (1, 16):
+        raise RuntimeError("requires serpent 1.16 or better")
     _ser = SerpentSerializer()
     _serializers["serpent"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser
