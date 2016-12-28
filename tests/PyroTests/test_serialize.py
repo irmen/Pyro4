@@ -470,6 +470,15 @@ class SerializeTests_pickle(unittest.TestCase):
         finally:
             Pyro4.config.PICKLE_PROTOCOL_VERSION = orig_protocol
 
+    def testFloatPrecision(self):
+        f1 = 1482514078.54635912345
+        f2 = 9876543212345.12345678987654321
+        f3 = 11223344.556677889988776655e33
+        floats = [f1, f2, f3]
+        d, compr = self.ser.serializeData(floats)
+        v = self.ser.deserializeData(d, compr)
+        self.assertEqual(floats, v, "float precision must not be compromised in any serializer")
+
 
 import platform
 @unittest.skipIf(platform.python_implementation() in ('PyPy', 'IronPython'),
