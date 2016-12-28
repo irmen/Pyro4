@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.53**
 
-- serpent library dependency updated to 1.16 to fix critical floating point precision loss error on older python versions
+- *CRITICAL FIX:* serpent library dependency updated to 1.16 to fix floating point precision loss error on older python versions
 - added unittest to check that float precision is maintained in the serializers
 - mailing list (``pyro@freelists.org``) has been discontinued.
 - fixed some typos in docs and docstrings, improved daemon metadata doc.
