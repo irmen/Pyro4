@@ -113,6 +113,6 @@ set it. You can set the shared key via the ``_pyroHmacKey`` property on a proxy 
     It is hard to keep a shared secret key actually secret!
     People might read the source code of your software and extract the key from it.
     Pyro itself provides no facilities to help you with this, sorry.
-    The Diffie-Hellman Key Exchange algorithm is ane example of a secure solution to this problem.
+    The Diffie-Hellman Key Exchange algorithm is one example of a secure solution to this problem.
     There's the ``diffie-hellman`` example that shows the basics, but DO NOT use it directly
     as being "the secure way to do this" -- it's only demo code.
