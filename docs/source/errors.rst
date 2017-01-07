@@ -138,5 +138,5 @@ traceback is extended with details of the values of the local variables in every
 You can immediately see why the call produced a ``TypeError`` without the need to have a debugger running
 (the ``arg`` variable is a string and dividing that string by 2 ofcourse is the cause of the error).
 
-Ofcourse it is also possible to enable ``DETAILED_TRACEBACK`` on the client, but it is not as useful there
+Of course it is also possible to enable ``DETAILED_TRACEBACK`` on the client, but it is not as useful there
 (normally it is no problem to run the client code inside a debugger).
