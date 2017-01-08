@@ -685,7 +685,7 @@ See the :file:`proxysharing` example for more details.
 
 Metadata from the daemon
 ------------------------
-A proxy contains some meta-dataabout the object it connects to.
+A proxy contains some meta-data about the object it connects to.
 It obtains the data via the (public) :py:meth:`Pyro4.core.DaemonObject.get_metadata` method on the daemon
 that it connects to. This method returns the following information about the object (or rather, its class):
 what methods and attributes are defined, and which of the methods are to be called as one-way.

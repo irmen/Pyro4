@@ -75,7 +75,7 @@ Because Pyro serializes the objects you're passing, it needs to know how to seri
 While you can teach Pyro about these (see :ref:`customizing-serialization`) it may sometimes be easier to just use a builtin datatype instead.
 For instance if you have a custom class whose state essentially is a set of numbers, consider then
 that it may be easier to just transfer a ``set`` or a ``list`` of those numbers rather than an instance of your
-custom class.  It depends on your class and data ofcourse, and whether the receiving code expects
+custom class.  It depends on your class and data of course, and whether the receiving code expects
 just the list of numbers or really needs an instance of your custom class.
 
 
