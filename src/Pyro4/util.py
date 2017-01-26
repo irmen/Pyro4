@@ -369,7 +369,16 @@ class SerializerBase(object):
                 exceptiontype = getattr(sqlite3, short_classname)
                 if issubclass(exceptiontype, BaseException):
                     return SerializerBase.make_exception(exceptiontype, data)
-
+        
+        # serpent serializes float('nan') as {'__class__':'float','value':'nan'}. 
+        #  I'm not sure if this is the most elegant way to handle that edge case 
+        #  (it'd likely make more sense for this knowledge to live in 
+        #  SerpentSerializer?) - but it does the trick. ~ jackjweinstein 1/26/17
+        if classname == "float":
+            value = data.get("value", None)
+            if value == "nan":
+                return float("nan")
+            
         # try one of the serializer classes
         for serializer in _serializers.values():
             if classname == serializer.__class__.__name__:
