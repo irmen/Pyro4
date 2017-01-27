@@ -14,7 +14,8 @@ if sys.platform == "cli":
     class IronPythonWeirdnessTests(unittest.TestCase):
         def testExceptionWithAttrsPickle(self):
             # ironpython doesn't pickle exception attributes
-            # see bug report http://ironpython.codeplex.com/workitem/30805
+            # Bug report is at https://github.com/IronLanguages/main/issues/943
+            # Bug is still present in Ironpython 2.7.7
             ex = ValueError("some exception")
             ex.custom_attribute = 42
             ex2 = pickle.loads(pickle.dumps(ex))
@@ -24,8 +25,8 @@ if sys.platform == "cli":
 
         def testExceptionReduce(self):
             # ironpython doesn't pickle exception attributes
-            # see bug report http://ironpython.codeplex.com/workitem/30805
-            # it could be caused by a malfunctioning __reduce__
+            # Bug report is at https://github.com/IronLanguages/main/issues/943
+            # Bug is still present in Ironpython 2.7.7
             ex = ValueError("some exception")
             ex.custom_attribute = 42
             r = ex.__reduce__()

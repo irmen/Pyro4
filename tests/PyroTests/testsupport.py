@@ -216,7 +216,7 @@ class ConnectionMock(object):
     def __init__(self, initial_msg=None):
         if not initial_msg:
             self.received = b""
-        elif isinstance(initial_msg, bytes):
+        elif isinstance(initial_msg, (str, bytes)):
             self.received = initial_msg
         else:
             self.received = initial_msg.to_bytes()   # it's probably a Message object

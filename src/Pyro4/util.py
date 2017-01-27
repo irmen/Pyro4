@@ -615,9 +615,6 @@ _ser = MarshalSerializer()
 _serializers["marshal"] = _ser
 _serializers_by_id[_ser.serializer_id] = _ser
 try:
-    import platform
-    if platform.python_implementation() in ('PyPy', 'IronPython'):
-        raise ImportError('Currently dill is not supported with PyPy and IronPython')
     import dill
     _ser = DillSerializer()
     _serializers["dill"] = _ser
@@ -679,9 +676,8 @@ def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
     """
     Function to hack around a bug in IronPython where it doesn't pickle
     exception attributes. We piggyback them into the exception's args.
-    Bug report is at http://ironpython.codeplex.com/workitem/30805
-    migrated to github as https://github.com/IronLanguages/main/issues/943
-    Bug is still present in Ironpython 2.7.5
+    Bug report is at https://github.com/IronLanguages/main/issues/943
+    Bug is still present in Ironpython 2.7.7
     """
     if hasattr(exceptionObject, "args"):
         if addAttributes:

@@ -481,9 +481,15 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(floats, v, "float precision must not be compromised in any serializer")
 
 
-import platform
-@unittest.skipIf(platform.python_implementation() in ('PyPy', 'IronPython'),
-                 'PyPy and IronPython not currently supported with dill')
+is_ironpython_without_dill = False
+try:
+    import dill
+except ImportError:
+    if sys.platform == "cli":
+        is_ironpython_without_dill = True
+
+
+@unittest.skipIf(is_ironpython_without_dill, "dill with ironpython has issues so it's fine if we don't test this")
 class SerializeTests_dill(SerializeTests_pickle):
     SERIALIZER = "dill"
 
@@ -618,9 +624,6 @@ class GenericTests(unittest.TestCase):
         except ImportError:
             pass
         try:
-            import platform
-            if platform.python_implementation() in ('PyPy', 'IronPython'):
-                raise ImportError('Currently dill is not supported with IronPython and PyPy')
             import dill
             Pyro4.util.get_serializer("dill")
         except ImportError:
@@ -628,11 +631,10 @@ class GenericTests(unittest.TestCase):
 
     def testSerializersAvailableById(self):
         Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_PICKLE)
-        import platform
-        if platform.python_implementation() not in ('PyPy', 'IronPython'):
-            Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_DILL)
         Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
-        self.assertRaises(Pyro4.errors.ProtocolError, lambda: Pyro4.util.get_serializer_by_id(9999999))
+        Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_SERPENT)
+        Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_JSON)
+        self.assertRaises(Pyro4.errors.SerializeError, lambda: Pyro4.util.get_serializer_by_id(9999999))
 
     def testDictClassFail(self):
         o = pprint.PrettyPrinter(stream="dummy", width=42)

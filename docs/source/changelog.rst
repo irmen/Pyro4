@@ -7,6 +7,10 @@ Change Log
 - Serpent serializer: floats with value NaN will now be properly serialized and deserialized into a float again, instead of the class dict ``{'__class__':'float', 'value':'nan'}``
   Note that you can achieve the same for older versions of Pyro by manually registering a custom converter:
   ``Pyro4.util.SerializerBase.register_dict_to_class("float", lambda _, d: float(d["value"]))``
+- Removed platform checks when using dill serializer, latest Pypy version + latest dill shoul work again.
+  Other platforms might still expose problems when trying to use dill (IronPython), but they are now considered
+  to be the user's problem if they attempt to use this combination.
+- Fixed a few IronPython issues with several unit tests.
 
 
 **Pyro 4.53**

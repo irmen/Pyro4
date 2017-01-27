@@ -20,9 +20,9 @@ It will probably not work with Jython 2.7 at this time of writing. If you need t
 .. note::
     When Pyro is configured to use pickle, dill or marshal as its serialization format, it is required to have the same *major* Python versions
     on your clients and your servers. Otherwise the different parties cannot decipher each others serialized data.
-    This means you cannot let Python 2.x talk to Python 3.x with Pyro. However
-    it should be fine to have Python 3.3 talk to Python 3.4 for instance.
-    The other protocols (serpent, json) don't have this limitation.
+    This means you cannot let Python 2.x talk to Python 3.x with Pyro, when using those serializers.
+    However it should be fine to have Python 3.3 talk to Python 3.4 for instance.
+    The other protocols (serpent, json) don't have this limitation!
 
 
 .. index::
