@@ -537,6 +537,12 @@ class SerpentSerializer(SerializerBase):
 
         serpent.register_class(object_type, custom_serializer)
 
+    @classmethod
+    def dict_to_class(cls, data):
+        if data.get("__class__") == "float":
+            return float(data["value"])     # serpent encodes a float nan as a special class dict like this
+        return super(SerpentSerializer, cls).dict_to_class(data)
+
 
 class JsonSerializer(SerializerBase):
     """(de)serializer that wraps the json serialization protocol."""

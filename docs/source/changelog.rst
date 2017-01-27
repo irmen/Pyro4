@@ -2,6 +2,13 @@
 Change Log
 **********
 
+**Pyro 4.54**
+
+- Serpent serializer: floats with value NaN will now be properly serialized and deserialized into a float again, instead of the class dict ``{'__class__':'float', 'value':'nan'}``
+  Note that you can achieve the same for older versions of Pyro by manually registering a custom converter:
+  ``Pyro4.util.SerializerBase.register_dict_to_class("float", lambda _, d: float(d["value"]))``
+
+
 **Pyro 4.53**
 
 - *CRITICAL FIX:* serpent library dependency updated to 1.16 to fix floating point precision loss error on older python versions.

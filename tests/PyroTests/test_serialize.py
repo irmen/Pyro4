@@ -12,6 +12,7 @@ import pickle
 import base64
 import unittest
 import serpent
+import math
 import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
@@ -730,6 +731,16 @@ class GenericTests(unittest.TestCase):
         with self.assertRaises(Pyro4.errors.SerializeError) as cm:
             _ = Pyro4.util.SerializerBase.dict_to_class(data)
         self.assertEqual("unsupported serialized class: builtins.ZeroDivisionError", str(cm.exception))
+
+    def testWeirdFloats(self):
+        ser = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
+        p, _ = ser.serializeData([float("+inf"), float("-inf"), float("nan")])
+        s2 = ser.deserializeData(p)
+        self.assertTrue(math.isinf(s2[0]))
+        self.assertEqual(1.0, math.copysign(1, s2[0]))
+        self.assertTrue(math.isinf(s2[1]))
+        self.assertEqual(-1.0, math.copysign(1, s2[1]))
+        self.assertTrue(math.isnan(s2[2]))
 
 
 def mything_dict(obj):

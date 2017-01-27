@@ -73,6 +73,12 @@ class EchoServer(object):
         yield "two"
         yield "three"
 
+    def nan(self):
+        return float("nan")
+
+    def inf(self):
+        return float("inf")
+
     @Pyro4.oneway
     def oneway_slow(self):
         """prints a message after a certain delay, and returns; but the client won't wait for it"""
