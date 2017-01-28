@@ -11,6 +11,7 @@ Change Log
   Other platforms might still expose problems when trying to use dill (IronPython), but they are now considered
   to be the user's problem if they attempt to use this combination.
 - Fixed a few IronPython issues with several unit tests.
+- Applied version detection patch from Debian package to contrib/init.d/pyro4-nsd
 
 
 **Pyro 4.53**
