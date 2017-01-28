@@ -12,6 +12,11 @@ Change Log
   to be the user's problem if they attempt to use this combination.
 - Fixed a few IronPython issues with several unit tests.
 - Applied version detection patch from Debian package to contrib/init.d/pyro4-nsd
+- Don't crash immediately at importing Pyro4 when the 'selectors' or 'selectors34' module is not available.
+  (This is normally a required dependency so the situation should not occur.
+   But it is problematic on Debian (and perhaps other distributions) at this time, because this module is not packaged.
+   So we now raise a proper error message, but only when an attempt is made to actually create a multiplex server.
+   Note that all other parts of Pyro4 are usable just fine in this case. The problem is absent when using Python 3.4 or newer.)
 
 
 **Pyro 4.53**

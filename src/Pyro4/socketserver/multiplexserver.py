@@ -15,7 +15,10 @@ from collections import defaultdict
 try:
     import selectors
 except ImportError:
-    import selectors34 as selectors
+    try:
+        import selectors34 as selectors
+    except ImportError:
+        selectors = None
 from Pyro4 import socketutil, errors, util
 import Pyro4.constants
 
@@ -26,6 +29,9 @@ class SocketServer_Multiplex(object):
     """Multiplexed transport server for socket connections (uses select, poll, kqueue, ...)"""
     def __init__(self):
         self.sock = self.daemon = self.locationStr = None
+        if selectors is None:
+            raise RuntimeError("This Python installation doesn't have the 'selectors34' module installed, " +
+                               "which is required to use Pyro's multiplex server. Install it, or use the threadpool server instead.")
         self.selector = selectors.DefaultSelector()
         self.shutting_down = False
 
