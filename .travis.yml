@@ -7,6 +7,10 @@ python:
   - 3.5
   - 3.6
   - pypy
+matrix:
+  allow_failures:
+    - python: 'pypy'
+  fast_finish: true
 install:
   - pip install --upgrade setuptools
   - pip install "pip>=7.1.0"
