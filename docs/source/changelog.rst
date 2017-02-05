@@ -17,6 +17,7 @@ Change Log
    But it is problematic on Debian (and perhaps other distributions) at this time, because this module is not packaged.
    So we now raise a proper error message, but only when an attempt is made to actually create a multiplex server.
    Note that all other parts of Pyro4 are usable just fine in this case. The problem is absent when using Python 3.4 or newer.)
+- Fixed crash when trying to print the repr or string form of a Daemon that was serialized.
 
 
 **Pyro 4.53**

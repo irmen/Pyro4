@@ -1539,8 +1539,12 @@ class Daemon(object):
         self.transportServer.combine_loop(daemon.transportServer)
 
     def __repr__(self):
-        return "<%s.%s at 0x%x; %s; %d objects>" % (self.__class__.__module__, self.__class__.__name__,
-                                                    id(self), self.locationStr, len(self.objectsById))
+        if hasattr(self, "locationStr"):
+            return "<%s.%s at 0x%x; %s; %d objects>" % (self.__class__.__module__, self.__class__.__name__,
+                                                        id(self), self.locationStr, len(self.objectsById))
+        else:
+            # daemon objects may come back from serialized form without being properly initialized (by design)
+            return "<%s.%s at 0x%x; unusable>" % (self.__class__.__module__, self.__class__.__name__, id(self))
 
     def __enter__(self):
         if not self.transportServer:
@@ -1551,7 +1555,9 @@ class Daemon(object):
         self.close()
 
     def __getstate__(self):
-        return {}  # a little hack to make it possible to serialize Pyro objects, because they can reference a daemon
+        # A little hack to make it possible to serialize Pyro objects, because they can reference a daemon,
+        # but it is not meant to be able to properly serialize/deserialize Daemon objects.
+        return {}
 
     def __getstate_for_dict__(self):
         return tuple(self.__getstate__())
