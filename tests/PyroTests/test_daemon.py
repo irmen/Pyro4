@@ -647,7 +647,7 @@ class MetaInfoTests(unittest.TestCase):
             try:
                 serializer = get_serializer_by_id(Pyro4.message.SERIALIZER_DILL)
             except SerializeError:
-                # dill is optional for ironpython alone
+                # dill doesn't work with ironpython so we allow an error here in that case
                 if sys.platform != "cli":
                     raise
             else:

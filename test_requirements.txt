@@ -1,2 +1,2 @@
 -rrequirements.txt
-dill>=0.2.4
+dill>=0.2.6
