@@ -8,8 +8,6 @@ python:
   - 3.6
   - pypy
 matrix:
-  allow_failures:
-    - python: 'pypy'
   fast_finish: true
 install:
   - pip install --upgrade setuptools
