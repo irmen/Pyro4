@@ -5,6 +5,7 @@ use --tox to make this work from Tox.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
+from __future__ import print_function
 import unittest
 import sys
 import os
@@ -29,7 +30,7 @@ sys.path.insert(1, "PyroTests")
 
 if __name__ == "__main__":
     # add test modules here
-    modules = [module[:-3] for module in sorted(os.listdir("PyroTests")) if module.endswith(".py") and not module.startswith("__")]
+    modules = sorted(module[:-3] for module in os.listdir("PyroTests") if module.endswith(".py") and not module.startswith("__"))
 
     print("gathering testcases from %s" % modules)
 

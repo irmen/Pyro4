@@ -18,6 +18,8 @@ Change Log
    So we now raise a proper error message, but only when an attempt is made to actually create a multiplex server.
    Note that all other parts of Pyro4 are usable just fine in this case. The problem is absent when using Python 3.4 or newer.)
 - Fixed crash when trying to print the repr or string form of a Daemon that was serialized.
+- Changed uuid.uuid1() calls to uuid.uuid4()  because of potential issues with uuid1 (obscure resource leak on file descriptors on /var/lib/libuuid/clock.txt).
+  Pyro4 already used uuid4() for certain things, it now exclusively uses uuid4().
 
 
 **Pyro 4.53**

@@ -433,7 +433,7 @@ class MessageBus(object):
             return set(self.storage.topics())
 
     def send(self, topic, message):
-        message = Message(uuid.uuid1(), datetime.datetime.now(), message)
+        message = Message(uuid.uuid4(), datetime.datetime.now(), message)
         with self.msg_lock:
             self.storage.add_message(topic, message)
         self.msg_added.set()   # signal that a new message has arrived

@@ -4,6 +4,7 @@ Name Server and helper functions.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
+from __future__ import print_function
 import warnings
 import random
 import re

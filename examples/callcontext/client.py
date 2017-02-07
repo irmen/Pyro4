@@ -4,7 +4,7 @@ import Pyro4
 import uuid
 
 # example: set a single correlation id on the context that should be passed along
-Pyro4.current_context.correlation_id = uuid.uuid1()
+Pyro4.current_context.correlation_id = uuid.uuid4()
 print("correlation id set to:", Pyro4.current_context.correlation_id)
 
 if sys.version_info < (3, 0):

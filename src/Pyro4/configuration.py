@@ -8,6 +8,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 # PYRO_LOGLEVEL   (enable Pyro log config and set level)
 # PYRO_LOGFILE    (the name of the logfile if you don't like the default)
 
+from __future__ import print_function
 import os
 import platform
 import pickle

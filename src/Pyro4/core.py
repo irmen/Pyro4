@@ -4,6 +4,7 @@ Core logic (uri, daemon, proxy stuff).
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
+from __future__ import print_function, division
 import inspect
 import collections
 import re
@@ -1113,7 +1114,7 @@ class Daemon(object):
             if "CORR" in msg.annotations:
                 current_context.correlation_id = uuid.UUID(bytes=msg.annotations["CORR"])
             else:
-                current_context.correlation_id = uuid.uuid1()
+                current_context.correlation_id = uuid.uuid4()
             serializer_id = msg.serializer_id
             serializer = util.get_serializer_by_id(serializer_id)
             data = serializer.deserializeData(msg.data, msg.flags & Pyro4.message.FLAGS_COMPRESSED)
@@ -1188,7 +1189,7 @@ class Daemon(object):
             if "CORR" in msg.annotations:
                 current_context.correlation_id = uuid.UUID(bytes=msg.annotations["CORR"])
             else:
-                current_context.correlation_id = uuid.uuid1()
+                current_context.correlation_id = uuid.uuid4()
             if Pyro4.config.LOGWIRE:
                 _log_wiredata(log, "daemon wiredata received", msg)
             if msg.type == message.MSG_PING:

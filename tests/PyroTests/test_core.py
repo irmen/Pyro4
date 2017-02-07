@@ -4,6 +4,7 @@ Tests for the core logic.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
+from __future__ import print_function
 import copy
 import logging
 import os

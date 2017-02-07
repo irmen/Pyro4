@@ -4,6 +4,7 @@ Tests for a running Pyro server, without timeouts.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
+from __future__ import print_function
 import time
 import sys
 import uuid

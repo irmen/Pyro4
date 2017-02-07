@@ -207,7 +207,7 @@ def process_pyro_request(environ, path, parameters, start_response):
             if header_corr_id:
                 Pyro4.current_context.correlation_id = uuid.UUID(header_corr_id)  # use the correlation id from the request header
             else:
-                Pyro4.current_context.correlation_id = uuid.uuid1()  # set new correlation id
+                Pyro4.current_context.correlation_id = uuid.uuid4()  # set new correlation id
             proxy._pyroHmacKey = pyro_app.hmac_key
             proxy._pyroGetMetadata()
             if "oneway" in pyro_options:

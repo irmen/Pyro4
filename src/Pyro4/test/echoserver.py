@@ -12,6 +12,7 @@ but that is not terribly useful.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
+from __future__ import print_function
 import sys
 import time
 from optparse import OptionParser
