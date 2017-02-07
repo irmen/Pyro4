@@ -13,10 +13,12 @@ Change Log
 - Fixed a few IronPython issues with several unit tests.
 - Applied version detection patch from Debian package to contrib/init.d/pyro4-nsd
 - Don't crash immediately at importing Pyro4 when the 'selectors' or 'selectors34' module is not available.
-  (This is normally a required dependency so the situation should not occur.
-   But it is problematic on Debian (and perhaps other distributions) at this time, because this module is not packaged.
-   So we now raise a proper error message, but only when an attempt is made to actually create a multiplex server.
-   Note that all other parts of Pyro4 are usable just fine in this case. The problem is absent when using Python 3.4 or newer.)
+  Rationale:
+  This is normally a required dependency so the situation should usually not occur at all.
+  But it can be problematic on Debian (and perhaps other distributions) at this time, because this module may not be packaged/not be available.
+  So we now raise a proper error message, but only when an attempt is made to actually create a multiplex server (all other parts of Pyro4 are still usable just fine in this case).
+  The selectors module is available automatically on Python 3.4 or newer, for older Pythons you have to
+  install it manually or via the python2-selectors34 package if that is available.
 - Fixed crash when trying to print the repr or string form of a Daemon that was serialized.
 - Changed uuid.uuid1() calls to uuid.uuid4()  because of potential issues with uuid1 (obscure resource leak on file descriptors on /var/lib/libuuid/clock.txt).
   Pyro4 already used uuid4() for certain things, it now exclusively uses uuid4().
