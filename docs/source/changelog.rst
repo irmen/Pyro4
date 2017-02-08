@@ -10,7 +10,6 @@ Change Log
 - Removed platform checks when using dill serializer, latest Pypy version + latest dill (0.2.6) should work again.
   Other platforms might still expose problems when trying to use dill (IronPython), but they are now considered
   to be the user's problem if they attempt to use this combination.
-- Fixed a few IronPython issues with several unit tests.
 - Applied version detection patch from Debian package to contrib/init.d/pyro4-nsd
 - Don't crash immediately at importing Pyro4 when the 'selectors' or 'selectors34' module is not available.
   Rationale:
@@ -22,6 +21,8 @@ Change Log
 - Fixed crash when trying to print the repr or string form of a Daemon that was serialized.
 - Changed uuid.uuid1() calls to uuid.uuid4()  because of potential issues with uuid1 (obscure resource leak on file descriptors on /var/lib/libuuid/clock.txt).
   Pyro4 already used uuid4() for certain things, it now exclusively uses uuid4().
+- Fixed a few IronPython issues with several unit tests.
+- Improved the installation chapter in the docs.
 
 
 **Pyro 4.53**
