@@ -16,6 +16,7 @@ import threading
 import uuid
 import base64
 import warnings
+import socket
 import Pyro4.futures
 from Pyro4 import errors, socketutil, util, constants, message
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
@@ -475,7 +476,6 @@ class Proxy(object):
         with self.__pyroConnLock:
             if self._pyroConnection is not None:
                 return False  # already connected
-            from Pyro4.naming import resolve  # don't import this globally because of cyclic dependency
             uri = resolve(self._pyroUri, self._pyroHmacKey)
             # socket connection (normal or Unix domain socket)
             conn = None
@@ -1037,7 +1037,7 @@ class Daemon(object):
             daemon = Daemon(host, port)
         with daemon:
             if ns:
-                ns = Pyro4.naming.locateNS()
+                ns = locateNS()
             for obj, name in objects.items():
                 if ns:
                     localname = None  # name is used for the name server
@@ -1100,7 +1100,7 @@ class Daemon(object):
         Return True for successful handshake, False if something was wrong.
         If a denied_reason is given, the handshake will fail with the given reason.
         """
-        serializer_id = message.SERIALIZER_MARSHAL
+        serializer_id = util.MarshalSerializer.serializer_id
         msg_seq = 0
         try:
             msg = message.Message.recv(conn, [message.MSG_CONNECT], hmac_key=self._pyroHmacKey)
@@ -1669,6 +1669,129 @@ class _OnewayCallThread(threading.Thread):
         current_context.from_global(self.parent_context)
         super(_OnewayCallThread, self).run()
 
+
+# name server utility functions, here to avoid cyclic dependencies
+def resolve(uri, hmac_key=None):
+    """
+    Resolve a 'magic' uri (PYRONAME, PYROMETA) into the direct PYRO uri.
+    It finds a name server, and use that to resolve a PYRONAME uri into the direct PYRO uri pointing to the named object.
+    If uri is already a PYRO uri, it is returned unmodified.
+    You can consider this a shortcut function so that you don't have to locate and use a name server proxy yourself.
+    Note: if you need to resolve more than a few names, consider using the name server directly instead of repeatedly
+    calling this function, to avoid the name server lookup overhead from each call.
+    """
+    if isinstance(uri, basestring):
+        uri = URI(uri)
+    elif not isinstance(uri, URI):
+        raise TypeError("can only resolve Pyro URIs")
+    if uri.protocol == "PYRO":
+        return uri
+    log.debug("resolving %s", uri)
+    if uri.protocol == "PYRONAME":
+        with locateNS(uri.host, uri.port, hmac_key=hmac_key) as nameserver:
+            return nameserver.lookup(uri.object)
+    elif uri.protocol == "PYROMETA":
+        with locateNS(uri.host, uri.port, hmac_key=hmac_key) as nameserver:
+            candidates = nameserver.list(metadata_all=uri.object)
+            if candidates:
+                candidate = random.choice(list(candidates.values()))
+                log.debug("resolved to candidate %s", candidate)
+                return URI(candidate)
+            raise errors.NamingError("no registrations available with desired metadata properties %s" % uri.object)
+    else:
+        raise errors.PyroError("invalid uri protocol")
+
+
+def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
+    """Get a proxy for a name server somewhere in the network."""
+    if host is None:
+        # first try localhost if we have a good chance of finding it there
+        if Pyro4.config.NS_HOST in ("localhost", "::1") or Pyro4.config.NS_HOST.startswith("127."):
+            if ":" in Pyro4.config.NS_HOST:  # ipv6
+                hosts = ["[%s]" % Pyro4.config.NS_HOST]
+            else:
+                # Some systems (Debian Linux) have 127.0.1.1 in the hosts file assigned to the hostname,
+                # try this too for convenience sake (only if it's actually used as a valid ip address)
+                try:
+                    socket.gethostbyaddr("127.0.1.1")
+                    hosts = [Pyro4.config.NS_HOST] if Pyro4.config.NS_HOST == "127.0.1.1" else [Pyro4.config.NS_HOST, "127.0.1.1"]
+                except socket.error:
+                    hosts = [Pyro4.config.NS_HOST]
+            for host in hosts:
+                uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port or Pyro4.config.NS_PORT)
+                log.debug("locating the NS: %s", uristring)
+                proxy = Proxy(uristring)
+                proxy._pyroHmacKey = hmac_key
+                try:
+                    proxy._pyroBind()
+                    log.debug("located NS")
+                    return proxy
+                except errors.PyroError:
+                    pass
+        if broadcast:
+            # broadcast lookup
+            if not port:
+                port = Pyro4.config.NS_BCPORT
+            log.debug("broadcast locate")
+            sock = Pyro4.socketutil.createBroadcastSocket(reuseaddr=Pyro4.config.SOCK_REUSE, timeout=0.7)
+            for _ in range(3):
+                try:
+                    for bcaddr in Pyro4.config.parseAddressesString(Pyro4.config.BROADCAST_ADDRS):
+                        try:
+                            sock.sendto(b"GET_NSURI", 0, (bcaddr, port))
+                        except socket.error:
+                            x = sys.exc_info()[1]
+                            err = getattr(x, "errno", x.args[0])
+                            # handle some errno's that some platforms like to throw:
+                            if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL and err not in Pyro4.socketutil.ERRNO_EADDRINUSE:
+                                raise
+                    data, _ = sock.recvfrom(100)
+                    sock.close()
+                    if sys.version_info >= (3, 0):
+                        data = data.decode("iso-8859-1")
+                    log.debug("located NS: %s", data)
+                    proxy = Proxy(data)
+                    proxy._pyroHmacKey = hmac_key
+                    return proxy
+                except socket.timeout:
+                    continue
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except (OSError, socket.error):
+                pass
+            sock.close()
+            log.debug("broadcast locate failed, try direct connection on NS_HOST")
+        else:
+            log.debug("skipping broadcast lookup")
+        # broadcast failed or skipped, try PYRO directly on specific host
+        host = Pyro4.config.NS_HOST
+        port = Pyro4.config.NS_PORT
+    # pyro direct lookup
+    if not port:
+        port = Pyro4.config.NS_PORT
+    if URI.isUnixsockLocation(host):
+        uristring = "PYRO:%s@%s" % (Pyro4.constants.NAMESERVER_NAME, host)
+    else:
+        # if not a unix socket, check for ipv6
+        if ":" in host:
+            host = "[%s]" % host
+        uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port)
+    uri = URI(uristring)
+    log.debug("locating the NS: %s", uri)
+    proxy = Proxy(uri)
+    proxy._pyroHmacKey = hmac_key
+    try:
+        proxy._pyroBind()
+        log.debug("located NS")
+        return proxy
+    except errors.PyroError as x:
+        e = errors.NamingError("Failed to locate the nameserver")
+        if sys.version_info >= (3, 0):
+            e.__cause__ = x
+        raise e
+
+
+# call context thread local
 
 current_context = _CallContext()
 """the context object for the current call. (thread-local)"""

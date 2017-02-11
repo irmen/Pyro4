@@ -17,7 +17,7 @@ import sys
 import time
 import threading
 from optparse import OptionParser
-from Pyro4 import naming
+from Pyro4 import naming, core
 import Pyro4
 
 __all__ = ["EchoServer"]
@@ -178,7 +178,7 @@ def main(args=None, returnWithoutLooping=False):
         host, port = None, None
         if nameserver is not None:
             host, port = nameserver.uri.host, nameserver.uri.port
-        ns = naming.locateNS(host, port, hmac_key=hmac)
+        ns = core.locateNS(host, port, hmac_key=hmac)
         ns.register(objectName, uri)
         if options.verbose:
             print("using name server at %s" % ns._pyroUri)

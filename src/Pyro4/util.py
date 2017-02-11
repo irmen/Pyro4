@@ -11,7 +11,6 @@ import linecache
 import traceback
 import inspect
 import Pyro4.errors
-import Pyro4.message
 
 try:
     import copyreg
@@ -418,7 +417,7 @@ class PickleSerializer(SerializerBase):
     A (de)serializer that wraps the Pickle serialization protocol.
     It can optionally compress the serialized data, and is thread safe.
     """
-    serializer_id = Pyro4.message.SERIALIZER_PICKLE
+    serializer_id = 4  # never change this
 
     def dumpsCall(self, obj, method, vargs, kwargs):
         return pickle.dumps((obj, method, vargs, kwargs), Pyro4.config.PICKLE_PROTOCOL_VERSION)
@@ -448,7 +447,7 @@ class DillSerializer(SerializerBase):
     A (de)serializer that wraps the Dill serialization protocol.
     It can optionally compress the serialized data, and is thread safe.
     """
-    serializer_id = Pyro4.message.SERIALIZER_DILL
+    serializer_id = 5  # never change this
 
     def dumpsCall(self, obj, method, vargs, kwargs):
         return dill.dumps((obj, method, vargs, kwargs), Pyro4.config.DILL_PROTOCOL_VERSION)
@@ -475,7 +474,7 @@ class DillSerializer(SerializerBase):
 
 class MarshalSerializer(SerializerBase):
     """(de)serializer that wraps the marshal serialization protocol."""
-    serializer_id = Pyro4.message.SERIALIZER_MARSHAL
+    serializer_id = 3  # never change this
 
     def dumpsCall(self, obj, method, vargs, kwargs):
         return marshal.dumps((obj, method, vargs, kwargs))
@@ -509,7 +508,7 @@ class MarshalSerializer(SerializerBase):
 
 class SerpentSerializer(SerializerBase):
     """(de)serializer that wraps the serpent serialization protocol."""
-    serializer_id = Pyro4.message.SERIALIZER_SERPENT
+    serializer_id = 1  # never change this
 
     def dumpsCall(self, obj, method, vargs, kwargs):
         return serpent.dumps((obj, method, vargs, kwargs), module_in_classname=True)
@@ -546,7 +545,7 @@ class SerpentSerializer(SerializerBase):
 
 class JsonSerializer(SerializerBase):
     """(de)serializer that wraps the json serialization protocol."""
-    serializer_id = Pyro4.message.SERIALIZER_JSON
+    serializer_id = 2  # never change this
 
     __type_replacements = {}
 

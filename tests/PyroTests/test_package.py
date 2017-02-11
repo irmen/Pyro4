@@ -1,5 +1,6 @@
 """
 Tests for the package structure and import names.
+Also checks if the key API functions are still in place.
 
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
@@ -26,8 +27,10 @@ class TestPackage(unittest.TestCase):
         self.assertIs(Pyro4.core.batch, Pyro4.batch)
         self.assertIs(Pyro4.core.expose, Pyro4.expose)
         self.assertIs(Pyro4.core.behavior, Pyro4.behavior)
-        self.assertIs(Pyro4.naming.locateNS, Pyro4.locateNS)
-        self.assertIs(Pyro4.naming.resolve, Pyro4.resolve)
+        self.assertIs(Pyro4.core.locateNS, Pyro4.locateNS)
+        self.assertIs(Pyro4.core.resolve, Pyro4.resolve)
+        self.assertIs(Pyro4.core.locateNS, Pyro4.naming.locateNS, "old API function location must still be valid")
+        self.assertIs(Pyro4.core.resolve, Pyro4.naming.resolve, "old API function location must still be valid")
         self.assertIsInstance(Pyro4.current_context, Pyro4.core._CallContext)
 
 

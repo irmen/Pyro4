@@ -15,7 +15,7 @@ import Pyro4.naming
 import Pyro4.constants
 import Pyro4.socketutil
 import Pyro4.message
-from Pyro4.util import get_serializer_by_id
+import Pyro4.util
 from Pyro4.errors import DaemonError, PyroError, SerializeError
 from Pyro4 import current_context
 from testsupport import *
@@ -47,10 +47,10 @@ class DaemonTests(unittest.TestCase):
         Pyro4.config.POLLTIMEOUT = 0.1
 
     def sendHandshakeMessage(self, conn, correlation_id=None):
-        ser = get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
+        ser = Pyro4.util.get_serializer_by_id(Pyro4.util.MarshalSerializer.serializer_id)
         data, _ = ser.serializeData({"handshake": "hello", "object": Pyro4.constants.DAEMON_NAME}, False)
         annotations = {"CORR": correlation_id.bytes} if correlation_id else None
-        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECT, data, Pyro4.message.SERIALIZER_MARSHAL, 0, 99, annotations=annotations)
+        msg = Pyro4.message.Message(Pyro4.message.MSG_CONNECT, data, Pyro4.util.MarshalSerializer.serializer_id, 0, 99, annotations=annotations)
         msg.send(conn)
 
     def testSerializerConfig(self):
@@ -63,10 +63,10 @@ class DaemonTests(unittest.TestCase):
         self.assertNotIn("pickle", Pyro4.config.SERIALIZERS_ACCEPTED)
         self.assertNotIn("dill", Pyro4.config.SERIALIZERS_ACCEPTED)
         with Pyro4.core.Daemon(port=0) as d:
-            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_MARSHAL, 0, 0, hmac_key=d._pyroHmacKey)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.util.MarshalSerializer.serializer_id, 0, 0, hmac_key=d._pyroHmacKey)
             cm = ConnectionMock(msg)
             d.handleRequest(cm)  # marshal serializer should be accepted
-            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_PICKLE, 0, 0, hmac_key=d._pyroHmacKey)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.util.PickleSerializer.serializer_id, 0, 0, hmac_key=d._pyroHmacKey)
             cm = ConnectionMock(msg)
             try:
                 d.handleRequest(cm)
@@ -74,7 +74,7 @@ class DaemonTests(unittest.TestCase):
             except Pyro4.errors.ProtocolError as x:
                 self.assertIn("serializer that is not accepted", str(x))
                 pass
-            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.message.SERIALIZER_DILL, 0, 0, hmac_key=d._pyroHmacKey)
+            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.util.DillSerializer.serializer_id, 0, 0, hmac_key=d._pyroHmacKey)
             cm = ConnectionMock(msg)
             try:
                 d.handleRequest(cm)
@@ -427,7 +427,7 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(2, len(msg.annotations))
             self.assertEqual(corr_id.bytes, msg.annotations["CORR"])
             self.assertEqual(b"custom annotation set by daemon", msg.annotations["XYZZ"])
-            ser = get_serializer_by_id(msg.serializer_id)
+            ser = Pyro4.util.get_serializer_by_id(msg.serializer_id)
             data = ser.deserializeData(msg.data, msg.flags & Pyro4.message.FLAGS_COMPRESSED)
             self.assertEqual(["sure", "have", "fun"], data)
 
@@ -641,12 +641,15 @@ class MetaInfoTests(unittest.TestCase):
         with Pyro4.core.Daemon() as d:
             daemon_obj = d.objectsById[Pyro4.constants.DAEMON_NAME]
             meta = daemon_obj.get_metadata(Pyro4.constants.DAEMON_NAME)
-            for ser_id in [Pyro4.message.SERIALIZER_JSON, Pyro4.message.SERIALIZER_MARSHAL, Pyro4.message.SERIALIZER_PICKLE, Pyro4.message.SERIALIZER_SERPENT]:
-                serializer = get_serializer_by_id(ser_id)
+            for ser_id in [Pyro4.util.JsonSerializer.serializer_id,
+                           Pyro4.util.MarshalSerializer.serializer_id,
+                           Pyro4.util.PickleSerializer.serializer_id,
+                           Pyro4.util.SerpentSerializer.serializer_id]:
+                serializer = Pyro4.util.get_serializer_by_id(ser_id)
                 data = serializer.dumps(meta)
                 _ = serializer.loads(data)
             try:
-                serializer = get_serializer_by_id(Pyro4.message.SERIALIZER_DILL)
+                serializer = Pyro4.util.get_serializer_by_id(Pyro4.util.DillSerializer.serializer_id)
             except SerializeError:
                 # dill doesn't work with ironpython so we allow an error here in that case
                 if sys.platform != "cli":

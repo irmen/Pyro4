@@ -17,7 +17,6 @@ import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
 import Pyro4.futures
-import Pyro4.message
 from testsupport import *
 
 
@@ -641,12 +640,21 @@ class GenericTests(unittest.TestCase):
         except ImportError:
             pass
 
+    def testAssignedSerializerIds(self):
+        self.assertEqual(1, Pyro4.util.SerpentSerializer.serializer_id)
+        self.assertEqual(2, Pyro4.util.JsonSerializer.serializer_id)
+        self.assertEqual(3, Pyro4.util.MarshalSerializer.serializer_id)
+        self.assertEqual(4, Pyro4.util.PickleSerializer.serializer_id)
+        self.assertEqual(5, Pyro4.util.DillSerializer.serializer_id)
+
     def testSerializersAvailableById(self):
-        Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_PICKLE)
-        Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_MARSHAL)
-        Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_SERPENT)
-        Pyro4.util.get_serializer_by_id(Pyro4.message.SERIALIZER_JSON)
-        self.assertRaises(Pyro4.errors.SerializeError, lambda: Pyro4.util.get_serializer_by_id(9999999))
+        Pyro4.util.get_serializer_by_id(1)  # serpent
+        Pyro4.util.get_serializer_by_id(2)  # json
+        Pyro4.util.get_serializer_by_id(3)  # marshal
+        Pyro4.util.get_serializer_by_id(4)  # pickle
+        Pyro4.util.get_serializer_by_id(5)  # dill
+        self.assertRaises(Pyro4.errors.SerializeError, lambda: Pyro4.util.get_serializer_by_id(0))
+        self.assertRaises(Pyro4.errors.SerializeError, lambda: Pyro4.util.get_serializer_by_id(6))
 
     def testDictClassFail(self):
         o = pprint.PrettyPrinter(stream="dummy", width=42)

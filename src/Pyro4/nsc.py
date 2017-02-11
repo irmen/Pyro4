@@ -6,7 +6,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import print_function
 import sys
-from Pyro4 import naming, errors
+from Pyro4 import naming, errors, core
 
 if sys.version_info < (3, 0):
     input = raw_input
@@ -126,7 +126,7 @@ def main(args=None):
     if options.unixsocket:
         options.host = "./u:" + options.unixsocket
     try:
-        nameserver = naming.locateNS(options.host, options.port, hmac_key=options.key)
+        nameserver = core.locateNS(options.host, options.port, hmac_key=options.key)
     except errors.PyroError:
         x = sys.exc_info()[1]
         print("Failed to locate the name server: %s" % x)

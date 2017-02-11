@@ -19,8 +19,8 @@ symbol in :mod:`Pyro4`              referenced location
 .. py:function:: callback           :func:`Pyro4.core.callback`
 .. py:function:: batch              :func:`Pyro4.core.batch`
 .. py:function:: async              :func:`Pyro4.core.async`
-.. py:function:: locateNS           :func:`Pyro4.naming.locateNS`
-.. py:function:: resolve            :func:`Pyro4.naming.resolve`
+.. py:function:: locateNS           :func:`Pyro4.core.locateNS`
+.. py:function:: resolve            :func:`Pyro4.core.resolve`
 =================================== ==========================
 
 
