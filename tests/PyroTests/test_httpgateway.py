@@ -155,7 +155,7 @@ class TestHttpGateway(WSGITestBase):
         self.assertEqual("Pyro4.errors.CommunicationError", j["__class__"])
 
     def testNameDeniedPattern(self):
-        result = self.request(Pyro4.utils.httpgateway.pyro_app, "/pyro/Pyro4.NameServer/method")
+        result = self.request(Pyro4.utils.httpgateway.pyro_app, "/pyro/Pyro.NameServer/method")
         # the call will result in a access denied error because the uri points to a non-exposed name
         self.assertEqual("403 Forbidden", self.status)
 

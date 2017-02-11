@@ -439,7 +439,8 @@ class Proxy(object):
                     if msg.annotations:
                         self._pyroResponseAnnotations(msg.annotations, msg.type)
                     if self._pyroRawWireResponse:
-                        return util.SerializerBase.decompress_if_needed(msg)
+                        msg.decompress_if_needed()
+                        return msg
                     data = serializer.deserializeData(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
                     if msg.flags & message.FLAGS_ITEMSTREAMRESULT:
                         streamId = msg.annotations.get("STRM", b"").decode()

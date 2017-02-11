@@ -9,8 +9,9 @@ import hmac
 import struct
 import logging
 import sys
+import zlib
 from Pyro4 import errors, constants
-import Pyro4.constants
+import Pyro4
 
 
 __all__ = ["Message", "secure_compare"]
@@ -217,6 +218,14 @@ class Message(object):
         ping = Message(MSG_PING, b"ping", 42, 0, 0, hmac_key=hmac_key)
         pyroConnection.send(ping.to_bytes())
         Message.recv(pyroConnection, [MSG_PING])
+
+    def decompress_if_needed(self):
+        """Decompress the message data if it is compressed."""
+        if self.flags & FLAGS_COMPRESSED:
+            self.data = zlib.decompress(self.data)
+            self.flags &= ~FLAGS_COMPRESSED
+            self.data_size = len(self.data)
+        return self
 
 
 try:

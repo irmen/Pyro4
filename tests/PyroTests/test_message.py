@@ -7,6 +7,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import hashlib
 import hmac
 import unittest
+import zlib
 import Pyro4.message
 from Pyro4.message import Message
 import Pyro4.constants
@@ -176,6 +177,19 @@ class MessageTestsHmac(unittest.TestCase):
             self.fail("crash expected")
         except Pyro4.errors.ProtocolError as x:
             self.assertIn("checksum", str(x))
+
+    def testCompression(self):
+        data = b"The quick brown fox jumps over the lazy dog."*10
+        compressed_data = zlib.compress(data)
+        flags = Pyro4.message.FLAGS_COMPRESSED
+        msg = Message(Pyro4.message.MSG_INVOKE, compressed_data, 42, flags, 1, hmac_key=b"secret")
+        self.assertNotEqual(data, msg.data)
+        data_size = msg.data_size
+        self.assertLess(data_size, len(data))
+        msg.decompress_if_needed()
+        self.assertEqual(data, msg.data)
+        self.assertEqual(0, msg.flags)
+        self.assertGreater(msg.data_size, data_size)
 
 
 class MessageTestsNoHmac(unittest.TestCase):
