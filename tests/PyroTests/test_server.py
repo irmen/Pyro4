@@ -7,13 +7,14 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 from __future__ import print_function
 import time
 import sys
+import threading
 import uuid
 import unittest
 import Pyro4.core
 import Pyro4.errors
 import Pyro4.util
 import Pyro4.message
-from Pyro4 import threadutil, current_context
+from Pyro4 import current_context
 from testsupport import *
 
 
@@ -100,12 +101,12 @@ class NotEverythingExposedClass(object):
         return "you should not see this"    # .... only when REQUIRE_EXPOSE is set to True is this valid
 
 
-class DaemonLoopThread(threadutil.Thread):
+class DaemonLoopThread(threading.Thread):
     def __init__(self, pyrodaemon):
         super(DaemonLoopThread, self).__init__()
         self.setDaemon(True)
         self.pyrodaemon = pyrodaemon
-        self.running = threadutil.Event()
+        self.running = threading.Event()
         self.running.clear()
 
     def run(self):
@@ -498,7 +499,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testAsyncProxyCallchain(self):
         class FuncHolder(object):
-            count = threadutil.AtomicCounter()
+            count = AtomicCounter()
 
             def function(self, value, increase=1):
                 self.count.incr()
@@ -550,7 +551,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testBatchAsyncCallchain(self):
         class FuncHolder(object):
-            count = threadutil.AtomicCounter()
+            count = AtomicCounter()
 
             def function(self, values):
                 result = [value + 1 for value in values]
@@ -632,11 +633,11 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertFalse(proxy._pyroBind(), "second bind should not connect again")
 
     def testConnectingThreads(self):
-        class ConnectingThread(threadutil.Thread):
-            new_connections = threadutil.AtomicCounter()
+        class ConnectingThread(threading.Thread):
+            new_connections = AtomicCounter()
 
             def __init__(self, proxy, event):
-                threadutil.Thread.__init__(self)
+                threading.Thread.__init__(self)
                 self.proxy = proxy
                 self.event = event
                 self.setDaemon(True)
@@ -648,7 +649,7 @@ class ServerTestsOnce(unittest.TestCase):
                     ConnectingThread.new_connections.incr()  # 1 more new connection done
 
         with Pyro4.core.Proxy(self.objectUri) as proxy:
-            event = threadutil.Event()
+            event = threading.Event()
             threads = [ConnectingThread(proxy, event) for _ in range(20)]
             for t in threads:
                 t.start()
@@ -931,7 +932,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             self.assertEqual("receiving: timeout", str(e.exception))
 
     def testProxySharing(self):
-        class SharedProxyThread(threadutil.Thread):
+        class SharedProxyThread(threading.Thread):
             def __init__(self, proxy):
                 super(SharedProxyThread, self).__init__()
                 self.proxy = proxy
@@ -977,7 +978,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 p._pyroRelease()
 
     def testServerParallelism(self):
-        class ClientThread(threadutil.Thread):
+        class ClientThread(threading.Thread):
             def __init__(self, uri, name):
                 super(ClientThread, self).__init__()
                 self.setDaemon(True)

@@ -1,6 +1,6 @@
 from __future__ import print_function
-import Pyro4.threadutil
-
+import threading
+import Pyro4
 
 # A message bouncer. Passes messages back to the callback
 # object, until a certain limit is reached.
@@ -13,7 +13,7 @@ class Bouncer(object):
     def __init__(self, name):
         self.name = name
         self.count = 0
-        self.callbackMutex = Pyro4.threadutil.Lock()
+        self.callbackMutex = threading.Lock()
 
     def register(self, callback):
         self.callback = callback

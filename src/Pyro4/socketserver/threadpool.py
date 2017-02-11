@@ -7,7 +7,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 from __future__ import with_statement
 import time
 import logging
-import Pyro4.threadutil
+import threading
 import Pyro4.util
 
 __all__ = ["PoolError", "NoFreeWorkersError", "Pool"]
@@ -23,12 +23,12 @@ class NoFreeWorkersError(PoolError):
     pass
 
 
-class Worker(Pyro4.threadutil.Thread):
+class Worker(threading.Thread):
     def __init__(self, pool):
         super(Worker, self).__init__()
         self.daemon = True
         self.name = "Pyro-Worker-%d " % id(self)
-        self.job_available = Pyro4.threadutil.Event()
+        self.job_available = threading.Event()
         self.job = None
         self.pool = pool
 
@@ -69,7 +69,7 @@ class Pool(object):
             self.idle.add(worker)
             worker.start()
         log.debug("worker pool created with initial size %d", self.num_workers())
-        self.count_lock = Pyro4.threadutil.Lock()
+        self.count_lock = threading.Lock()
 
     def __enter__(self):
         return self
@@ -90,7 +90,7 @@ class Pool(object):
             busy, self.busy = self.busy, set()
             # check if the threads that are joined are not the current thread,
             # otherwise Python 2.x crashes with "cannot join current thread".
-            current_thread = Pyro4.threadutil.current_thread()
+            current_thread = threading.current_thread()
             while idle:
                 p = idle.pop()
                 if p is not current_thread:

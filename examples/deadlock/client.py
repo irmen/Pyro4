@@ -1,7 +1,7 @@
 from __future__ import print_function
 
+import threading
 import Pyro4
-from Pyro4.threadutil import Thread
 import bouncer
 
 abort = False
@@ -31,7 +31,7 @@ def main():
     bounceObj.register(server)
 
     # create a thread that handles callback requests
-    thread = Thread(target=PyroLoop, args=(daemon,))
+    thread = threading.Thread(target=PyroLoop, args=(daemon,))
     thread.setDaemon(True)
     thread.start()
 

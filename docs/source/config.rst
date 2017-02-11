@@ -100,7 +100,6 @@ POLLTIMEOUT             float   2.0            For the multiplexing server only:
 SERVERTYPE              str     thread         Select the Pyro server type. thread=thread pool based, multiplex=select/poll/kqueue based
 SOCK_REUSE              bool    False          Should SO_REUSEADDR be used on sockets that Pyro creates.
 PREFER_IP_VERSION       int     4              The IP address type that is preferred (4=ipv4, 6=ipv6, 0=let OS decide).
-THREADING2              bool    False          Use the threading2 module if available instead of Python's standard threading module
 THREADPOOL_SIZE         int     40             For the thread pool server: maximum number of threads running
 THREADPOOL_SIZE_MIN     int     4              For the thread pool server: minimum number of threads running
 FLAME_ENABLED           bool    False          Should Pyro Flame be enabled on the server

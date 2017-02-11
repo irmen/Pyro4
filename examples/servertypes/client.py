@@ -1,15 +1,14 @@
 from __future__ import print_function
 import sys
 import time
-
+import threading
 import Pyro4
-from Pyro4 import threadutil
 
 
 if sys.version_info < (3, 0):
-    current_thread = threadutil.currentThread
+    current_thread = threading.currentThread
 else:
-    current_thread = threadutil.current_thread
+    current_thread = threading.current_thread
 
 serv = Pyro4.core.Proxy("PYRONAME:example.servertypes")
 
@@ -75,7 +74,7 @@ def func(uri):
 serv._pyroBind()  # simplify the uri
 threads = []
 for i in range(5):
-    t = threadutil.Thread(target=func, args=[serv._pyroUri])
+    t = threading.Thread(target=func, args=[serv._pyroUri])
     t.setDaemon(True)
     threads.append(t)
     t.start()

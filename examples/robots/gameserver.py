@@ -1,16 +1,15 @@
 import random
 import time
+import threading
 
 import robot
 import remote
-
 
 try:
     from tkinter import *
 except ImportError:
     from Tkinter import *
 import Pyro4
-from Pyro4 import threadutil
 import Pyro4.util
 
 
@@ -238,9 +237,9 @@ class GUI(object):
             self.startbutton.config(state=DISABLED)
 
 
-class PyroDaemonThread(threadutil.Thread):
+class PyroDaemonThread(threading.Thread):
     def __init__(self, engine):
-        threadutil.Thread.__init__(self)
+        threading.Thread.__init__(self)
         self.pyroserver = remote.GameServer(engine)
         self.pyrodaemon = Pyro4.Daemon()
         self.ns = Pyro4.locateNS()

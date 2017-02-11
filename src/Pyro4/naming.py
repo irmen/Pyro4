@@ -12,7 +12,7 @@ import logging
 import socket
 import sys
 import time
-from Pyro4.threadutil import RLock, Thread
+import threading
 from Pyro4.errors import NamingError, PyroError, ProtocolError
 from Pyro4 import core, socketutil
 import Pyro4.constants
@@ -74,7 +74,7 @@ class NameServer(object):
         if storageProvider is None:
             self.storage = MemoryStorage()
             log.debug("using volatile in-memory dict storage")
-        self.lock = RLock()
+        self.lock = threading.RLock()
 
     def count(self):
         return len(self.storage)
@@ -315,7 +315,7 @@ class NameServerDaemon(core.Daemon):
             raise
 
 
-class AutoCleaner(Thread):
+class AutoCleaner(threading.Thread):
     """
     Takes care of checking every registration in the name server.
     If it cannot be contacted anymore, it will be removed after ~20 seconds.
@@ -417,7 +417,7 @@ class BroadcastServer(object):
 
     def runInThread(self):
         """Run the broadcast server loop in its own thread."""
-        thread = Thread(target=self.__requestLoop)
+        thread = threading.Thread(target=self.__requestLoop)
         thread.setDaemon(True)
         thread.start()
         log.debug("broadcast server loop running in own thread")

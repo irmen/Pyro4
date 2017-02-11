@@ -315,6 +315,7 @@ the server that listens for and processes incoming remote method calls. One way 
 Next, we have to tell Pyro what parts of the class should be remotely accessible, and what pars aren't supposed
 to be accessible. This has to do with security. We'll be adding a ``@Pyro4.expose`` decorator on the Warehouse
 class definition to tell Pyro it is allowed to access the class remotely.
+You can ignore the ``@Pyro4.behavior`` line we also added for now (but it is required to properly have a persistent warehouse inventory).
 Finally we add a little ``main`` function so it will be started correctly, which should
 make the code now look like this (:file:`warehouse.py`)::
 
@@ -324,6 +325,7 @@ make the code now look like this (:file:`warehouse.py`)::
 
 
     @Pyro4.expose
+    @Pyro4.behavior(instance_mode="single")
     class Warehouse(object):
         def __init__(self):
             self.contents = ["chair", "bike", "flashlight", "laptop", "couch"]

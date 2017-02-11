@@ -4,6 +4,7 @@ import Pyro4
 # Chat box administration server.
 # Handles logins, logouts, channels and nicknames, and the chatting.
 @Pyro4.expose
+@Pyro4.behavior(instance_mode="single")
 class ChatBox(object):
     def __init__(self):
         self.channels = {}  # registered channels { channel --> (nick, client callback) list }

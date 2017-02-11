@@ -1,15 +1,14 @@
 from __future__ import print_function
 import sys
 import time
-
+import threading
 import Pyro4
-from Pyro4 import threadutil
 
 
 if sys.version_info < (3, 0):
-    current_thread = threadutil.currentThread
+    current_thread = threading.currentThread
 else:
-    current_thread = threadutil.current_thread
+    current_thread = threading.current_thread
 
 stop = False
 
@@ -32,7 +31,7 @@ proxy = Pyro4.core.Proxy("PYRONAME:example.proxysharing")
 # now create a handful of threads and give each of them the same two proxy objects
 threads = []
 for i in range(5):
-    thread = threadutil.Thread(target=myThread, args=(nsproxy, proxy))
+    thread = threading.Thread(target=myThread, args=(nsproxy, proxy))
     # thread.setDaemon(True)
     thread.setDaemon(False)
     threads.append(thread)
@@ -61,7 +60,7 @@ stop = False
 proxy.reset_work()
 threads = []
 for i in range(10):
-    thread = threadutil.Thread(target=myThread2, args=[proxy])
+    thread = threading.Thread(target=myThread2, args=[proxy])
     thread.setDaemon(False)
     threads.append(thread)
     thread.start()
@@ -86,7 +85,7 @@ stop = False
 threads = []
 for i in range(10):
     proxy = Pyro4.core.Proxy(proxy._pyroUri)  # create a new proxy
-    thread = threadutil.Thread(target=myThread2, args=[proxy])
+    thread = threading.Thread(target=myThread2, args=[proxy])
     thread.setDaemon(False)
     threads.append(thread)
     thread.start()

@@ -27,6 +27,7 @@ class RestrictedAccount(Account):
 
 # Abstract bank.
 @Pyro4.expose
+@Pyro4.behavior(instance_mode="single")
 class Bank(object):
     def __init__(self):
         self.accounts = {}

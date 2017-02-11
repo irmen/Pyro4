@@ -15,8 +15,8 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 from __future__ import print_function
 import sys
 import time
+import threading
 from optparse import OptionParser
-from Pyro4 import threadutil
 from Pyro4 import naming
 import Pyro4
 
@@ -117,13 +117,13 @@ class EchoServer(object):
         self._verbose = bool(onoff)
 
 
-class NameServer(threadutil.Thread):
+class NameServer(threading.Thread):
     def __init__(self, hostname, hmac=None):
         super(NameServer, self).__init__()
         self.setDaemon(1)
         self.hostname = hostname
         self.hmac = hmac
-        self.started = threadutil.Event()
+        self.started = threading.Event()
 
     def run(self):
         self.uri, self.ns_daemon, self.bc_server = naming.startNS(self.hostname, hmac=self.hmac)

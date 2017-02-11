@@ -6,6 +6,7 @@ from shoppingcart import ShoppingCart
 
 
 @Pyro4.expose
+@Pyro4.behavior(instance_mode="single")
 class Shop(object):
     inventory = {
         "paper": 1.25,

@@ -18,8 +18,7 @@ import Pyro4.constants
 
 class Configuration(object):
     __slots__ = ("HOST", "NS_HOST", "NS_PORT", "NS_BCPORT", "NS_BCHOST", "NS_AUTOCLEAN",
-                 "COMPRESSION", "SERVERTYPE", "COMMTIMEOUT",
-                 "POLLTIMEOUT", "THREADING2", "ONEWAY_THREADED",
+                 "COMPRESSION", "SERVERTYPE", "COMMTIMEOUT", "POLLTIMEOUT", "ONEWAY_THREADED",
                  "DETAILED_TRACEBACK", "SOCK_REUSE", "SOCK_NODELAY", "PREFER_IP_VERSION",
                  "THREADPOOL_SIZE", "THREADPOOL_SIZE_MIN", "AUTOPROXY", "PICKLE_PROTOCOL_VERSION",
                  "BROADCAST_ADDRS", "NATHOST", "NATPORT", "MAX_MESSAGE_SIZE",
@@ -50,7 +49,6 @@ class Configuration(object):
         self.POLLTIMEOUT = 2.0  # seconds
         self.SOCK_REUSE = True  # so_reuseaddr on server sockets?
         self.SOCK_NODELAY = False  # tcp_nodelay on socket?
-        self.THREADING2 = False  # use threading2 if available?
         self.ONEWAY_THREADED = True  # oneway calls run in their own thread
         self.DETAILED_TRACEBACK = False
         self.THREADPOOL_SIZE = 40

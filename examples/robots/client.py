@@ -43,6 +43,8 @@ class ScaredGameObserver(remote.GameObserver):
         # run to a corner
         self.direction = random.choice([(-1, -1), (1, -1), (1, 1), (-1, 1)])
 
+    @Pyro4.oneway
+    @Pyro4.expose
     def start(self):
         super(ScaredGameObserver, self).start()
         self.robot.change_direction(self.direction)

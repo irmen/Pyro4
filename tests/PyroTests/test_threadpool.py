@@ -11,7 +11,6 @@ import unittest
 from Pyro4.socketserver.threadpool import Pool, PoolError, NoFreeWorkersError
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 import Pyro4.socketutil
-import Pyro4.threadutil
 
 
 JOB_TIME = 0.2

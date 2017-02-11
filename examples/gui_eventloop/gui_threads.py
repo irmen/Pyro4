@@ -13,13 +13,12 @@ to check for new work in that Queue and will process it if the Pyro worker
 thread has put something in it.
 """
 import time
-
+import threading
 try:
     import queue
 except ImportError:
     import Queue as queue
 import Pyro4
-import Pyro4.threadutil
 
 try:
     from tkinter import *
@@ -140,11 +139,11 @@ class MessagePrinter(object):
         })
 
 
-class PyroDaemon(Pyro4.threadutil.Thread):
+class PyroDaemon(threading.Thread):
     def __init__(self, gui):
-        Pyro4.threadutil.Thread.__init__(self)
+        threading.Thread.__init__(self)
         self.gui = gui
-        self.started = Pyro4.threadutil.Event()
+        self.started = threading.Event()
 
     def run(self):
         daemon = Pyro4.Daemon()

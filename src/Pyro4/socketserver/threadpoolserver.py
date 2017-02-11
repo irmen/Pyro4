@@ -11,14 +11,14 @@ import socket
 import logging
 import sys
 import time
+import threading
 import os
 import Pyro4.util
 from Pyro4 import socketutil, errors
 from .threadpool import Pool, NoFreeWorkersError
-from ..threadutil import Lock, Thread, Event
 
 log = logging.getLogger("Pyro4.threadpoolserver")
-_client_disconnect_lock = Lock()
+_client_disconnect_lock = threading.Lock()
 
 
 class ClientConnectionJob(object):
@@ -84,11 +84,11 @@ class ClientConnectionJob(object):
         self.csock.close()
 
 
-class Housekeeper(Thread):
+class Housekeeper(threading.Thread):
     def __init__(self, daemon):
         super(Housekeeper, self).__init__(name="housekeeper")
         self.pyroDaemon = daemon
-        self.stop = Event()
+        self.stop = threading.Event()
         self.daemon = True
         self.waittime = min(Pyro4.config.POLLTIMEOUT or 0, max(Pyro4.config.COMMTIMEOUT or 0, 5))
 

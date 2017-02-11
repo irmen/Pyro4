@@ -12,7 +12,6 @@ import Pyro4.errors
 import Pyro4.naming
 import Pyro4.nsc
 import Pyro4.socketutil
-import Pyro4.threadutil
 import Pyro4.util
 
 

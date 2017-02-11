@@ -17,7 +17,7 @@ import uuid
 import base64
 import warnings
 import Pyro4.futures
-from Pyro4 import errors, threadutil, socketutil, util, constants, message
+from Pyro4 import errors, socketutil, util, constants, message
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 
@@ -233,7 +233,7 @@ class Proxy(object):
         self._pyroMaxRetries = Pyro4.config.MAX_RETRIES
         self.__pyroHmacKey = None
         self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
-        self.__pyroConnLock = threadutil.RLock()
+        self.__pyroConnLock = threading.RLock()
         util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
         self.__async = False
 
@@ -333,7 +333,7 @@ class Proxy(object):
         self._pyroConnection = None
         self._pyroSeq = 0
         self._pyroRawWireResponse = False
-        self.__pyroConnLock = threadutil.RLock()
+        self.__pyroConnLock = threading.RLock()
         self.__async = False
 
     def __copy__(self):
@@ -765,7 +765,7 @@ class _AsyncRemoteMethod(object):
 
     def __call__(self, *args, **kwargs):
         result = Pyro4.futures.FutureResult()
-        thread = threadutil.Thread(target=self.__asynccall, args=(result, args, kwargs))
+        thread = threading.Thread(target=self.__asynccall, args=(result, args, kwargs))
         thread.setDaemon(True)
         thread.start()
         return result
@@ -985,8 +985,8 @@ class Daemon(object):
         pyroObject._pyroId = constants.DAEMON_NAME
         #: Dictionary from Pyro object id to the actual Pyro object registered by this id
         self.objectsById = {pyroObject._pyroId: pyroObject}
-        self.__mustshutdown = threadutil.Event()
-        self.__loopstopped = threadutil.Event()
+        self.__mustshutdown = threading.Event()
+        self.__loopstopped = threading.Event()
         self.__loopstopped.set()
         # assert that the configured serializers are available, and remember their ids:
         self.__serializer_ids = {util.get_serializer(ser_name).serializer_id for ser_name in Pyro4.config.SERIALIZERS_ACCEPTED}
@@ -995,7 +995,7 @@ class Daemon(object):
         self.__pyroHmacKey = None
         self._pyroInstances = {}   # pyro objects for instance_mode=single (singletons, just one per daemon)
         self.streaming_responses = {}   # stream_id -> (client, creation_timestamp, linger_timestamp, stream)
-        self.housekeeper_lock = threadutil.Lock()
+        self.housekeeper_lock = threading.Lock()
 
     @property
     def _pyroHmacKey(self):
@@ -1659,7 +1659,7 @@ class _CallContext(threading.local):
         self.client_sock_addr = values["client_sock_addr"]
 
 
-class _OnewayCallThread(threadutil.Thread):
+class _OnewayCallThread(threading.Thread):
     def __init__(self, target, args, kwargs):
         super(_OnewayCallThread, self).__init__(target=target, args=args, kwargs=kwargs, name="oneway-call")
         self.daemon = True

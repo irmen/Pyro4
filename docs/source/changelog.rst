@@ -2,6 +2,13 @@
 Change Log
 **********
 
+**Pyro 4.55**
+
+- Prefer selectors2 over selectors34 if it is available (Python 3.4 or older, to have better semantics of failing syscalls)
+- Removed THREADING2 config item and Pyro4.threadutil module. (the threading2 third party module is old and seems unmaintained and wasn't useful for Pyro anyway)
+- Fixed various examples.
+
+
 **Pyro 4.54**
 
 - Serpent serializer: floats with value NaN will now be properly serialized and deserialized into a float again, instead of the class dict ``{'__class__':'float', 'value':'nan'}``

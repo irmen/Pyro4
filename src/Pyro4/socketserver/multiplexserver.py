@@ -12,15 +12,22 @@ import sys
 import logging
 import os
 from collections import defaultdict
-try:
-    import selectors
-except ImportError:
-    try:
-        import selectors34 as selectors
-    except ImportError:
-        selectors = None
 from Pyro4 import socketutil, errors, util
 import Pyro4.constants
+if sys.version_info >= (3, 5):
+    import selectors
+else:
+    try:
+        # first try selectors2 as it has better semantics when dealing with interrupted system calls
+        import selectors2 as selectors
+    except ImportError:
+        if sys.version_info >= (3, 4):
+            import selectors
+        else:
+            try:
+                import selectors34 as selectors
+            except ImportError:
+                selectors = None
 
 log = logging.getLogger("Pyro4.multiplexserver")
 
@@ -30,14 +37,14 @@ class SocketServer_Multiplex(object):
     def __init__(self):
         self.sock = self.daemon = self.locationStr = None
         if selectors is None:
-            raise RuntimeError("This Python installation doesn't have the 'selectors34' module installed, " +
+            raise RuntimeError("This Python installation doesn't have the 'selectors2' or 'selectors34' module installed, " +
                                "which is required to use Pyro's multiplex server. Install it, or use the threadpool server instead.")
         self.selector = selectors.DefaultSelector()
         self.shutting_down = False
 
     def init(self, daemon, host, port, unixsocket=None):
         log.info("starting multiplexed socketserver")
-        log.debug("selector implementation: "+self.selector.__class__.__name__)
+        log.debug("selector implementation: %s.%s", self.selector.__class__.__module__, self.selector.__class__.__name__)
         self.sock = None
         bind_location = unixsocket if unixsocket else (host, port)
         self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True, nodelay=Pyro4.config.SOCK_NODELAY)

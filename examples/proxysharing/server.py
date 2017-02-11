@@ -5,6 +5,7 @@ import Pyro4
 
 
 @Pyro4.expose
+@Pyro4.behavior(instance_mode="single")
 class RemoteObject(object):
     def __init__(self):
         self.amount = 0

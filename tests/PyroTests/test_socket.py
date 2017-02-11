@@ -9,10 +9,11 @@ import socket
 import os
 import sys
 import platform
+import threading
 import time
 import unittest
 import Pyro4.socketutil as SU
-from Pyro4 import threadutil, errors
+from Pyro4 import errors
 from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.core import Daemon
@@ -303,7 +304,7 @@ class TestSocketutil(unittest.TestCase):
         cs.close()
 
     def testMsgWaitallProblems2(self):
-        class ReceiveThread(threadutil.Thread):
+        class ReceiveThread(threading.Thread):
             def __init__(self, sock, sizes):
                 super(ReceiveThread, self).__init__()
                 self.sock = sock
@@ -421,13 +422,13 @@ class TestServerDOS_multiplex(unittest.TestCase):
         Pyro4.config.POLLTIMEOUT = self.orig_poll_timeout
         Pyro4.config.COMMTIMEOUT = self.orig_comm_timeout
 
-    class ServerThread(threadutil.Thread):
+    class ServerThread(threading.Thread):
         def __init__(self, server, daemon):
-            threadutil.Thread.__init__(self)
+            threading.Thread.__init__(self)
             self.serv = server()
             self.serv.init(daemon(), "localhost", 0)
             self.locationStr = self.serv.locationStr
-            self.stop_loop = threadutil.Event()
+            self.stop_loop = threading.Event()
 
         def run(self):
             self.serv.loop(loopCondition=lambda: not self.stop_loop.is_set())

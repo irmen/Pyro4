@@ -1,19 +1,19 @@
 from __future__ import print_function
 import time
 import sys
-
+import threading
 import Pyro4
-from Pyro4 import threadutil
 
 
 if sys.version_info < (3, 0):
     input = raw_input
-    current_thread = threadutil.currentThread
+    current_thread = threading.currentThread
 else:
-    current_thread = threadutil.current_thread
+    current_thread = threading.current_thread
 
 
 @Pyro4.expose
+@Pyro4.behavior(instance_mode="single")
 class Server(object):
     def __init__(self):
         self.callcount = 0

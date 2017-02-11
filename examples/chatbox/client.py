@@ -1,6 +1,6 @@
 import sys
+import threading
 import Pyro4
-from Pyro4 import threadutil
 
 
 if sys.version_info < (3, 0):
@@ -53,9 +53,9 @@ class Chatter(object):
             self._pyroDaemon.shutdown()
 
 
-class DaemonThread(threadutil.Thread):
+class DaemonThread(threading.Thread):
     def __init__(self, chatter):
-        threadutil.Thread.__init__(self)
+        threading.Thread.__init__(self)
         self.chatter = chatter
         self.setDaemon(True)
 

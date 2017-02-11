@@ -7,12 +7,14 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import sys
 import pickle
+import threading
 import Pyro4
 import Pyro4.errors
 
 __all__ = ["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO",
            "NonserializableError", "MyThingPartlyExposed", "MyThingFullExposed",
-           "MyThingExposedSub", "MyThingPartlyExposedSub", "ConnectionMock"]
+           "MyThingExposedSub", "MyThingPartlyExposedSub", "ConnectionMock",
+           "AtomicCounter"]
 
 
 Pyro4.config.reset(False)   # reset the config to default
@@ -230,3 +232,27 @@ class ConnectionMock(object):
         if len(chunk) < datasize:
             raise Pyro4.errors.ConnectionClosedError("receiving: not enough data")
         return chunk
+
+
+class AtomicCounter(object):
+    def __init__(self, value=0):
+        self.__initial = value
+        self.__value = value
+        self.__lock = threading.Lock()
+
+    def reset(self):
+        self.__value = self.__initial
+
+    def incr(self, amount=1):
+        with self.__lock:
+            self.__value += amount
+            return self.__value
+
+    def decr(self, amount=1):
+        with self.__lock:
+            self.__value -= amount
+            return self.__value
+
+    @property
+    def value(self):
+        return self.__value

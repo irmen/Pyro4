@@ -45,8 +45,9 @@ Obtaining and installing Pyro
 **Manual installation**
     Download the source distribution archive (Pyro4-X.YZ.tar.gz) from Pypi or Github, extract and ``python setup.py install``.
     The `serpent <https://pypi.python.org/pypi/serpent>`_ serialization library must also be installed.
-    If you're using a version of Python older than 3.4, the `selectors34 <https://pypi.python.org/pypi/selectors34>`_
-    backported module must also be installed to be able to use the multiplex server type.
+    If you're using a version of Python older than 3.4, the `selectors2 <https://pypi.python.org/pypi/selectors2>`_
+    or `selectors34 <https://pypi.python.org/pypi/selectors34>`_  backported module must also be installed
+    to be able to use the multiplex server type.
 
 **Github**
     Source is on Github: https://github.com/irmen/Pyro4

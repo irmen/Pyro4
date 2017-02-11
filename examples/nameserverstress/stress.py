@@ -2,9 +2,8 @@ from __future__ import print_function
 import sys
 import random
 import time
-
+import threading
 import Pyro4
-from Pyro4 import threadutil
 
 
 def randomname():
@@ -17,9 +16,9 @@ def randomname():
     return ".".join(parts)
 
 
-class NamingTrasher(threadutil.Thread):
+class NamingTrasher(threading.Thread):
     def __init__(self, nsuri, number):
-        threadutil.Thread.__init__(self)
+        threading.Thread.__init__(self)
         self.daemon = True
         self.number = number
         self.ns = Pyro4.core.Proxy(nsuri)

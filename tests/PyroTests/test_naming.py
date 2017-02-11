@@ -5,21 +5,21 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import time
+import threading
 import unittest
 import Pyro4.core
 import Pyro4.naming
 import Pyro4.socketutil
 import Pyro4.constants
 from Pyro4.errors import CommunicationError, NamingError
-from Pyro4 import threadutil
 
 
-class NSLoopThread(threadutil.Thread):
+class NSLoopThread(threading.Thread):
     def __init__(self, nameserver):
         super(NSLoopThread, self).__init__()
         self.setDaemon(True)
         self.nameserver = nameserver
-        self.running = threadutil.Event()
+        self.running = threading.Event()
         self.running.clear()
 
     def run(self):

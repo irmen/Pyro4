@@ -4,10 +4,10 @@ import tempfile
 import uuid
 import io
 import os
+import threading
 import Pyro4
 import Pyro4.core
 import Pyro4.socketutil
-import Pyro4.threadutil
 
 
 datafiles = {}      # temporary files
@@ -80,7 +80,7 @@ class BlobServerDaemon(Pyro4.core.Daemon):
 
     def handle_blob_connect(self, sock):
         csock, caddr = sock.accept()
-        thread = Pyro4.threadutil.Thread(target=self.blob_client, args=(csock,))
+        thread = threading.Thread(target=self.blob_client, args=(csock,))
         thread.daemon = True
         thread.start()
 

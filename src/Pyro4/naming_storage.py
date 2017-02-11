@@ -7,9 +7,9 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import re
 import logging
 import sys
+import threading
 from collections import MutableMapping
 from contextlib import closing
-from Pyro4.threadutil import Lock
 from Pyro4.errors import NamingError
 
 try:
@@ -252,7 +252,7 @@ class DbmStorage(MutableMapping):
         self.dbmfile = dbmfile
         db = dbm.open(self.dbmfile, "c", mode=0o600)
         db.close()
-        self.lock = Lock()
+        self.lock = threading.Lock()
 
     def __getattr__(self, item):
         raise NotImplementedError("DbmStorage doesn't implement method/attribute '"+item+"'")

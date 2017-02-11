@@ -3,6 +3,7 @@ import Pyro4
 
 
 @Pyro4.expose
+@Pyro4.behavior(instance_mode="single")
 class Warehouse(object):
     def __init__(self):
         self.contents = ["chair", "bike", "flashlight", "laptop", "couch"]

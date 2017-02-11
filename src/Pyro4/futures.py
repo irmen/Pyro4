@@ -7,11 +7,11 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import sys
-import time
 import functools
 import logging
+import threading
+import time
 import Pyro4.util
-from Pyro4 import threadutil
 
 
 __all__ = ["Future", "FutureResult", "_ExceptionWrapper"]
@@ -48,7 +48,7 @@ class Future(object):
         chain = self.chain
         del self.chain  # make it impossible to add new calls to the chain once we started executing it
         result = FutureResult()  # notice that the call chain doesn't sit on the result object
-        thread = threadutil.Thread(target=self.__asynccall, args=(result, chain, args, kwargs))
+        thread = threading.Thread(target=self.__asynccall, args=(result, chain, args, kwargs))
         thread.setDaemon(True)
         thread.start()
         return result
@@ -126,9 +126,9 @@ class FutureResult(object):
     """
 
     def __init__(self):
-        self.__ready = threadutil.Event()
+        self.__ready = threading.Event()
         self.callchain = []
-        self.valueLock = threadutil.Lock()
+        self.valueLock = threading.Lock()
         self.exceptionhandler = None
 
     def wait(self, timeout=None):
