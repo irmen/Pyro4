@@ -1,8 +1,8 @@
 PYRO - Python Remote Objects
 
+[![saythanks](https://img.shields.io/badge/say-thanks-ff69b4.svg)](https://saythanks.io/to/irmen)
 [![Build Status](https://travis-ci.org/irmen/Pyro4.svg?branch=master)](https://travis-ci.org/irmen/Pyro4)
 [![Latest Version](https://img.shields.io/pypi/v/Pyro4.svg)](https://pypi.python.org/pypi/Pyro4/)
-[![Downloads](https://img.shields.io/pypi/dm/Pyro4.svg)](https://pypi.python.org/pypi/Pyro4/)
 
 
 Pyro enables you to build applications in which objects can talk
