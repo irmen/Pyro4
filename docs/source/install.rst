@@ -49,6 +49,11 @@ Obtaining and installing Pyro
     or `selectors34 <https://pypi.python.org/pypi/selectors34>`_  backported module must also be installed
     to be able to use the multiplex server type.
 
+.. attention::
+    When using Python 3.4 or older it is better to install ``selectors2`` instead of ``selectors34``.
+    Pyro4's package requirements only refer to ``selectors34`` but Pyro will use ``selectors2`` first if it detects it.
+    (reason: selectors2 deals with interrupted system calls better. Python 3.5 and newer already have this built-in.)
+
 **Github**
     Source is on Github: https://github.com/irmen/Pyro4
     The required serpent serializer library is there as well: https://github.com/irmen/Serpent
