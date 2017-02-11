@@ -5,6 +5,9 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import sys
+import Pyro4.constants
+
+__version__ = Pyro4.constants.VERSION
 
 if sys.version_info < (2, 7):
     import warnings
@@ -56,13 +59,7 @@ def _configLogging():
 _configLogging()
 del _configLogging
 
-# initialize Pyro's configuration
-from Pyro4.configuration import Configuration
-
-config = Configuration()
-del Configuration
-
 # import the required Pyro symbols into this package
+from Pyro4.configuration import config
 from Pyro4.core import URI, Proxy, Daemon, callback, batch, async, oneway, expose, behavior, current_context, locateNS, resolve
 from Pyro4.futures import Future
-from Pyro4.constants import VERSION as __version__

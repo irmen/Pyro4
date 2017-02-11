@@ -11,6 +11,7 @@ import linecache
 import traceback
 import inspect
 import Pyro4.errors
+from Pyro4.configuration import config
 
 try:
     import copyreg
@@ -47,7 +48,7 @@ def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
             ex_type, ex_value, ex_tb = sys.exc_info()
 
         remote_tb = getattr(ex_value, "_pyroTraceback", None)
-        local_tb = formatTraceback(ex_type, ex_value, ex_tb, Pyro4.config.DETAILED_TRACEBACK)
+        local_tb = formatTraceback(ex_type, ex_value, ex_tb, config.DETAILED_TRACEBACK)
         if remote_tb:
             remote_tb = formatRemoteTraceback(remote_tb)
             return local_tb + remote_tb
@@ -413,10 +414,10 @@ class PickleSerializer(SerializerBase):
     serializer_id = 4  # never change this
 
     def dumpsCall(self, obj, method, vargs, kwargs):
-        return pickle.dumps((obj, method, vargs, kwargs), Pyro4.config.PICKLE_PROTOCOL_VERSION)
+        return pickle.dumps((obj, method, vargs, kwargs), config.PICKLE_PROTOCOL_VERSION)
 
     def dumps(self, data):
-        return pickle.dumps(data, Pyro4.config.PICKLE_PROTOCOL_VERSION)
+        return pickle.dumps(data, config.PICKLE_PROTOCOL_VERSION)
 
     def loadsCall(self, data):
         return pickle.loads(data)
@@ -443,10 +444,10 @@ class DillSerializer(SerializerBase):
     serializer_id = 5  # never change this
 
     def dumpsCall(self, obj, method, vargs, kwargs):
-        return dill.dumps((obj, method, vargs, kwargs), Pyro4.config.DILL_PROTOCOL_VERSION)
+        return dill.dumps((obj, method, vargs, kwargs), config.DILL_PROTOCOL_VERSION)
 
     def dumps(self, data):
-        return dill.dumps(data, Pyro4.config.DILL_PROTOCOL_VERSION)
+        return dill.dumps(data, config.DILL_PROTOCOL_VERSION)
 
     def loadsCall(self, data):
         return dill.loads(data)
@@ -598,7 +599,7 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-assert Pyro4.config.PICKLE_PROTOCOL_VERSION >= 2, "pickle protocol needs to be 2 or higher"
+assert config.PICKLE_PROTOCOL_VERSION >= 2, "pickle protocol needs to be 2 or higher"
 _ser = PickleSerializer()
 _serializers["pickle"] = _ser
 _serializers_by_id[_ser.serializer_id] = _ser
@@ -616,9 +617,9 @@ except ImportError:
 try:
     try:
         import importlib
-        json = importlib.import_module(Pyro4.config.JSON_MODULE)
+        json = importlib.import_module(config.JSON_MODULE)
     except ImportError:
-        json = __import__(Pyro4.config.JSON_MODULE)
+        json = __import__(config.JSON_MODULE)
     _ser = JsonSerializer()
     _serializers["json"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser
@@ -653,7 +654,7 @@ def getAttribute(obj, attr):
         raise AttributeError("attempt to access private attribute '%s'" % attr)
     else:
         obj = getattr(obj, attr)
-    if not Pyro4.config.REQUIRE_EXPOSE or getattr(obj, "_pyroExposed", False):
+    if not config.REQUIRE_EXPOSE or getattr(obj, "_pyroExposed", False):
         return obj
     raise AttributeError("attempt to access unexposed attribute '%s'" % attr)
 
@@ -726,7 +727,7 @@ def get_exposed_members(obj, only_exposed=True, as_lists=False, use_cache=True):
         if inspect.ismethod(v) or inspect.isfunction(v):
             if getattr(v, "_pyroExposed", not only_exposed):
                 methods.add(m)
-                # check if the method is marked with the @Pyro4.oneway decorator:
+                # check if the method is marked with the 'oneway' decorator:
                 if getattr(v, "_pyroOneway", False):
                     oneway.add(m)
         elif inspect.isdatadescriptor(v):

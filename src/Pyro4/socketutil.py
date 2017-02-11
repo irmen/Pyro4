@@ -9,7 +9,7 @@ import errno
 import time
 import sys
 import select
-import Pyro4.constants
+from Pyro4.configuration import config
 from Pyro4.errors import CommunicationError, TimeoutError, ConnectionClosedError
 
 try:
@@ -73,7 +73,7 @@ def getIpAddress(hostname, workaround127=False, ipVersion=None):
     Returns the IP address for the given host. If you enable the workaround,
     it will use a little hack if the ip address is found to be the loopback address.
     The hack tries to discover an externally visible ip address instead (this only works for ipv4 addresses).
-    Set ipVersion=6 to return ipv6 addresses, 4 to return ipv4, 0 to let OS choose the best one or None to use Pyro4.config.PREFER_IP_VERSION.
+    Set ipVersion=6 to return ipv6 addresses, 4 to return ipv4, 0 to let OS choose the best one or None to use config.PREFER_IP_VERSION.
     """
 
     def getaddr(ipVersion):
@@ -93,9 +93,9 @@ def getIpAddress(hostname, workaround127=False, ipVersion=None):
     try:
         if hostname and ':' in hostname and ipVersion is None:
             ipVersion = 0
-        return getaddr(Pyro4.config.PREFER_IP_VERSION) if ipVersion is None else getaddr(ipVersion)
+        return getaddr(config.PREFER_IP_VERSION) if ipVersion is None else getaddr(ipVersion)
     except socket.gaierror:
-        if ipVersion == 6 or (ipVersion is None and Pyro4.config.PREFER_IP_VERSION == 6):
+        if ipVersion == 6 or (ipVersion is None and config.PREFER_IP_VERSION == 6):
             raise socket.error("unable to determine IPV6 address")
         return getaddr(0)
 
@@ -132,7 +132,7 @@ def receiveData(sock, size):
         retrydelay = 0.0
         msglen = 0
         chunks = []
-        if Pyro4.config.USE_MSG_WAITALL:
+        if config.USE_MSG_WAITALL:
             # waitall is very convenient and if a socket error occurs,
             # we can assume the receive has failed. No need for a loop,
             # unless it is a retryable error.
@@ -235,7 +235,7 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
     """
     if bind and connect:
         raise ValueError("bind and connect cannot both be specified at the same time")
-    forceIPv6 = ipv6 or (ipv6 is None and Pyro4.config.PREFER_IP_VERSION == 6)
+    forceIPv6 = ipv6 or (ipv6 is None and config.PREFER_IP_VERSION == 6)
     if isinstance(bind, basestring) or isinstance(connect, basestring):
         family = socket.AF_UNIX
     elif not bind and not connect:
@@ -327,7 +327,7 @@ def createBroadcastSocket(bind=None, reuseaddr=False, timeout=_GLOBAL_DEFAULT_TI
     Set ipv6=True to create an IPv6 socket rather than IPv4.
     Set ipv6=None to use the PREFER_IP_VERSION config setting.
     """
-    forceIPv6 = ipv6 or (ipv6 is None and Pyro4.config.PREFER_IP_VERSION == 6)
+    forceIPv6 = ipv6 or (ipv6 is None and config.PREFER_IP_VERSION == 6)
     if not bind:
         family = socket.AF_INET6 if forceIPv6 else socket.AF_INET
     elif type(bind) is tuple:

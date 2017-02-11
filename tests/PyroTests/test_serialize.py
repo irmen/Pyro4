@@ -17,6 +17,7 @@ import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
 import Pyro4.futures
+from Pyro4.configuration import config
 from testsupport import *
 
 
@@ -24,16 +25,16 @@ class SerializeTests_pickle(unittest.TestCase):
     SERIALIZER = "pickle"
 
     def setUp(self):
-        self.previous_serializer = Pyro4.config.SERIALIZER
-        Pyro4.config.SERIALIZER = self.SERIALIZER
-        self.ser = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
-        Pyro4.config.REQUIRE_EXPOSE = True
+        self.previous_serializer = config.SERIALIZER
+        config.SERIALIZER = self.SERIALIZER
+        self.ser = Pyro4.util.get_serializer(config.SERIALIZER)
+        config.REQUIRE_EXPOSE = True
 
     def tearDown(self):
-        Pyro4.config.SERIALIZER = self.previous_serializer
+        config.SERIALIZER = self.previous_serializer
 
     def testSerItself(self):
-        s = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
+        s = Pyro4.util.get_serializer(config.SERIALIZER)
         p, _ = self.ser.serializeData(s)
         s2 = self.ser.deserializeData(p)
         self.assertEqual(s, s2)
@@ -153,7 +154,7 @@ class SerializeTests_pickle(unittest.TestCase):
             self.assertTrue("Pyro4.core.Daemon" in repr(d2))
             self.assertTrue("unusable" in repr(d2))
             try:
-                Pyro4.config.AUTOPROXY = False
+                config.AUTOPROXY = False
                 obj = pprint.PrettyPrinter(stream="dummy", width=42)
                 obj.name = "hello"
                 daemon.register(obj)
@@ -164,7 +165,7 @@ class SerializeTests_pickle(unittest.TestCase):
                     self.assertEqual("hello", o2.name)
                     self.assertEqual(42, o2._width)
             finally:
-                Pyro4.config.AUTOPROXY = True
+                config.AUTOPROXY = True
 
     def testPyroClasses(self):
         uri = Pyro4.core.URI("PYRO:object@host:4444")
@@ -464,12 +465,12 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(Pyro4.core.URI("PYRO:555@localhost:80"), uri["uri"])
 
     def testProtocolVersion(self):
-        self.assertGreaterEqual(Pyro4.config.PICKLE_PROTOCOL_VERSION, 2)
-        self.assertEqual(pickle.HIGHEST_PROTOCOL, Pyro4.config.PICKLE_PROTOCOL_VERSION)
+        self.assertGreaterEqual(config.PICKLE_PROTOCOL_VERSION, 2)
+        self.assertEqual(pickle.HIGHEST_PROTOCOL, config.PICKLE_PROTOCOL_VERSION)
 
     def testUriSerializationWithoutSlots(self):
-        orig_protocol = Pyro4.config.PICKLE_PROTOCOL_VERSION
-        Pyro4.config.PICKLE_PROTOCOL_VERSION = 2
+        orig_protocol = config.PICKLE_PROTOCOL_VERSION
+        config.PICKLE_PROTOCOL_VERSION = 2
         try:
             u = Pyro4.core.URI("PYRO:obj@localhost:1234")
             d, compr = self.ser.serializeData(u)
@@ -480,7 +481,7 @@ class SerializeTests_pickle(unittest.TestCase):
             result2 = b'\x80\x02cPyro4.core\nURI\n)\x81(X\x04\x00\x00\x00PYROX\x03\x00\x00\x00objNX\t\x00\x00\x00localhostM\xd2\x04tb.'
             self.assertTrue(d in (result1, result2))
         finally:
-            Pyro4.config.PICKLE_PROTOCOL_VERSION = orig_protocol
+            config.PICKLE_PROTOCOL_VERSION = orig_protocol
 
     def testFloatPrecision(self):
         f1 = 1482514078.54635912345
@@ -506,7 +507,7 @@ class SerializeTests_dill(SerializeTests_pickle):
 
     def testProtocolVersion(self):
         import dill
-        self.assertEqual(dill.HIGHEST_PROTOCOL, Pyro4.config.DILL_PROTOCOL_VERSION)
+        self.assertEqual(dill.HIGHEST_PROTOCOL, config.DILL_PROTOCOL_VERSION)
 
     @unittest.skip('not implemented')
     def testUriSerializationWithoutSlots(self):
@@ -755,7 +756,7 @@ class GenericTests(unittest.TestCase):
         self.assertEqual("unsupported serialized class: builtins.ZeroDivisionError", str(cm.exception))
 
     def testWeirdFloats(self):
-        ser = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
+        ser = Pyro4.util.get_serializer(config.SERIALIZER)
         p, _ = ser.serializeData([float("+inf"), float("-inf"), float("nan")])
         s2 = ser.deserializeData(p)
         self.assertTrue(math.isinf(s2[0]))

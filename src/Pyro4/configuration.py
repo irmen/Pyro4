@@ -25,7 +25,7 @@ class Configuration(object):
                  "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
                  "METADATA", "REQUIRE_EXPOSE", "USE_MSG_WAITALL", "JSON_MODULE",
                  "MAX_RETRIES", "DILL_PROTOCOL_VERSION", "ITER_STREAMING", "ITER_STREAM_LIFETIME",
-                 "ITER_STREAM_LINGER", "NEW_API")
+                 "ITER_STREAM_LINGER")
 
     def __init__(self):
         self.reset()
@@ -75,7 +75,6 @@ class Configuration(object):
         self.ITER_STREAMING = True
         self.ITER_STREAM_LIFETIME = 0.0
         self.ITER_STREAM_LINGER = 30.0
-        self.NEW_API = False    # provide only new api or also older api?
 
         if useenvironment:
             # process environment variables
@@ -142,9 +141,8 @@ class Configuration(object):
         return "\n".join(result)
 
 
-def configuration_dump():
-    print(Configuration().dump())
+config = Configuration()
 
 
 if __name__ == "__main__":
-    configuration_dump()
+    print(config.dump())

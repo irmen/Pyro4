@@ -6,7 +6,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import unittest
-import Pyro4
 import Pyro4.constants
 import Pyro4.core
 import Pyro4.errors

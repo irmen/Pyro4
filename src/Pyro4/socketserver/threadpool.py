@@ -8,7 +8,7 @@ from __future__ import with_statement
 import time
 import logging
 import threading
-import Pyro4.util
+from Pyro4.configuration import config
 
 __all__ = ["PoolError", "NoFreeWorkersError", "Pool"]
 
@@ -57,14 +57,14 @@ class Pool(object):
     The amount of worker threads in the pool is configurable and scales between min/max size.
     """
     def __init__(self):
-        if Pyro4.config.THREADPOOL_SIZE < 1 or Pyro4.config.THREADPOOL_SIZE_MIN < 1:
+        if config.THREADPOOL_SIZE < 1 or config.THREADPOOL_SIZE_MIN < 1:
             raise ValueError("threadpool sizes must be greater than zero")
-        if Pyro4.config.THREADPOOL_SIZE_MIN > Pyro4.config.THREADPOOL_SIZE:
+        if config.THREADPOOL_SIZE_MIN > config.THREADPOOL_SIZE:
             raise ValueError("minimum threadpool size must be less than or equal to max size")
         self.idle = set()
         self.busy = set()
         self.closed = False
-        for _ in range(Pyro4.config.THREADPOOL_SIZE_MIN):
+        for _ in range(config.THREADPOOL_SIZE_MIN):
             worker = Worker(self)
             self.idle.add(worker)
             worker.start()
@@ -112,7 +112,7 @@ class Pool(object):
             raise PoolError("job queue is closed")
         if self.idle:
             worker = self.idle.pop()
-        elif self.num_workers() < Pyro4.config.THREADPOOL_SIZE:
+        elif self.num_workers() < config.THREADPOOL_SIZE:
             worker = Worker(self)
             worker.start()
         else:
@@ -127,7 +127,7 @@ class Pool(object):
         if self.closed:
             worker.process(None)
             return
-        if len(self.idle) >= Pyro4.config.THREADPOOL_SIZE_MIN:
+        if len(self.idle) >= config.THREADPOOL_SIZE_MIN:
             worker.process(None)
         else:
             self.idle.add(worker)

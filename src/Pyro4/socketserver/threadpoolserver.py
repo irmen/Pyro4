@@ -13,8 +13,8 @@ import sys
 import time
 import threading
 import os
-import Pyro4.util
-from Pyro4 import socketutil, errors
+from Pyro4 import socketutil, errors, util
+from Pyro4.configuration import config
 from .threadpool import Pool, NoFreeWorkersError
 
 log = logging.getLogger("Pyro4.threadpoolserver")
@@ -52,7 +52,7 @@ class ClientConnectionJob(object):
                     except:
                         # other errors log a warning, break this loop and close the client connection
                         ex_t, ex_v, ex_tb = sys.exc_info()
-                        tb = Pyro4.util.formatTraceback(ex_t, ex_v, ex_tb)
+                        tb = util.formatTraceback(ex_t, ex_v, ex_tb)
                         msg = "error during handleRequest: %s; %s" % (ex_v, "".join(tb))
                         log.warning(msg)
                         break
@@ -72,7 +72,7 @@ class ClientConnectionJob(object):
             self.csock.close()
         except:
             ex_t, ex_v, ex_tb = sys.exc_info()
-            tb = Pyro4.util.formatTraceback(ex_t, ex_v, ex_tb)
+            tb = util.formatTraceback(ex_t, ex_v, ex_tb)
             log.warning("error during connect/handshake: %s; %s", ex_v, "\n".join(tb))
             self.csock.close()
         return False
@@ -90,7 +90,7 @@ class Housekeeper(threading.Thread):
         self.pyroDaemon = daemon
         self.stop = threading.Event()
         self.daemon = True
-        self.waittime = min(Pyro4.config.POLLTIMEOUT or 0, max(Pyro4.config.COMMTIMEOUT or 0, 5))
+        self.waittime = min(config.POLLTIMEOUT or 0, max(config.COMMTIMEOUT or 0, 5))
 
     def run(self):
         while True:
@@ -112,7 +112,7 @@ class SocketServer_Threadpool(object):
         self.daemon = daemon
         self.sock = None
         bind_location = unixsocket if unixsocket else (host, port)
-        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True, nodelay=Pyro4.config.SOCK_NODELAY)
+        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=config.SOCK_REUSE, timeout=config.COMMTIMEOUT, noinherit=True, nodelay=config.SOCK_NODELAY)
         self._socketaddr = self.sock.getsockname()
         if not unixsocket and self._socketaddr[0].startswith("127."):
             if host is None or host.lower() != "localhost" and not host.startswith("127."):
@@ -179,8 +179,8 @@ class SocketServer_Threadpool(object):
                 csock.close()
                 return
             log.debug("connected %s", caddr)
-            if Pyro4.config.COMMTIMEOUT:
-                csock.settimeout(Pyro4.config.COMMTIMEOUT)
+            if config.COMMTIMEOUT:
+                csock.settimeout(config.COMMTIMEOUT)
             job = ClientConnectionJob(csock, caddr, self.daemon)
             try:
                 self.pool.process(job)

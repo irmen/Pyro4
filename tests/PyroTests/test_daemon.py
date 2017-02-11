@@ -17,7 +17,8 @@ import Pyro4.socketutil
 import Pyro4.message
 import Pyro4.util
 from Pyro4.errors import DaemonError, PyroError, SerializeError
-from Pyro4 import current_context
+from Pyro4.configuration import config
+from Pyro4.core import current_context
 from testsupport import *
 
 
@@ -44,7 +45,7 @@ class DaemonTests(unittest.TestCase):
     # 'on-line' tests are all taking place in another test, to keep this one simple.
 
     def setUp(self):
-        Pyro4.config.POLLTIMEOUT = 0.1
+        config.POLLTIMEOUT = 0.1
 
     def sendHandshakeMessage(self, conn, correlation_id=None):
         ser = Pyro4.util.get_serializer_by_id(Pyro4.util.MarshalSerializer.serializer_id)
@@ -54,14 +55,14 @@ class DaemonTests(unittest.TestCase):
         msg.send(conn)
 
     def testSerializerConfig(self):
-        self.assertIsInstance(Pyro4.config.SERIALIZERS_ACCEPTED, set)
-        self.assertIsInstance(Pyro4.config.SERIALIZER, basestring)
-        self.assertGreater(len(Pyro4.config.SERIALIZERS_ACCEPTED), 1)
+        self.assertIsInstance(config.SERIALIZERS_ACCEPTED, set)
+        self.assertIsInstance(config.SERIALIZER, basestring)
+        self.assertGreater(len(config.SERIALIZERS_ACCEPTED), 1)
 
     def testSerializerAccepted(self):
-        self.assertIn("marshal", Pyro4.config.SERIALIZERS_ACCEPTED)
-        self.assertNotIn("pickle", Pyro4.config.SERIALIZERS_ACCEPTED)
-        self.assertNotIn("dill", Pyro4.config.SERIALIZERS_ACCEPTED)
+        self.assertIn("marshal", config.SERIALIZERS_ACCEPTED)
+        self.assertNotIn("pickle", config.SERIALIZERS_ACCEPTED)
+        self.assertNotIn("dill", config.SERIALIZERS_ACCEPTED)
         with Pyro4.core.Daemon(port=0) as d:
             msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.util.MarshalSerializer.serializer_id, 0, 0, hmac_key=d._pyroHmacKey)
             cm = ConnectionMock(msg)
@@ -137,26 +138,26 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(socket.AF_UNIX, d.sock.family)
 
     def testServertypeThread(self):
-        old_servertype = Pyro4.config.SERVERTYPE
-        Pyro4.config.SERVERTYPE = "thread"
+        old_servertype = config.SERVERTYPE
+        config.SERVERTYPE = "thread"
         with Pyro4.core.Daemon(port=0) as d:
             self.assertIn(d.sock, d.sockets, "daemon's socketlist should contain the server socket")
             self.assertTrue(len(d.sockets) == 1, "daemon without connections should have just 1 socket")
-        Pyro4.config.SERVERTYPE = old_servertype
+        config.SERVERTYPE = old_servertype
 
     def testServertypeMultiplex(self):
-        old_servertype = Pyro4.config.SERVERTYPE
-        Pyro4.config.SERVERTYPE = "multiplex"
+        old_servertype = config.SERVERTYPE
+        config.SERVERTYPE = "multiplex"
         with Pyro4.core.Daemon(port=0) as d:
             self.assertIn(d.sock, d.sockets, "daemon's socketlist should contain the server socket")
             self.assertTrue(len(d.sockets) == 1, "daemon without connections should have just 1 socket")
-        Pyro4.config.SERVERTYPE = old_servertype
+        config.SERVERTYPE = old_servertype
 
     def testServertypeFoobar(self):
-        old_servertype = Pyro4.config.SERVERTYPE
-        Pyro4.config.SERVERTYPE = "foobar"
+        old_servertype = config.SERVERTYPE
+        config.SERVERTYPE = "foobar"
         self.assertRaises(PyroError, Pyro4.core.Daemon)
-        Pyro4.config.SERVERTYPE = old_servertype
+        config.SERVERTYPE = old_servertype
 
     def testRegisterTwice(self):
         with Pyro4.core.Daemon(port=0) as d:
@@ -460,9 +461,9 @@ class DaemonTests(unittest.TestCase):
             pass
 
     def testNATzeroPort(self):
-        servertype = Pyro4.config.SERVERTYPE
+        servertype = config.SERVERTYPE
         try:
-            Pyro4.config.SERVERTYPE = "multiplex"
+            config.SERVERTYPE = "multiplex"
             with Pyro4.core.Daemon(nathost="nathosttest", natport=99999) as d:
                 host, port = d.locationStr.split(":")
                 self.assertNotEqual(99999, port)
@@ -470,7 +471,7 @@ class DaemonTests(unittest.TestCase):
             with Pyro4.core.Daemon(nathost="nathosttest", natport=0) as d:
                 host, port = d.locationStr.split(":")
                 self.assertEqual("nathosttest:%s" % port, d.natLocationStr)
-            Pyro4.config.SERVERTYPE = "thread"
+            config.SERVERTYPE = "thread"
             with Pyro4.core.Daemon(nathost="nathosttest", natport=99999) as d:
                 host, port = d.locationStr.split(":")
                 self.assertNotEqual(99999, port)
@@ -479,21 +480,21 @@ class DaemonTests(unittest.TestCase):
                 host, port = d.locationStr.split(":")
                 self.assertEqual("nathosttest:%s" % port, d.natLocationStr)
         finally:
-            Pyro4.config.SERVERTYPE = servertype
+            config.SERVERTYPE = servertype
 
     def testNATconfig(self):
         try:
-            Pyro4.config.NATHOST = None
-            Pyro4.config.NATPORT = 0
+            config.NATHOST = None
+            config.NATPORT = 0
             with Pyro4.core.Daemon() as d:
                 self.assertIsNone(d.natLocationStr)
-            Pyro4.config.NATHOST = "nathosttest"
-            Pyro4.config.NATPORT = 12345
+            config.NATHOST = "nathosttest"
+            config.NATPORT = 12345
             with Pyro4.core.Daemon() as d:
                 self.assertEqual("nathosttest:12345", d.natLocationStr)
         finally:
-            Pyro4.config.NATHOST = None
-            Pyro4.config.NATPORT = 0
+            config.NATHOST = None
+            config.NATPORT = 0
 
     def testBehaviorDefaults(self):
         class TestClass:
@@ -603,7 +604,7 @@ class DaemonTests(unittest.TestCase):
         d1.close()
         d2.close()
         try:
-            Pyro4.config.SERVERTYPE = "multiplex"
+            config.SERVERTYPE = "multiplex"
             d1 = Pyro4.core.Daemon()
             d2 = Pyro4.core.Daemon()
             nsuri, nsd, bcd = Pyro4.naming.startNS(host="", bchost="")
@@ -625,7 +626,7 @@ class DaemonTests(unittest.TestCase):
             d2.close()
             d1.close()
         finally:
-            Pyro4.config.SERVERTYPE = "thread"
+            config.SERVERTYPE = "thread"
 
 
 class MetaInfoTests(unittest.TestCase):

@@ -13,10 +13,9 @@ import sys
 import time
 import threading
 from Pyro4.errors import NamingError, PyroError, ProtocolError
-from Pyro4 import core, socketutil
-import Pyro4.constants
-if not Pyro4.config.NEW_API:
-    from Pyro4.core import locateNS, resolve    # API compatibility with older versions
+from Pyro4 import core, socketutil, constants
+from Pyro4.configuration import config
+from Pyro4.core import locateNS, resolve    # API compatibility with older versions
 
 
 __all__ = ["locateNS", "resolve", "type_meta", "startNS", "startNSloop", "MemoryStorage"]
@@ -65,7 +64,7 @@ class MemoryStorage(dict):
         pass
 
 
-@Pyro4.expose
+@core.expose
 class NameServer(object):
     """
     Pyro name server. Provides a simple flat name space to map logical object names to Pyro URIs.
@@ -135,20 +134,20 @@ class NameServer(object):
 
     def remove(self, name=None, prefix=None, regex=None):
         """Remove a registration. returns the number of items removed."""
-        if name and name in self.storage and name != Pyro4.constants.NAMESERVER_NAME:
+        if name and name in self.storage and name != constants.NAMESERVER_NAME:
             with self.lock:
                 del self.storage[name]
             return 1
         if prefix:
             items = list(self.list(prefix=prefix).keys())
-            if Pyro4.constants.NAMESERVER_NAME in items:
-                items.remove(Pyro4.constants.NAMESERVER_NAME)
+            if constants.NAMESERVER_NAME in items:
+                items.remove(constants.NAMESERVER_NAME)
             self.storage.remove_items(items)
             return len(items)
         if regex:
             items = list(self.list(regex=regex).keys())
-            if Pyro4.constants.NAMESERVER_NAME in items:
-                items.remove(Pyro4.constants.NAMESERVER_NAME)
+            if constants.NAMESERVER_NAME in items:
+                items.remove(constants.NAMESERVER_NAME)
             self.storage.remove_items(items)
             return len(items)
         return 0
@@ -237,13 +236,13 @@ class NameServerDaemon(core.Daemon):
 
     def __init__(self, host=None, port=None, unixsocket=None, nathost=None, natport=None, storage=None):
         if host is None:
-            host = Pyro4.config.HOST
+            host = config.HOST
         if port is None:
-            port = Pyro4.config.NS_PORT
+            port = config.NS_PORT
         if nathost is None:
-            nathost = Pyro4.config.NATHOST
+            nathost = config.NATHOST
         if natport is None:
-            natport = Pyro4.config.NATPORT or None
+            natport = config.NATPORT or None
         storage = storage or "memory"
         if storage == "memory":
             log.debug("using volatile in-memory dict storage")
@@ -267,11 +266,11 @@ class NameServerDaemon(core.Daemon):
         if existing_count > 0:
             log.debug("number of existing entries in storage: %d", existing_count)
         super(NameServerDaemon, self).__init__(host, port, unixsocket, nathost=nathost, natport=natport)
-        self.register(self.nameserver, Pyro4.constants.NAMESERVER_NAME)
+        self.register(self.nameserver, constants.NAMESERVER_NAME)
         metadata = {"class:Pyro4.naming.NameServer"}
-        self.nameserver.register(Pyro4.constants.NAMESERVER_NAME, self.uriFor(self.nameserver), metadata=metadata)
-        if Pyro4.config.NS_AUTOCLEAN > 0:
-            if not AutoCleaner.override_autoclean_min and Pyro4.config.NS_AUTOCLEAN < AutoCleaner.min_autoclean_value:
+        self.nameserver.register(constants.NAMESERVER_NAME, self.uriFor(self.nameserver), metadata=metadata)
+        if config.NS_AUTOCLEAN > 0:
+            if not AutoCleaner.override_autoclean_min and config.NS_AUTOCLEAN < AutoCleaner.min_autoclean_value:
                 raise ValueError("NS_AUTOCLEAN cannot be smaller than " + str(AutoCleaner.min_autoclean_value))
             log.debug("autoclean enabled")
             self.cleaner_thread = AutoCleaner(self.nameserver)
@@ -328,8 +327,8 @@ class AutoCleaner(threading.Thread):
     override_autoclean_min = False   # only for unit test purposes
 
     def __init__(self, nameserver):
-        assert Pyro4.config.NS_AUTOCLEAN > 0
-        if not self.override_autoclean_min and Pyro4.config.NS_AUTOCLEAN < self.min_autoclean_value:
+        assert config.NS_AUTOCLEAN > 0
+        if not self.override_autoclean_min and config.NS_AUTOCLEAN < self.min_autoclean_value:
             raise ValueError("NS_AUTOCLEAN cannot be smaller than "+str(self.min_autoclean_value))
         super(AutoCleaner, self).__init__()
         self.nameserver = nameserver
@@ -342,14 +341,14 @@ class AutoCleaner(threading.Thread):
         while not self.stop:
             time.sleep(self.loop_delay)
             time_since_last_autoclean = time.time() - self.last_cleaned
-            if time_since_last_autoclean < Pyro4.config.NS_AUTOCLEAN:
+            if time_since_last_autoclean < config.NS_AUTOCLEAN:
                 continue
             for name, uri in self.nameserver.list().items():
-                if name in (Pyro4.constants.DAEMON_NAME, Pyro4.constants.NAMESERVER_NAME):
+                if name in (constants.DAEMON_NAME, constants.NAMESERVER_NAME):
                     continue
                 try:
-                    uri_obj = Pyro4.URI(uri)
-                    timeout = Pyro4.config.COMMTIMEOUT or 5
+                    uri_obj = core.URI(uri)
+                    timeout = config.COMMTIMEOUT or 5
                     sock = socketutil.createSocket(connect=(uri_obj.host, uri_obj.port), timeout=timeout)
                     sock.close()
                     # if we get here, the listed server is still answering on its port
@@ -382,14 +381,14 @@ class BroadcastServer(object):
         self.transportServer = self.TransportServerAdapter(self)
         self.nsUri = nsUri
         if bcport is None:
-            bcport = Pyro4.config.NS_BCPORT
+            bcport = config.NS_BCPORT
         if bchost is None:
-            bchost = Pyro4.config.NS_BCHOST
+            bchost = config.NS_BCHOST
         if ":" in nsUri.host:  # ipv6
             bchost = bchost or "::"
-            self.sock = Pyro4.socketutil.createBroadcastSocket((bchost, bcport, 0, 0), reuseaddr=Pyro4.config.SOCK_REUSE, timeout=2.0)
+            self.sock = socketutil.createBroadcastSocket((bchost, bcport, 0, 0), reuseaddr=config.SOCK_REUSE, timeout=2.0)
         else:
-            self.sock = Pyro4.socketutil.createBroadcastSocket((bchost, bcport), reuseaddr=Pyro4.config.SOCK_REUSE, timeout=2.0)
+            self.sock = socketutil.createBroadcastSocket((bchost, bcport), reuseaddr=config.SOCK_REUSE, timeout=2.0)
         self._sockaddr = self.sock.getsockname()
         bchost = bchost or self._sockaddr[0]
         bcport = bcport or self._sockaddr[1]

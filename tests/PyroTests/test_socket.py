@@ -13,12 +13,13 @@ import threading
 import time
 import unittest
 import Pyro4.socketutil as SU
+import Pyro4.util
+import Pyro4.constants
+from Pyro4.configuration import config
 from Pyro4 import errors
 from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.core import Daemon
-import Pyro4.util
-import Pyro4.constants
 from testsupport import *
 
 
@@ -47,10 +48,10 @@ class TestSocketStuff(unittest.TestCase):
 
 class TestSocketutil(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.POLLTIMEOUT = 0.1
+        config.POLLTIMEOUT = 0.1
 
     def testGetIP(self):
-        Pyro4.config.PREFER_IP_VERSION = 4
+        config.PREFER_IP_VERSION = 4
         myip = SU.getIpAddress("")
         self.assertTrue(len(myip) > 4)
         myip = SU.getIpAddress("", workaround127=True)
@@ -66,31 +67,31 @@ class TestSocketutil(unittest.TestCase):
         self.assertIn(":", SU.getIpAddress("localhost", ipVersion=6))
 
     def testGetIpVersion4(self):
-        version = Pyro4.config.PREFER_IP_VERSION
+        version = config.PREFER_IP_VERSION
         try:
-            Pyro4.config.PREFER_IP_VERSION = 4
+            config.PREFER_IP_VERSION = 4
             self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
             self.assertEqual(4, SU.getIpVersion("localhost"))
-            Pyro4.config.PREFER_IP_VERSION = 0
+            config.PREFER_IP_VERSION = 0
             self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
         finally:
-            Pyro4.config.PREFER_IP_VERSION = version
+            config.PREFER_IP_VERSION = version
 
     @unittest.skipUnless(has_ipv6, "ipv6 testcase")
     def testGetIpVersion6(self):
-        version = Pyro4.config.PREFER_IP_VERSION
+        version = config.PREFER_IP_VERSION
         try:
-            Pyro4.config.PREFER_IP_VERSION = 6
+            config.PREFER_IP_VERSION = 6
             self.assertEqual(6, SU.getIpVersion("::1"))
             self.assertEqual(6, SU.getIpVersion("localhost"))
-            Pyro4.config.PREFER_IP_VERSION = 4
+            config.PREFER_IP_VERSION = 4
             self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
             self.assertEqual(6, SU.getIpVersion("::1"))
-            Pyro4.config.PREFER_IP_VERSION = 0
+            config.PREFER_IP_VERSION = 0
             self.assertEqual(4, SU.getIpVersion("127.0.0.1"))
             self.assertEqual(6, SU.getIpVersion("::1"))
         finally:
-            Pyro4.config.PREFER_IP_VERSION = version
+            config.PREFER_IP_VERSION = version
 
     def testGetInterfaceAddress(self):
         self.assertTrue(SU.getInterfaceAddress("localhost").startswith("127."))
@@ -272,7 +273,7 @@ class TestSocketutil(unittest.TestCase):
         ss = SU.createBroadcastSocket((None, 0))
         port = ss.getsockname()[1]
         cs = SU.createBroadcastSocket()
-        for bcaddr in Pyro4.config.parseAddressesString(Pyro4.config.BROADCAST_ADDRS):
+        for bcaddr in config.parseAddressesString(config.BROADCAST_ADDRS):
             try:
                 cs.sendto(tobytes("monkey"), 0, (bcaddr, port))
             except socket.error:
@@ -335,13 +336,13 @@ class TestSocketutil(unittest.TestCase):
     def testMsgWaitAllConfig(self):
         if platform.system() == "Windows":
             # default config should be False on these platforms even though socket.MSG_WAITALL might exist
-            self.assertFalse(Pyro4.config.USE_MSG_WAITALL)
+            self.assertFalse(config.USE_MSG_WAITALL)
         else:
             # on all other platforms, default config should be True (as long as socket.MSG_WAITALL exists)
             if hasattr(socket, "MSG_WAITALL"):
-                self.assertTrue(Pyro4.config.USE_MSG_WAITALL)
+                self.assertTrue(config.USE_MSG_WAITALL)
             else:
-                self.assertFalse(Pyro4.config.USE_MSG_WAITALL)
+                self.assertFalse(config.USE_MSG_WAITALL)
 
 
 class ServerCallback(object):
@@ -411,15 +412,15 @@ class TestSocketServer(unittest.TestCase):
 
 class TestServerDOS_multiplex(unittest.TestCase):
     def setUp(self):
-        self.orig_poll_timeout = Pyro4.config.POLLTIMEOUT
-        self.orig_comm_timeout = Pyro4.config.COMMTIMEOUT
-        Pyro4.config.POLLTIMEOUT = 0.5
-        Pyro4.config.COMMTIMEOUT = 0.5
+        self.orig_poll_timeout = config.POLLTIMEOUT
+        self.orig_comm_timeout = config.COMMTIMEOUT
+        config.POLLTIMEOUT = 0.5
+        config.COMMTIMEOUT = 0.5
         self.socket_server = SocketServer_Multiplex
 
     def tearDown(self):
-        Pyro4.config.POLLTIMEOUT = self.orig_poll_timeout
-        Pyro4.config.COMMTIMEOUT = self.orig_comm_timeout
+        config.POLLTIMEOUT = self.orig_poll_timeout
+        config.COMMTIMEOUT = self.orig_comm_timeout
 
     class ServerThread(threading.Thread):
         def __init__(self, server, daemon):
@@ -522,14 +523,14 @@ class TestServerDOS_threading(TestServerDOS_multiplex):
     def setUp(self):
         super(TestServerDOS_threading, self).setUp()
         self.socket_server = SocketServer_Threadpool
-        self.orig_numthreads = Pyro4.config.THREADPOOL_SIZE
-        self.orig_numthreads_min = Pyro4.config.THREADPOOL_SIZE_MIN
-        Pyro4.config.THREADPOOL_SIZE = 1
-        Pyro4.config.THREADPOOL_SIZE_MIN = 1
+        self.orig_numthreads = config.THREADPOOL_SIZE
+        self.orig_numthreads_min = config.THREADPOOL_SIZE_MIN
+        config.THREADPOOL_SIZE = 1
+        config.THREADPOOL_SIZE_MIN = 1
 
     def tearDown(self):
-        Pyro4.config.THREADPOOL_SIZE = self.orig_numthreads
-        Pyro4.config.THREADPOOL_SIZE_MIN = self.orig_numthreads_min
+        config.THREADPOOL_SIZE = self.orig_numthreads
+        config.THREADPOOL_SIZE_MIN = self.orig_numthreads_min
 
 
 if __name__ == "__main__":

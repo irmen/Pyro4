@@ -13,9 +13,10 @@ import code
 import os
 import stat
 import Pyro4.core
-import Pyro4.util
 import Pyro4.constants
 import Pyro4.errors
+from Pyro4.configuration import config
+
 
 try:
     import importlib
@@ -159,7 +160,7 @@ class RemoteInteractiveConsole(object):
         self.close()
 
 
-@Pyro4.expose
+@Pyro4.core.expose
 class InteractiveConsole(code.InteractiveConsole):
     """Interactive console wrapper that saves output written to stdout so it can be returned as value"""
 
@@ -186,7 +187,7 @@ class InteractiveConsole(code.InteractiveConsole):
         self.resetbuffer()
 
 
-@Pyro4.expose
+@Pyro4.core.expose
 class Flame(object):
     """
     The actual FLAME server logic.
@@ -195,7 +196,7 @@ class Flame(object):
     """
 
     def __init__(self):
-        if set(Pyro4.config.SERIALIZERS_ACCEPTED) != {"pickle"}:
+        if set(config.SERIALIZERS_ACCEPTED) != {"pickle"}:
             raise RuntimeError("flame requires the pickle serializer exclusively")
 
     def module(self, name):
@@ -250,11 +251,11 @@ class Flame(object):
         console.banner = "Python %s on %s\n(Remote console on %s)" % (sys.version, sys.platform, uri.location)
         return RemoteInteractiveConsole(uri)
 
-    @Pyro4.expose
+    @Pyro4.core.expose
     def invokeBuiltin(self, builtin, args, kwargs):
         return getattr(builtins, builtin)(*args, **kwargs)
 
-    @Pyro4.expose
+    @Pyro4.core.expose
     def invokeModule(self, dottedname, args, kwargs):
         # dottedname is something like "os.path.walk" so strip off the module name
         modulename, dottedname = dottedname.split('.', 1)
@@ -301,8 +302,8 @@ def start(daemon):
     Create and register a Flame server in the given daemon.
     Be *very* cautious before starting this: it allows the clients full access to everything on your system.
     """
-    if Pyro4.config.FLAME_ENABLED:
-        if set(Pyro4.config.SERIALIZERS_ACCEPTED) != {"pickle"}:
+    if config.FLAME_ENABLED:
+        if set(config.SERIALIZERS_ACCEPTED) != {"pickle"}:
             raise Pyro4.errors.SerializeError("Flame requires the pickle serializer exclusively")
         return daemon.register(Flame(), Pyro4.constants.FLAME_NAME)
     else:
@@ -314,7 +315,7 @@ def connect(location):
     Connect to a Flame server on the given location, for instance localhost:9999 or ./u:unixsock
     This is just a convenience function to creates an appropriate Pyro proxy.
     """
-    if Pyro4.config.SERIALIZER != "pickle":
+    if config.SERIALIZER != "pickle":
         raise Pyro4.errors.SerializeError("Flame requires the pickle serializer")
     proxy = Pyro4.core.Proxy("PYRO:%s@%s" % (Pyro4.constants.FLAME_NAME, location))
     proxy._pyroBind()

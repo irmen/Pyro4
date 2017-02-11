@@ -21,6 +21,8 @@ import Pyro4.futures
 from Pyro4 import errors, socketutil, util, constants, message
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
+from Pyro4.configuration import config
+
 
 __all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "behavior", "oneway"]
 
@@ -63,14 +65,14 @@ class URI(object):
         self.object = match.group("object")
         location = match.group("location")
         if self.protocol == "PYRONAME":
-            self._parseLocation(location, Pyro4.config.NS_PORT)
+            self._parseLocation(location, config.NS_PORT)
         elif self.protocol == "PYRO":
             if not location:
                 raise errors.PyroError("invalid uri")
             self._parseLocation(location, None)
         elif self.protocol == "PYROMETA":
             self.object = set(m.strip() for m in self.object.split(","))
-            self._parseLocation(location, Pyro4.config.NS_PORT)
+            self._parseLocation(location, config.NS_PORT)
         else:
             raise errors.PyroError("invalid uri (protocol)")
 
@@ -231,11 +233,11 @@ class Proxy(object):
         self._pyroSeq = 0  # message sequence number
         self._pyroRawWireResponse = False  # internal switch to enable wire level responses
         self._pyroHandshake = "hello"  # the data object that should be sent in the initial connection handshake message (can be any serializable object)
-        self._pyroMaxRetries = Pyro4.config.MAX_RETRIES
+        self._pyroMaxRetries = config.MAX_RETRIES
         self.__pyroHmacKey = None
-        self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
+        self.__pyroTimeout = config.COMMTIMEOUT
         self.__pyroConnLock = threading.RLock()
-        util.get_serializer(Pyro4.config.SERIALIZER)  # assert that the configured serializer is available
+        util.get_serializer(config.SERIALIZER)  # assert that the configured serializer is available
         self.__async = False
 
     @property
@@ -258,13 +260,13 @@ class Proxy(object):
         if name in Proxy.__pyroAttributes:
             # allows it to be safely pickled
             raise AttributeError(name)
-        if Pyro4.config.METADATA:
+        if config.METADATA:
             # get metadata if it's not there yet
             if not self._pyroMethods and not self._pyroAttrs:
                 self._pyroGetMetadata()
         if name in self._pyroAttrs:
             return self._pyroInvoke("__getattr__", (name,), None)
-        if Pyro4.config.METADATA and name not in self._pyroMethods:
+        if config.METADATA and name not in self._pyroMethods:
             # client side check if the requested attr actually exists
             raise AttributeError("remote object '%s' has no exposed attribute or method '%s'" % (self._pyroUri, name))
         if self.__async:
@@ -274,13 +276,13 @@ class Proxy(object):
     def __setattr__(self, name, value):
         if name in Proxy.__pyroAttributes:
             return super(Proxy, self).__setattr__(name, value)  # one of the special pyro attributes
-        if Pyro4.config.METADATA:
+        if config.METADATA:
             # get metadata if it's not there yet
             if not self._pyroMethods and not self._pyroAttrs:
                 self._pyroGetMetadata()
         if name in self._pyroAttrs:
             return self._pyroInvoke("__setattr__", (name, value), None)  # remote attribute
-        if Pyro4.config.METADATA:
+        if config.METADATA:
             # client side validation if the requested attr actually exists
             raise AttributeError("remote object '%s' has no exposed attribute '%s'" % (self._pyroUri, name))
         # metadata disabled, just treat it as a local attribute on the proxy:
@@ -329,8 +331,8 @@ class Proxy(object):
         # but we're not using them here. Instead we get the configured values from the 'local' config.
         self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, _, self._pyroHmacKey, self._pyroHandshake = state[:7]
         self._pyroSerializer = None if len(state) < 9 else state[8]
-        self.__pyroTimeout = Pyro4.config.COMMTIMEOUT
-        self._pyroMaxRetries = Pyro4.config.MAX_RETRIES
+        self.__pyroTimeout = config.COMMTIMEOUT
+        self._pyroMaxRetries = config.MAX_RETRIES
         self._pyroConnection = None
         self._pyroSeq = 0
         self._pyroRawWireResponse = False
@@ -410,17 +412,17 @@ class Proxy(object):
             if self._pyroConnection is None:
                 # rebind here, don't do it from inside the invoke because deadlock will occur
                 self.__pyroCreateConnection()
-            serializer = util.get_serializer(self._pyroSerializer or Pyro4.config.SERIALIZER)
+            serializer = util.get_serializer(self._pyroSerializer or config.SERIALIZER)
             data, compressed = serializer.serializeCall(
                 objectId or self._pyroConnection.objectId, methodname, vargs, kwargs,
-                compress=Pyro4.config.COMPRESSION)
+                compress=config.COMPRESSION)
             if compressed:
                 flags |= Pyro4.message.FLAGS_COMPRESSED
             if methodname in self._pyroOneway:
                 flags |= Pyro4.message.FLAGS_ONEWAY
             self._pyroSeq = (self._pyroSeq + 1) & 0xffff
             msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
-            if Pyro4.config.LOGWIRE:
+            if config.LOGWIRE:
                 _log_wiredata(log, "proxy wiredata sending", msg)
             try:
                 self._pyroConnection.send(msg.to_bytes())
@@ -429,7 +431,7 @@ class Proxy(object):
                     return None  # oneway call, no response data
                 else:
                     msg = message.Message.recv(self._pyroConnection, [message.MSG_RESULT], hmac_key=self._pyroHmacKey)
-                    if Pyro4.config.LOGWIRE:
+                    if config.LOGWIRE:
                         _log_wiredata(log, "proxy wiredata received", msg)
                     self.__pyroCheckSequence(msg.seq)
                     if msg.serializer_id != serializer.serializer_id:
@@ -485,28 +487,28 @@ class Proxy(object):
             try:
                 if self._pyroConnection is not None:
                     return False  # already connected
-                sock = socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout, nodelay=Pyro4.config.SOCK_NODELAY)
+                sock = socketutil.createSocket(connect=connect_location, reuseaddr=config.SOCK_REUSE, timeout=self.__pyroTimeout, nodelay=config.SOCK_NODELAY)
                 conn = socketutil.SocketConnection(sock, uri.object)
                 # Do handshake.
-                serializer = util.get_serializer(self._pyroSerializer or Pyro4.config.SERIALIZER)
+                serializer = util.get_serializer(self._pyroSerializer or config.SERIALIZER)
                 data = {"handshake": self._pyroHandshake}
-                if Pyro4.config.METADATA:
+                if config.METADATA:
                     # the object id is only used/needed when piggybacking the metadata on the connection response
                     # make sure to pass the resolved object id instead of the logical id
                     data["object"] = uri.object
                     flags = Pyro4.message.FLAGS_META_ON_CONNECT
                 else:
                     flags = 0
-                data, compressed = serializer.serializeData(data, Pyro4.config.COMPRESSION)
+                data, compressed = serializer.serializeData(data, config.COMPRESSION)
                 if compressed:
                     flags |= Pyro4.message.FLAGS_COMPRESSED
                 msg = message.Message(message.MSG_CONNECT, data, serializer.serializer_id, flags, self._pyroSeq,
                                       annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
-                if Pyro4.config.LOGWIRE:
+                if config.LOGWIRE:
                     _log_wiredata(log, "proxy connect sending", msg)
                 conn.send(msg.to_bytes())
                 msg = message.Message.recv(conn, [message.MSG_CONNECTOK, message.MSG_CONNECTFAIL], hmac_key=self._pyroHmacKey)
-                if Pyro4.config.LOGWIRE:
+                if config.LOGWIRE:
                     _log_wiredata(log, "proxy connect response received", msg)
             except Exception:
                 x = sys.exc_info()[1]
@@ -550,7 +552,7 @@ class Proxy(object):
                     err = "connect: invalid msg type %d received" % msg.type
                     log.error(err)
                     raise errors.ProtocolError(err)
-            if Pyro4.config.METADATA:
+            if config.METADATA:
                 # obtain metadata if this feature is enabled, and the metadata is not known yet
                 if self._pyroMethods or self._pyroAttrs:
                     log.debug("reusing existing metadata")
@@ -804,7 +806,7 @@ def async(proxy):
 
 def pyroObjectToAutoProxy(obj):
     """reduce function that automatically replaces Pyro objects by a Proxy"""
-    if Pyro4.config.AUTOPROXY:
+    if config.AUTOPROXY:
         daemon = getattr(obj, "_pyroDaemon", None)
         if daemon:
             # only return a proxy if the object is a registered pyro object
@@ -918,8 +920,8 @@ class DaemonObject(object):
         """
         obj = self.daemon.objectsById.get(objectId)
         if obj is not None:
-            metadata = util.get_exposed_members(obj, only_exposed=Pyro4.config.REQUIRE_EXPOSE, as_lists=as_lists)
-            if Pyro4.config.REQUIRE_EXPOSE and not metadata["methods"] and not metadata["attrs"]:
+            metadata = util.get_exposed_members(obj, only_exposed=config.REQUIRE_EXPOSE, as_lists=as_lists)
+            if config.REQUIRE_EXPOSE and not metadata["methods"] and not metadata["attrs"]:
                 # Something seems wrong: nothing is remotely exposed.
                 # Possibly because older code not using @expose is now running with a more recent Pyro version
                 # where @expose is mandatory in the default configuration. Give a hint to the user.
@@ -955,21 +957,21 @@ class Daemon(object):
 
     def __init__(self, host=None, port=0, unixsocket=None, nathost=None, natport=None, interface=DaemonObject):
         if host is None:
-            host = Pyro4.config.HOST
+            host = config.HOST
         if nathost is None:
-            nathost = Pyro4.config.NATHOST
+            nathost = config.NATHOST
         if natport is None:
-            natport = Pyro4.config.NATPORT or None
+            natport = config.NATPORT or None
         if nathost and unixsocket:
             raise ValueError("cannot use nathost together with unixsocket")
         if (nathost is None) ^ (natport is None):
             raise ValueError("must provide natport with nathost")
-        if Pyro4.config.SERVERTYPE == "thread":
+        if config.SERVERTYPE == "thread":
             self.transportServer = SocketServer_Threadpool()
-        elif Pyro4.config.SERVERTYPE == "multiplex":
+        elif config.SERVERTYPE == "multiplex":
             self.transportServer = SocketServer_Multiplex()
         else:
-            raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
+            raise errors.PyroError("invalid server type '%s'" % config.SERVERTYPE)
         self.transportServer.init(self, host, port, unixsocket)
         #: The location (str of the form ``host:portnumber``) on which the Daemon is listening
         self.locationStr = self.transportServer.locationStr
@@ -990,9 +992,9 @@ class Daemon(object):
         self.__loopstopped = threading.Event()
         self.__loopstopped.set()
         # assert that the configured serializers are available, and remember their ids:
-        self.__serializer_ids = {util.get_serializer(ser_name).serializer_id for ser_name in Pyro4.config.SERIALIZERS_ACCEPTED}
-        log.debug("accepted serializers: %s" % Pyro4.config.SERIALIZERS_ACCEPTED)
-        log.debug("pyro protocol version: %d  pickle version: %d" % (constants.PROTOCOL_VERSION, Pyro4.config.PICKLE_PROTOCOL_VERSION))
+        self.__serializer_ids = {util.get_serializer(ser_name).serializer_id for ser_name in config.SERIALIZERS_ACCEPTED}
+        log.debug("accepted serializers: %s" % config.SERIALIZERS_ACCEPTED)
+        log.debug("pyro protocol version: %d  pickle version: %d" % (constants.PROTOCOL_VERSION, config.PICKLE_PROTOCOL_VERSION))
         self.__pyroHmacKey = None
         self._pyroInstances = {}   # pyro objects for instance_mode=single (singletons, just one per daemon)
         self.streaming_responses = {}   # stream_id -> (client, creation_timestamp, linger_timestamp, stream)
@@ -1108,7 +1110,7 @@ class Daemon(object):
             msg_seq = msg.seq
             if denied_reason:
                 raise Exception(denied_reason)
-            if Pyro4.config.LOGWIRE:
+            if config.LOGWIRE:
                 _log_wiredata(log, "daemon handshake received", msg)
             if msg.serializer_id not in self.__serializer_ids:
                 raise errors.SerializeError("message used serializer that is not accepted: %d" % msg.serializer_id)
@@ -1130,7 +1132,7 @@ class Daemon(object):
                 }
             else:
                 flags = 0
-            data, compressed = serializer.serializeData(handshake_response, Pyro4.config.COMPRESSION)
+            data, compressed = serializer.serializeData(handshake_response, config.COMPRESSION)
             msgtype = message.MSG_CONNECTOK
             if compressed:
                 flags |= message.FLAGS_COMPRESSED
@@ -1146,7 +1148,7 @@ class Daemon(object):
         # We need a minimal amount of response data or the socket will remain blocked
         # on some systems... (messages smaller than 40 bytes)
         msg = message.Message(msgtype, data, serializer_id, flags, msg_seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
-        if Pyro4.config.LOGWIRE:
+        if config.LOGWIRE:
             _log_wiredata(log, "daemon handshake response", msg)
         conn.send(msg.to_bytes())
         return msg.type == message.MSG_CONNECTOK
@@ -1191,12 +1193,12 @@ class Daemon(object):
                 current_context.correlation_id = uuid.UUID(bytes=msg.annotations["CORR"])
             else:
                 current_context.correlation_id = uuid.uuid4()
-            if Pyro4.config.LOGWIRE:
+            if config.LOGWIRE:
                 _log_wiredata(log, "daemon wiredata received", msg)
             if msg.type == message.MSG_PING:
                 # return same seq, but ignore any data (it's a ping, not an echo). Nothing is deserialized.
                 msg = message.Message(message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
-                if Pyro4.config.LOGWIRE:
+                if config.LOGWIRE:
                     _log_wiredata(log, "daemon wiredata sending", msg)
                 conn.send(msg.to_bytes())
                 return
@@ -1225,7 +1227,7 @@ class Daemon(object):
                         except Exception:
                             xt, xv = sys.exc_info()[0:2]
                             log.debug("Exception occurred while handling batched request: %s", xv)
-                            xv._pyroTraceback = util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
+                            xv._pyroTraceback = util.formatTraceback(detailed=config.DETAILED_TRACEBACK)
                             if sys.platform == "cli":
                                 util.fixIronPythonExceptionForPickle(xv, True)  # piggyback attributes
                             data.append(Pyro4.futures._ExceptionWrapper(xv))
@@ -1237,13 +1239,13 @@ class Daemon(object):
                     # normal single method call
                     if method == "__getattr__":
                         # special case for direct attribute access (only exposed @properties are accessible)
-                        data = util.get_exposed_property_value(obj, vargs[0], only_exposed=Pyro4.config.REQUIRE_EXPOSE)
+                        data = util.get_exposed_property_value(obj, vargs[0], only_exposed=config.REQUIRE_EXPOSE)
                     elif method == "__setattr__":
                         # special case for direct attribute access (only exposed @properties are accessible)
-                        data = util.set_exposed_property_value(obj, vargs[0], vargs[1], only_exposed=Pyro4.config.REQUIRE_EXPOSE)
+                        data = util.set_exposed_property_value(obj, vargs[0], vargs[1], only_exposed=config.REQUIRE_EXPOSE)
                     else:
                         method = util.getAttribute(obj, method)
-                        if request_flags & Pyro4.message.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:
+                        if request_flags & Pyro4.message.FLAGS_ONEWAY and config.ONEWAY_THREADED:
                             # oneway call to be run inside its own thread
                             _OnewayCallThread(target=method, args=vargs, kwargs=kwargs).start()
                         else:
@@ -1265,14 +1267,14 @@ class Daemon(object):
             if request_flags & Pyro4.message.FLAGS_ONEWAY:
                 return  # oneway call, don't send a response
             else:
-                data, compressed = serializer.serializeData(data, compress=Pyro4.config.COMPRESSION)
+                data, compressed = serializer.serializeData(data, compress=config.COMPRESSION)
                 response_flags = 0
                 if compressed:
                     response_flags |= Pyro4.message.FLAGS_COMPRESSED
                 if wasBatched:
                     response_flags |= Pyro4.message.FLAGS_BATCH
                 msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
-                if Pyro4.config.LOGWIRE:
+                if config.LOGWIRE:
                     _log_wiredata(log, "daemon wiredata sending", msg)
                 conn.send(msg.to_bytes())
         except Exception:
@@ -1287,13 +1289,13 @@ class Daemon(object):
                     if isinstance(xv, errors.SerializeError) or not isinstance(xv, errors.CommunicationError):
                         # only return the error to the client if it wasn't a oneway call, and not a communication error
                         # (in these cases, it makes no sense to try to report the error back to the client...)
-                        tblines = util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
+                        tblines = util.formatTraceback(detailed=config.DETAILED_TRACEBACK)
                         self._sendExceptionResponse(conn, request_seq, request_serializer_id, xv, tblines)
             if isCallback or isinstance(xv, (errors.CommunicationError, errors.SecurityError)):
                 raise  # re-raise if flagged as callback, communication or security error.
 
     def _clientDisconnect(self, conn):
-        if Pyro4.config.ITER_STREAM_LINGER > 0:
+        if config.ITER_STREAM_LINGER > 0:
             # client goes away, keep streams around for a bit longer (allow reconnect)
             for streamId in list(self.streaming_responses):
                 info = self.streaming_responses.get(streamId, None)
@@ -1317,21 +1319,21 @@ class Daemon(object):
         if not self.streaming_responses:
             return
         with self.housekeeper_lock:
-            if Pyro4.config.ITER_STREAM_LIFETIME > 0:
+            if config.ITER_STREAM_LIFETIME > 0:
                 # cleanup iter streams that are past their lifetime
                 for streamId in list(self.streaming_responses.keys()):
                     info = self.streaming_responses.get(streamId, None)
                     if info:
                         last_use_period = time.time() - info[1]
-                        if 0 < Pyro4.config.ITER_STREAM_LIFETIME < last_use_period:
+                        if 0 < config.ITER_STREAM_LIFETIME < last_use_period:
                             del self.streaming_responses[streamId]
-            if Pyro4.config.ITER_STREAM_LINGER > 0:
+            if config.ITER_STREAM_LINGER > 0:
                 # cleanup iter streams that are past their linger time
                 for streamId in list(self.streaming_responses.keys()):
                     info = self.streaming_responses.get(streamId, None)
                     if info and info[2]:
                         linger_period = time.time() - info[2]
-                        if linger_period > Pyro4.config.ITER_STREAM_LINGER:
+                        if linger_period > config.ITER_STREAM_LINGER:
                             del self.streaming_responses[streamId]
 
     def _getInstance(self, clazz, conn):
@@ -1398,7 +1400,7 @@ class Daemon(object):
         ann = self.annotations()
         ann.update(annotations or {})
         msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq, annotations=ann, hmac_key=self._pyroHmacKey)
-        if Pyro4.config.LOGWIRE:
+        if config.LOGWIRE:
             _log_wiredata(log, "daemon wiredata sending (error response)", msg)
         connection.send(msg.to_bytes())
 
@@ -1430,7 +1432,7 @@ class Daemon(object):
         # set some pyro attributes
         obj_or_class._pyroId = objectId
         obj_or_class._pyroDaemon = self
-        if Pyro4.config.AUTOPROXY:
+        if config.AUTOPROXY:
             # register a custom serializer for the type to automatically return proxies
             # we need to do this for all known serializers
             for ser in util._serializers.values():
@@ -1491,8 +1493,8 @@ class Daemon(object):
         if uri.object in self.objectsById:
             registered_object = self.objectsById[uri.object]
             # Clear cache regardless of how it is accessed
-            util.reset_exposed_members(registered_object, Pyro4.config.REQUIRE_EXPOSE, as_lists=True)
-            util.reset_exposed_members(registered_object, Pyro4.config.REQUIRE_EXPOSE, as_lists=False)
+            util.reset_exposed_members(registered_object, config.REQUIRE_EXPOSE, as_lists=True)
+            util.reset_exposed_members(registered_object, config.REQUIRE_EXPOSE, as_lists=False)
 
     def proxyFor(self, objectOrId, nat=True):
         """
@@ -1507,7 +1509,7 @@ class Daemon(object):
             registered_object = self.objectsById[uri.object]
         except KeyError:
             raise errors.DaemonError("object isn't registered in this daemon")
-        meta = util.get_exposed_members(registered_object, only_exposed=Pyro4.config.REQUIRE_EXPOSE)
+        meta = util.get_exposed_members(registered_object, only_exposed=config.REQUIRE_EXPOSE)
         proxy._pyroGetMetadata(known_metadata=meta)
         return proxy
 
@@ -1574,7 +1576,7 @@ class Daemon(object):
 
     def _streamResponse(self, data, client):
         if isinstance(data, collections.Iterator) or inspect.isgenerator(data):
-            if Pyro4.config.ITER_STREAMING:
+            if config.ITER_STREAMING:
                 if type(data) in self.__lazy_dict_iterator_types:
                     raise errors.PyroError("won't serialize or stream lazy dict iterators, convert to list yourself")
                 stream_id = str(uuid.uuid4())
@@ -1707,19 +1709,19 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
     """Get a proxy for a name server somewhere in the network."""
     if host is None:
         # first try localhost if we have a good chance of finding it there
-        if Pyro4.config.NS_HOST in ("localhost", "::1") or Pyro4.config.NS_HOST.startswith("127."):
-            if ":" in Pyro4.config.NS_HOST:  # ipv6
-                hosts = ["[%s]" % Pyro4.config.NS_HOST]
+        if config.NS_HOST in ("localhost", "::1") or config.NS_HOST.startswith("127."):
+            if ":" in config.NS_HOST:  # ipv6
+                hosts = ["[%s]" % config.NS_HOST]
             else:
                 # Some systems (Debian Linux) have 127.0.1.1 in the hosts file assigned to the hostname,
                 # try this too for convenience sake (only if it's actually used as a valid ip address)
                 try:
                     socket.gethostbyaddr("127.0.1.1")
-                    hosts = [Pyro4.config.NS_HOST] if Pyro4.config.NS_HOST == "127.0.1.1" else [Pyro4.config.NS_HOST, "127.0.1.1"]
+                    hosts = [config.NS_HOST] if config.NS_HOST == "127.0.1.1" else [config.NS_HOST, "127.0.1.1"]
                 except socket.error:
-                    hosts = [Pyro4.config.NS_HOST]
+                    hosts = [config.NS_HOST]
             for host in hosts:
-                uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port or Pyro4.config.NS_PORT)
+                uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port or config.NS_PORT)
                 log.debug("locating the NS: %s", uristring)
                 proxy = Proxy(uristring)
                 proxy._pyroHmacKey = hmac_key
@@ -1732,12 +1734,12 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
         if broadcast:
             # broadcast lookup
             if not port:
-                port = Pyro4.config.NS_BCPORT
+                port = config.NS_BCPORT
             log.debug("broadcast locate")
-            sock = Pyro4.socketutil.createBroadcastSocket(reuseaddr=Pyro4.config.SOCK_REUSE, timeout=0.7)
+            sock = Pyro4.socketutil.createBroadcastSocket(reuseaddr=config.SOCK_REUSE, timeout=0.7)
             for _ in range(3):
                 try:
-                    for bcaddr in Pyro4.config.parseAddressesString(Pyro4.config.BROADCAST_ADDRS):
+                    for bcaddr in config.parseAddressesString(config.BROADCAST_ADDRS):
                         try:
                             sock.sendto(b"GET_NSURI", 0, (bcaddr, port))
                         except socket.error:
@@ -1765,11 +1767,11 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
         else:
             log.debug("skipping broadcast lookup")
         # broadcast failed or skipped, try PYRO directly on specific host
-        host = Pyro4.config.NS_HOST
-        port = Pyro4.config.NS_PORT
+        host = config.NS_HOST
+        port = config.NS_PORT
     # pyro direct lookup
     if not port:
-        port = Pyro4.config.NS_PORT
+        port = config.NS_PORT
     if URI.isUnixsockLocation(host):
         uristring = "PYRO:%s@%s" % (Pyro4.constants.NAMESERVER_NAME, host)
     else:

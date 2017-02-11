@@ -8,8 +8,9 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import sys
 import pickle
 import threading
-import Pyro4
-import Pyro4.errors
+from Pyro4 import errors, core
+from Pyro4.configuration import config
+
 
 __all__ = ["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO",
            "NonserializableError", "MyThingPartlyExposed", "MyThingFullExposed",
@@ -17,7 +18,7 @@ __all__ = ["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO",
            "AtomicCounter"]
 
 
-Pyro4.config.reset(False)   # reset the config to default
+config.reset(False)   # reset the config to default
 
 if sys.version_info < (3, 0):
     # noinspection PyUnresolvedReferences
@@ -86,17 +87,17 @@ class MyThingPartlyExposed(object):
     def _private(self):
         pass
 
-    @Pyro4.expose
+    @core.expose
     @property
     def prop1(self):
         return self.propvalue
 
-    @Pyro4.expose
+    @core.expose
     @prop1.setter
     def prop1(self, value):
         self.propvalue = value
 
-    @Pyro4.expose
+    @core.expose
     @property
     def readonly_prop1(self):
         return self.propvalue
@@ -109,19 +110,19 @@ class MyThingPartlyExposed(object):
     def prop2(self, value):
         self.propvalue = value
 
-    @Pyro4.oneway
-    @Pyro4.expose
+    @core.oneway
+    @core.expose
     def oneway(self, arg):
         pass
 
-    @Pyro4.expose
+    @core.expose
     def exposed(self):
         pass
 
     __hash__ = object.__hash__
 
 
-@Pyro4.expose
+@core.expose
 class MyThingFullExposed(object):
     """this is the same as MyThingPartlyExposed but the whole class should be exposed"""
     c_attr = "hi"
@@ -178,7 +179,7 @@ class MyThingFullExposed(object):
     def prop2(self, value):
         self.propvalue = value
 
-    @Pyro4.oneway
+    @core.oneway
     def oneway(self, arg):
         pass
 
@@ -188,7 +189,7 @@ class MyThingFullExposed(object):
     __hash__ = object.__hash__
 
 
-@Pyro4.expose
+@core.expose
 class MyThingExposedSub(MyThingFullExposed):
     def sub_exposed(self):
         pass
@@ -196,20 +197,20 @@ class MyThingExposedSub(MyThingFullExposed):
     def sub_unexposed(self):
         pass
 
-    @Pyro4.oneway
+    @core.oneway
     def oneway2(self):
         pass
 
 
 class MyThingPartlyExposedSub(MyThingPartlyExposed):
-    @Pyro4.expose
+    @core.expose
     def sub_exposed(self):
         pass
 
     def sub_unexposed(self):
         pass
 
-    @Pyro4.oneway
+    @core.oneway
     def oneway2(self):
         pass
 
@@ -230,7 +231,7 @@ class ConnectionMock(object):
         chunk = self.received[:datasize]
         self.received = self.received[datasize:]
         if len(chunk) < datasize:
-            raise Pyro4.errors.ConnectionClosedError("receiving: not enough data")
+            raise errors.ConnectionClosedError("receiving: not enough data")
         return chunk
 
 

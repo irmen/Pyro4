@@ -12,6 +12,7 @@ import Pyro4.naming
 import Pyro4.socketutil
 import Pyro4.constants
 from Pyro4.errors import CommunicationError, NamingError
+from Pyro4.configuration import config
 
 
 class NSLoopThread(threading.Thread):
@@ -46,7 +47,7 @@ class BCSetupTests(unittest.TestCase):
 
 class NameServerTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.POLLTIMEOUT = 0.1
+        config.POLLTIMEOUT = 0.1
         myIpAddress = Pyro4.socketutil.getIpAddress("", workaround127=True)
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0)
         self.assertIsNotNone(self.bcserver, "expected a BC server to be running")
@@ -55,21 +56,21 @@ class NameServerTests(unittest.TestCase):
         self.daemonthread.start()
         self.daemonthread.running.wait()
         time.sleep(0.05)
-        self.old_bcPort = Pyro4.config.NS_BCPORT
-        self.old_nsPort = Pyro4.config.NS_PORT
-        self.old_nsHost = Pyro4.config.NS_HOST
-        Pyro4.config.NS_PORT = self.nsUri.port
-        Pyro4.config.NS_HOST = myIpAddress
-        Pyro4.config.NS_BCPORT = self.bcserver.getPort()
+        self.old_bcPort = config.NS_BCPORT
+        self.old_nsPort = config.NS_PORT
+        self.old_nsHost = config.NS_HOST
+        config.NS_PORT = self.nsUri.port
+        config.NS_HOST = myIpAddress
+        config.NS_BCPORT = self.bcserver.getPort()
 
     def tearDown(self):
         time.sleep(0.01)
         self.nameserver.shutdown()
         self.bcserver.close()
         self.daemonthread.join()
-        Pyro4.config.NS_HOST = self.old_nsHost
-        Pyro4.config.NS_PORT = self.old_nsPort
-        Pyro4.config.NS_BCPORT = self.old_bcPort
+        config.NS_HOST = self.old_nsHost
+        config.NS_PORT = self.old_nsPort
+        config.NS_BCPORT = self.old_bcPort
 
     def testLookupUnixsockParsing(self):
         # this must not raise AttributeError, it did before because of a parse bug
@@ -85,14 +86,14 @@ class NameServerTests(unittest.TestCase):
         uri = ns._pyroUri
         self.assertEqual("PYRO", uri.protocol)
         self.assertEqual(self.nsUri.host, uri.host)
-        self.assertEqual(Pyro4.config.NS_PORT, uri.port)
+        self.assertEqual(config.NS_PORT, uri.port)
         self.assertIsNone(ns._pyroHmacKey)
         ns._pyroRelease()
-        ns = Pyro4.core.locateNS(self.nsUri.host, Pyro4.config.NS_PORT, hmac_key=None)
+        ns = Pyro4.core.locateNS(self.nsUri.host, config.NS_PORT, hmac_key=None)
         uri = ns._pyroUri
         self.assertEqual("PYRO", uri.protocol)
         self.assertEqual(self.nsUri.host, uri.host)
-        self.assertEqual(Pyro4.config.NS_PORT, uri.port)
+        self.assertEqual(config.NS_PORT, uri.port)
         self.assertIsNone(ns._pyroHmacKey)
         # check that we cannot register a stupid type
         self.assertRaises(TypeError, ns.register, "unittest.object1", 5555)
@@ -105,7 +106,7 @@ class NameServerTests(unittest.TestCase):
 
     def testLookupInvalidHmac(self):
         with self.assertRaises(NamingError):
-            Pyro4.core.locateNS(self.nsUri.host, Pyro4.config.NS_PORT, hmac_key="invalidkey")
+            Pyro4.core.locateNS(self.nsUri.host, config.NS_PORT, hmac_key="invalidkey")
 
     def testDaemonPyroObj(self):
         uri = self.nsUri
@@ -187,25 +188,25 @@ class NameServerTests(unittest.TestCase):
         self.assertRaises(TypeError, Pyro4.core.resolve, 999)  # wrong arg type
 
     def testRefuseDottedNames(self):
-        old_metadata = Pyro4.config.METADATA
-        Pyro4.config.METADATA = False
+        old_metadata = config.METADATA
+        config.METADATA = False
         with Pyro4.core.locateNS(self.nsUri.host, self.nsUri.port) as ns:
             # the name server should never have dotted names enabled
             self.assertRaises(AttributeError, ns.namespace.keys)
             self.assertIsNotNone(ns._pyroConnection)
         self.assertIsNone(ns._pyroConnection)
-        Pyro4.config.METADATA = old_metadata
+        config.METADATA = old_metadata
 
     def testAutoClean(self):
         try:
-            Pyro4.config.NS_AUTOCLEAN = 0.0
-            Pyro4.config.COMMTIMEOUT = 0.5
+            config.NS_AUTOCLEAN = 0.0
+            config.COMMTIMEOUT = 0.5
             Pyro4.naming.AutoCleaner.max_unreachable_time = 1
             Pyro4.naming.AutoCleaner.loop_delay = 0.5
             Pyro4.naming.AutoCleaner.override_autoclean_min = True
             with Pyro4.naming.NameServerDaemon(port=0) as ns:
                 self.assertIsNone(ns.cleaner_thread)
-            Pyro4.config.NS_AUTOCLEAN = 0.2
+            config.NS_AUTOCLEAN = 0.2
             with Pyro4.naming.NameServerDaemon(port=0) as ns:
                 self.assertIsNotNone(ns.cleaner_thread)
                 ns.nameserver.register("test", "PYRO:test@localhost:59999")
@@ -217,33 +218,33 @@ class NameServerTests(unittest.TestCase):
             Pyro4.naming.AutoCleaner.override_autoclean_min = False
             Pyro4.naming.AutoCleaner.max_unreachable_time = 20
             Pyro4.naming.AutoCleaner.loop_delay = 2
-            Pyro4.config.NS_AUTOCLEAN = 0.0
-            Pyro4.config.COMMTIMEOUT = 0.0
+            config.NS_AUTOCLEAN = 0.0
+            config.COMMTIMEOUT = 0.0
 
 
 class NameServerTests0000(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.POLLTIMEOUT = 0.1
+        config.POLLTIMEOUT = 0.1
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host="", port=0, bcport=0)
         host_check = self.nsUri.host
         self.assertEqual("0.0.0.0", host_check, "for hostname \"\" the resulting ip must be 0.0.0.0 (or ipv6 equivalent)")
         self.assertIsNotNone(self.bcserver, "expected a BC server to be running")
         self.bcthread = self.bcserver.runInThread()
-        self.old_bcPort = Pyro4.config.NS_BCPORT
-        self.old_nsPort = Pyro4.config.NS_PORT
-        self.old_nsHost = Pyro4.config.NS_HOST
-        Pyro4.config.NS_PORT = self.nsUri.port
-        Pyro4.config.NS_HOST = self.nsUri.host
-        Pyro4.config.NS_BCPORT = self.bcserver.getPort()
+        self.old_bcPort = config.NS_BCPORT
+        self.old_nsPort = config.NS_PORT
+        self.old_nsHost = config.NS_HOST
+        config.NS_PORT = self.nsUri.port
+        config.NS_HOST = self.nsUri.host
+        config.NS_BCPORT = self.bcserver.getPort()
 
     def tearDown(self):
         time.sleep(0.01)
         self.nameserver.shutdown()
         self.bcserver.close()
         self.bcthread.join()
-        Pyro4.config.NS_HOST = self.old_nsHost
-        Pyro4.config.NS_PORT = self.old_nsPort
-        Pyro4.config.NS_BCPORT = self.old_bcPort
+        config.NS_HOST = self.old_nsHost
+        config.NS_PORT = self.old_nsPort
+        config.NS_BCPORT = self.old_bcPort
 
     def testBCLookup0000(self):
         ns = Pyro4.core.locateNS()  # broadcast lookup
@@ -254,7 +255,7 @@ class NameServerTests0000(unittest.TestCase):
 
 class NameServerTestsHmac(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.POLLTIMEOUT = 0.1
+        config.POLLTIMEOUT = 0.1
         myIpAddress = Pyro4.socketutil.getIpAddress("", workaround127=True)
         self.nsUri, self.nameserver, self.bcserver = Pyro4.naming.startNS(host=myIpAddress, port=0, bcport=0, hmac=b"test_key")
         self.assertIsNotNone(self.bcserver, "expected a BC server to be running")
@@ -263,21 +264,21 @@ class NameServerTestsHmac(unittest.TestCase):
         self.daemonthread.start()
         self.daemonthread.running.wait()
         time.sleep(0.05)
-        self.old_bcPort = Pyro4.config.NS_BCPORT
-        self.old_nsPort = Pyro4.config.NS_PORT
-        self.old_nsHost = Pyro4.config.NS_HOST
-        Pyro4.config.NS_PORT = self.nsUri.port
-        Pyro4.config.NS_HOST = myIpAddress
-        Pyro4.config.NS_BCPORT = self.bcserver.getPort()
+        self.old_bcPort = config.NS_BCPORT
+        self.old_nsPort = config.NS_PORT
+        self.old_nsHost = config.NS_HOST
+        config.NS_PORT = self.nsUri.port
+        config.NS_HOST = myIpAddress
+        config.NS_BCPORT = self.bcserver.getPort()
 
     def tearDown(self):
         time.sleep(0.01)
         self.nameserver.shutdown()
         self.bcserver.close()
         self.daemonthread.join()
-        Pyro4.config.NS_HOST = self.old_nsHost
-        Pyro4.config.NS_PORT = self.old_nsPort
-        Pyro4.config.NS_BCPORT = self.old_bcPort
+        config.NS_HOST = self.old_nsHost
+        config.NS_PORT = self.old_nsPort
+        config.NS_BCPORT = self.old_bcPort
 
     def testLookupAndRegister(self):
         ns = Pyro4.core.locateNS()  # broadcast lookup without providing hmac still works
@@ -288,11 +289,11 @@ class NameServerTestsHmac(unittest.TestCase):
         self.assertIsInstance(ns, Pyro4.core.Proxy)
         self.assertEqual(b"test_key", ns._pyroHmacKey)  # ... sets the hmac on the proxy
         ns._pyroRelease()
-        ns = Pyro4.core.locateNS(self.nsUri.host, Pyro4.config.NS_PORT, hmac_key=b"test_key")
+        ns = Pyro4.core.locateNS(self.nsUri.host, config.NS_PORT, hmac_key=b"test_key")
         uri = ns._pyroUri
         self.assertEqual("PYRO", uri.protocol)
         self.assertEqual(self.nsUri.host, uri.host)
-        self.assertEqual(Pyro4.config.NS_PORT, uri.port)
+        self.assertEqual(config.NS_PORT, uri.port)
         self.assertEqual(b"test_key", ns._pyroHmacKey)
         ns._pyroRelease()
 
@@ -300,7 +301,7 @@ class NameServerTestsHmac(unittest.TestCase):
         uri = Pyro4.core.resolve("PYRONAME:Pyro.NameServer", hmac_key=b"test_key")
         self.assertEqual("PYRO", uri.protocol)
         self.assertEqual(self.nsUri.host, uri.host)
-        self.assertEqual(Pyro4.config.NS_PORT, uri.port)
+        self.assertEqual(config.NS_PORT, uri.port)
 
     def testPyroname(self):
         with Pyro4.Proxy("PYRONAME:Pyro.NameServer") as p:

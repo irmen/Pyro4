@@ -8,6 +8,7 @@ import sys
 import os
 import unittest
 import Pyro4.util
+from Pyro4.configuration import config
 from testsupport import *
 
 
@@ -137,49 +138,49 @@ class TestUtils(unittest.TestCase):
             del os.environ["PYRO_NS_PORT"]
         if "PYRO_COMPRESSION" in os.environ:
             del os.environ["PYRO_COMPRESSION"]
-        Pyro4.config.reset()
+        config.reset()
 
     def testConfig(self):
         self.clearEnv()
         try:
-            self.assertEqual(9090, Pyro4.config.NS_PORT)
-            self.assertEqual("localhost", Pyro4.config.HOST)
-            self.assertEqual(False, Pyro4.config.COMPRESSION)
+            self.assertEqual(9090, config.NS_PORT)
+            self.assertEqual("localhost", config.HOST)
+            self.assertEqual(False, config.COMPRESSION)
             os.environ["NS_PORT"] = "4444"
-            Pyro4.config.reset()
-            self.assertEqual(9090, Pyro4.config.NS_PORT)
+            config.reset()
+            self.assertEqual(9090, config.NS_PORT)
             os.environ["PYRO_NS_PORT"] = "4444"
             os.environ["PYRO_HOST"] = "something.com"
             os.environ["PYRO_COMPRESSION"] = "OFF"
-            Pyro4.config.reset()
-            self.assertEqual(4444, Pyro4.config.NS_PORT)
-            self.assertEqual("something.com", Pyro4.config.HOST)
-            self.assertEqual(False, Pyro4.config.COMPRESSION)
+            config.reset()
+            self.assertEqual(4444, config.NS_PORT)
+            self.assertEqual("something.com", config.HOST)
+            self.assertEqual(False, config.COMPRESSION)
         finally:
             self.clearEnv()
-            self.assertEqual(9090, Pyro4.config.NS_PORT)
-            self.assertEqual("localhost", Pyro4.config.HOST)
-            self.assertEqual(False, Pyro4.config.COMPRESSION)
+            self.assertEqual(9090, config.NS_PORT)
+            self.assertEqual("localhost", config.HOST)
+            self.assertEqual(False, config.COMPRESSION)
 
     def testConfigReset(self):
         try:
-            Pyro4.config.reset()
-            self.assertEqual("localhost", Pyro4.config.HOST)
-            Pyro4.config.HOST = "foobar"
-            self.assertEqual("foobar", Pyro4.config.HOST)
-            Pyro4.config.reset()
-            self.assertEqual("localhost", Pyro4.config.HOST)
+            config.reset()
+            self.assertEqual("localhost", config.HOST)
+            config.HOST = "foobar"
+            self.assertEqual("foobar", config.HOST)
+            config.reset()
+            self.assertEqual("localhost", config.HOST)
             os.environ["PYRO_HOST"] = "foobar"
-            Pyro4.config.reset()
-            self.assertEqual("foobar", Pyro4.config.HOST)
+            config.reset()
+            self.assertEqual("foobar", config.HOST)
             del os.environ["PYRO_HOST"]
-            Pyro4.config.reset()
-            self.assertEqual("localhost", Pyro4.config.HOST)
+            config.reset()
+            self.assertEqual("localhost", config.HOST)
         finally:
             self.clearEnv()
 
     def testResolveAttr(self):
-        Pyro4.config.REQUIRE_EXPOSE = True
+        config.REQUIRE_EXPOSE = True
         @Pyro4.expose
         class Exposed(object):
             def __init__(self, value):
@@ -240,12 +241,12 @@ class TestUtils(unittest.TestCase):
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "u.v")
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "u.v.value")
         # try again but with require expose disabled
-        Pyro4.config.REQUIRE_EXPOSE = False
+        config.REQUIRE_EXPOSE = False
         self.assertIsInstance(Pyro4.util.getAttribute(obj, "u"), Unexposed)
         self.assertEqual("<a>", str(Pyro4.util.getAttribute(obj, "a")))
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "u.v")  # still not allowed to follow the dots
         self.assertRaises(AttributeError, Pyro4.util.getAttribute, obj, "u.v.value")  # still not allowed to follow the dots
-        Pyro4.config.REQUIRE_EXPOSE = True
+        config.REQUIRE_EXPOSE = True
 
     def testUnicodeKwargs(self):
         # test the way the interpreter deals with unicode function kwargs
@@ -262,7 +263,7 @@ class TestUtils(unittest.TestCase):
 
 class TestMeta(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.REQUIRE_EXPOSE = True
+        config.REQUIRE_EXPOSE = True
 
     def testBasic(self):
         o = MyThingFullExposed("irmen")

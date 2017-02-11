@@ -9,10 +9,11 @@ import hmac
 import unittest
 import zlib
 import Pyro4.message
-from Pyro4.message import Message
 import Pyro4.constants
 import Pyro4.util
 import Pyro4.errors
+from Pyro4.message import Message
+from Pyro4.configuration import config
 from testsupport import ConnectionMock
 
 
@@ -26,7 +27,7 @@ def pyrohmac(data, hmac_key, annotations={}):
 
 class MessageTestsHmac(unittest.TestCase):
     def setUp(self):
-        self.ser = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
+        self.ser = Pyro4.util.get_serializer(config.SERIALIZER)
 
     def testMessage(self):
         Message(99, b"", self.ser.serializer_id, 0, 0, hmac_key=b"secret")  # doesn't check msg type here

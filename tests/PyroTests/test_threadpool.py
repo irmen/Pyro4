@@ -8,9 +8,10 @@ from __future__ import print_function
 import time
 import random
 import unittest
+from Pyro4 import socketutil, core
 from Pyro4.socketserver.threadpool import Pool, PoolError, NoFreeWorkersError
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
-import Pyro4.socketutil
+from Pyro4.configuration import config
 
 
 JOB_TIME = 0.2
@@ -34,11 +35,11 @@ class SlowJob(object):
 
 class PoolTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.THREADPOOL_SIZE_MIN = 2
-        Pyro4.config.THREADPOOL_SIZE = 4
+        config.THREADPOOL_SIZE_MIN = 2
+        config.THREADPOOL_SIZE = 4
 
     def tearDown(self):
-        Pyro4.config.reset()
+        config.reset()
 
     def testCreate(self):
         with Pool() as jq:
@@ -54,19 +55,19 @@ class PoolTests(unittest.TestCase):
 
     def testAllBusy(self):
         try:
-            Pyro4.config.COMMTIMEOUT = 0.2
+            config.COMMTIMEOUT = 0.2
             with Pool() as p:
-                for i in range(Pyro4.config.THREADPOOL_SIZE):
+                for i in range(config.THREADPOOL_SIZE):
                     p.process(SlowJob(str(i+1)))
                 # putting one more than the number of workers should raise an error:
                 with self.assertRaises(NoFreeWorkersError):
                     p.process(SlowJob("toomuch"))
         finally:
-            Pyro4.config.COMMTIMEOUT = 0.0
+            config.COMMTIMEOUT = 0.0
 
     def testClose(self):
         with Pool() as p:
-            for i in range(Pyro4.config.THREADPOOL_SIZE):
+            for i in range(config.THREADPOOL_SIZE):
                 p.process(Job(str(i + 1)))
         with self.assertRaises(PoolError):
             p.process(Job(1))  # must not allow new jobs after closing
@@ -75,13 +76,13 @@ class PoolTests(unittest.TestCase):
 
     def testScaling(self):
         with Pool() as p:
-            for i in range(Pyro4.config.THREADPOOL_SIZE_MIN-1):
+            for i in range(config.THREADPOOL_SIZE_MIN-1):
                 p.process(Job("x"))
             self.assertEqual(1, len(p.idle))
-            self.assertEqual(Pyro4.config.THREADPOOL_SIZE_MIN-1, len(p.busy))
+            self.assertEqual(config.THREADPOOL_SIZE_MIN-1, len(p.busy))
             p.process(Job("x"))
             self.assertEqual(0, len(p.idle))
-            self.assertEqual(Pyro4.config.THREADPOOL_SIZE_MIN, len(p.busy))
+            self.assertEqual(config.THREADPOOL_SIZE_MIN, len(p.busy))
             # grow until no more free workers
             while True:
                 try:
@@ -89,14 +90,14 @@ class PoolTests(unittest.TestCase):
                 except NoFreeWorkersError:
                     break
             self.assertEqual(0, len(p.idle))
-            self.assertEqual(Pyro4.config.THREADPOOL_SIZE, len(p.busy))
+            self.assertEqual(config.THREADPOOL_SIZE, len(p.busy))
             # wait till jobs are done and check ending situation
             time.sleep(JOB_TIME*1.5)
             self.assertEqual(0, len(p.busy))
-            self.assertEqual(Pyro4.config.THREADPOOL_SIZE_MIN, len(p.idle))
+            self.assertEqual(config.THREADPOOL_SIZE_MIN, len(p.idle))
 
 
-class ServerCallback(Pyro4.core.Daemon):
+class ServerCallback(core.Daemon):
     def __init__(self):
         self.received_denied_reasons = []
 
@@ -113,22 +114,22 @@ class ServerCallback(Pyro4.core.Daemon):
 
 class ThreadPoolServerTests(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.THREADPOOL_SIZE_MIN = 1
-        Pyro4.config.THREADPOOL_SIZE = 1
-        Pyro4.config.POLLTIMEOUT = 0.5
-        Pyro4.config.COMMTIMEOUT = 0.5
+        config.THREADPOOL_SIZE_MIN = 1
+        config.THREADPOOL_SIZE = 1
+        config.POLLTIMEOUT = 0.5
+        config.COMMTIMEOUT = 0.5
 
     def tearDown(self):
-        Pyro4.config.reset()
+        config.reset()
 
     def testServerPoolFull(self):
-        port = Pyro4.socketutil.findProbablyUnusedPort()
+        port = socketutil.findProbablyUnusedPort()
         serv = SocketServer_Threadpool()
         daemon = ServerCallback()
         serv.init(daemon, "localhost", port)
         serversock = serv.sock.getsockname()
-        csock1 = Pyro4.socketutil.createSocket(connect=serversock)
-        csock2 = Pyro4.socketutil.createSocket(connect=serversock)
+        csock1 = socketutil.createSocket(connect=serversock)
+        csock2 = socketutil.createSocket(connect=serversock)
         try:
             serv.events([serv.sock])
             time.sleep(0.2)

@@ -29,12 +29,13 @@ import cgi
 import uuid
 from wsgiref.simple_server import make_server
 import traceback
-import Pyro4
+import Pyro4.core
+import Pyro4.constants
 import Pyro4.errors
 import Pyro4.message
 import Pyro4.util
-import Pyro4.constants
-from Pyro4.util import json     # don't import directly, we want to use the JSON_MODULE config item
+from Pyro4.util import json     # don't import stdlib json directly, we want to use the JSON_MODULE config item
+from Pyro4.configuration import config
 
 
 __all__ = ["pyro_app", "main"]
@@ -44,7 +45,7 @@ _nameserver = None
 def get_nameserver(hmac=None):
     global _nameserver
     if not _nameserver:
-        _nameserver = Pyro4.locateNS(hmac_key=hmac)
+        _nameserver = Pyro4.core.locateNS(hmac_key=hmac)
     try:
         _nameserver.ping()
         return _nameserver
@@ -256,8 +257,8 @@ def pyro_app(environ, start_response):
     You can stick this into a wsgi server of your choice, or use the main() method
     to use the default wsgiref server.
     """
-    Pyro4.config.SERIALIZER = "json"     # we only talk json through the http proxy
-    Pyro4.config.COMMTIMEOUT = pyro_app.comm_timeout
+    config.SERIALIZER = "json"     # we only talk json through the http proxy
+    config.COMMTIMEOUT = pyro_app.comm_timeout
     method = environ.get("REQUEST_METHOD")
     path = environ.get('PATH_INFO', '').lstrip('/')
     if not path:
@@ -285,7 +286,7 @@ def singlyfy_parameters(parameters):
 pyro_app.ns_regex = r"http\."
 pyro_app.hmac_key = None
 pyro_app.gateway_key = None
-pyro_app.comm_timeout = Pyro4.config.COMMTIMEOUT
+pyro_app.comm_timeout = config.COMMTIMEOUT
 
 
 def main(args=None):
@@ -303,7 +304,7 @@ def main(args=None):
     pyro_app.hmac_key = (options.pyrokey or "").encode("utf-8")
     pyro_app.gateway_key = (options.gatewaykey or "").encode("utf-8")
     pyro_app.ns_regex = options.expose
-    pyro_app.comm_timeout = Pyro4.config.COMMTIMEOUT = options.timeout
+    pyro_app.comm_timeout = config.COMMTIMEOUT = options.timeout
     if pyro_app.ns_regex:
         print("Exposing objects with names matching: ", pyro_app.ns_regex)
     else:

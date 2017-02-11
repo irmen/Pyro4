@@ -13,7 +13,7 @@ import logging
 import os
 from collections import defaultdict
 from Pyro4 import socketutil, errors, util
-import Pyro4.constants
+from Pyro4.configuration import config
 if sys.version_info >= (3, 5):
     import selectors
 else:
@@ -47,7 +47,7 @@ class SocketServer_Multiplex(object):
         log.debug("selector implementation: %s.%s", self.selector.__class__.__module__, self.selector.__class__.__name__)
         self.sock = None
         bind_location = unixsocket if unixsocket else (host, port)
-        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True, nodelay=Pyro4.config.SOCK_NODELAY)
+        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=config.SOCK_REUSE, timeout=config.COMMTIMEOUT, noinherit=True, nodelay=config.SOCK_NODELAY)
         self.daemon = daemon
         self._socketaddr = sockaddr = self.sock.getsockname()
         if not unixsocket and sockaddr[0].startswith("127."):
@@ -101,8 +101,8 @@ class SocketServer_Multiplex(object):
                 return
             csock, caddr = sock.accept()
             log.debug("connected %s", caddr)
-            if Pyro4.config.COMMTIMEOUT:
-                csock.settimeout(Pyro4.config.COMMTIMEOUT)
+            if config.COMMTIMEOUT:
+                csock.settimeout(config.COMMTIMEOUT)
         except socket.error:
             x = sys.exc_info()[1]
             err = getattr(x, "errno", x.args[0])
@@ -195,7 +195,7 @@ class SocketServer_Multiplex(object):
         while loopCondition():
             try:
                 try:
-                    events = self.selector.select(Pyro4.config.POLLTIMEOUT)
+                    events = self.selector.select(config.POLLTIMEOUT)
                 except OSError:
                     events = []
                 # get all the socket connection objects that have a READ event

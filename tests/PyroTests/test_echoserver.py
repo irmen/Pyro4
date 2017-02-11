@@ -9,7 +9,7 @@ import unittest
 from threading import Thread, Event
 import Pyro4.test.echoserver as echoserver
 import Pyro4.util
-import Pyro4
+from Pyro4.configuration import config
 
 
 class EchoServerThread(Thread):
@@ -36,7 +36,7 @@ class TestEchoserver(unittest.TestCase):
         self.echoserverthread.echodaemon.shutdown()
         time.sleep(0.02)
         self.echoserverthread.join()
-        Pyro4.config.SERVERTYPE = "thread"
+        config.SERVERTYPE = "thread"
 
     def testExposed(self):
         e = Pyro4.test.echoserver.EchoServer()

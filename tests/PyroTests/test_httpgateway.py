@@ -8,11 +8,11 @@ import json
 from wsgiref.util import setup_testing_defaults
 import io
 import unittest
-import Pyro4
 import Pyro4.utils.httpgateway
 import Pyro4.errors
 import Pyro4.core
 from Pyro4.naming import NameServer
+from Pyro4.configuration import config
 
 
 # a bit of hackery to avoid having to launch a live name server
@@ -103,12 +103,12 @@ class TestHttpGateway(WSGITestBase):
         super(TestHttpGateway, self).setUp()
         self.old_get_ns = Pyro4.utils.httpgateway.get_nameserver
         Pyro4.utils.httpgateway.get_nameserver = get_nameserver_dummy
-        Pyro4.config.COMMTIMEOUT = 0.3
+        config.COMMTIMEOUT = 0.3
 
     def tearDown(self):
         super(TestHttpGateway, self).tearDown()
         Pyro4.utils.httpgateway.get_nameserver = self.old_get_ns
-        Pyro4.config.COMMTIMEOUT = 0.0
+        config.COMMTIMEOUT = 0.0
 
     def testParams(self):
         multiparams = {

@@ -9,8 +9,8 @@ from __future__ import print_function
 import unittest
 import sys
 import os
-import Pyro4
-Pyro4.config.reset()
+from Pyro4.configuration import config
+config.reset()
 
 from_tox = "--tox" in sys.argv
 xml_report = "--xml" in sys.argv

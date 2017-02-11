@@ -13,11 +13,11 @@ import time
 import uuid
 import unittest
 import warnings
-import Pyro4.configuration
 import Pyro4.core
 import Pyro4.errors
 import Pyro4.constants
 import Pyro4.futures
+from Pyro4.configuration import config
 from testsupport import *
 
 
@@ -48,26 +48,26 @@ class CoreTests(unittest.TestCase):
         d.shutdown()
 
     def testConfig(self):
-        self.assertTrue(type(Pyro4.config.COMPRESSION) is bool)
-        self.assertTrue(type(Pyro4.config.NS_PORT) is int)
-        config = Pyro4.config.asDict()
-        self.assertTrue(type(config) is dict)
-        self.assertIn("COMPRESSION", config)
-        self.assertEqual(Pyro4.config.COMPRESSION, config["COMPRESSION"])
+        self.assertTrue(type(config.COMPRESSION) is bool)
+        self.assertTrue(type(config.NS_PORT) is int)
+        cfgdict = config.asDict()
+        self.assertTrue(type(cfgdict) is dict)
+        self.assertIn("COMPRESSION", cfgdict)
+        self.assertEqual(config.COMPRESSION, cfgdict["COMPRESSION"])
 
     def testConfigDefaults(self):
         # some security sensitive settings:
-        Pyro4.config.reset(False)   # reset the config to default
-        self.assertTrue(Pyro4.config.REQUIRE_EXPOSE)
-        self.assertEqual("localhost", Pyro4.config.HOST)
-        self.assertEqual("localhost", Pyro4.config.NS_HOST)
-        self.assertFalse(Pyro4.config.FLAME_ENABLED)
-        self.assertEqual("serpent", Pyro4.config.SERIALIZER)
-        self.assertEqual({"json", "serpent", "marshal"}, Pyro4.config.SERIALIZERS_ACCEPTED)
+        config.reset(False)   # reset the config to default
+        self.assertTrue(config.REQUIRE_EXPOSE)
+        self.assertEqual("localhost", config.HOST)
+        self.assertEqual("localhost", config.NS_HOST)
+        self.assertFalse(config.FLAME_ENABLED)
+        self.assertEqual("serpent", config.SERIALIZER)
+        self.assertEqual({"json", "serpent", "marshal"}, config.SERIALIZERS_ACCEPTED)
 
     def testConfigValid(self):
         try:
-            Pyro4.config.XYZ_FOOBAR = True  # don't want to allow weird config names
+            config.XYZ_FOOBAR = True  # don't want to allow weird config names
             self.fail("expected exception for weird config item")
         except AttributeError:
             pass
@@ -112,7 +112,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(uri, str(p))
         uri = "PYRONAME:some_obj_name@host.com"
         p = Pyro4.core.URI(uri)
-        self.assertEqual(uri + ":" + str(Pyro4.config.NS_PORT), str(p))  # a PYRONAME uri with a hostname gets a port too if omitted
+        self.assertEqual(uri + ":" + str(config.NS_PORT), str(p))  # a PYRONAME uri with a hostname gets a port too if omitted
         uri = "PYRONAME:some_obj_name@host.com:8888"
         p = Pyro4.core.URI(uri)
         self.assertEqual(uri, str(p))
@@ -184,7 +184,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("PYRONAME", p.protocol)
         self.assertEqual("objectname", p.object)
         self.assertEqual("nameserverhost", p.host)
-        self.assertEqual(Pyro4.config.NS_PORT, p.port)  # Pyroname uri with host gets a port too if not specified
+        self.assertEqual(config.NS_PORT, p.port)  # Pyroname uri with host gets a port too if not specified
         p = Pyro4.core.URI("PYRONAME:objectname@nameserverhost:4444")
         self.assertEqual("PYRONAME", p.protocol)
         self.assertEqual("objectname", p.object)
@@ -205,7 +205,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("PYROMETA", p.protocol)
         self.assertEqual({"meta1", "meta2"}, p.object)
         self.assertEqual("nameserverhost", p.host)
-        self.assertEqual(Pyro4.config.NS_PORT, p.port)  # PyroMeta uri with host gets a port too if not specified
+        self.assertEqual(config.NS_PORT, p.port)  # PyroMeta uri with host gets a port too if not specified
         p = Pyro4.core.URI("PYROMETA:meta@nameserverhost:4444")
         self.assertEqual("PYROMETA", p.protocol)
         self.assertEqual({"meta"}, p.object)
@@ -373,14 +373,14 @@ class CoreTests(unittest.TestCase):
 
     def testAsyncProxyAdapterCopy(self):
         try:
-            Pyro4.config.METADATA = False
+            config.METADATA = False
             with Pyro4.core.Proxy("PYRO:12345@hostname:9999") as proxy:
                 asyncproxy = proxy._pyroAsync()
                 p2 = copy.copy(asyncproxy)
                 asynccall = p2.foobar()
                 self.assertIsInstance(asynccall, Pyro4.futures.FutureResult)
         finally:
-            Pyro4.config.METADATA = True
+            config.METADATA = True
 
     def testBatchProxyAdapterCopy(self):
         with Pyro4.core.Proxy("PYRO:12345@hostname:9999") as proxy:
@@ -414,16 +414,16 @@ class CoreTests(unittest.TestCase):
             self.assertEqual(unicode(expected), unicode(p))
 
     def testProxySerializerOverride(self):
-        serializer = Pyro4.config.SERIALIZER
+        serializer = config.SERIALIZER
         try:
-            Pyro4.config.SERIALIZER = "~invalid~"
+            config.SERIALIZER = "~invalid~"
             _ = Pyro4.core.Proxy("PYRO:obj@localhost:5555")
             self.fail("must raise exception")
         except Pyro4.errors.SerializeError as x:
             self.assertIn("~invalid~", str(x))
             self.assertIn("unknown", str(x))
         finally:
-            Pyro4.config.SERIALIZER = serializer
+            config.SERIALIZER = serializer
         try:
             proxy = Pyro4.core.Proxy("PYRO:obj@localhost:5555")
             proxy._pyroSerializer = "~invalidoverride~"
@@ -435,7 +435,7 @@ class CoreTests(unittest.TestCase):
             self.assertIn("unknown", str(x))
         finally:
             proxy._pyroConnection = None
-            Pyro4.config.SERIALIZER = serializer
+            config.SERIALIZER = serializer
 
     def testProxyDir(self):
         # PyPy tries to call deprecated __members__ and __methods__
@@ -567,12 +567,12 @@ class CoreTests(unittest.TestCase):
     def testTimeoutGetSet(self):
         class ConnectionMock(object):
             def __init__(self):
-                self.timeout = Pyro4.config.COMMTIMEOUT
+                self.timeout = config.COMMTIMEOUT
 
             def close(self):
                 pass
 
-        Pyro4.config.COMMTIMEOUT = None
+        config.COMMTIMEOUT = None
         p = Pyro4.core.Proxy("PYRO:obj@host:555")
         self.assertIsNone(p._pyroTimeout)
         p._pyroTimeout = 5
@@ -583,7 +583,7 @@ class CoreTests(unittest.TestCase):
         p._pyroTimeout = 5
         self.assertEqual(5, p._pyroTimeout)
         self.assertEqual(5, p._pyroConnection.timeout)
-        Pyro4.config.COMMTIMEOUT = 2
+        config.COMMTIMEOUT = 2
         p = Pyro4.core.Proxy("PYRO:obj@host:555")
         p._pyroConnection = ConnectionMock()
         self.assertEqual(2, p._pyroTimeout)
@@ -591,7 +591,7 @@ class CoreTests(unittest.TestCase):
         p._pyroTimeout = None
         self.assertIsNone(p._pyroTimeout)
         self.assertIsNone(p._pyroConnection.timeout)
-        Pyro4.config.COMMTIMEOUT = None
+        config.COMMTIMEOUT = None
         p._pyroRelease()
 
     def testCallbackDecorator(self):
@@ -786,7 +786,7 @@ class RemoteMethodTests(unittest.TestCase):
 
     def testRemoteMethodMetaOff(self):
         try:
-            Pyro4.config.METADATA = False
+            config.METADATA = False
             class ProxyMock(object):
                 def invoke(self, name, args, kwargs):
                     return "INVOKED name=%s args=%s kwargs=%s" % (name, args, kwargs)
@@ -805,7 +805,7 @@ class RemoteMethodTests(unittest.TestCase):
             self.assertIsInstance(a2, Pyro4.core._RemoteMethod, "nested attribute should just be another RemoteMethod")
             p._pyroRelease()
         finally:
-            Pyro4.config.METADATA = True
+            config.METADATA = True
 
     def testRemoteMethodMetaOn(self):
         p = Pyro4.core.Proxy("PYRO:obj@localhost:59999")

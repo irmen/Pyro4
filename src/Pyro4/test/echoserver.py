@@ -17,13 +17,14 @@ import sys
 import time
 import threading
 from optparse import OptionParser
-from Pyro4 import naming, core
-import Pyro4
+from Pyro4 import core, naming
+from Pyro4.configuration import config
+
 
 __all__ = ["EchoServer"]
 
 
-@Pyro4.expose
+@core.expose
 class EchoServer(object):
     """
     The echo server object that is provided as a Pyro object by this module.
@@ -51,7 +52,7 @@ class EchoServer(object):
             print("%s - error: generating exception" % time.asctime())
         raise ValueError("the message of the error")
 
-    @Pyro4.oneway
+    @core.oneway
     def oneway_echo(self, message):
         """just like echo, but oneway; the client won't wait for response"""
         if self._verbose:
@@ -80,7 +81,7 @@ class EchoServer(object):
     def inf(self):
         return float("inf")
 
-    @Pyro4.oneway
+    @core.oneway
     def oneway_slow(self):
         """prints a message after a certain delay, and returns; but the client won't wait for it"""
         if self._verbose:
@@ -156,7 +157,7 @@ def main(args=None, returnWithoutLooping=False):
         options.quiet = False
     if not options.quiet:
         print("Starting Pyro's built-in test echo server.")
-    Pyro4.config.SERVERTYPE = "multiplex"
+    config.SERVERTYPE = "multiplex"
 
     hmac = (options.key or "").encode("utf-8")
     if not hmac and not options.quiet:
@@ -167,7 +168,7 @@ def main(args=None, returnWithoutLooping=False):
         options.naming = True
         nameserver = startNameServer(options.host, hmac=hmac)
 
-    d = Pyro4.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
+    d = core.Daemon(host=options.host, port=options.port, unixsocket=options.unixsocket)
     if hmac:
         d._pyroHmacKey = hmac
     echo = EchoServer()

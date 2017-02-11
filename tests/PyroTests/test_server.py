@@ -15,6 +15,7 @@ import Pyro4.errors
 import Pyro4.util
 import Pyro4.message
 from Pyro4 import current_context
+from Pyro4.configuration import config
 from testsupport import *
 
 
@@ -131,8 +132,8 @@ class DaemonWithSabotagedHandshake(Pyro4.core.Daemon):
 
 class ServerTestsBrokenHandshake(unittest.TestCase):
     def setUp(self):
-        Pyro4.config.LOGWIRE = True
-        Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
+        config.LOGWIRE = True
+        config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon = DaemonWithSabotagedHandshake(port=0)
         obj = ServerTestObject()
         uri = self.daemon.register(obj, "something")
@@ -146,7 +147,7 @@ class ServerTestsBrokenHandshake(unittest.TestCase):
         time.sleep(0.05)
         self.daemon.shutdown()
         self.daemonthread.join()
-        Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
+        config.SERIALIZERS_ACCEPTED.discard("pickle")
 
     def testDaemonConnectFail(self):
         # check what happens when the daemon responds with a failed connection msg
@@ -165,8 +166,8 @@ class ServerTestsOnce(unittest.TestCase):
     """tests that are fine to run with just a single server type"""
 
     def setUp(self):
-        Pyro4.config.LOGWIRE = True
-        Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
+        config.LOGWIRE = True
+        config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon = Pyro4.core.Daemon(port=0)
         obj = ServerTestObject()
         uri = self.daemon.register(obj, "something")
@@ -183,7 +184,7 @@ class ServerTestsOnce(unittest.TestCase):
         if self.daemon is not None:
             self.daemon.shutdown()
             self.daemonthread.join()
-        Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
+        config.SERIALIZERS_ACCEPTED.discard("pickle")
 
     def testPingMessage(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -208,8 +209,8 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testMetaOffAttrs(self):
         try:
-            old_meta = Pyro4.config.METADATA
-            Pyro4.config.METADATA = False
+            old_meta = config.METADATA
+            config.METADATA = False
             # should fail here, because there is no meta info about attributes
             with Pyro4.core.Proxy(self.objectUri) as p:
                 self.assertEqual(55, p.multiply(5, 11))
@@ -224,12 +225,12 @@ class ServerTestsOnce(unittest.TestCase):
                 x = p.getDict()
                 self.assertEqual({"number": 42}, x)
         finally:
-            Pyro4.config.METADATA = old_meta
+            config.METADATA = old_meta
 
     def testMetaOnAttrs(self):
         try:
-            old_meta = Pyro4.config.METADATA
-            Pyro4.config.METADATA = True
+            old_meta = config.METADATA
+            config.METADATA = True
             with Pyro4.core.Proxy(self.objectUri) as p:
                 self.assertEqual(55, p.multiply(5, 11))
                 # property
@@ -243,7 +244,7 @@ class ServerTestsOnce(unittest.TestCase):
                     # attribute should fail (meta only works for exposed properties)
                     p.dict_attr.update({"more": 666})
         finally:
-            Pyro4.config.METADATA = old_meta
+            config.METADATA = old_meta
 
     def testSomeArgumentTypes(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -301,7 +302,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testProxyAttrsMetadataOff(self):
         try:
-            Pyro4.config.METADATA = False
+            config.METADATA = False
             # read attributes
             with Pyro4.core.Proxy(self.objectUri) as p:
                 a = p.multiply
@@ -315,11 +316,11 @@ class ServerTestsOnce(unittest.TestCase):
                 p.some_weird_attribute = 42
                 self.assertEqual(42, p.some_weird_attribute)
         finally:
-            Pyro4.config.METADATA = True
+            config.METADATA = True
 
     def testProxyAttrsMetadataOn(self):
         try:
-            Pyro4.config.METADATA = True
+            config.METADATA = True
             # read attributes
             with Pyro4.core.Proxy(self.objectUri) as p:
                 # unconnected proxy still has empty metadata.
@@ -336,7 +337,7 @@ class ServerTestsOnce(unittest.TestCase):
                 self.assertEqual(42, p.value)
                 self.assertTrue("value" in p._pyroAttrs)
         finally:
-            Pyro4.config.METADATA = True
+            config.METADATA = True
 
     def testProxyAnnotations(self):
         class CustomAnnotationsProxy(Pyro4.core.Proxy):
@@ -361,19 +362,19 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testExposedNotRequired(self):
         try:
-            old_require = Pyro4.config.REQUIRE_EXPOSE
-            Pyro4.config.REQUIRE_EXPOSE = False
+            old_require = config.REQUIRE_EXPOSE
+            config.REQUIRE_EXPOSE = False
             with self.daemon.proxyFor("unexposed") as p:
                 self.assertEqual({"unexposed", "getName"}, p._pyroMethods)
                 self.assertEqual("hello", p.getName())
                 self.assertEqual("you should not see this", p.unexposed())   # you *should* see it when REQUIRE_EXPOSE is False :)
         finally:
-            Pyro4.config.REQUIRE_EXPOSE = old_require
+            config.REQUIRE_EXPOSE = old_require
 
     def testExposedRequired(self):
         try:
-            old_require = Pyro4.config.REQUIRE_EXPOSE
-            Pyro4.config.REQUIRE_EXPOSE = True
+            old_require = config.REQUIRE_EXPOSE
+            config.REQUIRE_EXPOSE = True
             with self.daemon.proxyFor("unexposed") as p:
                 self.assertEqual({"getName"}, p._pyroMethods)
                 self.assertEqual("hello", p.getName())
@@ -386,7 +387,7 @@ class ServerTestsOnce(unittest.TestCase):
                 expected_msg = "remote object '%s' has no exposed attribute 'unexposed_set'" % p._pyroUri
                 self.assertEqual(expected_msg, str(e.exception))
         finally:
-            Pyro4.config.REQUIRE_EXPOSE = old_require
+            config.REQUIRE_EXPOSE = old_require
 
     def testProperties(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -404,7 +405,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testHasAttr(self):
         try:
-            Pyro4.config.METADATA = False
+            config.METADATA = False
             with Pyro4.core.Proxy(self.objectUri) as p:
                 # with metadata off, all attributes are considered valid (and return a RemoteMethod object)
                 self.assertTrue(hasattr(p, "multiply"))
@@ -413,7 +414,7 @@ class ServerTestsOnce(unittest.TestCase):
                 self.assertTrue(hasattr(p, "_value"))
                 self.assertTrue(hasattr(p, "_dictionary"))
                 self.assertTrue(hasattr(p, "non_existing_attribute"))
-            Pyro4.config.METADATA = True
+            config.METADATA = True
             with Pyro4.core.Proxy(self.objectUri) as p:
                 # with metadata on, hasattr actually gives proper results
                 self.assertTrue(hasattr(p, "multiply"))
@@ -423,7 +424,7 @@ class ServerTestsOnce(unittest.TestCase):
                 self.assertFalse(hasattr(p, "_dictionary"))
                 self.assertFalse(hasattr(p, "non_existing_attribute"))
         finally:
-            Pyro4.config.METADATA = True
+            config.METADATA = True
 
     def testProxyMetadataKnown(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -452,7 +453,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testNonserializableException_pickle(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            Pyro4.config.SERIALIZER = "pickle"
+            config.SERIALIZER = "pickle"
             try:
                 p.nonserializableException()
                 self.fail("should crash")
@@ -466,7 +467,7 @@ class ServerTestsOnce(unittest.TestCase):
                 self.assertTrue(s1 in tblines or s2 in tblines)
                 self.assertTrue("raise NonserializableError((\"xantippe" in tblines)
             finally:
-                Pyro4.config.SERIALIZER = "serpent"
+                config.SERIALIZER = "serpent"
 
     def testBatchProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -600,10 +601,10 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testAutoProxy(self):
         obj = ServerTestObject()
-        Pyro4.config.SERIALIZER = "pickle"
+        config.SERIALIZER = "pickle"
         try:
             with Pyro4.core.Proxy(self.objectUri) as p:
-                Pyro4.config.AUTOPROXY = False  # make sure autoproxy is disabled
+                config.AUTOPROXY = False  # make sure autoproxy is disabled
                 result = p.echo(obj)
                 self.assertIsInstance(result, ServerTestObject)
                 self.daemon.register(obj)
@@ -612,7 +613,7 @@ class ServerTestsOnce(unittest.TestCase):
                 self.daemon.unregister(obj)
                 result = p.echo(obj)
                 self.assertIsInstance(result, ServerTestObject, "serialized object must still be normal object")
-                Pyro4.config.AUTOPROXY = True  # make sure autoproxying is enabled
+                config.AUTOPROXY = True  # make sure autoproxying is enabled
                 result = p.echo(obj)
                 self.assertIsInstance(result, ServerTestObject, "non-pyro object must be returned as normal class")
                 self.daemon.register(obj)
@@ -624,8 +625,8 @@ class ServerTestsOnce(unittest.TestCase):
                 # note: the custom serializer may still be active but it should be smart enough to see
                 # that the object is no longer a pyro object, and therefore, no proxy should be created.
         finally:
-            Pyro4.config.AUTOPROXY = True
-            Pyro4.config.SERIALIZER = "serpent"
+            config.AUTOPROXY = True
+            config.SERIALIZER = "serpent"
 
     def testConnectOnce(self):
         with Pyro4.core.Proxy(self.objectUri) as proxy:
@@ -663,13 +664,13 @@ class ServerTestsOnce(unittest.TestCase):
             bigobject = [42] * 1000
             result = p.echo(bigobject)
             self.assertEqual(result, bigobject)
-            Pyro4.config.MAX_MESSAGE_SIZE = 999
+            config.MAX_MESSAGE_SIZE = 999
             try:
                 _ = p.echo(bigobject)
                 self.fail("should fail with ProtocolError msg too large")
             except Pyro4.errors.ProtocolError:
                 pass
-            Pyro4.config.MAX_MESSAGE_SIZE = 0
+            config.MAX_MESSAGE_SIZE = 0
 
     def testIterator(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
@@ -715,11 +716,11 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
     COMMTIMEOUT = None
 
     def setUp(self):
-        Pyro4.config.LOGWIRE = True
-        Pyro4.config.POLLTIMEOUT = 0.1
-        Pyro4.config.SERVERTYPE = self.SERVERTYPE
-        Pyro4.config.COMMTIMEOUT = self.COMMTIMEOUT
-        Pyro4.config.SERIALIZERS_ACCEPTED.add("pickle")
+        config.LOGWIRE = True
+        config.POLLTIMEOUT = 0.1
+        config.SERVERTYPE = self.SERVERTYPE
+        config.COMMTIMEOUT = self.COMMTIMEOUT
+        config.SERIALIZERS_ACCEPTED.add("pickle")
         self.daemon = Pyro4.core.Daemon(port=0)
         obj = ServerTestObject()
         uri = self.daemon.register(obj, "something")
@@ -733,9 +734,9 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         time.sleep(0.05)
         self.daemon.shutdown()
         self.daemonthread.join()
-        Pyro4.config.SERVERTYPE = "thread"
-        Pyro4.config.COMMTIMEOUT = None
-        Pyro4.config.SERIALIZERS_ACCEPTED.discard("pickle")
+        config.SERVERTYPE = "thread"
+        config.COMMTIMEOUT = None
+        config.SERIALIZERS_ACCEPTED.discard("pickle")
 
     def testConnectionStuff(self):
         p1 = Pyro4.core.Proxy(self.objectUri)
@@ -774,14 +775,14 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         # test compression:
         try:
             with Pyro4.core.Proxy(self.objectUri) as p:
-                Pyro4.config.COMPRESSION = True
+                config.COMPRESSION = True
                 self.assertEqual(55, p.multiply(5, 11))
                 self.assertEqual("*" * 1000, p.multiply("*" * 500, 2))
         finally:
-            Pyro4.config.COMPRESSION = False
+            config.COMPRESSION = False
 
     def testOnewayMetaOn(self):
-        Pyro4.config.METADATA = True
+        config.METADATA = True
         with Pyro4.core.Proxy(self.objectUri) as p:
             self.assertEqual(set(), p._pyroOneway)  # when not bound, no meta info exchange has been done
             p._pyroBind()
@@ -800,7 +801,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 p.nonexisting_method()
 
     def testOnewayMetaOff(self):
-        Pyro4.config.METADATA = False
+        config.METADATA = False
         with Pyro4.core.Proxy(self.objectUri) as p:
             self.assertEqual(set(), p._pyroOneway)  # when not bound, no meta info exchange has been done
             p._pyroBind()
@@ -813,10 +814,10 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             p._pyroOneway.add("nonexisting_method")
             # now it shouldn't fail because of oneway semantics (!) (and becaue there's no metadata to tell Pyro that the method doesn't exist)
             p.nonexisting_method()
-        Pyro4.config.METADATA = True
+        config.METADATA = True
 
     def testOnewayWithProxySubclass(self):
-        Pyro4.config.METADATA = False
+        config.METADATA = False
 
         class ProxyWithOneway(Pyro4.core.Proxy):
             def __init__(self, arg):
@@ -829,13 +830,13 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             p._pyroOneway = set()
             self.assertEqual(55, p.oneway_multiply(5, 11))
             self.assertEqual(55, p.multiply(5, 11))
-        Pyro4.config.METADATA = True
+        config.METADATA = True
 
     def testOnewayDelayed(self):
         try:
             with Pyro4.core.Proxy(self.objectUri) as p:
                 p.ping()
-                Pyro4.config.ONEWAY_THREADED = True  # the default
+                config.ONEWAY_THREADED = True  # the default
                 now = time.time()
                 p.oneway_delay(1)  # oneway so we should continue right away
                 time.sleep(0.01)
@@ -845,7 +846,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 self.assertTrue(time.time() - now < 0.2, "delay should be running in its own thread")
                 # make oneway calls run in the server thread
                 # we can change the config here and the server will pick it up on the fly
-                Pyro4.config.ONEWAY_THREADED = False
+                config.ONEWAY_THREADED = False
                 now = time.time()
                 p.oneway_delay(1)  # oneway so we should continue right away
                 time.sleep(0.01)
@@ -854,11 +855,11 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 self.assertEqual(55, p.multiply(5, 11), "expected a normal result from a non-oneway call")
                 self.assertFalse(time.time() - now < 0.2, "delay should be running in the server thread")
         finally:
-            Pyro4.config.ONEWAY_THREADED = True  # back to normal
+            config.ONEWAY_THREADED = True  # back to normal
 
     def testSerializeConnected(self):
         # online serialization tests
-        ser = Pyro4.util.get_serializer(Pyro4.config.SERIALIZER)
+        ser = Pyro4.util.get_serializer(config.SERIALIZER)
         proxy = Pyro4.core.Proxy(self.objectUri)
         proxy._pyroBind()
         self.assertIsNotNone(proxy._pyroConnection)
@@ -900,7 +901,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 del tb
 
     def testTimeoutCall(self):
-        Pyro4.config.COMMTIMEOUT = None
+        config.COMMTIMEOUT = None
         with Pyro4.core.Proxy(self.objectUri) as p:
             p.ping()
             start = time.time()
@@ -1015,7 +1016,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             self.assertFalse(t.error, "all threads should report no errors")
         del threads
         duration = time.time() - start
-        if Pyro4.config.SERVERTYPE == "multiplex":
+        if config.SERVERTYPE == "multiplex":
             # multiplex based server doesn't execute calls in parallel,
             # so 6 threads times 0.5 seconds =~ 3 seconds
             self.assertTrue(2.5 < duration < 3.5)
@@ -1032,13 +1033,13 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             next(generator)
 
     def testGeneratorLinger(self):
-        orig_linger = Pyro4.config.ITER_STREAM_LINGER
-        orig_commt = Pyro4.config.COMMTIMEOUT
-        orig_pollt = Pyro4.config.POLLTIMEOUT
+        orig_linger = config.ITER_STREAM_LINGER
+        orig_commt = config.COMMTIMEOUT
+        orig_pollt = config.POLLTIMEOUT
         try:
-            Pyro4.config.ITER_STREAM_LINGER = 0.5
-            Pyro4.config.COMMTIMEOUT = 0.2
-            Pyro4.config.POLLTIMEOUT = 0.2
+            config.ITER_STREAM_LINGER = 0.5
+            config.COMMTIMEOUT = 0.2
+            config.POLLTIMEOUT = 0.2
             p = Pyro4.core.Proxy(self.objectUri)
             generator = p.generator()
             self.assertEqual("one", next(generator))
@@ -1054,15 +1055,15 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             with self.assertRaises(Pyro4.errors.PyroError):  # should not be resumable anymore
                 next(generator)
         finally:
-            Pyro4.config.ITER_STREAM_LINGER = orig_linger
-            Pyro4.config.COMMTIMEOUT = orig_commt
-            Pyro4.config.POLLTIMEOUT = orig_pollt
+            config.ITER_STREAM_LINGER = orig_linger
+            config.COMMTIMEOUT = orig_commt
+            config.POLLTIMEOUT = orig_pollt
 
     def testGeneratorNoLinger(self):
-        orig_linger = Pyro4.config.ITER_STREAM_LINGER
+        orig_linger = config.ITER_STREAM_LINGER
         try:
             p = Pyro4.core.Proxy(self.objectUri)
-            Pyro4.config.ITER_STREAM_LINGER = 0  # disable linger
+            config.ITER_STREAM_LINGER = 0  # disable linger
             generator = p.generator()
             self.assertEqual("one", next(generator))
             p._pyroRelease()
@@ -1073,7 +1074,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 next(generator)
             generator.close()
         finally:
-            Pyro4.config.ITER_STREAM_LINGER = orig_linger
+            config.ITER_STREAM_LINGER = orig_linger
 
 
 class ServerTestsMultiplexNoTimeout(ServerTestsThreadNoTimeout):
