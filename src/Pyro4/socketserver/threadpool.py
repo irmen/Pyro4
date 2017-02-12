@@ -78,9 +78,9 @@ class Pool(object):
     def close(self):
         if not self.closed:
             log.debug("closing down")
-            for w in self.busy:
+            for w in list(self.busy):
                 w.process(None)
-            for w in self.idle:
+            for w in list(self.idle):
                 w.process(None)
             self.closed = True
             time.sleep(0.1)
