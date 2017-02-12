@@ -28,6 +28,5 @@ try:
     print("\nSending big data with a limit on message size...")
     response = echoserver.echo(simple_object)
     print("Hmm, this should have raised an exception")
-except Pyro4.errors.MessageTooLargeError:
-    ex_t, ex_v, ex_tb = sys.exc_info()
-    print("EXCEPTION (expected):", ex_t, ex_v)
+except Pyro4.errors.MessageTooLargeError as x:
+    print("EXCEPTION (expected):", x)

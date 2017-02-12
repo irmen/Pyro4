@@ -9,38 +9,38 @@ test = Pyro4.core.Proxy("PYRONAME:example.exceptions")
 print(test.div(2.0, 9.0))
 try:
     print(2 // 0)
-except ZeroDivisionError:
-    print("DIVIDE BY ZERO: %s" % sys.exc_info()[1])
+except ZeroDivisionError as x:
+    print("DIVIDE BY ZERO: %s" % x)
 try:
     print(test.div(2, 0))
-except ZeroDivisionError:
-    print("DIVIDE BY ZERO: %s" % sys.exc_info()[1])
+except ZeroDivisionError as x:
+    print("DIVIDE BY ZERO: %s" % x)
 try:
     result = test.error()
     print("%r, %s" % (result, result))
-except ValueError:
-    print("VALUERROR: %s" % sys.exc_info()[1])
+except ValueError as x:
+    print("VALUERROR: %s" % x)
 try:
     result = test.error2()
     print("%r, %s" % (result, result))
-except ValueError:
-    print("VALUERROR: %s" % sys.exc_info()[1])
+except ValueError as x:
+    print("VALUERROR: %s" % x)
 try:
     result = test.othererr()
     print("%r, %s" % (result, result))
-except Exception:
-    print("ANOTHER ERROR: %s" % sys.exc_info()[1])
+except Exception as x:
+    print("ANOTHER ERROR: %s" % x)
 try:
     result = test.unserializable()
     print("%r, %s" % (result, result))
-except Exception:
-    print("UNSERIALIZABLE ERROR: %s" % sys.exc_info()[1])
+except Exception as x:
+    print("UNSERIALIZABLE ERROR: %s" % x)
 
 print("\n*** invoking server method that crashes, catching traceback ***")
 try:
     print(test.complexerror())
-except Exception:
-    print("CAUGHT ERROR  >>> %s" % sys.exc_info()[1])
+except Exception as x:
+    print("CAUGHT ERROR  >>> %s" % x)
     print("Printing Pyro traceback >>>>>>")
     print("".join(Pyro4.util.getPyroTraceback()))
     print("<<<<<<< end of Pyro traceback")

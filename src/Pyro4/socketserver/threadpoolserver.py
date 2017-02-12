@@ -150,8 +150,7 @@ class SocketServer_Threadpool(object):
         while (self.sock is not None) and not self.shutting_down and loopCondition():
             try:
                 self.events([self.sock])
-            except socket.error:
-                x = sys.exc_info()[1]
+            except socket.error as x:
                 err = getattr(x, "errno", x.args[0])
                 if not loopCondition():
                     # swallow the socket error if loop terminates anyway

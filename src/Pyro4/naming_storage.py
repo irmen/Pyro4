@@ -347,8 +347,7 @@ class DbmStorage(MutableMapping):
     def optimized_regex_list(self, regex, return_metadata=False):
         try:
             regex = re.compile(regex + "$")  # add end of string marker
-        except re.error:
-            x = sys.exc_info()[1]
+        except re.error as x:
             raise NamingError("invalid regex: " + str(x))
         with self.lock:
             try:

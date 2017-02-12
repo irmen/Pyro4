@@ -73,7 +73,7 @@ class Future(object):
         except Exception as x:
             if self.exceptionhandler:
                 self.exceptionhandler(x)
-            asyncresult.value = _ExceptionWrapper(sys.exc_info()[1])
+            asyncresult.value = _ExceptionWrapper(x)
 
     def delay(self, seconds):
         """

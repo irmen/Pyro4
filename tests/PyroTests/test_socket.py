@@ -276,8 +276,7 @@ class TestSocketutil(unittest.TestCase):
         for bcaddr in config.parseAddressesString(config.BROADCAST_ADDRS):
             try:
                 cs.sendto(tobytes("monkey"), 0, (bcaddr, port))
-            except socket.error:
-                x = sys.exc_info()[1]
+            except socket.error as x:
                 err = getattr(x, "errno", x.args[0])
                 # handle some errno that some platforms like to throw
                 if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL and err not in Pyro4.socketutil.ERRNO_EADDRINUSE:

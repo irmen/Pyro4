@@ -154,9 +154,8 @@ class ServerTestsBrokenHandshake(unittest.TestCase):
             try:
                 p.ping()
                 self.fail("expected CommunicationError")
-            except Pyro4.errors.CommunicationError:
-                xv = sys.exc_info()[1]
-                message = str(xv)
+            except Pyro4.errors.CommunicationError as x:
+                message = str(x)
                 self.assertIn("rejected:", message)
                 self.assertIn("rigged connection failure", message)
 
@@ -444,9 +443,8 @@ class ServerTestsOnce(unittest.TestCase):
             try:
                 p.nonserializableException()
                 self.fail("should crash")
-            except Exception:
-                xt, xv, tb = sys.exc_info()
-                self.assertTrue(issubclass(xt, Pyro4.errors.PyroError))
+            except Exception as x:
+                self.assertIsInstance(x, Pyro4.errors.PyroError)
                 tblines = "\n".join(Pyro4.util.getPyroTraceback())
                 self.assertTrue("unsupported serialized class" in tblines)
 
@@ -456,9 +454,8 @@ class ServerTestsOnce(unittest.TestCase):
             try:
                 p.nonserializableException()
                 self.fail("should crash")
-            except Exception:
-                xt, xv, tb = sys.exc_info()
-                self.assertTrue(issubclass(xt, Pyro4.errors.PyroError))
+            except Exception as x:
+                self.assertIsInstance(x, Pyro4.errors.PyroError)
                 tblines = "\n".join(Pyro4.util.getPyroTraceback())
                 self.assertTrue("PyroError: Error serializing exception" in tblines)
                 s1 = "Original exception: <class 'testsupport.NonserializableError'>:"

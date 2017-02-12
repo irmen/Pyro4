@@ -71,8 +71,7 @@ class TestUtils(unittest.TestCase):
         try:
             crash("stringvalue")
             self.fail("must crash with TypeError")
-        except TypeError:
-            x = sys.exc_info()[1]
+        except TypeError as x:
             x._pyroTraceback = pyro_tb  # set the remote traceback info
             pyrotb = "".join(Pyro4.util.getPyroTraceback())
             self.assertIn("Remote traceback", pyrotb)

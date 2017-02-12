@@ -6,7 +6,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import print_function
 import sys
-from Pyro4 import naming, errors, core
+from Pyro4 import errors, core
 
 if sys.version_info < (3, 0):
     input = raw_input
@@ -101,9 +101,8 @@ def handleCommand(nameserver, options, args):
     }
     try:
         commands[args[0]]()
-    except Exception:
-        xt, xv, tb = sys.exc_info()
-        print("Error: %s - %s" % (xt.__name__, xv))
+    except Exception as x:
+        print("Error: %s - %s" % (type(x).__name__, x))
 
 
 def main(args=None):

@@ -103,8 +103,7 @@ class SocketServer_Multiplex(object):
             log.debug("connected %s", caddr)
             if config.COMMTIMEOUT:
                 csock.settimeout(config.COMMTIMEOUT)
-        except socket.error:
-            x = sys.exc_info()[1]
+        except socket.error as x:
             err = getattr(x, "errno", x.args[0])
             if err in socketutil.ERRNO_RETRIES:
                 # just ignore this error for now and continue

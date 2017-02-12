@@ -20,8 +20,7 @@ def myThread(nsproxy, proxy):
         while not stop:
             result = nsproxy.list(prefix="example.")
             result = proxy.method("the quick brown fox jumps over the lazy dog")
-    except Exception:
-        x = sys.exc_info()[1]
+    except Exception as x:
         print("**** Exception in thread %s: {%s} %s" % (name, type(x), x))
 
 

@@ -34,8 +34,8 @@ print("getting result value...")
 try:
     value = asyncresult.value
     print("Weird, this shouldn't succeed!?... resultvalue=", value)
-except ZeroDivisionError:
-    print("got exception (expected):", repr(sys.exc_info()[1]))
+except ZeroDivisionError as x:
+    print("got exception (expected):", repr(x))
 
 print("\n* async call with timeout:")
 asyncresult = async.divide(100, 5)

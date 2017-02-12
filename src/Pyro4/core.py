@@ -510,8 +510,7 @@ class Proxy(object):
                 msg = message.Message.recv(conn, [message.MSG_CONNECTOK, message.MSG_CONNECTFAIL], hmac_key=self._pyroHmacKey)
                 if config.LOGWIRE:
                     _log_wiredata(log, "proxy connect response received", msg)
-            except Exception:
-                x = sys.exc_info()[1]
+            except Exception as x:
                 if conn:
                     conn.close()
                 err = "cannot connect to %s: %s" % (connect_location, x)
@@ -782,15 +781,15 @@ class _AsyncRemoteMethod(object):
                     value = proxy._pyroInvoke(self.__name, args, kwargs)
                 asyncresult.value = value
                 return
-            except (errors.ConnectionClosedError, errors.TimeoutError):
+            except (errors.ConnectionClosedError, errors.TimeoutError) as x:
                 # only retry for recoverable network errors
                 if attempt >= self.__max_retries:
                     # ignore any exceptions here, return them as part of the async result instead
-                    asyncresult.value = futures._ExceptionWrapper(sys.exc_info()[1])
+                    asyncresult.value = futures._ExceptionWrapper(x)
                     return
-            except Exception:
+            except Exception as x:
                 # ignore any exceptions here, return them as part of the async result instead
-                asyncresult.value = futures._ExceptionWrapper(sys.exc_info()[1])
+                asyncresult.value = futures._ExceptionWrapper(x)
                 return
 
 
@@ -1742,8 +1741,7 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
                     for bcaddr in config.parseAddressesString(config.BROADCAST_ADDRS):
                         try:
                             sock.sendto(b"GET_NSURI", 0, (bcaddr, port))
-                        except socket.error:
-                            x = sys.exc_info()[1]
+                        except socket.error as x:
                             err = getattr(x, "errno", x.args[0])
                             # handle some errno's that some platforms like to throw:
                             if err not in socketutil.ERRNO_EADDRNOTAVAIL and err not in socketutil.ERRNO_EADDRINUSE:

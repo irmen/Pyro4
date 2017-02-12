@@ -21,8 +21,7 @@ class client(object):
         print("Creating account")
         try:
             bank.createAccount(self.name)
-        except ValueError:
-            x = sys.exc_info()[1]
+        except ValueError as x:
             print("Failed: %s" % x)
             print("Removing account and trying again")
             bank.deleteAccount(self.name)
@@ -38,8 +37,7 @@ class client(object):
         print("Withdraw money (overdraw)")
         try:
             bank.withdraw(self.name, 400.00)
-        except ValueError:
-            x = sys.exc_info()[1]
+        except ValueError as x:
             print("Failed: %s" % x)
         print("End balance=%.2f" % bank.balance(self.name))
 
@@ -47,16 +45,14 @@ class client(object):
         try:
             bank.withdraw('GOD', 2222.22)
             print("!!! Succeeded?!? That is an error")
-        except KeyError:
-            x = sys.exc_info()[1]
+        except KeyError as x:
             print("Failed as expected: %s" % x)
 
         print("Deleting non-existing account")
         try:
             bank.deleteAccount('GOD')
             print("!!! Succeeded?!? That is an error")
-        except KeyError:
-            x = sys.exc_info()[1]
+        except KeyError as x:
             print("Failed as expected: %s" % x)
 
 

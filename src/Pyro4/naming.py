@@ -186,8 +186,7 @@ class NameServer(object):
                 result = {}
                 try:
                     regex = re.compile(regex)
-                except re.error:
-                    x = sys.exc_info()[1]
+                except re.error as x:
                     raise NamingError("invalid regex: " + str(x))
                 else:
                     for name in self.storage:

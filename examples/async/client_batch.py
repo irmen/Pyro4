@@ -57,8 +57,8 @@ print("getting result values...")
 try:
     value = asyncresults.value
     print("Weird, this shouldn't succeed!?... resultvalues=", list(value))
-except ZeroDivisionError:
-    print("got exception (expected):", repr(sys.exc_info()[1]))
+except ZeroDivisionError as x:
+    print("got exception (expected):", repr(x))
 
 print("\n* batch async call with timeout:")
 batch = Pyro4.batch(proxy)
