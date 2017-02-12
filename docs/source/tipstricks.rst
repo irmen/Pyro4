@@ -308,13 +308,15 @@ allow you to specify a nathost and natport for it. See :ref:`nameserver-nameserv
 
 .. index:: failed to locate the nameserver, connection refused
 
-Failed to locate the nameserver / Connection refused, what now?
-===============================================================
+'Failed to locate the nameserver' or 'Connection refused' error, what now?
+==========================================================================
 
 Usually when you get an error like "failed to locate the name server" or "connection refused" it is because
 there is a configuration problem in your network setup, such as a firewall blocking certain network connections.
 Sometimes it can be because you configured Pyro wrong. A checklist to follow to diagnose your issue can be as follows:
 
+- is the name server on a network interface that is visible on the network? If it's on localhost, then it's definitely not! (check the URI)
+- is the Pyro object's daemon on a network interface that is visible on the network? If it's on localhost, then it's definitely not! (check the URI)
 - can you ping the server from your client machine?
 - can you telnet to the given host+port from your client machine?
 - is the server's ip address as shown one of an externally reachable network interface?
