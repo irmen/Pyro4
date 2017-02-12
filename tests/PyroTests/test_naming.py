@@ -308,12 +308,20 @@ class NameServerTestsHmac(unittest.TestCase):
             p._pyroHmacKey = b"test_key"
             p.ping()   # the resolve() that is done should also use the hmac key
 
-    def testResolveWrongKey(self):
+    def testResolveWrongHmac(self):
         with self.assertRaises(CommunicationError) as ex:
-            ns = Pyro4.core.resolve("PYRONAME:Pyro.NameServer", hmac_key=b"wrong_key")
-        self.assertEqual("cannot connect: message hmac mismatch", str(ex.exception))
+            Pyro4.core.resolve("PYRONAME:Pyro.NameServer", hmac_key=b"wrong_key")
+        emsg = str(ex.exception)
+        self.assertTrue(emsg.startswith("cannot connect to "))
+        self.assertTrue(emsg.endswith("message hmac mismatch"))
+
+    def testResolveAsymmetricHmacUsage(self):
+        with self.assertRaises(CommunicationError) as ex:
+            Pyro4.core.resolve("PYRONAME:Pyro.NameServer", hmac_key=None)
+        emsg = str(ex.exception)
+        self.assertTrue(emsg.startswith("cannot connect to "))
+        self.assertTrue(emsg.endswith("hmac key config not symmetric"))
 
 
 if __name__ == "__main__":
-    # import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

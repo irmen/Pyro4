@@ -158,7 +158,7 @@ class ServerTestsBrokenHandshake(unittest.TestCase):
             except Pyro4.errors.CommunicationError:
                 xv = sys.exc_info()[1]
                 message = str(xv)
-                self.assertIn("reason:", message)
+                self.assertIn("rejected:", message)
                 self.assertIn("rigged connection failure", message)
 
 

@@ -514,7 +514,7 @@ class Proxy(object):
                 x = sys.exc_info()[1]
                 if conn:
                     conn.close()
-                err = "cannot connect: %s" % x
+                err = "cannot connect to %s: %s" % (connect_location, x)
                 log.error(err)
                 if isinstance(x, errors.CommunicationError):
                     raise
@@ -530,9 +530,9 @@ class Proxy(object):
                     handshake_response = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
                 if msg.type == message.MSG_CONNECTFAIL:
                     if sys.version_info < (3, 0):
-                        error = "connection rejected, reason: " + handshake_response.decode()
+                        error = "connection to %s rejected: %s" % (connect_location, handshake_response.decode())
                     else:
-                        error = "connection rejected, reason: " + handshake_response
+                        error = "connection to %s rejected: %s" % (connect_location, handshake_response)
                     conn.close()
                     log.error(error)
                     raise errors.CommunicationError(error)
@@ -549,7 +549,7 @@ class Proxy(object):
                         self._pyroResponseAnnotations(msg.annotations, msg.type)
                 else:
                     conn.close()
-                    err = "connect: invalid msg type %d received" % msg.type
+                    err = "cannot connect to %s: invalid msg type %d received" % (connect_location, msg.type)
                     log.error(err)
                     raise errors.ProtocolError(err)
             if config.METADATA:
