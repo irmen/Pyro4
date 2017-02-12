@@ -317,8 +317,10 @@ Sometimes it can be because you configured Pyro wrong. A checklist to follow to 
 
 - is the name server on a network interface that is visible on the network? If it's on localhost, then it's definitely not! (check the URI)
 - is the Pyro object's daemon on a network interface that is visible on the network? If it's on localhost, then it's definitely not! (check the URI)
+- with what URI is the Pyro object registered in the Name server? See previous item.
 - can you ping the server from your client machine?
 - can you telnet to the given host+port from your client machine?
+- dealing with IPV4 versus IPV6: do both client and server use the same protocol?
 - is the server's ip address as shown one of an externally reachable network interface?
 - do you have your server behind a NAT router? See :ref:`nat-router`.
 - do you have a firewall or packetfilter running that prevents the connection?
