@@ -13,7 +13,7 @@ import os
 import platform
 import pickle
 import socket
-import Pyro4.constants
+from Pyro4 import constants
 
 
 class Configuration(object):
@@ -122,8 +122,6 @@ class Configuration(object):
 
     def dump(self):
         # easy config diagnostics
-        from Pyro4.constants import VERSION
-        import inspect
         if hasattr(platform, "python_implementation"):
             implementation = platform.python_implementation()
         else:
@@ -131,10 +129,10 @@ class Configuration(object):
         config = self.asDict()
         config["LOGFILE"] = os.environ.get("PYRO_LOGFILE")
         config["LOGLEVEL"] = os.environ.get("PYRO_LOGLEVEL")
-        result = ["Pyro version: %s" % VERSION,
-                  "Loaded from: %s" % os.path.abspath(os.path.split(inspect.getfile(Configuration))[0]),
+        result = ["Pyro version: %s" % constants.VERSION,
+                  "Loaded from: %s" % os.path.dirname(__file__),
                   "Python version: %s %s (%s, %s)" % (implementation, platform.python_version(), platform.system(), os.name),
-                  "Protocol version: %d" % Pyro4.constants.PROTOCOL_VERSION,
+                  "Protocol version: %d" % constants.PROTOCOL_VERSION,
                   "Currently active configuration settings:"]
         for n, v in sorted(config.items()):
             result.append("%s = %s" % (n, v))

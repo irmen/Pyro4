@@ -29,13 +29,9 @@ import cgi
 import uuid
 from wsgiref.simple_server import make_server
 import traceback
-import Pyro4.core
-import Pyro4.constants
-import Pyro4.errors
-import Pyro4.message
-import Pyro4.util
 from Pyro4.util import json     # don't import stdlib json directly, we want to use the JSON_MODULE config item
 from Pyro4.configuration import config
+from Pyro4 import constants, errors, core, message, util
 
 
 __all__ = ["pyro_app", "main"]
@@ -45,11 +41,11 @@ _nameserver = None
 def get_nameserver(hmac=None):
     global _nameserver
     if not _nameserver:
-        _nameserver = Pyro4.core.locateNS(hmac_key=hmac)
+        _nameserver = core.locateNS(hmac_key=hmac)
     try:
         _nameserver.ping()
         return _nameserver
-    except Pyro4.errors.ConnectionClosedError:
+    except errors.ConnectionClosedError:
         _nameserver = None
         print("Connection with nameserver lost, reconnecting...")
         return get_nameserver(hmac)
@@ -145,27 +141,27 @@ Response: <pre id="pyro_response"> &nbsp; </pre>
 def return_homepage(environ, start_response):
     try:
         nameserver = get_nameserver(hmac=pyro_app.hmac_key)
-    except Pyro4.errors.NamingError as x:
+    except errors.NamingError as x:
         print("Name server error:", x)
         start_response('500 Internal Server Error', [('Content-Type', 'text/plain')])
         return [b"Cannot connect to the Pyro name server. Is it running? Refresh page to retry."]
     start_response('200 OK', [('Content-Type', 'text/html')])
     nslist = ["<table><tr><th>Name</th><th>methods</th><th>attributes (zero-param methods)</th></tr>"]
     names = sorted(list(nameserver.list(regex=pyro_app.ns_regex).keys())[:10])
-    with Pyro4.batch(nameserver) as nsbatch:
+    with core.batch(nameserver) as nsbatch:
         for name in names:
             nsbatch.lookup(name)
         for name, uri in zip(names, nsbatch()):
             attributes = "-"
             try:
-                with Pyro4.Proxy(uri) as proxy:
+                with core.Proxy(uri) as proxy:
                     proxy._pyroHmacKey = pyro_app.hmac_key
                     proxy._pyroBind()
                     methods = " &nbsp; ".join(proxy._pyroMethods) or "-"
                     attributes = ["<a href=\"{name}/{attribute}\" onclick=\"pyro_call('{name}','{attribute}'); return false;\">{attribute}</a>"
                                   .format(name=name, attribute=attribute) for attribute in proxy._pyroAttrs]
                     attributes = " &nbsp; ".join(attributes) or "-"
-            except Pyro4.errors.PyroError as x:
+            except errors.PyroError as x:
                 stderr = environ["wsgi.errors"]
                 print("ERROR getting metadata for {0}:".format(uri), file=stderr)
                 traceback.print_exc(file=stderr)
@@ -176,7 +172,7 @@ def return_homepage(environ, start_response):
     nslist.append("</table>")
     index_page = index_page_template.format(ns_regex=pyro_app.ns_regex,
                                             name_server_contents_list="".join(nslist),
-                                            pyro_version=Pyro4.constants.VERSION,
+                                            pyro_version=constants.VERSION,
                                             hostname=environ["SERVER_NAME"])
     return [index_page.encode("utf-8")]
 
@@ -203,12 +199,12 @@ def process_pyro_request(environ, path, parameters, start_response):
     try:
         nameserver = get_nameserver(hmac=pyro_app.hmac_key)
         uri = nameserver.lookup(object_name)
-        with Pyro4.Proxy(uri) as proxy:
+        with core.Proxy(uri) as proxy:
             header_corr_id = environ.get("HTTP_X_PYRO_CORRELATION_ID", "")
             if header_corr_id:
-                Pyro4.current_context.correlation_id = uuid.UUID(header_corr_id)  # use the correlation id from the request header
+                core.current_context.correlation_id = uuid.UUID(header_corr_id)  # use the correlation id from the request header
             else:
-                Pyro4.current_context.correlation_id = uuid.uuid4()  # set new correlation id
+                core.current_context.correlation_id = uuid.uuid4()  # set new correlation id
             proxy._pyroHmacKey = pyro_app.hmac_key
             proxy._pyroGetMetadata()
             if "oneway" in pyro_options:
@@ -217,7 +213,7 @@ def process_pyro_request(environ, path, parameters, start_response):
                 result = {"methods": tuple(proxy._pyroMethods), "attributes": tuple(proxy._pyroAttrs)}
                 reply = json.dumps(result).encode("utf-8")
                 start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8'),
-                                          ('X-Pyro-Correlation-Id', str(Pyro4.current_context.correlation_id))])
+                                          ('X-Pyro-Correlation-Id', str(core.current_context.correlation_id))])
                 return [reply]
             else:
                 proxy._pyroRawWireResponse = True   # we want to access the raw response json
@@ -231,23 +227,23 @@ def process_pyro_request(environ, path, parameters, start_response):
                 if msg is None or "oneway" in pyro_options:
                     # was a oneway call, no response available
                     start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8'),
-                                              ('X-Pyro-Correlation-Id', str(Pyro4.current_context.correlation_id))])
+                                              ('X-Pyro-Correlation-Id', str(core.current_context.correlation_id))])
                     return []
-                elif msg.flags & Pyro4.message.FLAGS_EXCEPTION:
+                elif msg.flags & message.FLAGS_EXCEPTION:
                     # got an exception response so send a 500 status
                     start_response('500 Internal Server Error', [('Content-Type', 'application/json; charset=utf-8')])
                     return [msg.data]
                 else:
                     # normal response
                     start_response('200 OK', [('Content-Type', 'application/json; charset=utf-8'),
-                                              ('X-Pyro-Correlation-Id', str(Pyro4.current_context.correlation_id))])
+                                              ('X-Pyro-Correlation-Id', str(core.current_context.correlation_id))])
                     return [msg.data]
     except Exception as x:
         stderr = environ["wsgi.errors"]
         print("ERROR handling {0} with params {1}:".format(path, parameters), file=stderr)
         traceback.print_exc(file=stderr)
         start_response('500 Internal Server Error', [('Content-Type', 'application/json; charset=utf-8')])
-        reply = json.dumps(Pyro4.util.SerializerBase.class_to_dict(x)).encode("utf-8")
+        reply = json.dumps(util.SerializerBase.class_to_dict(x)).encode("utf-8")
         return [reply]
 
 
@@ -311,7 +307,7 @@ def main(args=None):
         print("Warning: exposing all objects (no expose regex set)")
     try:
         ns = get_nameserver(hmac=pyro_app.hmac_key)
-    except Pyro4.errors.PyroError:
+    except errors.PyroError:
         print("Not yet connected to a name server.")
     else:
         print("Connected to name server at: ", ns._pyroUri)

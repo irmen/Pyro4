@@ -12,9 +12,7 @@ import types
 import code
 import os
 import stat
-import Pyro4.core
-import Pyro4.constants
-import Pyro4.errors
+from Pyro4 import constants, errors, core
 from Pyro4.configuration import config
 
 
@@ -67,13 +65,13 @@ class FlameModule(object):
 
     def __init__(self, flameserver, module):
         # store a proxy to the flameserver regardless of autoproxy setting
-        self.flameserver = Pyro4.core.Proxy(flameserver._pyroDaemon.uriFor(flameserver))
+        self.flameserver = core.Proxy(flameserver._pyroDaemon.uriFor(flameserver))
         self.module = module
 
     def __getattr__(self, item):
         if item in ("__getnewargs__", "__getnewargs_ex__", "__getinitargs__"):
             raise AttributeError(item)
-        return Pyro4.core._RemoteMethod(self.__invoke, "%s.%s" % (self.module, item), 0)
+        return core._RemoteMethod(self.__invoke, "%s.%s" % (self.module, item), 0)
 
     def __getstate__(self):
         return self.__dict__
@@ -100,7 +98,7 @@ class FlameBuiltin(object):
 
     def __init__(self, flameserver, builtin):
         # store a proxy to the flameserver regardless of autoproxy setting
-        self.flameserver = Pyro4.core.Proxy(flameserver._pyroDaemon.uriFor(flameserver))
+        self.flameserver = core.Proxy(flameserver._pyroDaemon.uriFor(flameserver))
         self.builtin = builtin
 
     def __call__(self, *args, **kwargs):
@@ -135,7 +133,7 @@ class RemoteInteractiveConsole(object):
 
     def __init__(self, remoteconsoleuri):
         # store a proxy to the console regardless of autoproxy setting
-        self.remoteconsole = Pyro4.core.Proxy(remoteconsoleuri)
+        self.remoteconsole = core.Proxy(remoteconsoleuri)
 
     def interact(self):
         console = self.LineSendingConsole(self.remoteconsole)
@@ -160,7 +158,7 @@ class RemoteInteractiveConsole(object):
         self.close()
 
 
-@Pyro4.core.expose
+@core.expose
 class InteractiveConsole(code.InteractiveConsole):
     """Interactive console wrapper that saves output written to stdout so it can be returned as value"""
 
@@ -187,11 +185,11 @@ class InteractiveConsole(code.InteractiveConsole):
         self.resetbuffer()
 
 
-@Pyro4.core.expose
+@core.expose
 class Flame(object):
     """
     The actual FLAME server logic.
-    Usually created by using :py:meth:`Pyro4.core.Daemon.startFlame`.
+    Usually created by using :py:meth:`core.Daemon.startFlame`.
     Be *very* cautious before starting this: it allows the clients full access to everything on your system.
     """
 
@@ -251,11 +249,11 @@ class Flame(object):
         console.banner = "Python %s on %s\n(Remote console on %s)" % (sys.version, sys.platform, uri.location)
         return RemoteInteractiveConsole(uri)
 
-    @Pyro4.core.expose
+    @core.expose
     def invokeBuiltin(self, builtin, args, kwargs):
         return getattr(builtins, builtin)(*args, **kwargs)
 
-    @Pyro4.core.expose
+    @core.expose
     def invokeModule(self, dottedname, args, kwargs):
         # dottedname is something like "os.path.walk" so strip off the module name
         modulename, dottedname = dottedname.split('.', 1)
@@ -304,10 +302,10 @@ def start(daemon):
     """
     if config.FLAME_ENABLED:
         if set(config.SERIALIZERS_ACCEPTED) != {"pickle"}:
-            raise Pyro4.errors.SerializeError("Flame requires the pickle serializer exclusively")
-        return daemon.register(Flame(), Pyro4.constants.FLAME_NAME)
+            raise errors.SerializeError("Flame requires the pickle serializer exclusively")
+        return daemon.register(Flame(), constants.FLAME_NAME)
     else:
-        raise Pyro4.errors.SecurityError("Flame is disabled in the server configuration")
+        raise errors.SecurityError("Flame is disabled in the server configuration")
 
 
 def connect(location):
@@ -316,7 +314,7 @@ def connect(location):
     This is just a convenience function to creates an appropriate Pyro proxy.
     """
     if config.SERIALIZER != "pickle":
-        raise Pyro4.errors.SerializeError("Flame requires the pickle serializer")
-    proxy = Pyro4.core.Proxy("PYRO:%s@%s" % (Pyro4.constants.FLAME_NAME, location))
+        raise errors.SerializeError("Flame requires the pickle serializer")
+    proxy = core.Proxy("PYRO:%s@%s" % (constants.FLAME_NAME, location))
     proxy._pyroBind()
     return proxy

@@ -10,7 +10,7 @@ import logging
 import linecache
 import traceback
 import inspect
-import Pyro4.errors
+from Pyro4 import errors
 from Pyro4.configuration import config
 
 try:
@@ -139,8 +139,8 @@ else:
     for name, t in vars(builtins).items():
         if type(t) is type and issubclass(t, BaseException):
             all_exceptions[name] = t
-for name, t in vars(Pyro4.errors).items():
-    if type(t) is type and issubclass(t, Pyro4.errors.PyroError):
+for name, t in vars(errors).items():
+    if type(t) is type and issubclass(t, errors.PyroError):
         all_exceptions[name] = t
 
 
@@ -213,7 +213,7 @@ class SerializerBase(object):
                     serializer.ser_builtins_dict(d, stream, level)
 
                 serpent.register_class(clazz, serpent_converter)
-            except Pyro4.errors.ProtocolError:
+            except errors.ProtocolError:
                 pass
 
     @classmethod
@@ -226,7 +226,7 @@ class SerializerBase(object):
             get_serializer_by_id(SerpentSerializer.serializer_id)
             import serpent
             serpent.unregister_class(clazz)
-        except Pyro4.errors.ProtocolError:
+        except errors.ProtocolError:
             pass
 
     @classmethod
@@ -292,7 +292,7 @@ class SerializerBase(object):
                 value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
                 return value
             else:
-                raise Pyro4.errors.SerializeError("don't know how to serialize class " + str(obj.__class__) + " using serializer " + str(cls.__name__) + ". Give it vars() or an appropriate __getstate__")
+                raise errors.SerializeError("don't know how to serialize class " + str(obj.__class__) + " using serializer " + str(cls.__name__) + ". Give it vars() or an appropriate __getstate__")
 
     @classmethod
     def dict_to_class(cls, data):
@@ -308,19 +308,20 @@ class SerializerBase(object):
             converter = cls.__custom_dict_to_class_registry[classname]
             return converter(classname, data)
         if "__" in classname:
-            raise Pyro4.errors.SecurityError("refused to deserialize types with double underscores in their name: " + classname)
+            raise errors.SecurityError("refused to deserialize types with double underscores in their name: " + classname)
         # because of efficiency reasons the constructors below are hardcoded here instead of added on a per-class basis to the dict-to-class registry
         if classname.startswith("Pyro4.core."):
+            from Pyro4 import core  # XXX circular
             if classname == "Pyro4.core.URI":
-                uri = Pyro4.core.URI.__new__(Pyro4.core.URI)
+                uri = core.URI.__new__(core.URI)
                 uri.__setstate_from_dict__(data["state"])
                 return uri
             elif classname == "Pyro4.core.Proxy":
-                proxy = Pyro4.core.Proxy.__new__(Pyro4.core.Proxy)
+                proxy = core.Proxy.__new__(core.Proxy)
                 proxy.__setstate_from_dict__(data["state"])
                 return proxy
             elif classname == "Pyro4.core.Daemon":
-                daemon = Pyro4.core.Daemon.__new__(Pyro4.core.Daemon)
+                daemon = core.Daemon.__new__(core.Daemon)
                 daemon.__setstate_from_dict__(data["state"])
                 return daemon
         elif classname.startswith("Pyro4.util."):
@@ -335,12 +336,13 @@ class SerializerBase(object):
             elif classname == "Pyro4.util.SerpentSerializer":
                 return SerpentSerializer()
         elif classname.startswith("Pyro4.errors."):
-            errortype = getattr(Pyro4.errors, classname.split('.', 2)[2])
-            if issubclass(errortype, Pyro4.errors.PyroError):
+            errortype = getattr(errors, classname.split('.', 2)[2])
+            if issubclass(errortype, errors.PyroError):
                 return SerializerBase.make_exception(errortype, data)
         elif classname == "Pyro4.futures._ExceptionWrapper":
+            from Pyro4 import futures  # XXX circular
             ex = SerializerBase.dict_to_class(data["exception"])
-            return Pyro4.futures._ExceptionWrapper(ex)
+            return futures._ExceptionWrapper(ex)
         elif data.get("__exception__", False):
             if classname in all_exceptions:
                 return SerializerBase.make_exception(all_exceptions[classname], data)
@@ -368,7 +370,7 @@ class SerializerBase(object):
             if classname == serializer.__class__.__name__:
                 return serializer
         log.warning("unsupported serialized class: " + classname)
-        raise Pyro4.errors.SerializeError("unsupported serialized class: " + classname)
+        raise errors.SerializeError("unsupported serialized class: " + classname)
 
     @staticmethod
     def make_exception(exceptiontype, data):
@@ -585,14 +587,14 @@ def get_serializer(name):
     try:
         return _serializers[name]
     except KeyError:
-        raise Pyro4.errors.SerializeError("serializer '%s' is unknown or not available" % name)
+        raise errors.SerializeError("serializer '%s' is unknown or not available" % name)
 
 
 def get_serializer_by_id(sid):
     try:
         return _serializers_by_id[sid]
     except KeyError:
-        raise Pyro4.errors.SerializeError("no serializer available for id %d" % sid)
+        raise errors.SerializeError("no serializer available for id %d" % sid)
 
 # determine the serializers that are supported
 try:
@@ -663,30 +665,6 @@ def excepthook(ex_type, ex_value, ex_tb):
     """An exception hook you can use for ``sys.excepthook``, to automatically print remote Pyro tracebacks"""
     traceback = "".join(getPyroTraceback(ex_type, ex_value, ex_tb))
     sys.stderr.write(traceback)
-
-
-def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
-    """
-    Function to hack around a bug in IronPython where it doesn't pickle
-    exception attributes. We piggyback them into the exception's args.
-    Bug report is at https://github.com/IronLanguages/main/issues/943
-    Bug is still present in Ironpython 2.7.7
-    """
-    if hasattr(exceptionObject, "args"):
-        if addAttributes:
-            # piggyback the attributes on the exception args instead.
-            ironpythonArgs = vars(exceptionObject)
-            ironpythonArgs["__ironpythonargs__"] = True
-            exceptionObject.args += (ironpythonArgs,)
-        else:
-            # check if there is a piggybacked object in the args
-            # if there is, extract the exception attributes from it.
-            if len(exceptionObject.args) > 0:
-                piggyback = exceptionObject.args[-1]
-                if type(piggyback) is dict and piggyback.get("__ironpythonargs__"):
-                    del piggyback["__ironpythonargs__"]
-                    exceptionObject.args = exceptionObject.args[:-1]
-                    exceptionObject.__dict__.update(piggyback)
 
 
 __exposed_member_cache = {}

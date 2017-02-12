@@ -14,6 +14,7 @@ import unittest
 import serpent
 import math
 import Pyro4.util
+import Pyro4.platformutil
 import Pyro4.errors
 import Pyro4.core
 import Pyro4.futures
@@ -70,11 +71,11 @@ class SerializeTests_pickle(unittest.TestCase):
         e2 = Pyro4.errors.PyroError(unicode("x"))
         e3 = Pyro4.errors.ProtocolError(unicode("x"))
         if sys.platform == "cli":
-            Pyro4.util.fixIronPythonExceptionForPickle(e1, True)
+            Pyro4.platformutil.fixIronPythonExceptionForPickle(e1, True)
         p, _ = self.ser.serializeData(e1)
         e = self.ser.deserializeData(p)
         if sys.platform == "cli":
-            Pyro4.util.fixIronPythonExceptionForPickle(e, False)
+            Pyro4.platformutil.fixIronPythonExceptionForPickle(e, False)
         self.assertIsInstance(e, Pyro4.errors.NamingError)
         self.assertEqual(repr(orig_e), repr(e))
         self.assertEqual(["this is the remote traceback"], e._pyroTraceback, "remote traceback info should be present")
@@ -90,10 +91,10 @@ class SerializeTests_pickle(unittest.TestCase):
     def testSerializeExceptionWithAttr(self):
         ex = ZeroDivisionError("test error")
         ex._pyroTraceback = ["test traceback payload"]
-        Pyro4.util.fixIronPythonExceptionForPickle(ex, True)  # hack for ironpython
+        Pyro4.platformutil.fixIronPythonExceptionForPickle(ex, True)  # hack for ironpython
         data, compressed = self.ser.serializeData(ex)
         ex2 = self.ser.deserializeData(data, compressed)
-        Pyro4.util.fixIronPythonExceptionForPickle(ex2, False)  # hack for ironpython
+        Pyro4.platformutil.fixIronPythonExceptionForPickle(ex2, False)  # hack for ironpython
         self.assertEqual(ZeroDivisionError, type(ex2))
         self.assertTrue(hasattr(ex2, "_pyroTraceback"))
         self.assertEqual(["test traceback payload"], ex2._pyroTraceback)
@@ -433,11 +434,11 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertIn(str(e2), ("('hello', 42)", "(u'hello', 42)"))
         e.custom_attribute = 999
         if sys.platform == "cli":
-            Pyro4.util.fixIronPythonExceptionForPickle(e, True)
+            Pyro4.platformutil.fixIronPythonExceptionForPickle(e, True)
         ser, compressed = self.ser.serializeData(e)
         e2 = self.ser.deserializeData(ser, compressed)
         if sys.platform == "cli":
-            Pyro4.util.fixIronPythonExceptionForPickle(e2, False)
+            Pyro4.platformutil.fixIronPythonExceptionForPickle(e2, False)
         self.assertIsInstance(e2, ZeroDivisionError)
         self.assertIn(str(e2), ("('hello', 42)", "(u'hello', 42)"))
         self.assertEqual(999, e2.custom_attribute)

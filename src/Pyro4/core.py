@@ -17,8 +17,8 @@ import uuid
 import base64
 import warnings
 import socket
-import Pyro4.futures
-from Pyro4 import errors, socketutil, util, constants, message
+import random
+from Pyro4 import errors, socketutil, util, constants, message, futures, platformutil
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 from Pyro4.configuration import config
@@ -417,9 +417,9 @@ class Proxy(object):
                 objectId or self._pyroConnection.objectId, methodname, vargs, kwargs,
                 compress=config.COMPRESSION)
             if compressed:
-                flags |= Pyro4.message.FLAGS_COMPRESSED
+                flags |= message.FLAGS_COMPRESSED
             if methodname in self._pyroOneway:
-                flags |= Pyro4.message.FLAGS_ONEWAY
+                flags |= message.FLAGS_ONEWAY
             self._pyroSeq = (self._pyroSeq + 1) & 0xffff
             msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
             if config.LOGWIRE:
@@ -451,7 +451,7 @@ class Proxy(object):
                         return _StreamResultIterator(streamId, self)
                     if msg.flags & message.FLAGS_EXCEPTION:
                         if sys.platform == "cli":
-                            util.fixIronPythonExceptionForPickle(data, False)
+                            platformutil.fixIronPythonExceptionForPickle(data, False)
                         raise data
                     else:
                         return data
@@ -496,12 +496,12 @@ class Proxy(object):
                     # the object id is only used/needed when piggybacking the metadata on the connection response
                     # make sure to pass the resolved object id instead of the logical id
                     data["object"] = uri.object
-                    flags = Pyro4.message.FLAGS_META_ON_CONNECT
+                    flags = message.FLAGS_META_ON_CONNECT
                 else:
                     flags = 0
                 data, compressed = serializer.serializeData(data, config.COMPRESSION)
                 if compressed:
-                    flags |= Pyro4.message.FLAGS_COMPRESSED
+                    flags |= message.FLAGS_COMPRESSED
                 msg = message.Message(message.MSG_CONNECT, data, serializer.serializer_id, flags, self._pyroSeq,
                                       annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
                 if config.LOGWIRE:
@@ -527,7 +527,7 @@ class Proxy(object):
                 handshake_response = "?"
                 if msg.data:
                     serializer = util.get_serializer_by_id(msg.serializer_id)
-                    handshake_response = serializer.deserializeData(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
+                    handshake_response = serializer.deserializeData(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
                 if msg.type == message.MSG_CONNECTFAIL:
                     if sys.version_info < (3, 0):
                         error = "connection to %s rejected: %s" % (connect_location, handshake_response.decode())
@@ -627,9 +627,9 @@ class Proxy(object):
         return asyncproxy
 
     def _pyroInvokeBatch(self, calls, oneway=False):
-        flags = Pyro4.message.FLAGS_BATCH
+        flags = message.FLAGS_BATCH
         if oneway:
-            flags |= Pyro4.message.FLAGS_ONEWAY
+            flags |= message.FLAGS_ONEWAY
         return self._pyroInvoke("<batch>", calls, None, flags)
 
     def _pyroAnnotations(self):
@@ -733,7 +733,7 @@ class _BatchProxyAdapter(object):
 
     def __resultsgenerator(self, results):
         for result in results:
-            if isinstance(result, Pyro4.futures._ExceptionWrapper):
+            if isinstance(result, futures._ExceptionWrapper):
                 result.raiseIt()  # re-raise the remote exception locally.
             else:
                 yield result  # it is a regular result object, yield that and continue.
@@ -767,7 +767,7 @@ class _AsyncRemoteMethod(object):
         return _AsyncRemoteMethod(self.__proxy, "%s.%s" % (self.__name, name), self.__max_retries)
 
     def __call__(self, *args, **kwargs):
-        result = Pyro4.futures.FutureResult()
+        result = futures.FutureResult()
         thread = threading.Thread(target=self.__asynccall, args=(result, args, kwargs))
         thread.setDaemon(True)
         thread.start()
@@ -786,11 +786,11 @@ class _AsyncRemoteMethod(object):
                 # only retry for recoverable network errors
                 if attempt >= self.__max_retries:
                     # ignore any exceptions here, return them as part of the async result instead
-                    asyncresult.value = Pyro4.futures._ExceptionWrapper(sys.exc_info()[1])
+                    asyncresult.value = futures._ExceptionWrapper(sys.exc_info()[1])
                     return
             except Exception:
                 # ignore any exceptions here, return them as part of the async result instead
-                asyncresult.value = Pyro4.futures._ExceptionWrapper(sys.exc_info()[1])
+                asyncresult.value = futures._ExceptionWrapper(sys.exc_info()[1])
                 return
 
 
@@ -1120,7 +1120,7 @@ class Daemon(object):
                 current_context.correlation_id = uuid.uuid4()
             serializer_id = msg.serializer_id
             serializer = util.get_serializer_by_id(serializer_id)
-            data = serializer.deserializeData(msg.data, msg.flags & Pyro4.message.FLAGS_COMPRESSED)
+            data = serializer.deserializeData(msg.data, msg.flags & message.FLAGS_COMPRESSED)
             handshake_response = self.validateHandshake(conn, data["handshake"])
             if msg.flags & message.FLAGS_META_ON_CONNECT:
                 # Usually this flag will be enabled, which results in including the object metadata
@@ -1205,7 +1205,7 @@ class Daemon(object):
             if msg.serializer_id not in self.__serializer_ids:
                 raise errors.SerializeError("message used serializer that is not accepted: %d" % msg.serializer_id)
             serializer = util.get_serializer_by_id(msg.serializer_id)
-            objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & Pyro4.message.FLAGS_COMPRESSED)
+            objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
             current_context.client = conn
             current_context.client_sock_addr = conn.sock.getpeername()   # store this because on oneway calls the socket will be disconnected
             current_context.seq = msg.seq
@@ -1217,7 +1217,7 @@ class Daemon(object):
             if obj is not None:
                 if inspect.isclass(obj):
                     obj = self._getInstance(obj, conn)
-                if request_flags & Pyro4.message.FLAGS_BATCH:
+                if request_flags & message.FLAGS_BATCH:
                     # batched method calls, loop over them all and collect all results
                     data = []
                     for method, vargs, kwargs in vargs:
@@ -1229,8 +1229,8 @@ class Daemon(object):
                             log.debug("Exception occurred while handling batched request: %s", xv)
                             xv._pyroTraceback = util.formatTraceback(detailed=config.DETAILED_TRACEBACK)
                             if sys.platform == "cli":
-                                util.fixIronPythonExceptionForPickle(xv, True)  # piggyback attributes
-                            data.append(Pyro4.futures._ExceptionWrapper(xv))
+                                platformutil.fixIronPythonExceptionForPickle(xv, True)  # piggyback attributes
+                            data.append(futures._ExceptionWrapper(xv))
                             break  # stop processing the rest of the batch
                         else:
                             data.append(result)    # note that we don't support streaming results in batch mode
@@ -1245,18 +1245,18 @@ class Daemon(object):
                         data = util.set_exposed_property_value(obj, vargs[0], vargs[1], only_exposed=config.REQUIRE_EXPOSE)
                     else:
                         method = util.getAttribute(obj, method)
-                        if request_flags & Pyro4.message.FLAGS_ONEWAY and config.ONEWAY_THREADED:
+                        if request_flags & message.FLAGS_ONEWAY and config.ONEWAY_THREADED:
                             # oneway call to be run inside its own thread
                             _OnewayCallThread(target=method, args=vargs, kwargs=kwargs).start()
                         else:
                             isCallback = getattr(method, "_pyroCallback", False)
                             data = method(*vargs, **kwargs)  # this is the actual method call to the Pyro object
-                            if not request_flags & Pyro4.message.FLAGS_ONEWAY:
+                            if not request_flags & message.FLAGS_ONEWAY:
                                 isStream, data = self._streamResponse(data, conn)
                                 if isStream:
                                     # throw an exception as well as setting message flags
                                     # this way, it is backwards compatible with older pyro versions.
-                                    exc = Pyro4.errors.ProtocolError("result of call is an iterator")
+                                    exc = errors.ProtocolError("result of call is an iterator")
                                     ann = {"STRM": data.encode()} if data else {}
                                     self._sendExceptionResponse(conn, request_seq, serializer.serializer_id, exc, None,
                                                                 annotations=ann, flags=message.FLAGS_ITEMSTREAMRESULT)
@@ -1264,15 +1264,15 @@ class Daemon(object):
             else:
                 log.debug("unknown object requested: %s", objId)
                 raise errors.DaemonError("unknown object")
-            if request_flags & Pyro4.message.FLAGS_ONEWAY:
+            if request_flags & message.FLAGS_ONEWAY:
                 return  # oneway call, don't send a response
             else:
                 data, compressed = serializer.serializeData(data, compress=config.COMPRESSION)
                 response_flags = 0
                 if compressed:
-                    response_flags |= Pyro4.message.FLAGS_COMPRESSED
+                    response_flags |= message.FLAGS_COMPRESSED
                 if wasBatched:
-                    response_flags |= Pyro4.message.FLAGS_BATCH
+                    response_flags |= message.FLAGS_BATCH
                 msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
                 if config.LOGWIRE:
                     _log_wiredata(log, "daemon wiredata sending", msg)
@@ -1285,7 +1285,7 @@ class Daemon(object):
                 request_serializer_id = msg.serializer_id
             if xt is not errors.ConnectionClosedError:
                 log.debug("Exception occurred while handling request: %r", xv)
-                if not request_flags & Pyro4.message.FLAGS_ONEWAY:
+                if not request_flags & message.FLAGS_ONEWAY:
                     if isinstance(xv, errors.SerializeError) or not isinstance(xv, errors.CommunicationError):
                         # only return the error to the client if it wasn't a oneway call, and not a communication error
                         # (in these cases, it makes no sense to try to report the error back to the client...)
@@ -1381,7 +1381,7 @@ class Daemon(object):
         """send an exception back including the local traceback info"""
         exc_value._pyroTraceback = tbinfo
         if sys.platform == "cli":
-            util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
+            platformutil.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
         serializer = util.get_serializer_by_id(serializer_id)
         try:
             data, compressed = serializer.serializeData(exc_value)
@@ -1392,11 +1392,11 @@ class Daemon(object):
             exc_value = errors.PyroError(msg)
             exc_value._pyroTraceback = tbinfo
             if sys.platform == "cli":
-                util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
+                platformutil.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
             data, compressed = serializer.serializeData(exc_value)
-        flags |= Pyro4.message.FLAGS_EXCEPTION
+        flags |= message.FLAGS_EXCEPTION
         if compressed:
-            flags |= Pyro4.message.FLAGS_COMPRESSED
+            flags |= message.FLAGS_COMPRESSED
         ann = self.annotations()
         ann.update(annotations or {})
         msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq, annotations=ann, hmac_key=self._pyroHmacKey)
@@ -1602,7 +1602,7 @@ try:
     serpent.register_class(URI, pyro_class_serpent_serializer)
     serpent.register_class(Proxy, pyro_class_serpent_serializer)
     serpent.register_class(Daemon, pyro_class_serpent_serializer)
-    serpent.register_class(Pyro4.futures._ExceptionWrapper, pyro_class_serpent_serializer)
+    serpent.register_class(futures._ExceptionWrapper, pyro_class_serpent_serializer)
 except ImportError:
     pass
 
@@ -1617,7 +1617,7 @@ def serialize_core_object_to_dict(obj):
 util.SerializerBase.register_class_to_dict(URI, serialize_core_object_to_dict, serpent_too=False)
 util.SerializerBase.register_class_to_dict(Proxy, serialize_core_object_to_dict, serpent_too=False)
 util.SerializerBase.register_class_to_dict(Daemon, serialize_core_object_to_dict, serpent_too=False)
-util.SerializerBase.register_class_to_dict(Pyro4.futures._ExceptionWrapper, Pyro4.futures._ExceptionWrapper.__serialized_dict__, serpent_too=False)
+util.SerializerBase.register_class_to_dict(futures._ExceptionWrapper, futures._ExceptionWrapper.__serialized_dict__, serpent_too=False)
 
 
 def _log_wiredata(logger, text, msg):
@@ -1721,7 +1721,7 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
                 except socket.error:
                     hosts = [config.NS_HOST]
             for host in hosts:
-                uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port or config.NS_PORT)
+                uristring = "PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, host, port or config.NS_PORT)
                 log.debug("locating the NS: %s", uristring)
                 proxy = Proxy(uristring)
                 proxy._pyroHmacKey = hmac_key
@@ -1736,7 +1736,7 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
             if not port:
                 port = config.NS_BCPORT
             log.debug("broadcast locate")
-            sock = Pyro4.socketutil.createBroadcastSocket(reuseaddr=config.SOCK_REUSE, timeout=0.7)
+            sock = socketutil.createBroadcastSocket(reuseaddr=config.SOCK_REUSE, timeout=0.7)
             for _ in range(3):
                 try:
                     for bcaddr in config.parseAddressesString(config.BROADCAST_ADDRS):
@@ -1746,7 +1746,7 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
                             x = sys.exc_info()[1]
                             err = getattr(x, "errno", x.args[0])
                             # handle some errno's that some platforms like to throw:
-                            if err not in Pyro4.socketutil.ERRNO_EADDRNOTAVAIL and err not in Pyro4.socketutil.ERRNO_EADDRINUSE:
+                            if err not in socketutil.ERRNO_EADDRNOTAVAIL and err not in socketutil.ERRNO_EADDRINUSE:
                                 raise
                     data, _ = sock.recvfrom(100)
                     sock.close()
@@ -1773,12 +1773,12 @@ def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
     if not port:
         port = config.NS_PORT
     if URI.isUnixsockLocation(host):
-        uristring = "PYRO:%s@%s" % (Pyro4.constants.NAMESERVER_NAME, host)
+        uristring = "PYRO:%s@%s" % (constants.NAMESERVER_NAME, host)
     else:
         # if not a unix socket, check for ipv6
         if ":" in host:
             host = "[%s]" % host
-        uristring = "PYRO:%s@%s:%d" % (Pyro4.constants.NAMESERVER_NAME, host, port)
+        uristring = "PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, host, port)
     uri = URI(uristring)
     log.debug("locating the NS: %s", uri)
     proxy = Proxy(uri)

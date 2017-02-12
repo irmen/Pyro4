@@ -11,7 +11,7 @@ import functools
 import logging
 import threading
 import time
-import Pyro4.util
+from Pyro4 import platformutil
 
 
 __all__ = ["Future", "FutureResult", "_ExceptionWrapper"]
@@ -214,12 +214,13 @@ class _ExceptionWrapper(object):
 
     def raiseIt(self):
         if sys.platform == "cli":
-            Pyro4.util.fixIronPythonExceptionForPickle(self.exception, False)
+            platformutil.fixIronPythonExceptionForPickle(self.exception, False)
         raise self.exception
 
     def __serialized_dict__(self):
         """serialized form as a dictionary"""
+        from Pyro4.util import SerializerBase  # XXX circular
         return {
             "__class__": "Pyro4.futures._ExceptionWrapper",
-            "exception": Pyro4.util.SerializerBase.class_to_dict(self.exception)
+            "exception": SerializerBase.class_to_dict(self.exception)
         }

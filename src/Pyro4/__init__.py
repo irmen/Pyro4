@@ -5,9 +5,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import sys
-import Pyro4.constants
-
-__version__ = Pyro4.constants.VERSION
+from Pyro4.constants import VERSION as __version__
 
 if sys.version_info < (2, 7):
     import warnings
