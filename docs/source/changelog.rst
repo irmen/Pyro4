@@ -6,7 +6,7 @@ Change Log
 
 - Prefer selectors2 over selectors34 if it is available (Python 3.4 or older, to have better semantics of failing syscalls)
 - Removed THREADING2 config item and Pyro4.threadutil module. (the threading2 third party module is old and seems unmaintained and wasn't useful for Pyro anyway)
-- Improved module structure; fixed circular import dependencies. This also fixed the RuntimeWarning about sys.modules, when starting the name server.
+- Improved module structure; fixed various circular import dependencies. This also fixed the RuntimeWarning about sys.modules, when starting the name server.
 - To achieve the previous item, had to move ``resolve`` and ``locateNS`` from ``Pyro4.naming`` to ``Pyro4.core`` .
   They're still available on their old location for backwards compatibility for now.
   Ofcourse, they're also still on their old "shortcut" location in ``Pyro4`` directly.

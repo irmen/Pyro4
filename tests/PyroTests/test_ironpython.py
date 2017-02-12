@@ -7,10 +7,10 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import sys
 import pickle
 import unittest
+import Pyro4.util
 
 
 if sys.platform == "cli":
-    import Pyro4.platformutil
 
     class IronPythonWeirdnessTests(unittest.TestCase):
         def testExceptionWithAttrsPickle(self):
@@ -57,14 +57,14 @@ if sys.platform == "cli":
         def testExceptionArgs(self):
             x = ZeroDivisionError("division by zero", "arg1", "arg2")
             x.customattribute = 42
-            Pyro4.platformutil.fixIronPythonExceptionForPickle(x, True)
+            Pyro4.util.fixIronPythonExceptionForPickle(x, True)
             arg = x.args[-1]
             self.assertIsInstance(arg, dict)
             self.assertTrue(arg["__ironpythonargs__"])
             self.assertEqual(42, arg["customattribute"])
             x = ZeroDivisionError("division by zero", "arg1", "arg2")
             x.args += ({"__ironpythonargs__": True, "customattribute2": 99},)
-            Pyro4.platformutil.fixIronPythonExceptionForPickle(x, False)
+            Pyro4.util.fixIronPythonExceptionForPickle(x, False)
             self.assertEqual(99, x.customattribute2)
 
 

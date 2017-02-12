@@ -11,7 +11,6 @@ import functools
 import logging
 import threading
 import time
-from Pyro4 import platformutil
 
 
 __all__ = ["Future", "FutureResult", "_ExceptionWrapper"]
@@ -213,8 +212,9 @@ class _ExceptionWrapper(object):
         self.exception = exception
 
     def raiseIt(self):
+        from Pyro4.util import fixIronPythonExceptionForPickle  # XXX circular
         if sys.platform == "cli":
-            platformutil.fixIronPythonExceptionForPickle(self.exception, False)
+            fixIronPythonExceptionForPickle(self.exception, False)
         raise self.exception
 
     def __serialized_dict__(self):

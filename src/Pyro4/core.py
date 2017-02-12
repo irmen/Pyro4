@@ -18,7 +18,7 @@ import base64
 import warnings
 import socket
 import random
-from Pyro4 import errors, socketutil, util, constants, message, futures, platformutil
+from Pyro4 import errors, socketutil, util, constants, message, futures
 from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
 from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 from Pyro4.configuration import config
@@ -451,7 +451,7 @@ class Proxy(object):
                         return _StreamResultIterator(streamId, self)
                     if msg.flags & message.FLAGS_EXCEPTION:
                         if sys.platform == "cli":
-                            platformutil.fixIronPythonExceptionForPickle(data, False)
+                            util.fixIronPythonExceptionForPickle(data, False)
                         raise data
                     else:
                         return data
@@ -1229,7 +1229,7 @@ class Daemon(object):
                             log.debug("Exception occurred while handling batched request: %s", xv)
                             xv._pyroTraceback = util.formatTraceback(detailed=config.DETAILED_TRACEBACK)
                             if sys.platform == "cli":
-                                platformutil.fixIronPythonExceptionForPickle(xv, True)  # piggyback attributes
+                                util.fixIronPythonExceptionForPickle(xv, True)  # piggyback attributes
                             data.append(futures._ExceptionWrapper(xv))
                             break  # stop processing the rest of the batch
                         else:
@@ -1381,7 +1381,7 @@ class Daemon(object):
         """send an exception back including the local traceback info"""
         exc_value._pyroTraceback = tbinfo
         if sys.platform == "cli":
-            platformutil.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
+            util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
         serializer = util.get_serializer_by_id(serializer_id)
         try:
             data, compressed = serializer.serializeData(exc_value)
@@ -1392,7 +1392,7 @@ class Daemon(object):
             exc_value = errors.PyroError(msg)
             exc_value._pyroTraceback = tbinfo
             if sys.platform == "cli":
-                platformutil.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
+                util.fixIronPythonExceptionForPickle(exc_value, True)  # piggyback attributes
             data, compressed = serializer.serializeData(exc_value)
         flags |= message.FLAGS_EXCEPTION
         if compressed:
