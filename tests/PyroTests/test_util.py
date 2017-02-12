@@ -181,7 +181,7 @@ class TestUtils(unittest.TestCase):
 
     def testResolveAttr(self):
         config.REQUIRE_EXPOSE = True
-        @Pyro4.expose
+        @Pyro4.core.expose
         class Exposed(object):
             def __init__(self, value):
                 self.propvalue = value
@@ -280,7 +280,7 @@ class TestMeta(unittest.TestCase):
         o = MyThingFullExposed("irmen")
         m1 = Pyro4.util.get_exposed_members(o)
         self.assertNotIn("newly_added_method", m1["methods"])
-        MyThingFullExposed.newly_added_method = Pyro4.expose(lambda self: None)
+        MyThingFullExposed.newly_added_method = Pyro4.core.expose(lambda self: None)
         m2 = Pyro4.util.get_exposed_members(o)
         self.assertNotIn("newly_added_method", m2["methods"])
         Pyro4.util.reset_exposed_members(o)
@@ -342,30 +342,30 @@ class TestMeta(unittest.TestCase):
     def testExposePrivateFails(self):
         with self.assertRaises(AttributeError):
             class Test1(object):
-                @Pyro4.expose
+                @Pyro4.core.expose
                 def _private(self):
                     pass
         with self.assertRaises(AttributeError):
             class Test3(object):
-                @Pyro4.expose
+                @Pyro4.core.expose
                 def __private(self):
                     pass
         with self.assertRaises(AttributeError):
-            @Pyro4.expose
+            @Pyro4.core.expose
             class _Test4(object):
                 pass
         with self.assertRaises(AttributeError):
-            @Pyro4.expose
+            @Pyro4.core.expose
             class __Test5(object):
                 pass
 
     def testExposeDunderOk(self):
         class Test1(object):
-            @Pyro4.expose
+            @Pyro4.core.expose
             def __dunder__(self):
                 pass
         self.assertTrue(Test1.__dunder__._pyroExposed)
-        @Pyro4.expose
+        @Pyro4.core.expose
         class Test2(object):
             def __dunder__(self):
                 pass

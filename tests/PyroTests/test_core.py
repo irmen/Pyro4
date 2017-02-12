@@ -39,12 +39,12 @@ class CoreTests(unittest.TestCase):
 
     def testProxyNoHmac(self):
         # check that proxy without hmac is possible
-        with Pyro4.Proxy("PYRO:object@host:9999") as p:
+        with Pyro4.core.Proxy("PYRO:object@host:9999") as p:
             pass
 
     def testDaemonNoHmac(self):
         # check that daemon without hmac is possible
-        d = Pyro4.Daemon()
+        d = Pyro4.core.Daemon()
         d.shutdown()
 
     def testConfig(self):
@@ -598,7 +598,7 @@ class CoreTests(unittest.TestCase):
         # just test the decorator itself, testing the callback
         # exception handling is kinda hard in unit tests. Maybe later.
         class Test(object):
-            @Pyro4.callback
+            @Pyro4.core.callback
             def method(self):
                 pass
 
@@ -636,8 +636,8 @@ class CoreTests(unittest.TestCase):
         corr_id2 = uuid.UUID('67b05ad9-2d6a-4ed8-8ed5-95cba68b4cf9')
         d["correlation_id"] = corr_id2
         ctx.from_global(d)
-        self.assertEqual(corr_id2, Pyro4.current_context.correlation_id)
-        Pyro4.current_context.correlation_id = None
+        self.assertEqual(corr_id2, Pyro4.core.current_context.correlation_id)
+        Pyro4.core.current_context.correlation_id = None
 
 
 class ExposeDecoratorTests(unittest.TestCase):
@@ -712,16 +712,16 @@ class BehaviorDecoratorTests(unittest.TestCase):
         self.assertIs(float, ic)
 
     def testBehaviorWithExposeKeepsCorrectValues(self):
-        @Pyro4.behavior(instance_mode="percall", instance_creator=float)
-        @Pyro4.expose
+        @Pyro4.core.behavior(instance_mode="percall", instance_creator=float)
+        @Pyro4.core.expose
         class TestClass:
             pass
         im, ic = TestClass._pyroInstancing
         self.assertEqual("percall", im)
         self.assertIs(float, ic)
 
-        @Pyro4.expose
-        @Pyro4.behavior(instance_mode="percall", instance_creator=float)
+        @Pyro4.core.expose
+        @Pyro4.core.behavior(instance_mode="percall", instance_creator=float)
         class TestClass2:
             pass
         im, ic = TestClass2._pyroInstancing
@@ -815,7 +815,7 @@ class RemoteMethodTests(unittest.TestCase):
 
     def testBatchMethod(self):
         proxy = self.BatchProxyMock()
-        batch = Pyro4.batch(proxy)
+        batch = Pyro4.core.batch(proxy)
         self.assertIsNone(batch.foo(42))
         self.assertIsNone(batch.bar("abc"))
         self.assertIsNone(batch.baz(42, "abc", arg=999))
@@ -835,7 +835,7 @@ class RemoteMethodTests(unittest.TestCase):
 
     def testBatchMethodOneway(self):
         proxy = self.BatchProxyMock()
-        batch = Pyro4.batch(proxy)
+        batch = Pyro4.core.batch(proxy)
         self.assertIsNone(batch.foo(42))
         self.assertIsNone(batch.bar("abc"))
         self.assertIsNone(batch.baz(42, "abc", arg=999))
@@ -848,7 +848,7 @@ class RemoteMethodTests(unittest.TestCase):
 
     def testBatchMethodAsync(self):
         proxy = self.BatchProxyMock()
-        batch = Pyro4.batch(proxy)
+        batch = Pyro4.core.batch(proxy)
         self.assertIsNone(batch.foo(42))
         self.assertIsNone(batch.bar("abc"))
         self.assertIsNone(batch.pause(0.5))  # pause shouldn't matter with async
@@ -871,7 +871,7 @@ class RemoteMethodTests(unittest.TestCase):
 
     def testBatchMethodReuse(self):
         proxy = self.BatchProxyMock()
-        batch = Pyro4.batch(proxy)
+        batch = Pyro4.core.batch(proxy)
         batch.foo(1)
         batch.foo(2)
         results = batch()
@@ -886,7 +886,7 @@ class RemoteMethodTests(unittest.TestCase):
 
     def testAsyncMethod(self):
         proxy = self.AsyncProxyMock()
-        async = Pyro4.async(proxy)
+        async = Pyro4.core.async(proxy)
         begin = time.time()
         result = async.pause_and_divide(0.2, 10, 2)  # returns immediately
         duration = time.time() - begin
@@ -905,7 +905,7 @@ class RemoteMethodTests(unittest.TestCase):
                 return value + amount
 
         proxy = self.AsyncProxyMock()
-        async = Pyro4.async(proxy)
+        async = Pyro4.core.async(proxy)
         result = async.pause_and_divide(0.2, 10, 2)  # returns immediately
         holder = AsyncFunctionHolder()
         result.then(holder.asyncFunction, amount=2) \
@@ -924,7 +924,7 @@ class RemoteMethodTests(unittest.TestCase):
             return 1 // 0  # crash
 
         proxy = self.AsyncProxyMock()
-        async = Pyro4.async(proxy)
+        async = Pyro4.core.async(proxy)
         result = async.pause_and_divide(0.2, 10, 2)  # returns immediately
         result.then(crashingAsyncFunction).then(normalAsyncFunction, 2)
         try:
@@ -936,7 +936,7 @@ class RemoteMethodTests(unittest.TestCase):
 
     def testAsyncMethodTimeout(self):
         proxy = self.AsyncProxyMock()
-        async = Pyro4.async(proxy)
+        async = Pyro4.core.async(proxy)
         result = async.pause_and_divide(1, 10, 2)  # returns immediately
         self.assertFalse(result.ready)
         self.assertFalse(result.wait(0.5))  # won't be ready after 0.5 sec
@@ -993,14 +993,14 @@ class FuturesErrorHandlerStorage(object):
 
 class TestFutures(unittest.TestCase):
     def testSimpleFuture(self):
-        f = Pyro4.Future(futurestestfunc)
+        f = Pyro4.futures.Future(futurestestfunc)
         r = f(4, 5)
         self.assertIsInstance(r, Pyro4.futures.FutureResult)
         value = r.value
         self.assertEqual(9, value)
 
     def testFutureChain(self):
-        f = Pyro4.Future(futurestestfunc) \
+        f = Pyro4.futures.Future(futurestestfunc) \
             .then(futurestestfunc, 6) \
             .then(futurestestfunc, 7) \
             .then(futurestestfunc, 8) \
@@ -1010,7 +1010,7 @@ class TestFutures(unittest.TestCase):
         self.assertEqual(4 + 5 + 6 + 7 + 8 + 9 + 10, value)
 
     def testCrashingChain(self):
-        f = Pyro4.Future(futurestestfunc) \
+        f = Pyro4.futures.Future(futurestestfunc) \
             .then(futurestestfunc, 6) \
             .then(crashingfuturestestfunc) \
             .then(futurestestfunc, 8)
@@ -1023,7 +1023,7 @@ class TestFutures(unittest.TestCase):
 
     def testErrorHandler(self):
         storage = FuturesErrorHandlerStorage()
-        f = Pyro4.Future(crashingfuturestestfunc) \
+        f = Pyro4.futures.Future(crashingfuturestestfunc) \
             .then(futurestestfunc, 5) \
             .iferror(storage.errorhandler) \
             .then(futurestestfunc, 6)
@@ -1036,7 +1036,7 @@ class TestFutures(unittest.TestCase):
         self.assertIsInstance(storage.error, ZeroDivisionError)
 
     def testFutureResultChainSlow(self):
-        f = Pyro4.Future(futurestestfunc)
+        f = Pyro4.futures.Future(futurestestfunc)
         result = f(4, 5)
         time.sleep(.02)
         result.then(futurestestfunc, 6)
@@ -1053,7 +1053,7 @@ class TestFutures(unittest.TestCase):
         self.assertEqual(4 + 5 + 6 + 7 + 8 + 9 + 10, value)
 
     def testFutureResultChain(self):
-        f = Pyro4.Future(futurestestfunc)
+        f = Pyro4.futures.Future(futurestestfunc)
         result = f(4, 5).then(futurestestfunc, 6).then(futurestestfunc, 7).then(futurestestfunc, 8).then(futurestestfunc, 9).then(futurestestfunc, 10)
         value = result.value
         self.assertEqual(4 + 5 + 6 + 7 + 8 + 9 + 10, value)
@@ -1061,14 +1061,14 @@ class TestFutures(unittest.TestCase):
             f(4, 5)   # cannot evaluate the same future more than once
 
     def testFutureDelay(self):
-        f = Pyro4.Future(futurestestfunc)
+        f = Pyro4.futures.Future(futurestestfunc)
         b = f.delay(0)
         self.assertTrue(b)
         begin = time.time()
         f(4, 5).value
         duration = time.time() - begin
         self.assertLess(duration, 0.1)
-        f = Pyro4.Future(futurestestfunc)
+        f = Pyro4.futures.Future(futurestestfunc)
         b = f.delay(1)
         self.assertTrue(b)
         begin = time.time()
@@ -1083,14 +1083,14 @@ class TestFutures(unittest.TestCase):
         self.assertFalse(f.delay(10))
 
     def testFutureCancel(self):
-        f = Pyro4.Future(futurestestfunc)
+        f = Pyro4.futures.Future(futurestestfunc)
         f.delay(10)
         b = f.cancel()
         self.assertTrue(b)
         with self.assertRaises(RuntimeError) as x:
             f(4, 5)
         self.assertTrue("cancelled" in str(x.exception))
-        f = Pyro4.Future(futurestestfunc)
+        f = Pyro4.futures.Future(futurestestfunc)
         f.delay(10)
         result = f(4, 5)
         b = f.cancel()
@@ -1100,7 +1100,7 @@ class TestFutures(unittest.TestCase):
         with self.assertRaises(RuntimeError) as x:
             result.value
         self.assertTrue("cancelled" in str(x.exception))
-        f = Pyro4.Future(futurestestfunc)
+        f = Pyro4.futures.Future(futurestestfunc)
         result = f(4, 5)
         result.value
         b = f.cancel()

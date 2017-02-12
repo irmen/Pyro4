@@ -10,6 +10,7 @@ import unittest
 
 
 if sys.platform == "cli":
+    import Pyro4.platformutil
 
     class IronPythonWeirdnessTests(unittest.TestCase):
         def testExceptionWithAttrsPickle(self):
@@ -52,6 +53,19 @@ if sys.platform == "cli":
                 while ex_tb.tb_next:
                     ex_tb = ex_tb.tb_next
                 self.assertIsNone(ex_tb.tb_frame.f_back)  # should not be none... :(
+
+        def testExceptionArgs(self):
+            x = ZeroDivisionError("division by zero", "arg1", "arg2")
+            x.customattribute = 42
+            Pyro4.platformutil.fixIronPythonExceptionForPickle(x, True)
+            arg = x.args[-1]
+            self.assertIsInstance(arg, dict)
+            self.assertTrue(arg["__ironpythonargs__"])
+            self.assertEqual(42, arg["customattribute"])
+            x = ZeroDivisionError("division by zero", "arg1", "arg2")
+            x.args += ({"__ironpythonargs__": True, "customattribute2": 99},)
+            Pyro4.platformutil.fixIronPythonExceptionForPickle(x, False)
+            self.assertEqual(99, x.customattribute2)
 
 
 if __name__ == "__main__":

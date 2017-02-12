@@ -14,12 +14,11 @@ import Pyro4.core
 import Pyro4.errors
 import Pyro4.util
 import Pyro4.message
-from Pyro4 import current_context
 from Pyro4.configuration import config
 from testsupport import *
 
 
-@Pyro4.expose
+@Pyro4.core.expose
 class ServerTestObject(object):
     something = 99
     dict_attr = {}
@@ -47,7 +46,7 @@ class ServerTestObject(object):
     def echo(self, obj):
         return obj
 
-    @Pyro4.oneway
+    @Pyro4.core.oneway
     def oneway_delay(self, delay):
         time.sleep(delay)
 
@@ -65,7 +64,7 @@ class ServerTestObject(object):
     def nonserializableException(self):
         raise NonserializableError(("xantippe", lambda x: 0))
 
-    @Pyro4.oneway
+    @Pyro4.core.oneway
     def oneway_multiply(self, x, y):
         return x * y
 
@@ -94,7 +93,7 @@ class NotEverythingExposedClass(object):
     def __init__(self, name):
         self.name = name
 
-    @Pyro4.expose
+    @Pyro4.core.expose
     def getName(self):
         return self.name
 
@@ -151,7 +150,7 @@ class ServerTestsBrokenHandshake(unittest.TestCase):
 
     def testDaemonConnectFail(self):
         # check what happens when the daemon responds with a failed connection msg
-        with Pyro4.Proxy(self.objectUri) as p:
+        with Pyro4.core.Proxy(self.objectUri) as p:
             try:
                 p.ping()
                 self.fail("expected CommunicationError")
@@ -353,7 +352,7 @@ class ServerTestsOnce(unittest.TestCase):
                 self.__dict__["response"]["annotations"] = annotations
                 self.__dict__["response"]["msgtype"] = msgtype
         response = {}
-        corr_id = current_context.correlation_id = uuid.uuid4()
+        corr_id = Pyro4.core.current_context.correlation_id = uuid.uuid4()
         with CustomAnnotationsProxy(self.objectUri, response) as p:
             p.ping()
         self.assertDictEqual({"CORR": corr_id.bytes, "XYZZ": b"some data"}, p.__dict__["response"]["annotations_sent"])
@@ -471,7 +470,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testBatchProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch = Pyro4.batch(p)
+            batch = Pyro4.core.batch(p)
             self.assertIsNone(batch.multiply(7, 6))
             self.assertIsNone(batch.divide(999, 3))
             self.assertIsNone(batch.ping())
@@ -486,7 +485,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testAsyncProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            async = Pyro4.async(p)
+            async = Pyro4.core.async(p)
             async._pyroBind()  # force that any metadata is processed
             begin = time.time()
             result = async.delayAndId(1, 42)
@@ -507,7 +506,7 @@ class ServerTestsOnce(unittest.TestCase):
                 return value + increase
 
         with Pyro4.core.Proxy(self.objectUri) as p:
-            async = Pyro4.async(p)
+            async = Pyro4.core.async(p)
             async._pyroBind()  # force that any metadata is processed
             holder = FuncHolder()
             begin = time.time()
@@ -524,7 +523,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testBatchOneway(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch = Pyro4.batch(p)
+            batch = Pyro4.core.batch(p)
             self.assertIsNone(batch.multiply(7, 6))
             self.assertIsNone(batch.delay(1))  # a delay shouldn't matter with oneway
             self.assertIsNone(batch.multiply(3, 4))
@@ -536,7 +535,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testBatchAsync(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch = Pyro4.batch(p)
+            batch = Pyro4.core.batch(p)
             self.assertIsNone(batch.multiply(7, 6))
             self.assertIsNone(batch.delay(1))  # a delay shouldn't matter with async
             self.assertIsNone(batch.multiply(3, 4))
@@ -560,7 +559,7 @@ class ServerTestsOnce(unittest.TestCase):
                 return result
 
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch = Pyro4.batch(p)
+            batch = Pyro4.core.batch(p)
             self.assertIsNone(batch.multiply(7, 6))
             self.assertIsNone(batch.multiply(3, 4))
             result = batch(async=True)
@@ -585,7 +584,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testPyroTracebackBatch(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            batch = Pyro4.batch(p)
+            batch = Pyro4.core.batch(p)
             self.assertIsNone(batch.divide(999, 0))  # force an exception here
             results = batch()
             try:

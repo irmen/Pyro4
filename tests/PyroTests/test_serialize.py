@@ -373,7 +373,7 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(data, data2)
 
     def testCircular(self):
-        data = [42, "hello", Pyro4.Proxy("PYRO:dummy@dummy:4444")]
+        data = [42, "hello", Pyro4.core.Proxy("PYRO:dummy@dummy:4444")]
         data.append(data)
         ser, compressed = self.ser.serializeData(data)
         data2 = self.ser.deserializeData(ser, compressed)

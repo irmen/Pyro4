@@ -397,7 +397,7 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual(Pyro4.message.MSG_CONNECTFAIL, msg.type)
             self.assertEqual(99, msg.seq)
             self.assertTrue(b"handshake fail validation error" in msg.data)
-        with Pyro4.Daemon(port=0) as d:
+        with Pyro4.core.Daemon(port=0) as d:
             self.sendHandshakeMessage(conn)
             success = d._handshake(conn, denied_reason="no way, handshake denied")
             self.assertFalse(success)
@@ -661,7 +661,7 @@ class MetaInfoTests(unittest.TestCase):
 
     def testMetaResetCache(self):
         class Dummy:
-            @Pyro4.expose
+            @Pyro4.core.expose
             def method(self):
                 pass
         with Pyro4.core.Daemon() as d:
@@ -671,13 +671,13 @@ class MetaInfoTests(unittest.TestCase):
             meta = daemon_obj.get_metadata(uri.object)
             self.assertNotIn("newly_added_method", meta["methods"])
             self.assertNotIn("newly_added_method_two", meta["methods"])
-            Dummy.newly_added_method = Pyro4.expose(lambda self: None)
+            Dummy.newly_added_method = Pyro4.core.expose(lambda self: None)
             meta = daemon_obj.get_metadata(uri.object)
             self.assertNotIn("newly_added_method", meta["methods"])
             d.resetMetadataCache(uri.object)
             meta = daemon_obj.get_metadata(uri.object)
             self.assertIn("newly_added_method", meta["methods"])
-            Dummy.newly_added_method_two = Pyro4.expose(lambda self: None)
+            Dummy.newly_added_method_two = Pyro4.core.expose(lambda self: None)
             d.resetMetadataCache(dummy)
             meta = daemon_obj.get_metadata(uri.object)
             self.assertIn("newly_added_method_two", meta["methods"])

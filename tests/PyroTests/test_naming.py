@@ -304,7 +304,7 @@ class NameServerTestsHmac(unittest.TestCase):
         self.assertEqual(config.NS_PORT, uri.port)
 
     def testPyroname(self):
-        with Pyro4.Proxy("PYRONAME:Pyro.NameServer") as p:
+        with Pyro4.core.Proxy("PYRONAME:Pyro.NameServer") as p:
             p._pyroHmacKey = b"test_key"
             p.ping()   # the resolve() that is done should also use the hmac key
 

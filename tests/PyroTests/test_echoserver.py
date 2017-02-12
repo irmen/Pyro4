@@ -43,7 +43,7 @@ class TestEchoserver(unittest.TestCase):
         self.assertTrue(hasattr(e, "_pyroExposed"))
 
     def testEcho(self):
-        with Pyro4.Proxy(self.uri) as echo:
+        with Pyro4.core.Proxy(self.uri) as echo:
             try:
                 self.assertEqual("hello", echo.echo("hello"))
                 self.assertEqual(None, echo.echo(None))
@@ -52,7 +52,7 @@ class TestEchoserver(unittest.TestCase):
                 echo.shutdown()
 
     def testError(self):
-        with Pyro4.Proxy(self.uri) as echo:
+        with Pyro4.core.Proxy(self.uri) as echo:
             try:
                 echo.error()
                 self.fail("expected exception")
@@ -71,7 +71,7 @@ class TestEchoserver(unittest.TestCase):
                 self.assertEqual("the message of the error", str(x))
 
     def testGenerator(self):
-        with Pyro4.Proxy(self.uri) as echo:
+        with Pyro4.core.Proxy(self.uri) as echo:
             remotegenerator = echo.generator()
             self.assertIsInstance(remotegenerator, Pyro4.core._StreamResultIterator)
             next(remotegenerator)
