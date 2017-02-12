@@ -29,8 +29,6 @@ except ImportError:
     sqlite3 = None
 
 
-__all__ = ["SqlStorage", "DbmStorage"]
-
 log = logging.getLogger("Pyro4.naming_storage")
 
 

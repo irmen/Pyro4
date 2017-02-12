@@ -24,7 +24,7 @@ from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 from Pyro4.configuration import config
 
 
-__all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "behavior", "oneway"]
+__all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "behavior", "oneway", "resolve", "locateNS"]
 
 if sys.version_info >= (3, 0):
     basestring = str

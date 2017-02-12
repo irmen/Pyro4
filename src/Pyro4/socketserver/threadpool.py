@@ -10,8 +10,6 @@ import logging
 import threading
 from Pyro4.configuration import config
 
-__all__ = ["PoolError", "NoFreeWorkersError", "Pool"]
-
 log = logging.getLogger("Pyro4.threadpool")
 
 
