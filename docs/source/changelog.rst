@@ -12,6 +12,7 @@ Change Log
   Ofcourse, they're also still on their old "shortcut" location in ``Pyro4`` directly.
 - Removed the publicly visible serializer id numbers from the message module. They're internal protocol details, user code should always refer to serializers by their name.
 - When a connection cannot be made, the address Pyro tries to connect to is now also included in the error message.
+- Added overridable ``Daemon.housekeeping()`` method.
 - Fixed various examples.
 
 

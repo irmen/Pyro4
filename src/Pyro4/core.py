@@ -1315,25 +1315,32 @@ class Daemon(object):
         """
         if self._shutting_down:
             return
-        if not self.streaming_responses:
-            return
         with self.housekeeper_lock:
-            if config.ITER_STREAM_LIFETIME > 0:
-                # cleanup iter streams that are past their lifetime
-                for streamId in list(self.streaming_responses.keys()):
-                    info = self.streaming_responses.get(streamId, None)
-                    if info:
-                        last_use_period = time.time() - info[1]
-                        if 0 < config.ITER_STREAM_LIFETIME < last_use_period:
-                            del self.streaming_responses[streamId]
-            if config.ITER_STREAM_LINGER > 0:
-                # cleanup iter streams that are past their linger time
-                for streamId in list(self.streaming_responses.keys()):
-                    info = self.streaming_responses.get(streamId, None)
-                    if info and info[2]:
-                        linger_period = time.time() - info[2]
-                        if linger_period > config.ITER_STREAM_LINGER:
-                            del self.streaming_responses[streamId]
+            if self.streaming_responses:
+                if config.ITER_STREAM_LIFETIME > 0:
+                    # cleanup iter streams that are past their lifetime
+                    for streamId in list(self.streaming_responses.keys()):
+                        info = self.streaming_responses.get(streamId, None)
+                        if info:
+                            last_use_period = time.time() - info[1]
+                            if 0 < config.ITER_STREAM_LIFETIME < last_use_period:
+                                del self.streaming_responses[streamId]
+                if config.ITER_STREAM_LINGER > 0:
+                    # cleanup iter streams that are past their linger time
+                    for streamId in list(self.streaming_responses.keys()):
+                        info = self.streaming_responses.get(streamId, None)
+                        if info and info[2]:
+                            linger_period = time.time() - info[2]
+                            if linger_period > config.ITER_STREAM_LINGER:
+                                del self.streaming_responses[streamId]
+            self.housekeeping()
+
+    def housekeeping(self):
+        """
+        Override this to add custom periodic housekeeping (cleanup) logic.
+        This will be called every few seconds by the running daemon's request loop.
+        """
+        pass
 
     def _getInstance(self, clazz, conn):
         """
