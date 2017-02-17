@@ -4,6 +4,8 @@ Change Log
 
 **Pyro 4.55**
 
+- *CRITICAL FIX:* serpent library dependency updated to 1.17 to fix issues with encoding and parsing strings containing 0-bytes.
+  Note that if you don't want to upgrade Pyro itself yet, you should manually upgrade the serpent library to get this fix.
 - Prefer selectors2 over selectors34 if it is available (Python 3.4 or older, to have better semantics of failing syscalls)
 - Removed THREADING2 config item and Pyro4.threadutil module. (the threading2 third party module is old and seems unmaintained and wasn't useful for Pyro anyway)
 - Improved module structure; fixed various circular import dependencies. This also fixed the RuntimeWarning about sys.modules, when starting the name server.
