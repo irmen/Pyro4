@@ -87,7 +87,10 @@ class URI(object):
             if location.startswith("["):  # ipv6
                 if location.startswith("[["):  # possible mistake: double-bracketing
                     raise errors.PyroError("invalid ipv6 address: enclosed in too many brackets")
-                self.host, _, self.port = re.match(r"\[([0-9a-fA-F:%]+)](:(\d+))?", location).groups()
+                ipv6locationmatch = re.match(r"\[([0-9a-fA-F:%]+)](:(\d+))?", location)
+                if not ipv6locationmatch:
+                    raise errors.PyroError("invalid ipv6 address: the part between brackets must be a numeric ipv6 address")
+                self.host, _, self.port = ipv6locationmatch.groups()
             else:
                 self.host, _, self.port = location.partition(":")
             if not self.port:

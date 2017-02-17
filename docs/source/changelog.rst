@@ -15,6 +15,7 @@ Change Log
 - Removed the publicly visible serializer id numbers from the message module. They're internal protocol details, user code should always refer to serializers by their name.
 - When a connection cannot be made, the address Pyro tries to connect to is now also included in the error message.
 - Added overridable ``Daemon.housekeeping()`` method.
+- Improved error message in case of invalid ipv6 uri.
 - Fixed various examples.
 
 

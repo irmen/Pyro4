@@ -167,12 +167,17 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("host.com", p.host)
         self.assertIsNone(p.sockname)
         self.assertEqual(4444, p.port)
+
+    def testUriParsingIpv6(self):
         p = Pyro4.core.URI("pyro:12345@[::1]:4444")
         self.assertEqual("::1", p.host)
         self.assertEqual("[::1]:4444", p.location)
         with self.assertRaises(Pyro4.errors.PyroError) as e:
             Pyro4.core.URI("pyro:12345@[[::1]]:4444")
         self.assertEqual("invalid ipv6 address: enclosed in too many brackets", str(e.exception))
+        with self.assertRaises(Pyro4.errors.PyroError) as e:
+            Pyro4.core.URI("pyro:12345@[must_be_numeric_here]:4444")
+        self.assertEqual("invalid ipv6 address: the part between brackets must be a numeric ipv6 address", str(e.exception))
 
     def testUriParsingPyroname(self):
         p = Pyro4.core.URI("PYRONAME:objectname")
