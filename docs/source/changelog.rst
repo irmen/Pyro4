@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.56**
+
+- serpent version check fix.
+
+
 **Pyro 4.55**
 
 - *CRITICAL FIX:* serpent library dependency updated to 1.17 to fix issues with encoding and parsing strings containing 0-bytes.
