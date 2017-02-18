@@ -24,7 +24,7 @@ from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 from Pyro4.configuration import config
 
 
-__all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "behavior", "oneway", "resolve", "locateNS"]
+__all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "behavior", "oneway", "_resolve", "_locateNS"]
 
 if sys.version_info >= (3, 0):
     basestring = str
@@ -482,7 +482,7 @@ class Proxy(object):
         with self.__pyroConnLock:
             if self._pyroConnection is not None:
                 return False  # already connected
-            uri = resolve(self._pyroUri, self._pyroHmacKey)
+            uri = _resolve(self._pyroUri, self._pyroHmacKey)
             # socket connection (normal or Unix domain socket)
             conn = None
             log.debug("connecting to %s", uri)
@@ -1042,7 +1042,7 @@ class Daemon(object):
             daemon = Daemon(host, port)
         with daemon:
             if ns:
-                ns = locateNS()
+                ns = _locateNS()
             for obj, name in objects.items():
                 if ns:
                     localname = None  # name is used for the name server
@@ -1682,8 +1682,8 @@ class _OnewayCallThread(threading.Thread):
         super(_OnewayCallThread, self).run()
 
 
-# name server utility functions, here to avoid cyclic dependencies
-def resolve(uri, hmac_key=None):
+# name server utility function, here to avoid cyclic dependencies
+def _resolve(uri, hmac_key=None):
     """
     Resolve a 'magic' uri (PYRONAME, PYROMETA) into the direct PYRO uri.
     It finds a name server, and use that to resolve a PYRONAME uri into the direct PYRO uri pointing to the named object.
@@ -1700,10 +1700,10 @@ def resolve(uri, hmac_key=None):
         return uri
     log.debug("resolving %s", uri)
     if uri.protocol == "PYRONAME":
-        with locateNS(uri.host, uri.port, hmac_key=hmac_key) as nameserver:
+        with _locateNS(uri.host, uri.port, hmac_key=hmac_key) as nameserver:
             return nameserver.lookup(uri.object)
     elif uri.protocol == "PYROMETA":
-        with locateNS(uri.host, uri.port, hmac_key=hmac_key) as nameserver:
+        with _locateNS(uri.host, uri.port, hmac_key=hmac_key) as nameserver:
             candidates = nameserver.list(metadata_all=uri.object)
             if candidates:
                 candidate = random.choice(list(candidates.values()))
@@ -1714,7 +1714,8 @@ def resolve(uri, hmac_key=None):
         raise errors.PyroError("invalid uri protocol")
 
 
-def locateNS(host=None, port=None, broadcast=True, hmac_key=None):
+# name server utility function, here to avoid cyclic dependencies
+def _locateNS(host=None, port=None, broadcast=True, hmac_key=None):
     """Get a proxy for a name server somewhere in the network."""
     if host is None:
         # first try localhost if we have a good chance of finding it there

@@ -15,7 +15,7 @@ import threading
 from Pyro4.errors import NamingError, PyroError, ProtocolError
 from Pyro4 import core, socketutil, constants
 from Pyro4.configuration import config
-from Pyro4.core import locateNS, resolve    # API compatibility with older versions
+from Pyro4.core import _locateNS as locateNS, _resolve as resolve    # API compatibility with older versions
 
 
 __all__ = ["locateNS", "resolve", "type_meta", "startNS", "startNSloop", "startNS"]

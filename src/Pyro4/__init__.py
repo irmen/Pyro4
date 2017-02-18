@@ -59,5 +59,6 @@ del _configLogging
 
 # import the required Pyro symbols into this package
 from Pyro4.configuration import config
-from Pyro4.core import URI, Proxy, Daemon, callback, batch, async, oneway, expose, behavior, current_context, locateNS, resolve
+from Pyro4.core import URI, Proxy, Daemon, callback, batch, async, oneway, expose, behavior, current_context
+from Pyro4.core import _locateNS as locateNS, _resolve as resolve
 from Pyro4.futures import Future

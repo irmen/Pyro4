@@ -31,7 +31,7 @@ from wsgiref.simple_server import make_server
 import traceback
 from Pyro4.util import json     # don't import stdlib json directly, we want to use the JSON_MODULE config item
 from Pyro4.configuration import config
-from Pyro4 import constants, errors, core, message, util
+from Pyro4 import constants, errors, core, message, util, naming
 
 
 __all__ = ["pyro_app", "main"]
@@ -41,7 +41,7 @@ _nameserver = None
 def get_nameserver(hmac=None):
     global _nameserver
     if not _nameserver:
-        _nameserver = core.locateNS(hmac_key=hmac)
+        _nameserver = naming.locateNS(hmac_key=hmac)
     try:
         _nameserver.ping()
         return _nameserver
