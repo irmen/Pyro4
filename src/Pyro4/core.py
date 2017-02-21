@@ -416,15 +416,35 @@ class Proxy(object):
                 # rebind here, don't do it from inside the invoke because deadlock will occur
                 self.__pyroCreateConnection()
             serializer = util.get_serializer(self._pyroSerializer or config.SERIALIZER)
-            data, compressed = serializer.serializeCall(
-                objectId or self._pyroConnection.objectId, methodname, vargs, kwargs,
-                compress=config.COMPRESSION)
+            annotations = self._pyroAnnotations()
+            objectId = objectId or self._pyroConnection.objectId
+            if vargs and isinstance(vargs[0], SerializedBlob):
+                if len(vargs) > 1 or kwargs:
+                    raise errors.SerializeError("if SerializedBlob is used, it must be the only argument")
+                blob = vargs[0]
+                if not isinstance(blob.name, str):
+                    raise TypeError("blob name must be a str")
+                flags |= message.FLAGS_KEEPSERIALIZED
+                # Pass the objectId and methodname separately in an annotation because currently,
+                # they are embedded inside the serialized message data. And we're not deserializing that,
+                # so we have to have another means of knowing the object and method it is meant for...
+                import marshal
+                annotations["BLBN"] = marshal.dumps((blob.name, objectId, methodname))
+                if blob._contains_blob:
+                    # directly pass through the already serialized msg data from within the blob
+                    protocol_msg = blob._data
+                    data, compressed = protocol_msg.data, protocol_msg.flags & message.FLAGS_COMPRESSED
+                else:
+                    # replaces SerializedBlob argument with the data to be serialized
+                    data, compressed = serializer.serializeCall(objectId, methodname, blob._data, kwargs, compress=config.COMPRESSION)
+            else:
+                data, compressed = serializer.serializeCall(objectId, methodname, vargs, kwargs, compress=config.COMPRESSION)
             if compressed:
                 flags |= message.FLAGS_COMPRESSED
             if methodname in self._pyroOneway:
                 flags |= message.FLAGS_ONEWAY
             self._pyroSeq = (self._pyroSeq + 1) & 0xffff
-            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
+            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, annotations=annotations, hmac_key=self._pyroHmacKey)
             if config.LOGWIRE:
                 _log_wiredata(log, "proxy wiredata sending", msg)
             try:
@@ -1207,7 +1227,16 @@ class Daemon(object):
             if msg.serializer_id not in self.__serializer_ids:
                 raise errors.SerializeError("message used serializer that is not accepted: %d" % msg.serializer_id)
             serializer = util.get_serializer_by_id(msg.serializer_id)
-            objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
+            if not (request_flags & message.FLAGS_KEEPSERIALIZED):
+                objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
+            else:
+                # pass on the wire protocol message unchanged
+                import marshal
+                blobname, objId, method = marshal.loads(msg.annotations["BLBN"])  # blobname, objectid and methodname
+                blob = SerializedBlob(blobname, msg)
+                blob._contains_blob = True
+                vargs = (blob,)
+                kwargs = {}
             current_context.client = conn
             current_context.client_sock_addr = conn.sock.getpeername()   # store this because on oneway calls the socket will be disconnected
             current_context.seq = msg.seq
@@ -1801,6 +1830,24 @@ def _locateNS(host=None, port=None, broadcast=True, hmac_key=None):
         if sys.version_info >= (3, 0):
             e.__cause__ = x
         raise e
+
+
+class SerializedBlob(object):
+    def __init__(self, name, data):
+        self.name = name
+        self._data = data
+        self._contains_blob = False
+
+    @property
+    def data(self):
+        """Retrieves the client data stored in this blob. Deserializes it automatically if required."""
+        if self._contains_blob:
+            protocol_msg = self._data
+            serializer = util.get_serializer_by_id(protocol_msg.serializer_id)
+            _, _, data, _ = serializer.deserializeData(protocol_msg.data, protocol_msg.flags & message.FLAGS_COMPRESSED)
+            return data
+        else:
+            return self._data
 
 
 # call context thread local
