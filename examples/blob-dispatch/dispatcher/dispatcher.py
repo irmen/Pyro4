@@ -17,8 +17,8 @@ class Dispatcher(object):
 
     @Pyro4.expose
     def process_blob(self, blob):
-        print("Dispatching blob with name:", blob.name)
-        listeners = self.listeners.get(blob.name, [])
+        print("Dispatching blob with name:", blob.info)
+        listeners = self.listeners.get(blob.info, [])
         for listener in listeners:
             listener.process_blob(blob)
 

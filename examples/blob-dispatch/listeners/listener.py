@@ -16,7 +16,7 @@ class Listener(object):
 
     @Pyro4.expose
     def process_blob(self, blob):
-        assert blob.name == self.topic
-        customdata = blob.data
+        assert blob.info == self.topic
+        customdata = blob.deserialized()
         print("Received custom data (type={}):".format(type(customdata)))
         print("    a={}, b={}, c={}".format(customdata.a, customdata.b, customdata.c))

@@ -419,25 +419,10 @@ class Proxy(object):
             annotations = self._pyroAnnotations()
             objectId = objectId or self._pyroConnection.objectId
             if vargs and isinstance(vargs[0], SerializedBlob):
-                if len(vargs) > 1 or kwargs:
-                    raise errors.SerializeError("if SerializedBlob is used, it must be the only argument")
-                blob = vargs[0]
-                if not isinstance(blob.name, str):
-                    raise TypeError("blob name must be a str")
-                flags |= message.FLAGS_KEEPSERIALIZED
-                # Pass the objectId and methodname separately in an annotation because currently,
-                # they are embedded inside the serialized message data. And we're not deserializing that,
-                # so we have to have another means of knowing the object and method it is meant for...
-                import marshal
-                annotations["BLBN"] = marshal.dumps((blob.name, objectId, methodname))
-                if blob._contains_blob:
-                    # directly pass through the already serialized msg data from within the blob
-                    protocol_msg = blob._data
-                    data, compressed = protocol_msg.data, protocol_msg.flags & message.FLAGS_COMPRESSED
-                else:
-                    # replaces SerializedBlob argument with the data to be serialized
-                    data, compressed = serializer.serializeCall(objectId, methodname, blob._data, kwargs, compress=config.COMPRESSION)
+                # special serialization of a 'blob' that stays serialized
+                data, compressed, flags = self.__serializeBlobArgs(vargs, kwargs, annotations, flags, objectId, methodname, serializer)
             else:
+                # normal serialization of the remote call
                 data, compressed = serializer.serializeCall(objectId, methodname, vargs, kwargs, compress=config.COMPRESSION)
             if compressed:
                 flags |= message.FLAGS_COMPRESSED
@@ -681,6 +666,33 @@ class Proxy(object):
         Raise an exception if something is wrong and the connection should not be made.
         """
         return
+
+    def __serializeBlobArgs(self, vargs, kwargs, annotations, flags, objectId, methodname, serializer):
+        """
+        Special handling of a "blob" argument that has to stay serialized until explicitly deserialized
+        in client code. This allows for efficient, transparent proxies or dispatchers and such.
+        """
+        if len(vargs) > 1 or kwargs:
+            raise errors.SerializeError("if SerializedBlob is used, it must be the only argument")
+        blob = vargs[0]
+        flags |= message.FLAGS_KEEPSERIALIZED
+        # Pass the objectId and methodname separately in an annotation because currently,
+        # they are embedded inside the serialized message data. And we're not deserializing that,
+        # so we have to have another means of knowing the object and method it is meant for...
+        # A better solution is perhaps to split the actual remote method arguments from the
+        # control data (object + methodname) but that requires a major protocol change.
+        # The code below is not as nice but it works without any protocol change and doesn't
+        # require a hack either - so it's actually not bad like this.
+        import marshal
+        annotations["BLBI"] = marshal.dumps((blob.info, objectId, methodname))
+        if blob._contains_blob:
+            # directly pass through the already serialized msg data from within the blob
+            protocol_msg = blob._data
+            data, compressed = protocol_msg.data, protocol_msg.flags & message.FLAGS_COMPRESSED
+        else:
+            # replaces SerializedBlob argument with the data to be serialized
+            data, compressed = serializer.serializeCall(objectId, methodname, blob._data, kwargs, compress=config.COMPRESSION)
+        return data, compressed, flags
 
 
 class _StreamResultIterator(object):
@@ -1227,16 +1239,12 @@ class Daemon(object):
             if msg.serializer_id not in self.__serializer_ids:
                 raise errors.SerializeError("message used serializer that is not accepted: %d" % msg.serializer_id)
             serializer = util.get_serializer_by_id(msg.serializer_id)
-            if not (request_flags & message.FLAGS_KEEPSERIALIZED):
-                objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
+            if request_flags & message.FLAGS_KEEPSERIALIZED:
+                # pass on the wire protocol message blob unchanged
+                objId, method, vargs, kwargs = self.__deserializeBlobArgs(msg)
             else:
-                # pass on the wire protocol message unchanged
-                import marshal
-                blobname, objId, method = marshal.loads(msg.annotations["BLBN"])  # blobname, objectid and methodname
-                blob = SerializedBlob(blobname, msg)
-                blob._contains_blob = True
-                vargs = (blob,)
-                kwargs = {}
+                # normal deserialization of remote call arguments
+                objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
             current_context.client = conn
             current_context.client_sock_addr = conn.sock.getpeername()   # store this because on oneway calls the socket will be disconnected
             current_context.seq = msg.seq
@@ -1623,6 +1631,13 @@ class Daemon(object):
             return True, None
         return False, data
 
+    def __deserializeBlobArgs(self, protocolmsg):
+        import marshal
+        blobinfo, objId, method = marshal.loads(protocolmsg.annotations["BLBI"])
+        blob = SerializedBlob(blobinfo, protocolmsg)
+        blob._contains_blob = True
+        return objId, method, (blob,), {}  # object, method, vargs, kwargs
+
 
 # serpent serializer initialization
 
@@ -1833,14 +1848,19 @@ def _locateNS(host=None, port=None, broadcast=True, hmac_key=None):
 
 
 class SerializedBlob(object):
-    def __init__(self, name, data):
-        self.name = name
+    """
+    Used to wrap some data to make Pyro pass this object transparently (it keeps the serialized payload as-is)
+    Only when you need to access the actual client data you can deserialize on demand.
+    This allows for transparent Pyro proxies and dispatchers and such.
+    You have to pass this as the only parameter to a remote method call for Pyro to understand it.
+    """
+    def __init__(self, info, data):
+        self.info = info
         self._data = data
         self._contains_blob = False
 
-    @property
-    def data(self):
-        """Retrieves the client data stored in this blob. Deserializes it automatically if required."""
+    def deserialized(self):
+        """Retrieves the client data stored in this blob. Deserializes the data automatically if required."""
         if self._contains_blob:
             protocol_msg = self._data
             serializer = util.get_serializer_by_id(protocol_msg.serializer_id)
