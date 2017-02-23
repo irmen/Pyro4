@@ -24,7 +24,8 @@ from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 from Pyro4.configuration import config
 
 
-__all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "behavior", "oneway", "_resolve", "_locateNS"]
+__all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "behavior",
+           "oneway", "SerializedBlob", "_resolve", "_locateNS"]
 
 if sys.version_info >= (3, 0):
     basestring = str
@@ -1853,6 +1854,10 @@ class SerializedBlob(object):
     Only when you need to access the actual client data you can deserialize on demand.
     This allows for transparent Pyro proxies and dispatchers and such.
     You have to pass this as the only parameter to a remote method call for Pyro to understand it.
+    Init arguments:
+    ``info`` = some (small) descriptive data about the blob. Can be a simple id or name or guid. Must be marshallable.
+    ``data`` = the actual client data payload that you want to transfer in the blob. Can be anything that you would
+    otherwise have used as regular remote call arguments.
     """
     def __init__(self, info, data):
         self.info = info
