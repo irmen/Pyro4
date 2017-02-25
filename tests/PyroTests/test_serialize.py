@@ -636,14 +636,9 @@ class SerializeTests_msgpack(SerializeTests_pickle):
         data2 = self.ser.deserializeData(ser, compressed=compressed)
         self.assertEqual(list(data), data2)
 
+    @unittest.skip("msgpack is implementation dependent")
     def testUriSerializationWithoutSlots(self):
-        u = Pyro4.core.URI("PYRO:obj@localhost:1234")
-        d, compr = self.ser.serializeData(u)
-        self.assertFalse(compr)
-        result1 = b'\x82\xa5state\x95\xa4PYRO\xa3obj\xc0\xa9localhost\xcd\x04\xd2\xa9__class__\xaePyro4.core.URI'
-        result2 = b'\x82\xa9__class__\xaePyro4.core.URI\xa5state\x95\xa4PYRO\xa3obj\xc0\xa9localhost\xcd\x04\xd2'
-        result3 = b'\x82\xc4\t__class__\xc4\x0ePyro4.core.URI\xc4\x05state\x95\xc4\x04PYRO\xc4\x03obj\xc0\xc4\tlocalhost\xcd\x04\xd2'
-        self.assertTrue(d in (result1, result2, result3))
+        pass
 
 
 class GenericTests(unittest.TestCase):
