@@ -117,6 +117,7 @@ For normal usage, there's not a single line of Pyro specific code once you have 
     double: serialization; dill
     double: serialization; serpent
     double: serialization; marshal
+    double: serialization; msgpack
     double: serialization; json
 
 
@@ -161,8 +162,10 @@ on what objects you can use.
   the advanced parameters such as `default`, not all 3rd party implementations do that.
 * marshal: a very limited but fast serializer. Can deal with a small range of builtin types only,
   no custom classes can be serialized. Part of the standard library.
-* pickle: the legacy serializer. Fast and supports almost all types. Has security problems though. Part
-  of the standard library. No longer used by default.
+* msgpack: See https://pypi.python.org/pypi/msgpack-python Reasonably fast serializer (and a lot faster if you're using the C module extension).
+  Can deal with many builtin types, but not all.
+* pickle: the legacy serializer. Fast and supports almost all types. Part of the standard library.
+  Has security problems, so it's better to avoid using it.
 * dill: See https://pypi.python.org/pypi/dill It is similar to pickle serializer, but more capable. Extends python's 'pickle' module
   for serializing and de-serializing python objects to the majority of the built-in python types.
   Has security problems though, just as pickle.

@@ -26,7 +26,7 @@ Here's a quick overview of Pyro's features:
 
 - written in 100% Python so extremely portable.
 - defaults to a safe serializer (`serpent <https://pypi.python.org/pypi/serpent>`_) that supports many Python data types.
-- supports different serializers (serpent, json, marshal, pickle, dill).
+- supports different serializers (serpent, json, marshal, msgpack, pickle, dill).
 - support for all Python data types that are serializable when using the 'pickle' or 'dill' serializers [1]_.
 - runs on Python 2.7, Python 3.x, IronPython, Pypy.
 - works between different system architectures and operating systems

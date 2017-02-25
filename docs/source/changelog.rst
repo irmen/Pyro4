@@ -4,7 +4,9 @@ Change Log
 
 **Pyro 4.56**
 
+- json serializer can now serialize uuid.UUID, datetime and decimal objects (into strings, like serpent does)
 - serpent version check fix.
+
 
 
 **Pyro 4.55**
