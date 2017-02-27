@@ -13,6 +13,7 @@ import base64
 import unittest
 import serpent
 import math
+import uuid
 import Pyro4.util
 import Pyro4.errors
 import Pyro4.core
@@ -43,11 +44,8 @@ class SerializeTests_pickle(unittest.TestCase):
 
     def testSerUnicode(self):
         data = unicode("x")
-        ser, _ = self.ser.serializeData(data)
-        expected_type = str if sys.platform == "cli" else bytes  # ironpython serializes into str, not bytes... :(
-        self.assertTrue(type(ser) is expected_type)
-        ser, _ = self.ser.serializeCall(data, unicode("method"), [], {})
-        self.assertTrue(type(ser) is expected_type)
+        self.ser.serializeData(data)
+        self.ser.serializeCall(data, unicode("method"), [], {})
 
     def testSerCompression(self):
         d1, c1 = self.ser.serializeData("small data", compress=True)
@@ -359,11 +357,22 @@ class SerializeTests_pickle(unittest.TestCase):
     def testData(self):
         data = [42, "hello"]
         ser, compressed = self.ser.serializeData(data)
-        expected_type = str if sys.platform == "cli" else bytes  # ironpython serializes into str, not bytes... :(
-        self.assertTrue(type(ser) is expected_type)
         self.assertFalse(compressed)
         data2 = self.ser.deserializeData(ser, compressed=False)
         self.assertEqual(data, data2)
+
+    def testUnicodeData(self):
+        data = u"euro\u20aclowbytes\u0000\u0001\u007f\u0080\u00ff"
+        ser, compressed = self.ser.serializeData(data)
+        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        self.assertEqual(data, data2)
+
+    def testUUID(self):
+        data = uuid.uuid1()
+        ser, compressed = self.ser.serializeData(data)
+        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        uuid_as_str = str(data)
+        self.assertTrue(data2==data or data2==uuid_as_str)
 
     def testSet(self):
         data = {111, 222, 333}
@@ -530,10 +539,6 @@ class SerializeTests_dill(SerializeTests_pickle):
 class SerializeTests_serpent(SerializeTests_pickle):
     SERIALIZER = "serpent"
 
-    @unittest.skip("pickle specific")
-    def testProtocolVersion(self):
-        pass
-
     def testCircular(self):
         with self.assertRaises(ValueError):  # serpent doesn't support object graphs (since serpent 1.7 reports ValueError instead of crashing)
             super(SerializeTests_serpent, self).testCircular()
@@ -585,10 +590,6 @@ class SerializeTests_serpent(SerializeTests_pickle):
 class SerializeTests_json(SerializeTests_pickle):
     SERIALIZER = "json"
 
-    @unittest.skip("pickle specific")
-    def testProtocolVersion(self):
-        pass
-
     def testCircular(self):
         with self.assertRaises(ValueError):  # json doesn't support object graphs
             super(SerializeTests_json, self).testCircular()
@@ -621,6 +622,25 @@ class SerializeTests_marshal(SerializeTests_pickle):
         pass
 
 
+class SerializeTests_msgpack(SerializeTests_pickle):
+    SERIALIZER = "msgpack"
+
+    @unittest.skip("circular will crash msgpack")
+    def testCircular(self):
+        pass
+
+    def testSet(self):
+        # msgpack serializes a set into a list, so we override this
+        data = {111, 222, 333}
+        ser, compressed = self.ser.serializeData(data)
+        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        self.assertEqual(list(data), data2)
+
+    @unittest.skip("msgpack is implementation dependent")
+    def testUriSerializationWithoutSlots(self):
+        pass
+
+
 class GenericTests(unittest.TestCase):
     def testSerializersAvailable(self):
         Pyro4.util.get_serializer("pickle")
@@ -647,15 +667,16 @@ class GenericTests(unittest.TestCase):
         self.assertEqual(3, Pyro4.util.MarshalSerializer.serializer_id)
         self.assertEqual(4, Pyro4.util.PickleSerializer.serializer_id)
         self.assertEqual(5, Pyro4.util.DillSerializer.serializer_id)
+        self.assertEqual(6, Pyro4.util.MsgpackSerializer.serializer_id)
 
     def testSerializersAvailableById(self):
         Pyro4.util.get_serializer_by_id(1)  # serpent
         Pyro4.util.get_serializer_by_id(2)  # json
         Pyro4.util.get_serializer_by_id(3)  # marshal
         Pyro4.util.get_serializer_by_id(4)  # pickle
-        # id 5 = dill, not always available, so we skip this one.
+        # ids 5 and 6 (dill, msgpack) are not always available, so we skip those.
         self.assertRaises(Pyro4.errors.SerializeError, lambda: Pyro4.util.get_serializer_by_id(0))
-        self.assertRaises(Pyro4.errors.SerializeError, lambda: Pyro4.util.get_serializer_by_id(6))
+        self.assertRaises(Pyro4.errors.SerializeError, lambda: Pyro4.util.get_serializer_by_id(7))
 
     def testDictClassFail(self):
         o = pprint.PrettyPrinter(stream="dummy", width=42)

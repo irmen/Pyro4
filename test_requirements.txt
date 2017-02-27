@@ -1,2 +1,3 @@
 -rrequirements.txt
 dill>=0.2.6
+msgpack-python>=0.4.8

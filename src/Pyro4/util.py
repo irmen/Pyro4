@@ -6,10 +6,15 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import sys
 import zlib
+import uuid
 import logging
 import linecache
 import traceback
 import inspect
+import struct
+import datetime
+import decimal
+import numbers
 from Pyro4 import errors
 from Pyro4.configuration import config
 
@@ -325,23 +330,27 @@ class SerializerBase(object):
                 daemon.__setstate_from_dict__(data["state"])
                 return daemon
         elif classname.startswith("Pyro4.util."):
-            if classname == "Pyro4.util.PickleSerializer":
+            if classname == "Pyro4.util.SerpentSerializer":
+                return SerpentSerializer()
+            elif classname == "Pyro4.util.PickleSerializer":
                 return PickleSerializer()
-            elif classname == "Pyro4.util.DillSerializer":
-                return DillSerializer()
             elif classname == "Pyro4.util.MarshalSerializer":
                 return MarshalSerializer()
             elif classname == "Pyro4.util.JsonSerializer":
                 return JsonSerializer()
-            elif classname == "Pyro4.util.SerpentSerializer":
-                return SerpentSerializer()
+            elif classname == "Pyro4.util.MsgpackSerializer":
+                return MsgpackSerializer()
+            elif classname == "Pyro4.util.DillSerializer":
+                return DillSerializer()
         elif classname.startswith("Pyro4.errors."):
             errortype = getattr(errors, classname.split('.', 2)[2])
             if issubclass(errortype, errors.PyroError):
                 return SerializerBase.make_exception(errortype, data)
         elif classname == "Pyro4.futures._ExceptionWrapper":
             from Pyro4 import futures  # XXX circular
-            ex = SerializerBase.dict_to_class(data["exception"])
+            ex = data["exception"]
+            if isinstance(ex, dict) and "__class__" in ex:
+                ex = SerializerBase.dict_to_class(ex)
             return futures._ExceptionWrapper(ex)
         elif data.get("__exception__", False):
             if classname in all_exceptions:
@@ -498,6 +507,12 @@ class MarshalSerializer(SerializerBase):
             return self.recreate_classes(marshal.loads(data))
 
     @classmethod
+    def class_to_dict(cls, obj):
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
+        return super(MarshalSerializer, cls).class_to_dict(obj)
+
+    @classmethod
     def register_type_replacement(cls, object_type, replacement_function):
         pass  # marshal serializer doesn't support per-type hooks
 
@@ -571,7 +586,78 @@ class JsonSerializer(SerializerBase):
             obj = replacer(obj)
         if isinstance(obj, set):
             return tuple(obj)  # json module can't deal with sets so we make a tuple out of it
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
+        if isinstance(obj, (datetime.datetime, datetime.date)):
+            return obj.isoformat()
+        if isinstance(obj, decimal.Decimal):
+            return str(obj)
         return self.class_to_dict(obj)
+
+    @classmethod
+    def register_type_replacement(cls, object_type, replacement_function):
+        cls.__type_replacements[object_type] = replacement_function
+
+
+class MsgpackSerializer(SerializerBase):
+    """(de)serializer that wraps the msgpack serialization protocol."""
+    serializer_id = 6  # never change this
+
+    __type_replacements = {}
+
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        return msgpack.packb((obj, method, vargs, kwargs), use_bin_type=True, default=self.default)
+
+    def dumps(self, data):
+        return msgpack.packb(data, use_bin_type=True, default=self.default)
+
+    def loadsCall(self, data):
+        obj, method, vargs, kwargs = msgpack.unpackb(data, encoding="utf-8", object_hook=self.object_hook)
+        return obj, method, vargs, kwargs
+
+    def loads(self, data):
+        return msgpack.unpackb(data, encoding="utf-8", object_hook=self.object_hook, ext_hook=self.ext_hook)
+
+    def default(self, obj):
+        replacer = self.__type_replacements.get(type(obj), None)
+        if replacer:
+            obj = replacer(obj)
+        if isinstance(obj, set):
+            return tuple(obj)  # msgpack module can't deal with sets so we make a tuple out of it
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
+        if isinstance(obj, bytearray):
+            return bytes(obj)
+        if isinstance(obj, complex):
+            return msgpack.ExtType(0x30, struct.pack("dd", obj.real, obj.imag))
+        if isinstance(obj, datetime.datetime):
+            if obj.tzinfo:
+                raise errors.SerializeError("msgpack cannot serialize datetime with timezone info")
+            return msgpack.ExtType(0x32, struct.pack("d", obj.timestamp()))
+        if isinstance(obj, datetime.date):
+            return msgpack.ExtType(0x33, struct.pack("l", obj.toordinal()))
+        if isinstance(obj, decimal.Decimal):
+            return str(obj)
+        if isinstance(obj, numbers.Number):
+            return msgpack.ExtType(0x31, str(obj).encode("ascii"))     # long
+        return self.class_to_dict(obj)
+
+    def object_hook(self, obj):
+        if "__class__" in obj:
+            return self.dict_to_class(obj)
+        return obj
+
+    def ext_hook(self, code, data):
+        if code == 0x30:
+            real, imag = struct.unpack("dd", data)
+            return complex(real, imag)
+        if code == 0x31:
+            return int(data)
+        if code == 0x32:
+            return datetime.datetime.fromtimestamp(struct.unpack("d", data)[0])
+        if code == 0x33:
+            return datetime.date.fromordinal(struct.unpack("l", data)[0])
+        raise errors.SerializeError("invalid ext code for msgpack: "+str(code))
 
     @classmethod
     def register_type_replacement(cls, object_type, replacement_function):
@@ -641,6 +727,13 @@ try:
     _serializers_by_id[_ser.serializer_id] = _ser
 except ImportError:
     log.warning("serpent serializer is not available")
+    pass
+try:
+    import msgpack
+    _ser = MsgpackSerializer()
+    _serializers["msgpack"] = _ser
+    _serializers_by_id[_ser.serializer_id] = _ser
+except ImportError:
     pass
 del _ser
 

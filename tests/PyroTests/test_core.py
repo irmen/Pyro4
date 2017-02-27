@@ -63,7 +63,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual("localhost", config.NS_HOST)
         self.assertFalse(config.FLAME_ENABLED)
         self.assertEqual("serpent", config.SERIALIZER)
-        self.assertEqual({"json", "serpent", "marshal"}, config.SERIALIZERS_ACCEPTED)
+        self.assertEqual({"json", "serpent", "msgpack", "marshal"}, config.SERIALIZERS_ACCEPTED)
 
     def testConfigValid(self):
         try:

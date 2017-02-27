@@ -4,9 +4,11 @@ Change Log
 
 **Pyro 4.56**
 
+- json serializer can now serialize uuid.UUID, datetime and decimal objects (into strings, like serpent does)
 - serpent version check fix.
 - [on branch: dispatch_blob] experimental feature to be able to pass through serialized arguments unchanged via core.SerializedBlob
   See example 'blob-dispatch'
+
 
 
 **Pyro 4.55**
