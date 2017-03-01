@@ -974,7 +974,10 @@ class Daemon(object):
             self.transportServer = SocketServer_Multiplex()
         else:
             raise errors.PyroError("invalid server type '%s'" % config.SERVERTYPE)
-        self.housekeeper_lock = threading.Lock()
+        self.__mustshutdown = threading.Event()
+        self.__mustshutdown.set()
+        self.__loopstopped = threading.Event()
+        self.__loopstopped.set()
         self.transportServer.init(self, host, port, unixsocket)
         #: The location (str of the form ``host:portnumber``) on which the Daemon is listening
         self.locationStr = self.transportServer.locationStr
@@ -991,9 +994,6 @@ class Daemon(object):
         pyroObject._pyroId = constants.DAEMON_NAME
         #: Dictionary from Pyro object id to the actual Pyro object registered by this id
         self.objectsById = {pyroObject._pyroId: pyroObject}
-        self.__mustshutdown = threading.Event()
-        self.__loopstopped = threading.Event()
-        self.__loopstopped.set()
         # assert that the configured serializers are available, and remember their ids:
         self.__serializer_ids = {util.get_serializer(ser_name).serializer_id for ser_name in config.SERIALIZERS_ACCEPTED}
         log.debug("accepted serializers: %s" % config.SERIALIZERS_ACCEPTED)
@@ -1001,6 +1001,8 @@ class Daemon(object):
         self.__pyroHmacKey = None
         self._pyroInstances = {}   # pyro objects for instance_mode=single (singletons, just one per daemon)
         self.streaming_responses = {}   # stream_id -> (client, creation_timestamp, linger_timestamp, stream)
+        self.housekeeper_lock = threading.Lock()
+        self.__mustshutdown.clear()
 
     @property
     def _pyroHmacKey(self):
