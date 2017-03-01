@@ -974,6 +974,7 @@ class Daemon(object):
             self.transportServer = SocketServer_Multiplex()
         else:
             raise errors.PyroError("invalid server type '%s'" % config.SERVERTYPE)
+        self.housekeeper_lock = threading.Lock()
         self.transportServer.init(self, host, port, unixsocket)
         #: The location (str of the form ``host:portnumber``) on which the Daemon is listening
         self.locationStr = self.transportServer.locationStr
@@ -1000,7 +1001,6 @@ class Daemon(object):
         self.__pyroHmacKey = None
         self._pyroInstances = {}   # pyro objects for instance_mode=single (singletons, just one per daemon)
         self.streaming_responses = {}   # stream_id -> (client, creation_timestamp, linger_timestamp, stream)
-        self.housekeeper_lock = threading.Lock()
 
     @property
     def _pyroHmacKey(self):
