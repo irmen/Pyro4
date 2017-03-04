@@ -5,8 +5,10 @@ Change Log
 **Pyro 4.56**
 
 - json serializer can now serialize uuid.UUID, datetime and decimal objects (into strings, like serpent does)
+- msgpack serializer added (requires msgpack-python library, see https://pypi.python.org/pypi/msgpack-python )
+- serializers can now deal with memoryview and bytearray serialized data input types.
+- serpent library dependency updated to 1.19 to be able to deal with memoryview and bytearray inputs.
 - serpent version check fix.
-
 
 
 **Pyro 4.55**
