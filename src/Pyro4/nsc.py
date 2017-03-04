@@ -51,6 +51,8 @@ def handleCommand(nameserver, options, args):
         print("Registered %s" % args[1])
 
     def cmd_remove():
+        if len(args) != 2:
+            raise SystemExit("requires one argument: name")
         count = nameserver.remove(args[1])
         if count > 0:
             print("Removed %s" % args[1])
