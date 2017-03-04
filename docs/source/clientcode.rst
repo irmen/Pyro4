@@ -442,7 +442,7 @@ Pyrolite!  Version 4.14 or newer of that library supports  Pyro item streaming. 
 Java and .NET iterables to your code that you can loop over normally with foreach or other things.
 
 There are several examples that use the remote iterator feature.
-Have a look at the :file:`stockquotes` tutorial example, or the :file:`blobserver` example.
+Have a look at the :file:`stockquotes` tutorial example, or the :file:`filetransfer` example.
 
 
 

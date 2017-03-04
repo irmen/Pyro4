@@ -32,7 +32,8 @@ but not Windows) you'll benefit even more from optimized data transfer.
 
 Note:
 Performance of the download via iterator is almost identical to the normal transfer
-speed of regular python/pyro calls.
+speed of regular python/pyro calls. It is still a lot slower than raw data transfer,
+but at least you avoid having to load all of the data in memory at once.
 
 
 Note:

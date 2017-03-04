@@ -400,7 +400,7 @@ there's quite a difference in dealing with various types:
 
 **integrating raw socket transfer in a Pyro server**
 
-Have a look at the ``blobserver`` example to see an alternative for large binary transfers
+Have a look at the ``filetransfer`` example to see an alternative for large binary transfers
 where it is still mostly Pyro that does the job. But the actual data transfer is done over a
 temporary raw socket connection. The transfer speed approaches the limits of my network adapter
 in this case.
