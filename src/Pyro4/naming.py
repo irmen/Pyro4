@@ -18,7 +18,7 @@ from Pyro4.configuration import config
 from Pyro4.core import _locateNS as locateNS, _resolve as resolve    # API compatibility with older versions
 
 
-__all__ = ["locateNS", "resolve", "type_meta", "startNS", "startNSloop", "startNS"]
+__all__ = ["locateNS", "resolve", "type_meta", "startNSloop", "startNS"]
 
 if sys.version_info >= (3, 0):
     basestring = str
