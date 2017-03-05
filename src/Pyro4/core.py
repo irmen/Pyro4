@@ -708,13 +708,10 @@ class _StreamResultIterator(object):
                 # One of the reasons this can happen is because this call is being done from python's GC where
                 # it decides to gc old iterator objects *during a new call on the proxy*.
                 # If we use the same proxy and do a call in between, the other call on the proxy will get an out of sync seq and crash!
-                # An option is to create a temporary second proxy to call close_stream on,
+                # We create a temporary second proxy to call close_stream on. This is inefficient, but avoids the problem.
                 # or use a HACK to decrease the proxy's sequence number by one so it will be unchanged after this call.
-                self.proxy._pyroSeq -= 1  # HACK to keep proxy seq in sync
-                self.proxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
-                # with self.proxy.__copy__() as closingProxy:
-                #     print(" close async!")
-                #     closingProxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
+                with self.proxy.__copy__() as closingProxy:
+                    closingProxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
         self.proxy = None
 
 
