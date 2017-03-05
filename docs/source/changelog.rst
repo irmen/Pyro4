@@ -12,6 +12,7 @@ Change Log
 - added ``response_annotations`` on the call context object to be able to access annotations more easily than having to subclass Proxy or Daemon.
 - ``Proxy._pyroAnnotations`` and ``Daemon.annotations`` no longer needs to call super, the annotations you return
   here are now automatically merged with whatever Pyro uses internally.
+- improved the docs about binary data transfer a bit.
 
 
 **Pyro 4.55**
