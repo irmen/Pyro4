@@ -34,7 +34,7 @@ class FileServer(object):
     def annotation_stream(self, with_checksum=False):
         # create a large temporary file
         f = tempfile.TemporaryFile()
-        for _ in range(20000):
+        for _ in range(5000):
             f.write(b"1234567890!" * 1000)
         filesize = f.tell()
         f.seek(os.SEEK_SET, 0)
