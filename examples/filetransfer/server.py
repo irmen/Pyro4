@@ -15,7 +15,7 @@ datablobs = {}      # in-memory
 
 
 @Pyro4.expose
-class BlobServer(object):
+class FileServer(object):
     def get_with_pyro(self, size):
         print("sending %d bytes" % size)
         data = b"x" * size
@@ -53,16 +53,16 @@ class BlobServer(object):
         return file_id, blobsock_info
 
 
-class BlobServerDaemon(Pyro4.core.Daemon):
+class FileServerDaemon(Pyro4.core.Daemon):
     def __init__(self, host=None, port=0):
-        super(BlobServerDaemon, self).__init__(host, port)
+        super(FileServerDaemon, self).__init__(host, port)
         host, _ = self.transportServer.sock.getsockname()
         self.blobsocket = Pyro4.socketutil.createSocket(bind=(host, 0), timeout=Pyro4.config.COMMTIMEOUT, nodelay=False)
         print("Blob socket available on:", self.blobsocket.getsockname())
         
     def close(self):
         self.blobsocket.close()
-        super(BlobServerDaemon, self).close()
+        super(FileServerDaemon, self).close()
 
     def requestLoop(self, loopCondition=lambda: True):
         while loopCondition:
@@ -118,8 +118,14 @@ class BlobServerDaemon(Pyro4.core.Daemon):
         else:
             raise KeyError("no data for given id")
 
+    def annotations(self):
+        # XXX send file chunks via annotations
+        if hasattr(Pyro4.current_context, "_ann_file_chunk"):
+            return {"FDAT": Pyro4.current_context._chunk}  # XXX todo set via context.response_annotations!?
+        return {}
 
-with BlobServerDaemon(host=Pyro4.socketutil.getIpAddress("")) as daemon:
-    uri = daemon.register(BlobServer, "example.blobserver")
-    print("Blob server URI:", uri)
+
+with FileServerDaemon(host=Pyro4.socketutil.getIpAddress("")) as daemon:
+    uri = daemon.register(FileServer, "example.filetransfer")
+    print("Filetransfer server URI:", uri)
     daemon.requestLoop()

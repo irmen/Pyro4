@@ -343,8 +343,7 @@ class ServerTestsOnce(unittest.TestCase):
                 self.__dict__["response"] = response
                 super(CustomAnnotationsProxy, self).__init__(uri)
             def _pyroAnnotations(self):
-                ann = super(CustomAnnotationsProxy, self)._pyroAnnotations()
-                ann["XYZZ"] = b"some data"
+                ann = {"XYZZ": b"some data"}
                 self.__dict__["response"]["annotations_sent"] = ann
                 return ann
             def _pyroResponseAnnotations(self, annotations, msgtype):
@@ -354,7 +353,7 @@ class ServerTestsOnce(unittest.TestCase):
         corr_id = Pyro4.core.current_context.correlation_id = uuid.uuid4()
         with CustomAnnotationsProxy(self.objectUri, response) as p:
             p.ping()
-        self.assertDictEqual({"CORR": corr_id.bytes, "XYZZ": b"some data"}, p.__dict__["response"]["annotations_sent"])
+        self.assertDictEqual({"XYZZ": b"some data"}, p.__dict__["response"]["annotations_sent"])
         self.assertEqual(Pyro4.message.MSG_RESULT, p.__dict__["response"]["msgtype"])
         self.assertDictEqual({"CORR": corr_id.bytes}, p.__dict__["response"]["annotations"])
 

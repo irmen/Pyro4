@@ -77,7 +77,7 @@ def raw_socket(uri):
 
 
 if __name__ == "__main__":
-    uri = input("Uri of blob server? ").strip()
+    uri = input("Uri of filetransfer server? ").strip()
     print("\n\n**** regular pyro calls ****\n")
     t1 = threading.Thread(target=regular_pyro, args=(uri, ))
     t2 = threading.Thread(target=regular_pyro, args=(uri, ))

@@ -412,9 +412,7 @@ class DaemonTests(unittest.TestCase):
             def validateHandshake(self, conn, data):
                 return ["sure", "have", "fun"]
             def annotations(self):
-                ann = super(CustomHandshakeDaemon, self).annotations()
-                ann["XYZZ"] = b"custom annotation set by daemon"
-                return ann
+                return {"XYZZ": b"custom annotation set by daemon"}
         with CustomHandshakeDaemon(port=0) as d:
             corr_id = uuid.uuid4()
             self.sendHandshakeMessage(conn, correlation_id=corr_id)

@@ -14,12 +14,9 @@ def get_user_token():
 
 
 class CustomAnnotationProxy(Pyro4.Proxy):
-    # override the method that adds annotations and add our own,
-    # but be sure to call the base class method.
+    # override the method that adds annotations and add our own custom user token annotation
     def _pyroAnnotations(self):
-        annotations = super(CustomAnnotationProxy, self)._pyroAnnotations()
-        annotations["USER"] = get_user_token().encode("utf-8")
-        return annotations
+        return {"USER": get_user_token().encode("utf-8")}
 
 
 class DbAccessor(threading.Thread):

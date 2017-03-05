@@ -9,6 +9,9 @@ Change Log
 - serializers can now deal with memoryview and bytearray serialized data input types.
 - serpent library dependency updated to 1.19 to be able to deal with memoryview and bytearray inputs.
 - serpent version check fix.
+- added ``response_annotations`` on the call context object to be able to access annotations more easily than having to subclass Proxy.
+- ``Proxy._pyroAnnotations`` and ``Daemon.annotations`` no longer needs to call super, the annotations you return
+  here are now automatically merged with whatever Pyro uses internally.
 
 
 **Pyro 4.55**

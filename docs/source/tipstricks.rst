@@ -603,8 +603,13 @@ When accessed in a Pyro server it contains various attributes:
 .. py:attribute:: Pyro4.current_context.annotations
 
     (*dict*) message annotations, key is a 4-letter string and the value is a byte sequence.
-    Pyro uses this for the few internal annotations such as ``HMAC`` and ``CORR``, which are reserved.
-    But you can send your own annotations along with these if you so desire.
+    Used to send and receive annotations with Pyro requests.
+    See :ref:`msg_annotations` for more information about that.
+
+.. py:attribute:: Pyro4.current_context.response_annotations
+
+    (*dict*) message annotations, key is a 4-letter string and the value is a byte sequence.
+    Used in client code, the annotations returned by a Pyro server are available here.
     See :ref:`msg_annotations` for more information about that.
 
 .. py:attribute:: Pyro4.current_context.correlation_id
@@ -649,7 +654,7 @@ individual annotation cannot be larger than 64 Kb.
 
 .. sidebar:: reserved annotation chunks
 
-    The following annotation chunks are used by Pyro internally and should not be touched:
+    The following annotation chunks are used by Pyro internally and should not be touched or used:
     ``CORR``, ``HMAC`` and ``STRM``.
 
 An annotation is a low level datastructure (to optimize the generation of network messages):
@@ -662,17 +667,24 @@ Pyro will take care of encoding this dictionary into the wire message and extrac
 
 *Customizing annotations:*
 
-Adding your own annotations to messages is done by overriding the :py:meth:`Pyro4.core.Proxy._pyroAnnotations` method in your client code (proxy),
-and/or the :py:meth:`Pyro4.core.Daemon.annotations` method in the server code (daemon).
-If you override any of these methods, don't forget to call the original method and add to the dictionary returned from that,
-rather than simply returning a new dictionary. Otherwise you will sabotage Pyro's internal annotations.
+You can add your own annotations to messages. For server code, you do this by making a subclass of the Daemon and
+override the :py:meth:`Pyro4.core.Daemon.annotations` method. This method is called by Pyro to get the custom
+user annotations dict that should be added to response messages.
+In client code, you can set the ``annotations`` property of the :py:data:`Pyro4.current_context` object right
+before the proxy method call. Pyro will then add that annotations dict to the request message.
+
+Before Pyro 4.56, the older method for client code was to create a proxy subclass and override the method :py:meth:`Pyro4.core.Proxy._pyroAnnotations`.
+This method should return the custom annotations dict that should be added to request messages.
 
 *Reacting on annotations:*
 
-In the Daemon, you can use the :py:data:`Pyro4.current_context` to access the annotations of the message that was received.
+In your server code, in the Daemon, you can use the :py:data:`Pyro4.current_context` to access the ``annotations`` of the last message that was received.
+In your client code, you can do that as well, but you should look at the ``response_annotations`` of this context object instead.
+If you're using large annotation chunks, it is advised to clear these fields after use.
 See :ref:`current_context`.
-In the client code you have to create a proxy subclass and override the method :py:meth:`Pyro4.core.Proxy._pyroResponseAnnotations`.
-Pyro will call this method with the dictionary of any annotations received in a response message from the daemon,
+
+Before Pyro 4.56, the older method for client code was to create a proxy subclass and override the method :py:meth:`Pyro4.core.Proxy._pyroResponseAnnotations`.
+Pyro calls this method with the dictionary of any annotations received in a response message from the daemon,
 and the message type identifier of the response message.
 
 For an example of how you can work with custom message annotations, see the :py:mod:`callcontext` example.
