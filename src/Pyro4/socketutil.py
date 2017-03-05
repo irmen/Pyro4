@@ -461,6 +461,9 @@ class SocketConnection(object):
     def fileno(self):
         return self.sock.fileno()
 
+    def family(self):
+        return family_str(self.sock)
+
     def setTimeout(self, timeout):
         self.sock.settimeout(timeout)
 
@@ -468,6 +471,17 @@ class SocketConnection(object):
         return self.sock.gettimeout()
 
     timeout = property(getTimeout, setTimeout)
+
+
+def family_str(sock):
+    f = sock.family
+    if f == socket.AF_INET:
+        return "IPv4"
+    if f == socket.AF_INET6:
+        return "IPv6"
+    if f == socket.AF_UNIX:
+        return "Unix"
+    return "???"
 
 
 def findProbablyUnusedPort(family=socket.AF_INET, socktype=socket.SOCK_STREAM):

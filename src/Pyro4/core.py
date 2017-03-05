@@ -293,7 +293,10 @@ class Proxy(object):
         return super(Proxy, self).__setattr__(name, value)
 
     def __repr__(self):
-        connected = "connected" if self._pyroConnection else "not connected"
+        if self._pyroConnection:
+            connected = "connected "+self._pyroConnection.family()
+        else:
+            connected = "not connected"
         return "<%s.%s at 0x%x; %s; for %s>" % (self.__class__.__module__, self.__class__.__name__,
                                                 id(self), connected, self._pyroUri)
 
@@ -412,12 +415,11 @@ class Proxy(object):
 
     def _pyroInvoke(self, methodname, vargs, kwargs, flags=0, objectId=None):
         """perform the remote method call communication"""
+        current_context.response_annotations = {}
         with self.__pyroConnLock:
             if self._pyroConnection is None:
-                # rebind here, don't do it from inside the invoke because deadlock will occur
                 self.__pyroCreateConnection()
             serializer = util.get_serializer(self._pyroSerializer or config.SERIALIZER)
-            annotations = self._pyroAnnotations()
             objectId = objectId or self._pyroConnection.objectId
             if vargs and isinstance(vargs[0], SerializedBlob):
                 # special serialization of a 'blob' that stays serialized
@@ -430,7 +432,7 @@ class Proxy(object):
             if methodname in self._pyroOneway:
                 flags |= message.FLAGS_ONEWAY
             self._pyroSeq = (self._pyroSeq + 1) & 0xffff
-            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, annotations=annotations, hmac_key=self._pyroHmacKey)
+            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, annotations=self.__annotations(), hmac_key=self._pyroHmacKey)
             if config.LOGWIRE:
                 _log_wiredata(log, "proxy wiredata sending", msg)
             try:
@@ -448,6 +450,7 @@ class Proxy(object):
                         log.error(error)
                         raise errors.SerializeError(error)
                     if msg.annotations:
+                        current_context.response_annotations = msg.annotations
                         self._pyroResponseAnnotations(msg.annotations, msg.type)
                     if self._pyroRawWireResponse:
                         msg.decompress_if_needed()
@@ -512,7 +515,7 @@ class Proxy(object):
                 if compressed:
                     flags |= message.FLAGS_COMPRESSED
                 msg = message.Message(message.MSG_CONNECT, data, serializer.serializer_id, flags, self._pyroSeq,
-                                      annotations=self._pyroAnnotations(), hmac_key=self._pyroHmacKey)
+                                      annotations=self.__annotations(False), hmac_key=self._pyroHmacKey)
                 if config.LOGWIRE:
                     _log_wiredata(log, "proxy connect sending", msg)
                 conn.send(msg.to_bytes())
@@ -552,7 +555,7 @@ class Proxy(object):
                     if replaceUri:
                         self._pyroUri = uri
                     self._pyroValidateHandshake(handshake_response)
-                    log.debug("connected to %s", self._pyroUri)
+                    log.debug("connected to %s - %s", self._pyroUri, conn.family())
                     if msg.annotations:
                         self._pyroResponseAnnotations(msg.annotations, msg.type)
                 else:
@@ -599,9 +602,7 @@ class Proxy(object):
         self._pyroMethods = set(metadata["methods"])
         self._pyroAttrs = set(metadata["attrs"])
         if log.isEnabledFor(logging.DEBUG):
-            log.debug("from meta: oneway methods=%s", sorted(self._pyroOneway))
-            log.debug("from meta: methods=%s", sorted(self._pyroMethods))
-            log.debug("from meta: attributes=%s", sorted(self._pyroAttrs))
+            log.debug("from meta: methods=%s, oneway methods=%s, attributes=%s", sorted(self._pyroMethods), sorted(self._pyroOneway), sorted(self._pyroAttrs))
         if not self._pyroMethods and not self._pyroAttrs:
             raise errors.PyroError("remote object doesn't expose any methods or attributes. Did you forget setting @expose on them?")
 
@@ -642,14 +643,9 @@ class Proxy(object):
 
     def _pyroAnnotations(self):
         """
-        Returns a dict with annotations to be sent with each message.
-        Default behavior is to include the correlation id from the current context (if it is set).
-        If you override this, don't forget to call the original method and add to the dictionary returned from it,
-        rather than simply returning a new dictionary.
-        (note that the Message may include an additional hmac annotation at the moment the message is sent)
+        Override to return a dict with custom user annotations to be sent with each request message.
+        Code using Pyro 4.56 or newer can skip this and instead set the annotations directly on the context object.
         """
-        if current_context.correlation_id:
-            return {"CORR": current_context.correlation_id.bytes}
         return {}
 
     def _pyroResponseAnnotations(self, annotations, msgtype):
@@ -657,6 +653,7 @@ class Proxy(object):
         Process any response annotations (dictionary set by the daemon).
         Usually this contains the internal Pyro annotations such as hmac and correlation id,
         and if you override the annotations method in the daemon, can contain your own annotations as well.
+        Code using Pyro 4.56 or newer can skip this and instead read the response_annotations directly from the context object.
         """
         pass
 
@@ -667,6 +664,17 @@ class Proxy(object):
         Raise an exception if something is wrong and the connection should not be made.
         """
         return
+
+    def __annotations(self, clear=True):
+        annotations = current_context.annotations
+        if current_context.correlation_id:
+            annotations["CORR"] = current_context.correlation_id.bytes
+        else:
+            annotations.pop("CORR", None)
+        annotations.update(self._pyroAnnotations())
+        if clear:
+            current_context.annotations = {}
+        return annotations
 
     def __serializeBlobArgs(self, vargs, kwargs, annotations, flags, objectId, methodname, serializer):
         """
@@ -705,6 +713,7 @@ class _StreamResultIterator(object):
     def __init__(self, streamId, proxy):
         self.streamId = streamId
         self.proxy = proxy
+        self.pyroseq = proxy._pyroSeq
 
     def __iter__(self):
         return self
@@ -716,6 +725,7 @@ class _StreamResultIterator(object):
     def __next__(self):
         if self.proxy._pyroConnection is None:
             raise errors.ConnectionClosedError("the proxy for this stream result has been closed")
+        self.pyroseq += 1
         return self.proxy._pyroInvoke("get_next_stream_item", [self.streamId], {}, objectId=constants.DAEMON_NAME)
 
     def __del__(self):
@@ -723,7 +733,18 @@ class _StreamResultIterator(object):
 
     def close(self):
         if self.proxy and self.proxy._pyroConnection is not None:
-            self.proxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
+            if self.pyroseq == self.proxy._pyroSeq:
+                # we're still in sync, it's okay to use the same proxy to close this stream
+                self.proxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
+            else:
+                # The proxy's sequence number has diverged.
+                # One of the reasons this can happen is because this call is being done from python's GC where
+                # it decides to gc old iterator objects *during a new call on the proxy*.
+                # If we use the same proxy and do a call in between, the other call on the proxy will get an out of sync seq and crash!
+                # We create a temporary second proxy to call close_stream on. This is inefficient, but avoids the problem.
+                # or use a HACK to decrease the proxy's sequence number by one so it will be unchanged after this call.
+                with self.proxy.__copy__() as closingProxy:
+                    closingProxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
         self.proxy = None
 
 
@@ -1007,10 +1028,14 @@ class Daemon(object):
             self.transportServer = SocketServer_Multiplex()
         else:
             raise errors.PyroError("invalid server type '%s'" % config.SERVERTYPE)
+        self.__mustshutdown = threading.Event()
+        self.__mustshutdown.set()
+        self.__loopstopped = threading.Event()
+        self.__loopstopped.set()
         self.transportServer.init(self, host, port, unixsocket)
         #: The location (str of the form ``host:portnumber``) on which the Daemon is listening
         self.locationStr = self.transportServer.locationStr
-        log.debug("created daemon on %s (pid %d)", self.locationStr, os.getpid())
+        log.debug("daemon created on %s - %s (pid %d)", self.locationStr, socketutil.family_str(self.transportServer.sock), os.getpid())
         natport_for_loc = natport
         if natport == 0:
             # expose internal port number as NAT port as well. (don't use port because it could be 0 and will be chosen by the OS)
@@ -1023,9 +1048,6 @@ class Daemon(object):
         pyroObject._pyroId = constants.DAEMON_NAME
         #: Dictionary from Pyro object id to the actual Pyro object registered by this id
         self.objectsById = {pyroObject._pyroId: pyroObject}
-        self.__mustshutdown = threading.Event()
-        self.__loopstopped = threading.Event()
-        self.__loopstopped.set()
         # assert that the configured serializers are available, and remember their ids:
         self.__serializer_ids = {util.get_serializer(ser_name).serializer_id for ser_name in config.SERIALIZERS_ACCEPTED}
         log.debug("accepted serializers: %s" % config.SERIALIZERS_ACCEPTED)
@@ -1034,6 +1056,7 @@ class Daemon(object):
         self._pyroInstances = {}   # pyro objects for instance_mode=single (singletons, just one per daemon)
         self.streaming_responses = {}   # stream_id -> (client, creation_timestamp, linger_timestamp, stream)
         self.housekeeper_lock = threading.Lock()
+        self.__mustshutdown.clear()
 
     @property
     def _pyroHmacKey(self):
@@ -1182,7 +1205,7 @@ class Daemon(object):
             flags = message.FLAGS_COMPRESSED if compressed else 0
         # We need a minimal amount of response data or the socket will remain blocked
         # on some systems... (messages smaller than 40 bytes)
-        msg = message.Message(msgtype, data, serializer_id, flags, msg_seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
+        msg = message.Message(msgtype, data, serializer_id, flags, msg_seq, annotations=self.__annotations(), hmac_key=self._pyroHmacKey)
         if config.LOGWIRE:
             _log_wiredata(log, "daemon handshake response", msg)
         conn.send(msg.to_bytes())
@@ -1224,15 +1247,12 @@ class Daemon(object):
             request_flags = msg.flags
             request_seq = msg.seq
             request_serializer_id = msg.serializer_id
-            if "CORR" in msg.annotations:
-                current_context.correlation_id = uuid.UUID(bytes=msg.annotations["CORR"])
-            else:
-                current_context.correlation_id = uuid.uuid4()
+            current_context.correlation_id = uuid.UUID(bytes=msg.annotations["CORR"]) if "CORR" in msg.annotations else uuid.uuid4()
             if config.LOGWIRE:
                 _log_wiredata(log, "daemon wiredata received", msg)
             if msg.type == message.MSG_PING:
                 # return same seq, but ignore any data (it's a ping, not an echo). Nothing is deserialized.
-                msg = message.Message(message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
+                msg = message.Message(message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq, annotations=self.__annotations(), hmac_key=self._pyroHmacKey)
                 if config.LOGWIRE:
                     _log_wiredata(log, "daemon wiredata sending", msg)
                 conn.send(msg.to_bytes())
@@ -1313,7 +1333,9 @@ class Daemon(object):
                     response_flags |= message.FLAGS_COMPRESSED
                 if wasBatched:
                     response_flags |= message.FLAGS_BATCH
-                msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq, annotations=self.annotations(), hmac_key=self._pyroHmacKey)
+                msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq,
+                                      annotations=self.__annotations(), hmac_key=self._pyroHmacKey)
+                current_context.response_annotations = {}
                 if config.LOGWIRE:
                     _log_wiredata(log, "daemon wiredata sending", msg)
                 conn.send(msg.to_bytes())
@@ -1324,7 +1346,8 @@ class Daemon(object):
                 request_seq = msg.seq
                 request_serializer_id = msg.serializer_id
             if xt is not errors.ConnectionClosedError:
-                log.debug("Exception occurred while handling request: %r", xv)
+                if xt is not StopIteration:
+                    log.debug("Exception occurred while handling request: %r", xv)
                 if not request_flags & message.FLAGS_ONEWAY:
                     if isinstance(xv, errors.SerializeError) or not isinstance(xv, errors.CommunicationError):
                         # only return the error to the client if it wasn't a oneway call, and not a communication error
@@ -1424,7 +1447,7 @@ class Daemon(object):
         else:
             raise errors.DaemonError("invalid instancemode in registered class")
 
-    def _sendExceptionResponse(self, connection, seq, serializer_id, exc_value, tbinfo, flags=0, annotations={}):
+    def _sendExceptionResponse(self, connection, seq, serializer_id, exc_value, tbinfo, flags=0, annotations=None):
         """send an exception back including the local traceback info"""
         exc_value._pyroTraceback = tbinfo
         if sys.platform == "cli":
@@ -1444,9 +1467,9 @@ class Daemon(object):
         flags |= message.FLAGS_EXCEPTION
         if compressed:
             flags |= message.FLAGS_COMPRESSED
-        ann = self.annotations()
-        ann.update(annotations or {})
-        msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq, annotations=ann, hmac_key=self._pyroHmacKey)
+        annotations = dict(annotations or {})
+        annotations.update(self.annotations())
+        msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq, annotations=annotations, hmac_key=self._pyroHmacKey)
         if config.LOGWIRE:
             _log_wiredata(log, "daemon wiredata sending (error response)", msg)
         connection.send(msg.to_bytes())
@@ -1570,14 +1593,7 @@ class Daemon(object):
             self.transportServer = None
 
     def annotations(self):
-        """
-        Returns a dict with annotations to be sent with each message.
-        Default behavior is to include the correlation id from the current context (if it is set).
-        If you override this, don't forget to call the original method and add to the dictionary returned from it,
-        rather than simply returning a new dictionary.
-        """
-        if current_context.correlation_id:
-            return {"CORR": current_context.correlation_id.bytes}
+        """Override to return a dict with custom user annotations to be sent with each response message."""
         return {}
 
     def combine(self, daemon):
@@ -1589,10 +1605,20 @@ class Daemon(object):
         log.debug("combining event loop with other daemon")
         self.transportServer.combine_loop(daemon.transportServer)
 
+    def __annotations(self):
+        annotations = current_context.response_annotations
+        if current_context.correlation_id:
+            annotations["CORR"] = current_context.correlation_id.bytes
+        else:
+            annotations.pop("CORR", None)
+        annotations.update(self.annotations())
+        return annotations
+
     def __repr__(self):
         if hasattr(self, "locationStr"):
-            return "<%s.%s at 0x%x; %s; %d objects>" % (self.__class__.__module__, self.__class__.__name__,
-                                                        id(self), self.locationStr, len(self.objectsById))
+            family = socketutil.family_str(self.sock)
+            return "<%s.%s at 0x%x; %s - %s; %d objects>" % (self.__class__.__module__, self.__class__.__name__,
+                                                             id(self), self.locationStr, family, len(self.objectsById))
         else:
             # daemon objects may come back from serialized form without being properly initialized (by design)
             return "<%s.%s at 0x%x; unusable>" % (self.__class__.__module__, self.__class__.__name__, id(self))
@@ -1690,6 +1716,7 @@ class _CallContext(threading.local):
         self.msg_flags = 0
         self.serializer_id = 0
         self.annotations = {}
+        self.response_annotations = {}
         self.correlation_id = None
 
     def to_global(self):
@@ -1702,6 +1729,7 @@ class _CallContext(threading.local):
             "msg_flags": self.msg_flags,
             "serializer_id": self.serializer_id,
             "annotations": self.annotations,
+            "response_annotations": self.response_annotations,
             "correlation_id": self.correlation_id,
             "client_sock_addr": self.client_sock_addr
         }
@@ -1712,6 +1740,7 @@ class _CallContext(threading.local):
         self.msg_flags = values["msg_flags"]
         self.serializer_id = values["serializer_id"]
         self.annotations = values["annotations"]
+        self.response_annotations = values["response_annotations"]
         self.correlation_id = values["correlation_id"]
         self.client_sock_addr = values["client_sock_addr"]
 
@@ -1786,6 +1815,8 @@ def _locateNS(host=None, port=None, broadcast=True, hmac_key=None):
                     return proxy
                 except errors.PyroError:
                     pass
+        if config.PREFER_IP_VERSION == 6:
+            broadcast = False   # ipv6 doesn't have broadcast. We should probably use multicast....
         if broadcast:
             # broadcast lookup
             if not port:

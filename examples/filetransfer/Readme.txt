@@ -32,8 +32,13 @@ but not Windows) you'll benefit even more from optimized data transfer.
 
 Note:
 Performance of the download via iterator is almost identical to the normal transfer
-speed of regular python/pyro calls.
+speed of regular python/pyro calls. It is still a lot slower than raw data transfer,
+but at least you avoid having to load all of the data in memory at once.
 
+Note:
+The annotation stream is somewhere in the middle of the pack.
+Here the annotation mechanism is (ab)used to transfer binary file data chunks,
+thereby almost completely avoiding the overhead of the serialization mechanism.
 
 Note:
 the only "security" on the raw socket interface is that you have to know

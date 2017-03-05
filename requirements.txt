@@ -1,2 +1,2 @@
-serpent>=1.17
+serpent>=1.19
 selectors34 ; python_version < "3.4"

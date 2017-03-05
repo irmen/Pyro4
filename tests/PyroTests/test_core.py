@@ -1083,7 +1083,7 @@ class TestFutures(unittest.TestCase):
         begin = time.time()
         r.value
         duration = time.time() - begin
-        self.assertGreaterEqual(duration, 1)
+        self.assertGreaterEqual(duration, 0.98)
         self.assertLess(duration, 1.1)
         self.assertFalse(f.delay(10))
 

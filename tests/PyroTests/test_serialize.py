@@ -501,6 +501,71 @@ class SerializeTests_pickle(unittest.TestCase):
         v = self.ser.deserializeData(d, compr)
         self.assertEqual(floats, v, "float precision must not be compromised in any serializer")
 
+    def testSourceByteTypes_deserialize(self):
+        # uncompressed
+        call_ser, _ = self.ser.serializeCall("object", "method", [1, 2, 3], {"kwarg": 42}, False)
+        ser, _ = self.ser.serializeData([4, 5, 6], False)
+        _, _, vargs, _ = self.ser.deserializeCall(bytearray(call_ser), False)
+        self.assertEqual([1, 2, 3], vargs)
+        d = self.ser.deserializeData(bytearray(ser), False)
+        self.assertEqual([4, 5, 6], d)
+        if sys.version_info < (3, 0):
+            _, _, vargs, _ = self.ser.deserializeCall(buffer(call_ser), False)
+            self.assertEqual([1, 2, 3], vargs)
+            d = self.ser.deserializeData(buffer(ser), False)
+            self.assertEqual([4, 5, 6], d)
+        # compressed
+        call_ser, _ = self.ser.serializeCall("object", "method", [1, 2, 3]*100, {"kwarg": 42}, True)
+        ser, _ = self.ser.serializeData([4, 5, 6]*100, True)
+        _, _, vargs, _ = self.ser.deserializeCall(bytearray(call_ser), True)
+        self.assertEqual(300, len(vargs))
+        d = self.ser.deserializeData(bytearray(ser), True)
+        self.assertEqual(300, len(d))
+        if sys.version_info < (3, 0):
+            _, _, vargs, _ = self.ser.deserializeCall(buffer(call_ser), True)
+            self.assertEqual(300, len(vargs))
+            d = self.ser.deserializeData(buffer(ser), True)
+            self.assertEqual(300, len(d))
+
+    @unittest.skipIf(sys.platform == "cli", "ironpython can't properly create memoryviews from serialized data")
+    def testSourceByteTypes_deserialize_memoryview(self):
+        # uncompressed
+        call_ser, _ = self.ser.serializeCall("object", "method", [1, 2, 3], {"kwarg": 42}, False)
+        ser, _ = self.ser.serializeData([4, 5, 6], False)
+        _, _, vargs, _ = self.ser.deserializeCall(memoryview(call_ser), False)
+        self.assertEqual([1, 2, 3], vargs)
+        d = self.ser.deserializeData(memoryview(ser), False)
+        self.assertEqual([4, 5, 6], d)
+        # compressed
+        call_ser, _ = self.ser.serializeCall("object", "method", [1, 2, 3]*100, {"kwarg": 42}, True)
+        ser, _ = self.ser.serializeData([4, 5, 6]*100, True)
+        _, _, vargs, _ = self.ser.deserializeCall(memoryview(call_ser), True)
+        self.assertEqual(300, len(vargs))
+        d = self.ser.deserializeData(memoryview(ser), True)
+        self.assertEqual(300, len(d))
+
+    def testSourceByteTypes_loads(self):
+        call_ser, _ = self.ser.serializeCall("object", "method", [1, 2, 3], {"kwarg": 42}, False)
+        ser, _ = self.ser.serializeData([4, 5, 6], False)
+        _, _, vargs, _ = self.ser.loadsCall(bytearray(call_ser))
+        self.assertEqual([1, 2, 3], vargs)
+        d = self.ser.loads(bytearray(ser))
+        self.assertEqual([4, 5, 6], d)
+        if sys.version_info < (3, 0):
+            _, _, vargs, _ = self.ser.loadsCall(buffer(call_ser))
+            self.assertEqual([1, 2, 3], vargs)
+            d = self.ser.loads(buffer(ser))
+            self.assertEqual([4, 5, 6], d)
+
+    @unittest.skipIf(sys.platform == "cli", "ironpython can't properly create memoryviews from serialized data")
+    def testSourceByteTypes_loads_memoryview(self):
+        call_ser, _ = self.ser.serializeCall("object", "method", [1, 2, 3], {"kwarg": 42}, False)
+        ser, _ = self.ser.serializeData([4, 5, 6], False)
+        _, _, vargs, _ = self.ser.loadsCall(memoryview(call_ser))
+        self.assertEqual([1, 2, 3], vargs)
+        d = self.ser.loads(memoryview(ser))
+        self.assertEqual([4, 5, 6], d)
+
 
 is_ironpython_without_dill = False
 try:

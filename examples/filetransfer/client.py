@@ -3,6 +3,7 @@ import time
 import threading
 import sys
 import socket
+import zlib
 import Pyro4
 import serpent
 
@@ -24,7 +25,7 @@ def regular_pyro(uri):
             total_size += len(data)
     assert total_size == blobsize*num_blobs
     duration = time.time() - start
-    print("thread {0} done, {1} Mb/sec.".format(name, total_size/1024.0/1024.0/duration))
+    print("thread {0} done, {1:.2f} Mb/sec.".format(name, total_size/1024.0/1024.0/duration))
 
 
 def via_iterator(uri):
@@ -41,7 +42,25 @@ def via_iterator(uri):
                 total_size += len(chunk)
     assert total_size == blobsize*num_blobs
     duration = time.time() - start
-    print("thread {0} done, {1} Mb/sec.".format(name, total_size/1024.0/1024.0/duration))
+    print("thread {0} done, {1:.2f} Mb/sec.".format(name, total_size/1024.0/1024.0/duration))
+
+
+def via_annotation_stream(uri):
+    name = threading.currentThread().name
+    start = time.time()
+    total_size = 0
+    print("thread {0} downloading via annotation stream...".format(name))
+    with Pyro4.core.Proxy(uri) as p:
+        perform_checksum = False
+        for progress, checksum in p.annotation_stream(perform_checksum):
+            chunk = Pyro4.current_context.response_annotations["FDAT"]
+            if perform_checksum and zlib.crc32(chunk) != checksum:
+                raise ValueError("checksum error")
+            total_size += len(chunk)
+            assert progress == total_size
+            Pyro4.current_context.response_annotations.clear()  # clean them up once we're done with them
+    duration = time.time() - start
+    print("thread {0} done, {1:.2f} Mb/sec.".format(name, total_size/1024.0/1024.0/duration))
 
 
 def raw_socket(uri):
@@ -73,11 +92,11 @@ def raw_socket(uri):
             total_size += size
         duration = time.time() - start
         assert total_size == blobsize * num_blobs
-        print("thread {0} done, {1} Mb/sec.".format(name, total_size/1024.0/1024.0/duration))
+        print("thread {0} done, {1:.2f} Mb/sec.".format(name, total_size/1024.0/1024.0/duration))
 
 
 if __name__ == "__main__":
-    uri = input("Uri of blob server? ").strip()
+    uri = input("Uri of filetransfer server? ").strip()
     print("\n\n**** regular pyro calls ****\n")
     t1 = threading.Thread(target=regular_pyro, args=(uri, ))
     t2 = threading.Thread(target=regular_pyro, args=(uri, ))
@@ -89,6 +108,14 @@ if __name__ == "__main__":
     print("\n\n**** transfer via iterators ****\n")
     t1 = threading.Thread(target=via_iterator, args=(uri, ))
     t2 = threading.Thread(target=via_iterator, args=(uri, ))
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+    input("enter to continue:")
+    print("\n\n**** transfer via annotation stream ****\n")
+    t1 = threading.Thread(target=via_annotation_stream, args=(uri, ))
+    t2 = threading.Thread(target=via_annotation_stream, args=(uri, ))
     t1.start()
     t2.start()
     t1.join()

@@ -34,5 +34,5 @@ the normal transfer speed.
 
 Note:
 For a possible approach on transferring large amounts of binary data
-*efficiently*, see the 'blobserver' example.  It works with a raw socket
+*efficiently*, see the 'filetransfer' example.  It works with a raw socket
 connection and avoids the Pyro protocol and serialization overhead.

@@ -34,7 +34,8 @@ log = logging.getLogger("Pyro4.naming_storage")
 
 class SqlStorage(MutableMapping):
     """
-    Sqlite-based storage, in just a single (name,uri) table.
+    Sqlite-based storage.
+    It is just a single (name,uri) table for the names and another table for the metadata.
     Sqlite db connection objects aren't thread-safe, so a new connection is created in every method.
     """
     def __init__(self, dbfile):

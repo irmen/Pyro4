@@ -17,7 +17,8 @@ class EchoServer(object):
         print("  context.msg_flags: ", ctx.msg_flags)
         print("  context.serializer_id: ", ctx.serializer_id)
         print("  context.correlation_id:", ctx.correlation_id)
-        print("  custom annotation 'XYZZ':", ctx.annotations["XYZZ"])
+        if "XYZZ" in ctx.annotations:
+            print("  custom annotation 'XYZZ':", ctx.annotations["XYZZ"])
         return message
 
     @Pyro4.oneway
@@ -27,9 +28,7 @@ class EchoServer(object):
 
 class CustomDaemon(Pyro4.Daemon):
     def annotations(self):
-        annotations = super(CustomDaemon, self).annotations()
-        annotations["ZZQQ"] = b"custom response annotation set by the daemon"
-        return annotations
+        return {"DDAA": b"custom response annotation set by the daemon"}
 
 
 with CustomDaemon() as daemon:

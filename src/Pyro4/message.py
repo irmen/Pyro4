@@ -93,7 +93,7 @@ class Message(object):
         self.data = databytes
         self.data_size = len(self.data)
         self.serializer_id = serializer_id
-        self.annotations = annotations or {}
+        self.annotations = dict(annotations or {})
         self.hmac_key = hmac_key
         if self.hmac_key:
             self.annotations["HMAC"] = self.hmac()   # should be done last because it calculates hmac over other annotations

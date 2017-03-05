@@ -47,7 +47,7 @@ if __name__ == "__main__":
         result = xmlrunner.XMLTestRunner(verbosity=1, output="test-reports").run(suite)
     else:
         print("\nRUNNING UNIT TESTS...")
-        result = unittest.TextTestRunner(verbosity=1).run(suite)
+        result = unittest.TextTestRunner(verbosity=1, failfast=False).run(suite)
 
     if not result.wasSuccessful():
         sys.exit(10)

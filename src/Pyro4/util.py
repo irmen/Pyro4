@@ -144,6 +144,7 @@ else:
     for name, t in vars(builtins).items():
         if type(t) is type and issubclass(t, BaseException):
             all_exceptions[name] = t
+    buffer = bytearray
 for name, t in vars(errors).items():
     if type(t) is type and issubclass(t, errors.PyroError):
         all_exceptions[name] = t
@@ -163,6 +164,8 @@ class SerializerBase(object):
     def deserializeData(self, data, compressed=False):
         """Deserializes the given data (bytes). Set compressed to True to decompress the data first."""
         if compressed:
+            if sys.version_info < (3, 0):
+                data = self._convertToBytes(data)
             data = zlib.decompress(data)
         return self.loads(data)
 
@@ -176,6 +179,8 @@ class SerializerBase(object):
         """Deserializes the given call data back to (object, method, vargs, kwargs) tuple.
         Set compressed to True to decompress the data first."""
         if compressed:
+            if sys.version_info < (3, 0):
+                data = self._convertToBytes(data)
             data = zlib.decompress(data)
         return self.loadsCall(data)
 
@@ -190,6 +195,15 @@ class SerializerBase(object):
 
     def dumpsCall(self, obj, method, vargs, kwargs):
         raise NotImplementedError("implement in subclass")
+
+    def _convertToBytes(self, data):
+        t = type(data)
+        if t is not bytes:
+            if t in (bytearray, buffer):
+                return bytes(data)
+            if t is memoryview:
+                return data.tobytes()
+        return data
 
     def __compressdata(self, data, compress):
         if not compress or len(data) < 200:
@@ -306,6 +320,7 @@ class SerializerBase(object):
         Only a fixed set of classes are recognized.
         Not used for the pickle serializer.
         """
+        from Pyro4 import core, futures  # XXX circular
         classname = data.get("__class__", "<unknown>")
         if isinstance(classname, bytes):
             classname = classname.decode("utf-8")
@@ -316,7 +331,6 @@ class SerializerBase(object):
             raise errors.SecurityError("refused to deserialize types with double underscores in their name: " + classname)
         # for performance, the constructors below are hardcoded here instead of added on a per-class basis to the dict-to-class registry
         if classname.startswith("Pyro4.core."):
-            from Pyro4 import core  # XXX circular
             if classname == "Pyro4.core.URI":
                 uri = core.URI.__new__(core.URI)
                 uri.__setstate_from_dict__(data["state"])
@@ -347,7 +361,6 @@ class SerializerBase(object):
             if issubclass(errortype, errors.PyroError):
                 return SerializerBase.make_exception(errortype, data)
         elif classname == "Pyro4.futures._ExceptionWrapper":
-            from Pyro4 import futures  # XXX circular
             ex = data["exception"]
             if isinstance(ex, dict) and "__class__" in ex:
                 ex = SerializerBase.dict_to_class(ex)
@@ -373,11 +386,6 @@ class SerializerBase(object):
                 exceptiontype = getattr(sqlite3, short_classname)
                 if issubclass(exceptiontype, BaseException):
                     return SerializerBase.make_exception(exceptiontype, data)
-
-        # try one of the serializer classes
-        for serializer in _serializers.values():
-            if classname == serializer.__class__.__name__:
-                return serializer
         log.warning("unsupported serialized class: " + classname)
         raise errors.SerializeError("unsupported serialized class: " + classname)
 
@@ -431,9 +439,11 @@ class PickleSerializer(SerializerBase):
         return pickle.dumps(data, config.PICKLE_PROTOCOL_VERSION)
 
     def loadsCall(self, data):
+        data = self._convertToBytes(data)
         return pickle.loads(data)
 
     def loads(self, data):
+        data = self._convertToBytes(data)
         return pickle.loads(data)
 
     @classmethod
@@ -490,20 +500,31 @@ class MarshalSerializer(SerializerBase):
         except (ValueError, TypeError):
             return marshal.dumps(self.class_to_dict(data))
 
-    def loadsCall(self, data):
-        obj, method, vargs, kwargs = marshal.loads(data)
-        vargs = self.recreate_classes(vargs)
-        kwargs = self.recreate_classes(kwargs)
-        return obj, method, vargs, kwargs
-
     if sys.platform == "cli":
+        def loadsCall(self, data):
+            if type(data) is not str:
+                # Ironpython's marshal expects str...
+                data = str(data)
+            obj, method, vargs, kwargs = marshal.loads(data)
+            vargs = self.recreate_classes(vargs)
+            kwargs = self.recreate_classes(kwargs)
+            return obj, method, vargs, kwargs
+
         def loads(self, data):
             if type(data) is not str:
                 # Ironpython's marshal expects str...
                 data = str(data)
             return self.recreate_classes(marshal.loads(data))
     else:
+        def loadsCall(self, data):
+            data = self._convertToBytes(data)
+            obj, method, vargs, kwargs = marshal.loads(data)
+            vargs = self.recreate_classes(vargs)
+            kwargs = self.recreate_classes(kwargs)
+            return obj, method, vargs, kwargs
+
         def loads(self, data):
+            data = self._convertToBytes(data)
             return self.recreate_classes(marshal.loads(data))
 
     @classmethod
@@ -570,14 +591,14 @@ class JsonSerializer(SerializerBase):
         return data.encode("utf-8")
 
     def loadsCall(self, data):
-        data = data.decode("utf-8")
+        data = self._convertToBytes(data).decode("utf-8")
         data = json.loads(data)
         vargs = self.recreate_classes(data["params"])
         kwargs = self.recreate_classes(data["kwargs"])
         return data["object"], data["method"], vargs, kwargs
 
     def loads(self, data):
-        data = data.decode("utf-8")
+        data = self._convertToBytes(data).decode("utf-8")
         return self.recreate_classes(json.loads(data))
 
     def default(self, obj):
@@ -612,10 +633,12 @@ class MsgpackSerializer(SerializerBase):
         return msgpack.packb(data, use_bin_type=True, default=self.default)
 
     def loadsCall(self, data):
+        data = self._convertToBytes(data)
         obj, method, vargs, kwargs = msgpack.unpackb(data, encoding="utf-8", object_hook=self.object_hook)
         return obj, method, vargs, kwargs
 
     def loads(self, data):
+        data = self._convertToBytes(data)
         return msgpack.unpackb(data, encoding="utf-8", object_hook=self.object_hook, ext_hook=self.ext_hook)
 
     def default(self, obj):
@@ -720,8 +743,8 @@ try:
     else:
         ver = serpent.__version__
     ver = tuple(map(int, ver.split(".")))
-    if ver < (1, 17):
-        raise RuntimeError("requires serpent 1.17 or better")
+    if ver < (1, 19):
+        raise RuntimeError("requires serpent 1.19 or better")
     _ser = SerpentSerializer()
     _serializers["serpent"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser

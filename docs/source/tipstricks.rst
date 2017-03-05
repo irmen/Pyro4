@@ -337,6 +337,12 @@ Sometimes it can be because you configured Pyro wrong. A checklist to follow to 
 
 Binary data transfer / file transfer
 ====================================
+
+.. sidebar:: ...if you do want to use Pyro for this...
+
+    At the end of this paragraph, a few alternative approaches of reasonably efficient binary data transfer
+    are presented, where (almost) all of the code still uses just Pyro's high level abstractions.
+
 Pyro is not meant to transfer large amounts of binary data (images, sound files, video clips):
 the protocol is not designed nor optimized for these kinds of data. The occasional transmission of such data
 is fine (:doc:`flame` even provides a convenience method for that, if you like:
@@ -398,12 +404,28 @@ there's quite a difference in dealing with various types:
     usually cannot be transferred directly, see :ref:`numpy`.
 
 
-**integrating raw socket transfer in a Pyro server**
+**Alternative: avoid most of the serialization overhead by (ab)using annotations**
 
-Have a look at the ``blobserver`` example to see an alternative for large binary transfers
-where it is still mostly Pyro that does the job. But the actual data transfer is done over a
-temporary raw socket connection. The transfer speed approaches the limits of my network adapter
-in this case.
+Pyro allows you to add custom annotation chunks to the request and response messages
+(see  :ref:`msg_annotations`). Because these are binary chunks they will not be passed
+through the serializer at all. There is a 64Kb total annotation size limit on messages
+though, so you have to split up larger files. The ``filetransfer`` example contains
+fully working example code to see this in action. It combines this with the remote
+iterator capability of Pyro to easily get all chunks of the file.
+It has to split up the file in small chunks but is still quite a bit faster than transmitting
+bytes through regular response values. Also it is using only regular Pyro high level logic
+and no low level network or socket code.
+
+
+**Alternative: integrating raw socket transfer in a Pyro server**
+
+It is possible to get data transfer speeds that are close to the limit of your network adapter
+by doing the actual data transfer via low-level socket code and everything else via Pyro.
+This keeps the amount of low-level code to a minimum.
+Have a look at the ``filetransfer`` example again, to see a possible way of doing this.
+It creates a special Daemon subclass that uses Pyro for everything as usual,
+but for actual file transfer it sets up a dedicated temporary socket connection over which the file data
+is transmitted.
 
 
 .. index:: MSG_WAITALL
@@ -603,8 +625,13 @@ When accessed in a Pyro server it contains various attributes:
 .. py:attribute:: Pyro4.current_context.annotations
 
     (*dict*) message annotations, key is a 4-letter string and the value is a byte sequence.
-    Pyro uses this for the few internal annotations such as ``HMAC`` and ``CORR``, which are reserved.
-    But you can send your own annotations along with these if you so desire.
+    Used to send and receive annotations with Pyro requests.
+    See :ref:`msg_annotations` for more information about that.
+
+.. py:attribute:: Pyro4.current_context.response_annotations
+
+    (*dict*) message annotations, key is a 4-letter string and the value is a byte sequence.
+    Used in client code, the annotations returned by a Pyro server are available here.
     See :ref:`msg_annotations` for more information about that.
 
 .. py:attribute:: Pyro4.current_context.correlation_id
@@ -649,7 +676,7 @@ individual annotation cannot be larger than 64 Kb.
 
 .. sidebar:: reserved annotation chunks
 
-    The following annotation chunks are used by Pyro internally and should not be touched:
+    The following annotation chunks are used by Pyro internally and should not be touched or used:
     ``CORR``, ``HMAC``, ``STRM`` and ``BLBI``.
 
 An annotation is a low level datastructure (to optimize the generation of network messages):
@@ -660,20 +687,31 @@ When processing a custom annotation, you have to decode it yourself as well.
 Communicating annotations with Pyro is done via a normal dictionary of chunk id -> data bytes.
 Pyro will take care of encoding this dictionary into the wire message and extracting it out of a response message.
 
-*Customizing annotations:*
+*Custom user annotations:*
 
-Adding your own annotations to messages is done by overriding the :py:meth:`Pyro4.core.Proxy._pyroAnnotations` method in your client code (proxy),
-and/or the :py:meth:`Pyro4.core.Daemon.annotations` method in the server code (daemon).
-If you override any of these methods, don't forget to call the original method and add to the dictionary returned from that,
-rather than simply returning a new dictionary. Otherwise you will sabotage Pyro's internal annotations.
+You can add your own annotations to messages. For server code, you do this by setting the ``response_annotations``
+property of the :py:data:`Pyro4.current_context` in your Pyro object, right before returning the regular response value.
+Pyro will add the annotations dict to the response message.
+In client code, you can set the ``annotations`` property of the :py:data:`Pyro4.current_context` object right
+before the proxy method call. Pyro will then add that annotations dict to the request message.
+
+The older method to to this (before Pyro 4.56) was to create a subclass of ``Proxy`` or ``Daemon`` and override the methods
+:py:meth:`Pyro4.core.Proxy._pyroAnnotations` or :py:meth:`Pyro4.core.Daemon.annotations` respectively.
+These methods should return the custom annotations dict that should be added to request/response messages.
+This is still possible to not break older code.
 
 *Reacting on annotations:*
 
-In the Daemon, you can use the :py:data:`Pyro4.current_context` to access the annotations of the message that was received.
+In your server code, in the Daemon, you can use the :py:data:`Pyro4.current_context` to access the ``annotations`` of the last message that was received.
+In your client code, you can do that as well, but you should look at the ``response_annotations`` of this context object instead.
+If you're using large annotation chunks, it is advised to clear these fields after use.
 See :ref:`current_context`.
-In the client code you have to create a proxy subclass and override the method :py:meth:`Pyro4.core.Proxy._pyroResponseAnnotations`.
-Pyro will call this method with the dictionary of any annotations received in a response message from the daemon,
-and the message type identifier of the response message.
+
+The older method to do this (before Pyro 4.56) for client code was to create a proxy subclass and override the method
+:py:meth:`Pyro4.core.Proxy._pyroResponseAnnotations`.
+Pyro calls this method with the dictionary of any annotations received in a response message from the daemon,
+and the message type identifier of the response message. This still works to not break older code.
+
 
 For an example of how you can work with custom message annotations, see the :py:mod:`callcontext` example.
 

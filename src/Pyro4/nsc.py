@@ -51,6 +51,8 @@ def handleCommand(nameserver, options, args):
         print("Registered %s" % args[1])
 
     def cmd_remove():
+        if len(args) != 2:
+            raise SystemExit("requires one argument: name")
         count = nameserver.remove(args[1])
         if count > 0:
             print("Removed %s" % args[1])
@@ -126,9 +128,8 @@ def main(args=None):
         options.host = "./u:" + options.unixsocket
     try:
         nameserver = naming.locateNS(options.host, options.port, hmac_key=options.key)
-    except errors.PyroError:
-        x = sys.exc_info()[1]
-        print("Failed to locate the name server: %s" % x)
+    except errors.PyroError as x:
+        print("Error: %s" % x)
         return
     if options.verbose:
         print("Name server found: %s" % nameserver._pyroUri)

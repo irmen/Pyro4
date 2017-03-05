@@ -10,10 +10,12 @@ import sys
 import threading
 import uuid
 import unittest
+import serpent
 import Pyro4.core
 import Pyro4.errors
 import Pyro4.util
 import Pyro4.message
+import Pyro4.socketutil
 from Pyro4.configuration import config
 from testsupport import *
 
@@ -87,6 +89,15 @@ class ServerTestObject(object):
         yield "one"
         yield "two"
         yield "three"
+
+    def response_annotation(self):
+        # part of the annotations tests
+        if "XYZZ" not in Pyro4.core.current_context.annotations:
+            raise ValueError("XYZZ should be present in annotations in the daemon")
+        if Pyro4.core.current_context.annotations["XYZZ"] != b"data from proxy via new api":
+            raise ValueError("XYZZ annotation has wrong data")
+        Pyro4.core.current_context.response_annotations["ANN2"] = b"daemon annotation via new api"
+        return {"annotations_in_daemon": Pyro4.core.current_context.annotations}
 
 
 class NotEverythingExposedClass(object):
@@ -286,7 +297,7 @@ class ServerTestsOnce(unittest.TestCase):
             p._pyroBind()
             self.assertEqual({'value', 'dictionary'}, p._pyroAttrs)
             self.assertEqual({'echo', 'getDict', 'divide', 'nonserializableException', 'ping', 'oneway_delay', 'delayAndId', 'delay', 'testargs',
-                                  'multiply', 'oneway_multiply', 'getDictAttr', 'iterator', 'generator'}, p._pyroMethods)
+                                  'multiply', 'oneway_multiply', 'getDictAttr', 'iterator', 'generator', 'response_annotation'}, p._pyroMethods)
             self.assertEqual({'oneway_multiply', 'oneway_delay'}, p._pyroOneway)
             p._pyroAttrs = None
             p._pyroGetMetadata()
@@ -297,6 +308,13 @@ class ServerTestsOnce(unittest.TestCase):
             p._pyroAttrs = None
             p._pyroGetMetadata(known_metadata={"attrs": set(), "oneway": set(), "methods": {"ping"}})
             self.assertEqual(set(), p._pyroAttrs)
+
+    def testProxyRepr(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            p._pyroBind()
+            expected = "<Pyro4.core.Proxy at 0x%x; connected %s; for %s>" % (id(p), Pyro4.socketutil.family_str(self.daemon.sock), self.objectUri)
+            self.assertEqual(expected, str(p))
+            self.assertEqual(expected, repr(p))
 
     def testProxyAttrsMetadataOff(self):
         try:
@@ -337,14 +355,13 @@ class ServerTestsOnce(unittest.TestCase):
         finally:
             config.METADATA = True
 
-    def testProxyAnnotations(self):
+    def testProxyAnnotationsOldApi(self):
         class CustomAnnotationsProxy(Pyro4.core.Proxy):
             def __init__(self, uri, response):
                 self.__dict__["response"] = response
                 super(CustomAnnotationsProxy, self).__init__(uri)
             def _pyroAnnotations(self):
-                ann = super(CustomAnnotationsProxy, self)._pyroAnnotations()
-                ann["XYZZ"] = b"some data"
+                ann = {"XYZZ": b"some data sent by old annotations api"}
                 self.__dict__["response"]["annotations_sent"] = ann
                 return ann
             def _pyroResponseAnnotations(self, annotations, msgtype):
@@ -354,9 +371,32 @@ class ServerTestsOnce(unittest.TestCase):
         corr_id = Pyro4.core.current_context.correlation_id = uuid.uuid4()
         with CustomAnnotationsProxy(self.objectUri, response) as p:
             p.ping()
-        self.assertDictEqual({"CORR": corr_id.bytes, "XYZZ": b"some data"}, p.__dict__["response"]["annotations_sent"])
+        self.assertDictEqual({"XYZZ": b"some data sent by old annotations api"}, p.__dict__["response"]["annotations_sent"])
         self.assertEqual(Pyro4.message.MSG_RESULT, p.__dict__["response"]["msgtype"])
         self.assertDictEqual({"CORR": corr_id.bytes}, p.__dict__["response"]["annotations"])
+
+    def testProxyAnnotations(self):
+        class AnnotationsProxy(Pyro4.core.Proxy):
+            def _pyroAnnotations(self):
+                return {"QWER": b"data via old api"}
+        with AnnotationsProxy(self.objectUri) as p:
+            Pyro4.core.current_context.annotations = {"XYZZ": b"invalid test data"}
+            try:
+                p.response_annotation()
+                self.fail("should fail")
+            except ValueError:
+                pass
+            Pyro4.core.current_context.annotations = {"XYZZ": b"data from proxy via new api"}
+            response = p.response_annotation()
+            self.assertEqual(b"daemon annotation via new api", Pyro4.core.current_context.response_annotations["ANN2"])
+            # check that the daemon received both the old and the new annotation api data:
+            daemon_annotations = response["annotations_in_daemon"]
+            if sys.version_info < (3, 0) and sys.platform != "cli":
+                self.assertEqual("data from proxy via new api", daemon_annotations["XYZZ"])
+                self.assertEqual("data via old api", daemon_annotations["QWER"])
+            else:
+                self.assertEqual(b"data from proxy via new api", serpent.tobytes(daemon_annotations["XYZZ"]))
+                self.assertEqual(b"data via old api", serpent.tobytes(daemon_annotations["QWER"]))
 
     def testExposedNotRequired(self):
         try:
