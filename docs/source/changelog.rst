@@ -4,14 +4,15 @@ Change Log
 
 **Pyro 4.56**
 
+- msgpack serializer added (requires msgpack-python library, see https://pypi.python.org/pypi/msgpack-python )
 - fixed possible crash in closing of remote iterators (they could crash the proxy by screwing up the internal sequence number).
 - json serializer can now serialize uuid.UUID, datetime and decimal objects (into strings, like serpent does)
-- msgpack serializer added (requires msgpack-python library, see https://pypi.python.org/pypi/msgpack-python )
 - serializers can now deal with memoryview and bytearray serialized data input types.
 - serpent library dependency updated to 1.19 to be able to deal with memoryview and bytearray inputs.
 - added ``response_annotations`` on the call context object to be able to access annotations more easily than having to subclass Proxy or Daemon.
 - ``Proxy._pyroAnnotations`` and ``Daemon.annotations`` no longer needs to call super, the annotations you return
   here are now automatically merged with whatever Pyro uses internally.
+- improved the docs about binary data transfer a bit.
 
 
 **Pyro 4.55**

@@ -151,22 +151,22 @@ Pyro will serialize the objects that you pass to the remote methods, so they can
 a network connection. Depending on the serializer that is being used, there will be some limitations
 on what objects you can use.
 
-* serpent: serializes into Python literal expressions. Accepts quite a lot of different types.
+* **serpent**: serializes into Python literal expressions. Accepts quite a lot of different types.
   Many will be serialized as dicts. You might need to explicitly translate literals back to specific types
   on the receiving end if so desired, because most custom classes aren't dealt with automatically.
   Requires third party library module, but it will be installed automatically as a dependency of Pyro.
   This serializer is the default choice.
-* json: more restricted as serpent, less types supported. Part of the standard library. Not particularly fast,
+* **json**: more restricted as serpent, less types supported. Part of the standard library. Not particularly fast,
   so you might want to look for a faster 3rd party implementation (such as simplejson). Be sure to benchmark before switching!
   Use the `JSON_MODULE` config item to tell Pyro to use the other module instead. Note that it has to support
   the advanced parameters such as `default`, not all 3rd party implementations do that.
-* marshal: a very limited but fast serializer. Can deal with a small range of builtin types only,
+* **marshal**: a very limited but fast serializer. Can deal with a small range of builtin types only,
   no custom classes can be serialized. Part of the standard library.
-* msgpack: See https://pypi.python.org/pypi/msgpack-python Reasonably fast serializer (and a lot faster if you're using the C module extension).
+* **msgpack**: See https://pypi.python.org/pypi/msgpack-python Reasonably fast serializer (and a lot faster if you're using the C module extension).
   Can deal with many builtin types, but not all.
-* pickle: the legacy serializer. Fast and supports almost all types. Part of the standard library.
+* **pickle**: the legacy serializer. Fast and supports almost all types. Part of the standard library.
   Has security problems, so it's better to avoid using it.
-* dill: See https://pypi.python.org/pypi/dill It is similar to pickle serializer, but more capable. Extends python's 'pickle' module
+* **dill**: See https://pypi.python.org/pypi/dill It is similar to pickle serializer, but more capable. Extends python's 'pickle' module
   for serializing and de-serializing python objects to the majority of the built-in python types.
   Has security problems though, just as pickle.
 
