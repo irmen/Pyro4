@@ -388,12 +388,15 @@ class ServerTestsOnce(unittest.TestCase):
                 pass
             Pyro4.core.current_context.annotations = {"XYZZ": b"data from proxy via new api"}
             response = p.response_annotation()
-            self.assertEqual({}, Pyro4.core.current_context.annotations, "after call, annotations should be cleared")
             self.assertEqual(b"daemon annotation via new api", Pyro4.core.current_context.response_annotations["ANN2"])
             # check that the daemon received both the old and the new annotation api data:
             daemon_annotations = response["annotations_in_daemon"]
-            self.assertEqual(b"data from proxy via new api", serpent.tobytes(daemon_annotations["XYZZ"]))
-            self.assertEqual(b"data via old api", serpent.tobytes(daemon_annotations["QWER"]))
+            if sys.version_info < (3, 0) and sys.platform != "cli":
+                self.assertEqual("data from proxy via new api", daemon_annotations["XYZZ"])
+                self.assertEqual("data via old api", daemon_annotations["QWER"])
+            else:
+                self.assertEqual(b"data from proxy via new api", serpent.tobytes(daemon_annotations["XYZZ"]))
+                self.assertEqual(b"data via old api", serpent.tobytes(daemon_annotations["QWER"]))
 
     def testExposedNotRequired(self):
         try:
