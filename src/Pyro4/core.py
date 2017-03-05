@@ -421,6 +421,7 @@ class Proxy(object):
                 self.__pyroCreateConnection()
             serializer = util.get_serializer(self._pyroSerializer or config.SERIALIZER)
             objectId = objectId or self._pyroConnection.objectId
+            annotations = self.__annotations()
             if vargs and isinstance(vargs[0], SerializedBlob):
                 # special serialization of a 'blob' that stays serialized
                 data, compressed, flags = self.__serializeBlobArgs(vargs, kwargs, annotations, flags, objectId, methodname, serializer)
@@ -432,7 +433,7 @@ class Proxy(object):
             if methodname in self._pyroOneway:
                 flags |= message.FLAGS_ONEWAY
             self._pyroSeq = (self._pyroSeq + 1) & 0xffff
-            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, annotations=self.__annotations(), hmac_key=self._pyroHmacKey)
+            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, annotations=annotations, hmac_key=self._pyroHmacKey)
             if config.LOGWIRE:
                 _log_wiredata(log, "proxy wiredata sending", msg)
             try:
@@ -680,6 +681,8 @@ class Proxy(object):
         """
         Special handling of a "blob" argument that has to stay serialized until explicitly deserialized
         in client code. This allows for efficient, transparent proxies or dispatchers and such.
+        Annotations are passed in because they will be modified: the 'BLBI' blob info annotation
+        is added which contains some metadata about the blob.
         """
         if len(vargs) > 1 or kwargs:
             raise errors.SerializeError("if SerializedBlob is used, it must be the only argument")
