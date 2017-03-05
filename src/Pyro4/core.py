@@ -292,7 +292,10 @@ class Proxy(object):
         return super(Proxy, self).__setattr__(name, value)
 
     def __repr__(self):
-        connected = "connected" if self._pyroConnection else "not connected"
+        if self._pyroConnection:
+            connected = "connected "+self._pyroConnection.family()
+        else:
+            connected = "not connected"
         return "<%s.%s at 0x%x; %s; for %s>" % (self.__class__.__module__, self.__class__.__name__,
                                                 id(self), connected, self._pyroUri)
 
@@ -547,7 +550,7 @@ class Proxy(object):
                     if replaceUri:
                         self._pyroUri = uri
                     self._pyroValidateHandshake(handshake_response)
-                    log.debug("connected to %s", self._pyroUri)
+                    log.debug("connected to %s - %s", self._pyroUri, conn.family())
                     if msg.annotations:
                         self._pyroResponseAnnotations(msg.annotations, msg.type)
                 else:
@@ -594,9 +597,7 @@ class Proxy(object):
         self._pyroMethods = set(metadata["methods"])
         self._pyroAttrs = set(metadata["attrs"])
         if log.isEnabledFor(logging.DEBUG):
-            log.debug("from meta: oneway methods=%s", sorted(self._pyroOneway))
-            log.debug("from meta: methods=%s", sorted(self._pyroMethods))
-            log.debug("from meta: attributes=%s", sorted(self._pyroAttrs))
+            log.debug("from meta: methods=%s, oneway methods=%s, attributes=%s", sorted(self._pyroMethods), sorted(self._pyroOneway), sorted(self._pyroAttrs))
         if not self._pyroMethods and not self._pyroAttrs:
             raise errors.PyroError("remote object doesn't expose any methods or attributes. Did you forget setting @expose on them?")
 
@@ -1002,7 +1003,7 @@ class Daemon(object):
         self.transportServer.init(self, host, port, unixsocket)
         #: The location (str of the form ``host:portnumber``) on which the Daemon is listening
         self.locationStr = self.transportServer.locationStr
-        log.debug("created daemon on %s (pid %d)", self.locationStr, os.getpid())
+        log.debug("daemon created on %s - %s (pid %d)", self.locationStr, socketutil.family_str(self.transportServer.sock), os.getpid())
         natport_for_loc = natport
         if natport == 0:
             # expose internal port number as NAT port as well. (don't use port because it could be 0 and will be chosen by the OS)
@@ -1578,8 +1579,9 @@ class Daemon(object):
 
     def __repr__(self):
         if hasattr(self, "locationStr"):
-            return "<%s.%s at 0x%x; %s; %d objects>" % (self.__class__.__module__, self.__class__.__name__,
-                                                        id(self), self.locationStr, len(self.objectsById))
+            family = socketutil.family_str(self.sock)
+            return "<%s.%s at 0x%x; %s - %s; %d objects>" % (self.__class__.__module__, self.__class__.__name__,
+                                                             id(self), self.locationStr, family, len(self.objectsById))
         else:
             # daemon objects may come back from serialized form without being properly initialized (by design)
             return "<%s.%s at 0x%x; unusable>" % (self.__class__.__module__, self.__class__.__name__, id(self))
@@ -1769,6 +1771,8 @@ def _locateNS(host=None, port=None, broadcast=True, hmac_key=None):
                     return proxy
                 except errors.PyroError:
                     pass
+        if config.PREFER_IP_VERSION == 6:
+            broadcast = False   # ipv6 doesn't have broadcast. We should probably use multicast....
         if broadcast:
             # broadcast lookup
             if not port:

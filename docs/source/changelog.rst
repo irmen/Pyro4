@@ -12,6 +12,9 @@ Change Log
 - added ``response_annotations`` on the call context object to be able to access annotations more easily than having to subclass Proxy or Daemon.
 - ``Proxy._pyroAnnotations`` and ``Daemon.annotations`` no longer needs to call super, the annotations you return
   here are now automatically merged with whatever Pyro uses internally.
+- Proxy and Daemon now contain the ip address family in their repr string.
+- Pyro now logs the ip address family for proxy or daemon socket connections.
+- ipv6 doesn't have broadcasts, so Pyro no longer uses them when ipv6 is in use.
 - improved the docs about binary data transfer a bit.
 
 
