@@ -1300,6 +1300,7 @@ class Daemon(object):
                     response_flags |= message.FLAGS_BATCH
                 msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, response_flags, request_seq,
                                       annotations=self.__annotations(), hmac_key=self._pyroHmacKey)
+                current_context.response_annotations = {}
                 if config.LOGWIRE:
                     _log_wiredata(log, "daemon wiredata sending", msg)
                 conn.send(msg.to_bytes())
@@ -1569,7 +1570,11 @@ class Daemon(object):
         self.transportServer.combine_loop(daemon.transportServer)
 
     def __annotations(self):
-        annotations = {"CORR": current_context.correlation_id.bytes} if current_context.correlation_id else {}
+        annotations = current_context.response_annotations
+        if current_context.correlation_id:
+            annotations["CORR"] = current_context.correlation_id.bytes
+        else:
+            annotations.pop("CORR", None)
         annotations.update(self.annotations())
         return annotations
 

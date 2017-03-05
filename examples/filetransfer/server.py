@@ -5,6 +5,7 @@ import uuid
 import io
 import os
 import threading
+import zlib
 import Pyro4
 import Pyro4.core
 import Pyro4.socketutil
@@ -29,6 +30,26 @@ class FileServer(object):
         while i < size:
             yield data[i:i+chunksize]
             i += chunksize
+
+    def annotation_stream(self, with_checksum=False):
+        # create a large temporary file
+        f = tempfile.TemporaryFile()
+        for _ in range(20000):
+            f.write(b"1234567890!" * 1000)
+        filesize = f.tell()
+        f.seek(os.SEEK_SET, 0)
+        # return the file data via annotation stream (remote iterator)
+        print("transmitting file via annotations stream (%d bytes)..." % filesize)
+        with f:
+            annotation_size = 65000  # leave some room for Pyro's internal annotation chunks
+            while True:
+                chunk = f.read(annotation_size)
+                if not chunk:
+                    break
+                # store the file data chunk in the FDAT response annotation,
+                # and return the current file position and checksum (if asked).
+                Pyro4.current_context.response_annotations = {"FDAT": chunk}
+                yield f.tell(), zlib.crc32(chunk) if with_checksum else 0
 
     def prepare_file_blob(self, size):
         print("preparing file-based blob of size %d" % size)
@@ -117,12 +138,6 @@ class FileServerDaemon(Pyro4.core.Daemon):
             return True, datafiles.pop(file_id)
         else:
             raise KeyError("no data for given id")
-
-    def annotations(self):
-        # XXX send file chunks via annotations
-        if hasattr(Pyro4.current_context, "_ann_file_chunk"):
-            return {"FDAT": Pyro4.current_context._chunk}  # XXX todo set via context.response_annotations!?
-        return {}
 
 
 with FileServerDaemon(host=Pyro4.socketutil.getIpAddress("")) as daemon:

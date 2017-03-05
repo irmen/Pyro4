@@ -665,16 +665,18 @@ When processing a custom annotation, you have to decode it yourself as well.
 Communicating annotations with Pyro is done via a normal dictionary of chunk id -> data bytes.
 Pyro will take care of encoding this dictionary into the wire message and extracting it out of a response message.
 
-*Customizing annotations:*
+*Custom user annotations:*
 
-You can add your own annotations to messages. For server code, you do this by making a subclass of the Daemon and
-override the :py:meth:`Pyro4.core.Daemon.annotations` method. This method is called by Pyro to get the custom
-user annotations dict that should be added to response messages.
+You can add your own annotations to messages. For server code, you do this by setting the ``response_annotations``
+property of the :py:data:`Pyro4.current_context` in your Pyro object, right before returning the regular response value.
+Pyro will add the annotations dict to the response message.
 In client code, you can set the ``annotations`` property of the :py:data:`Pyro4.current_context` object right
 before the proxy method call. Pyro will then add that annotations dict to the request message.
 
-Before Pyro 4.56, the older method for client code was to create a proxy subclass and override the method :py:meth:`Pyro4.core.Proxy._pyroAnnotations`.
-This method should return the custom annotations dict that should be added to request messages.
+The older method to to this (before Pyro 4.56) was to create a subclass of ``Proxy`` or ``Daemon`` and override the methods
+:py:meth:`Pyro4.core.Proxy._pyroAnnotations` or :py:meth:`Pyro4.core.Daemon.annotations` respectively.
+These methods should return the custom annotations dict that should be added to request/response messages.
+This is still possible to not break older code.
 
 *Reacting on annotations:*
 
@@ -683,9 +685,11 @@ In your client code, you can do that as well, but you should look at the ``respo
 If you're using large annotation chunks, it is advised to clear these fields after use.
 See :ref:`current_context`.
 
-Before Pyro 4.56, the older method for client code was to create a proxy subclass and override the method :py:meth:`Pyro4.core.Proxy._pyroResponseAnnotations`.
+The older method to do this (before Pyro 4.56) for client code was to create a proxy subclass and override the method
+:py:meth:`Pyro4.core.Proxy._pyroResponseAnnotations`.
 Pyro calls this method with the dictionary of any annotations received in a response message from the daemon,
-and the message type identifier of the response message.
+and the message type identifier of the response message. This still works to not break older code.
+
 
 For an example of how you can work with custom message annotations, see the :py:mod:`callcontext` example.
 
