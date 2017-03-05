@@ -414,7 +414,6 @@ class Proxy(object):
         current_context.response_annotations = {}
         with self.__pyroConnLock:
             if self._pyroConnection is None:
-                # rebind here, don't do it from inside the invoke because deadlock will occur
                 self.__pyroCreateConnection()
             serializer = util.get_serializer(self._pyroSerializer or config.SERIALIZER)
             data, compressed = serializer.serializeCall(
@@ -681,6 +680,7 @@ class _StreamResultIterator(object):
     def __init__(self, streamId, proxy):
         self.streamId = streamId
         self.proxy = proxy
+        self.pyroseq = proxy._pyroSeq
 
     def __iter__(self):
         return self
@@ -692,6 +692,7 @@ class _StreamResultIterator(object):
     def __next__(self):
         if self.proxy._pyroConnection is None:
             raise errors.ConnectionClosedError("the proxy for this stream result has been closed")
+        self.pyroseq += 1
         return self.proxy._pyroInvoke("get_next_stream_item", [self.streamId], {}, objectId=constants.DAEMON_NAME)
 
     def __del__(self):
@@ -699,7 +700,21 @@ class _StreamResultIterator(object):
 
     def close(self):
         if self.proxy and self.proxy._pyroConnection is not None:
-            self.proxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
+            if self.pyroseq == self.proxy._pyroSeq:
+                # we're still in sync, it's okay to use the same proxy to close this stream
+                self.proxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
+            else:
+                # The proxy's sequence number has diverged.
+                # One of the reasons this can happen is because this call is being done from python's GC where
+                # it decides to gc old iterator objects *during a new call on the proxy*.
+                # If we use the same proxy and do a call in between, the other call on the proxy will get an out of sync seq and crash!
+                # An option is to create a temporary second proxy to call close_stream on,
+                # or use a HACK to decrease the proxy's sequence number by one so it will be unchanged after this call.
+                self.proxy._pyroSeq -= 1  # HACK to keep proxy seq in sync
+                self.proxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
+                # with self.proxy.__copy__() as closingProxy:
+                #     print(" close async!")
+                #     closingProxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
         self.proxy = None
 
 
