@@ -128,9 +128,8 @@ def main(args=None):
         options.host = "./u:" + options.unixsocket
     try:
         nameserver = naming.locateNS(options.host, options.port, hmac_key=options.key)
-    except errors.PyroError:
-        x = sys.exc_info()[1]
-        print("Failed to locate the name server: %s" % x)
+    except errors.PyroError as x:
+        print("Error: %s" % x)
         return
     if options.verbose:
         print("Name server found: %s" % nameserver._pyroUri)
