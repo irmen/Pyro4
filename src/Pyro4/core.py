@@ -679,10 +679,10 @@ class Proxy(object):
 
     def __serializeBlobArgs(self, vargs, kwargs, annotations, flags, objectId, methodname, serializer):
         """
-        Special handling of a "blob" argument that has to stay serialized until explicitly deserialized
-        in client code. This allows for efficient, transparent proxies or dispatchers and such.
-        Annotations are passed in because they will be modified: the 'BLBI' blob info annotation
-        is added which contains some metadata about the blob.
+        Special handling of a "blob" argument that has to stay serialized until explicitly deserialized in client code.
+        This makes efficient, transparent gateways or dispatchers and such possible:
+        they don't have to de/reserialize the message and are independent from the serialized class definitions.
+        Annotations are passed in because some blob metadata is added. They're not part of the blob itself.
         """
         if len(vargs) > 1 or kwargs:
             raise errors.SerializeError("if SerializedBlob is used, it must be the only argument")
@@ -1886,7 +1886,8 @@ class SerializedBlob(object):
     """
     Used to wrap some data to make Pyro pass this object transparently (it keeps the serialized payload as-is)
     Only when you need to access the actual client data you can deserialize on demand.
-    This allows for transparent Pyro proxies and dispatchers and such.
+    This makes efficient, transparent gateways or dispatchers and such possible:
+    they don't have to de/reserialize the message and are independent from the serialized class definitions.
     You have to pass this as the only parameter to a remote method call for Pyro to understand it.
     Init arguments:
     ``info`` = some (small) descriptive data about the blob. Can be a simple id or name or guid. Must be marshallable.
