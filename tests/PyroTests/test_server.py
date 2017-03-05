@@ -14,6 +14,7 @@ import Pyro4.core
 import Pyro4.errors
 import Pyro4.util
 import Pyro4.message
+import Pyro4.socketutil
 from Pyro4.configuration import config
 from testsupport import *
 
@@ -297,6 +298,13 @@ class ServerTestsOnce(unittest.TestCase):
             p._pyroAttrs = None
             p._pyroGetMetadata(known_metadata={"attrs": set(), "oneway": set(), "methods": {"ping"}})
             self.assertEqual(set(), p._pyroAttrs)
+
+    def testProxyRepr(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            p._pyroBind()
+            expected = "<Pyro4.core.Proxy at 0x%x; connected %s; for %s>" % (id(p), Pyro4.socketutil.family_str(self.daemon.sock), self.objectUri)
+            self.assertEqual(expected, str(p))
+            self.assertEqual(expected, repr(p))
 
     def testProxyAttrsMetadataOff(self):
         try:

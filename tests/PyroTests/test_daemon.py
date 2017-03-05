@@ -90,7 +90,7 @@ class DaemonTests(unittest.TestCase):
             self.assertIn(Pyro4.constants.DAEMON_NAME, d.objectsById)
             self.assertEqual("PYRO:" + Pyro4.constants.DAEMON_NAME + "@" + d.locationStr, str(d.uriFor(Pyro4.constants.DAEMON_NAME)))
             # check the string representations
-            expected = "<Pyro4.core.Daemon at 0x%x; %s; 1 objects>" % (id(d), d.locationStr)
+            expected = "<Pyro4.core.Daemon at 0x%x; %s - %s; 1 objects>" % (id(d), d.locationStr, Pyro4.socketutil.family_str(d.sock))
             self.assertEqual(expected, str(d))
             self.assertEqual(expected, unicode(d))
             self.assertEqual(expected, repr(d))
