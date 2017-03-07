@@ -383,7 +383,7 @@ class BroadcastServer(object):
             bcport = config.NS_BCPORT
         if bchost is None:
             bchost = config.NS_BCHOST
-        if ":" in nsUri.host or ipv6:   # match nameserver's ipv
+        if ":" in nsUri.host or ipv6:   # match nameserver's ip version
             bchost = bchost or "::"
             self.sock = socketutil.createBroadcastSocket((bchost, bcport, 0, 0), reuseaddr=config.SOCK_REUSE, timeout=2.0)
         else:
