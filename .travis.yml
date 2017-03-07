@@ -7,12 +7,16 @@ python:
   - 3.5
   - 3.6
   - pypy
+
+# Use fast travis build infrastructure explicitly
+sudo: false
+
 matrix:
   fast_finish: true
 install:
   - pip install --upgrade setuptools
   - pip install "pip>=7.1.0"
-  - pip install -e .
+  - pip install .
   - pip install -r test_requirements.txt
 script:
   - cd tests
