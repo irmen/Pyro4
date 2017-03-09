@@ -242,6 +242,7 @@ class Proxy(object):
         self.__pyroConnLock = threading.RLock()
         util.get_serializer(config.SERIALIZER)  # assert that the configured serializer is available
         self.__async = False
+        current_context.annotations = {}
 
     @property
     def _pyroHmacKey(self):
@@ -711,8 +712,11 @@ class _StreamResultIterator(object):
                 # If we use the same proxy and do a call in between, the other call on the proxy will get an out of sync seq and crash!
                 # We create a temporary second proxy to call close_stream on. This is inefficient, but avoids the problem.
                 # or use a HACK to decrease the proxy's sequence number by one so it will be unchanged after this call.
-                with self.proxy.__copy__() as closingProxy:
-                    closingProxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
+                try:
+                    with self.proxy.__copy__() as closingProxy:
+                        closingProxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
+                except errors.CommunicationError:
+                    pass
         self.proxy = None
 
 

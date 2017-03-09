@@ -50,6 +50,7 @@ for p in proxies:
 with CustomAnnotationProxy(uri) as proxy:
     # async
     print("Async proxy message...")
+    print("GOT PROXY", proxy)
     asyncproxy = Pyro4.async(proxy)
     result = asyncproxy.echo("hello-ASYNC")
     _ = result.value

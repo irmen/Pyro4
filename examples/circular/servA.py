@@ -1,5 +1,6 @@
 from __future__ import print_function
-import Pyro4
+import Pyro4.core
+import Pyro4.naming
 import chain
 
 this_node = "A"

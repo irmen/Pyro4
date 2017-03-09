@@ -3,7 +3,8 @@
 #
 
 from __future__ import print_function
-import Pyro4
+import Pyro4.core
+import Pyro4.naming
 import banks
 
 with Pyro4.core.Daemon() as daemon:

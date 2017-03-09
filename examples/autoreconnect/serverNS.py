@@ -1,6 +1,6 @@
 from __future__ import print_function
 import time
-import Pyro4
+import Pyro4.naming
 
 print("Autoreconnect using Name Server.")
 

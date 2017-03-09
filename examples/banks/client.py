@@ -6,9 +6,7 @@
 #
 
 from __future__ import print_function
-import sys
-
-import Pyro4
+import Pyro4.naming
 
 
 # A bank client.

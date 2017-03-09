@@ -2,7 +2,8 @@ from __future__ import print_function
 import sys
 import time
 import threading
-import Pyro4
+import Pyro4.naming
+import Pyro4.core
 
 
 if sys.version_info < (3, 0):

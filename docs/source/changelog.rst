@@ -16,6 +16,7 @@ Change Log
 - Pyro now logs the ip address family for proxy or daemon socket connections.
 - ipv6 doesn't have broadcasts, so Pyro no longer uses them when ipv6 is in use.
 - improved the docs about binary data transfer a bit.
+- fixed various examples
 
 
 **Pyro 4.55**

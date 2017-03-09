@@ -7,6 +7,11 @@ try:
 except ImportError:
     from itertools import zip_longest
 import Pyro4
+import Pyro4.errors
+
+
+# increase the threadpool size because the server is a bit brain dead
+Pyro4.config.THREADPOOL_SIZE = 100
 
 
 @Pyro4.expose
@@ -40,13 +45,17 @@ def grouper(n, iterable, padvalue=None):
 class Dispatcher(object):
     def count(self, lines):
         # use the name server's prefix lookup to get all registered wordcounters
-        all_counters = Pyro4.locateNS().list(prefix="example.dc.wordcount.")
+        with Pyro4.locateNS() as ns:
+            all_counters = ns.list(prefix="example.dc.wordcount.")
         counters = [Pyro4.async(Pyro4.Proxy(uri)) for uri in all_counters.values()]
         roundrobin_counters = cycle(counters)
 
         # chop the text into chunks that can be distributed across the workers
         # uses async proxy so that we can hand off everything in parallel
         # counter is selected in a round-robin fashion from list of all available counters
+        # (This is a brain dead way because it doesn't scale - all the async calls are hogging
+        # the worker threads in the server. That's why we've increased that a lot at the start
+        # of this file, just for the sake of this example!)
         async_results = []
         for chunk in grouper(100, lines):
             counter = next(roundrobin_counters)
@@ -57,7 +66,12 @@ class Dispatcher(object):
         print("Collecting %d results..." % len(async_results))
         totals = Counter()
         for result in async_results:
-            totals.update(result.value)
+            try:
+                totals.update(result.value)
+            except Pyro4.errors.CommunicationError as x:
+                raise Pyro4.errors.PyroError("Something went wrong in the server when collecting the async responses: "+str(x))
+        for proxy in counters:
+            proxy._pyroRelease()
         return totals
 
 
