@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.56**
 
-- msgpack serializer added (requires msgpack-python library, see https://pypi.python.org/pypi/msgpack-python )
+- optional msgpack serializer added (requires msgpack-python library, see https://pypi.python.org/pypi/msgpack-python )
 - fixed possible crash in closing of remote iterators (they could crash the proxy by screwing up the internal sequence number).
 - json serializer can now serialize uuid.UUID, datetime and decimal objects (into strings, like serpent does)
 - serializers can now deal with memoryview and bytearray serialized data input types.
@@ -16,6 +16,8 @@ Change Log
 - Pyro now logs the ip address family for proxy or daemon socket connections.
 - ipv6 doesn't have broadcasts, so Pyro no longer uses them when ipv6 is in use.
 - improved the docs about binary data transfer a bit.
+- documentation is now also available on ReadTheDocs: http://pyro4.readthedocs.io/
+- fixed various examples
 - [on branch: dispatch_blob] experimental feature to be able to pass through serialized arguments unchanged via core.SerializedBlob
   See example 'blob-dispatch'
 

@@ -1,7 +1,8 @@
 from __future__ import print_function
 import time
 
-import Pyro4
+import Pyro4.naming
+import Pyro4.core
 
 
 @Pyro4.expose

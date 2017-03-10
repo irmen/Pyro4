@@ -59,7 +59,7 @@ class Configuration(object):
         self.FLAME_ENABLED = False
         self.PREFER_IP_VERSION = 4  # 4, 6 or 0 (let OS choose according to RFC 3484)
         self.SERIALIZER = "serpent"
-        self.SERIALIZERS_ACCEPTED = "serpent,marshal,msgpack,json"   # these are the 'safe' serializers
+        self.SERIALIZERS_ACCEPTED = "serpent,marshal,json"   # these are the 'safe' serializers that are always available
         self.LOGWIRE = False  # log wire-level messages
         self.PICKLE_PROTOCOL_VERSION = pickle.HIGHEST_PROTOCOL
         try:

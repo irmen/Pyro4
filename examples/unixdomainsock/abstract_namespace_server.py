@@ -16,6 +16,6 @@ with Pyro4.Daemon(unixsocket="\0example_unix.sock") as d:   # notice the 0-byte 
     uri = d.register(Thingy, "example.unixsock")
     print("Server running, uri=", uri)
     string_uri = str(uri)
-    print("Actually, the uri contains a 0-byte, make sure you copy this to the client:")
+    print("Actually, the uri contains a 0-byte, make sure you copy the part between the quotes to the client:")
     print(repr(string_uri))
     d.requestLoop()

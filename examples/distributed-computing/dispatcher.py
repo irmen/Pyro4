@@ -14,6 +14,7 @@ SerializerBase.register_dict_to_class("workitem.Workitem", Workitem.from_dict)
 
 
 @Pyro4.expose
+@Pyro4.behavior(instance_mode="single")
 class DispatcherQueue(object):
     def __init__(self):
         self.workqueue = queue.Queue()

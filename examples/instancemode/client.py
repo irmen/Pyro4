@@ -15,6 +15,7 @@ with Pyro4.Proxy("PYRONAME:instance.session") as p:
     print(p.msg("hello1"))
     print(p.msg("hello1"))
     print(p.msg("hello1"))
+print(" ..new proxy..")
 with Pyro4.Proxy("PYRONAME:instance.session") as p:
     print(p.msg("hello2"))
     print(p.msg("hello2"))

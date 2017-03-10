@@ -3,7 +3,8 @@ import sys
 import random
 import time
 import threading
-import Pyro4
+import Pyro4.errors
+import Pyro4.naming
 
 
 def randomname():
