@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.56**
 
-- msgpack serializer added (requires msgpack-python library, see https://pypi.python.org/pypi/msgpack-python )
+- optional msgpack serializer added (requires msgpack-python library, see https://pypi.python.org/pypi/msgpack-python )
 - fixed possible crash in closing of remote iterators (they could crash the proxy by screwing up the internal sequence number).
 - json serializer can now serialize uuid.UUID, datetime and decimal objects (into strings, like serpent does)
 - serializers can now deal with memoryview and bytearray serialized data input types.
