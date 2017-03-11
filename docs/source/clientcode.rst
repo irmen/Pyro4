@@ -462,7 +462,7 @@ meantime, the code doesn't block at all and can process the results immediately.
 It is possible to define one or more callables (the "call chain") that should be invoked
 automatically by Pyro as soon as the result value becomes available.
 
-You create an async proxy using this: ``async = Pyro4.async(proxy)`` or this (equivalent): ``async = proxy._pyroAsync()``.
+You set a proxy in async mode using this: ``Pyro4.async(proxy)`` or (equivalent): ``proxy._pyroAsync()``.
 Every remote method call you make on the async proxy, returns a
 :py:class:`Pyro4.futures.FutureResult` object immediately.
 This object means 'the result of this will be available at some moment in the future' and has the following interface:
@@ -499,8 +499,8 @@ This object means 'the result of this will be available at some moment in the fu
 
 A simple piece of code showing an asynchronous method call::
 
-    async = Pyro4.async(proxy)
-    asyncresult = async.remotemethod()
+    proxy._pyroAsync()
+    asyncresult = proxy.remotemethod()
     print("value available?", asyncresult.ready)
     # ...do some other stuff...
     print("resultvalue=", asyncresult.value)

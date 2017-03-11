@@ -47,7 +47,9 @@ class Dispatcher(object):
         # use the name server's prefix lookup to get all registered wordcounters
         with Pyro4.locateNS() as ns:
             all_counters = ns.list(prefix="example.dc.wordcount.")
-        counters = [Pyro4.async(Pyro4.Proxy(uri)) for uri in all_counters.values()]
+        counters = [Pyro4.Proxy(uri) for uri in all_counters.values()]
+        for c in counters:
+            c._pyroAsync()   # set proxy in async mode
         roundrobin_counters = cycle(counters)
 
         # chop the text into chunks that can be distributed across the workers

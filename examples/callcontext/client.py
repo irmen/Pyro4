@@ -48,16 +48,16 @@ for p in proxies:
     p._pyroRelease()
 
 with CustomAnnotationProxy(uri) as proxy:
+    # oneway
+    print("Sending a oneway message... (should only print a connection ok response)")
+    proxy.oneway("hello-ONEWAY-1")
+    print("Sending another oneway message... (should not print a response at all)")
+    proxy.oneway("hello-ONEWAY-2")
     # async
     print("Async proxy message...")
-    print("GOT PROXY", proxy)
-    asyncproxy = Pyro4.async(proxy)
-    result = asyncproxy.echo("hello-ASYNC")
+    proxy._pyroAsync()
+    result = proxy.echo("hello-ASYNC")
     _ = result.value
-
-    # oneway
-    print("Finally, sending a oneway message...")
-    proxy.oneway("hello-ONEWAY")
 
 
 print("\n------- get annotations via normal proxy and the call context... -----\n")

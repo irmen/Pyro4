@@ -631,11 +631,10 @@ class Proxy(object):
         """returns a helper class that lets you create batched method calls on the proxy"""
         return _BatchProxyAdapter(self)
 
-    def _pyroAsync(self):
-        """returns an async version of the proxy so you can do asynchronous method calls"""
-        asyncproxy = self.__copy__()
-        asyncproxy.__async = True
-        return asyncproxy
+    def _pyroAsync(self, async=True):
+        """turns the proxy into async mode so you can do asynchronous method calls"""
+        self.__async = async
+        return self
 
     def _pyroInvokeBatch(self, calls, oneway=False):
         flags = message.FLAGS_BATCH
@@ -862,9 +861,9 @@ def batch(proxy):
     return proxy._pyroBatch()
 
 
-def async(proxy):
-    """convenience method to get an async proxy"""
-    return proxy._pyroAsync()
+def async(proxy, async=True):
+    """convenience method to set proxy to async mode"""
+    return proxy._pyroAsync(async)
 
 
 def pyroObjectToAutoProxy(obj):
