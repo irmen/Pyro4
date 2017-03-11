@@ -6,6 +6,8 @@ Change Log
 
 - Pyro4.core.async() and proxy._pyroAsync() no longer return a copy of the proxy but rather modify the proxy itself,
   in an attempt to reduce the number of socket connections to a server. They still return the proxy object for api compatibility reasons.
+- async result now internally retries connection after a short delay, if it finds that the server has no free worker threads to accept the connection.
+  If COMMTIMEOUT has been set, it retries until the timeout is exceeded. Otherwise it retries indefinitely util it gets a connection.
 
 
 **Pyro 4.56**

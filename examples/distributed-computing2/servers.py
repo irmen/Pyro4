@@ -10,10 +10,6 @@ import Pyro4
 import Pyro4.errors
 
 
-# increase the threadpool size because the server is a bit brain dead
-Pyro4.config.THREADPOOL_SIZE = 100
-
-
 @Pyro4.expose
 class WordCounter(object):
     filter_words = {'a', 'an', 'at', 'the', 'i', 'he', 'she', 's', 'but', 'was', 'has', 'had', 'have', 'and',
