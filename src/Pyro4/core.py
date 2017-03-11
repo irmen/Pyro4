@@ -691,10 +691,18 @@ class _StreamResultIterator(object):
         return self.__next__()
 
     def __next__(self):
+        if self.proxy is None:
+            raise StopIteration
         if self.proxy._pyroConnection is None:
             raise errors.ConnectionClosedError("the proxy for this stream result has been closed")
         self.pyroseq += 1
-        return self.proxy._pyroInvoke("get_next_stream_item", [self.streamId], {}, objectId=constants.DAEMON_NAME)
+        try:
+            return self.proxy._pyroInvoke("get_next_stream_item", [self.streamId], {}, objectId=constants.DAEMON_NAME)
+        except (StopIteration, GeneratorExit):
+            # when the iterator is exhausted, the proxy is removed to avoid unneeded close_stream calls later
+            # (the server has closed its part of the stream by itself already)
+            self.proxy = None
+            raise
 
     def __del__(self):
         self.close()
@@ -710,7 +718,6 @@ class _StreamResultIterator(object):
                 # it decides to gc old iterator objects *during a new call on the proxy*.
                 # If we use the same proxy and do a call in between, the other call on the proxy will get an out of sync seq and crash!
                 # We create a temporary second proxy to call close_stream on. This is inefficient, but avoids the problem.
-                # or use a HACK to decrease the proxy's sequence number by one so it will be unchanged after this call.
                 try:
                     with self.proxy.__copy__() as closingProxy:
                         closingProxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
@@ -979,6 +986,7 @@ class DaemonObject(object):
         try:
             return next(stream)
         except Exception:
+            # in case of error (or StopIteration!) the stream is removed
             del self.daemon.streaming_responses[streamId]
             raise
 
@@ -1323,7 +1331,7 @@ class Daemon(object):
                 request_seq = msg.seq
                 request_serializer_id = msg.serializer_id
             if xt is not errors.ConnectionClosedError:
-                if xt is not StopIteration:
+                if xt not in (StopIteration, GeneratorExit):
                     log.debug("Exception occurred while handling request: %r", xv)
                 if not request_flags & message.FLAGS_ONEWAY:
                     if isinstance(xv, errors.SerializeError) or not isinstance(xv, errors.CommunicationError):

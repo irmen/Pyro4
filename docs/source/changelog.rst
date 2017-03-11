@@ -8,6 +8,7 @@ Change Log
   in an attempt to reduce the number of socket connections to a server. They still return the proxy object for api compatibility reasons.
 - async result now internally retries connection after a short delay, if it finds that the server has no free worker threads to accept the connection.
   If COMMTIMEOUT has been set, it retries until the timeout is exceeded. Otherwise it retries indefinitely util it gets a connection.
+- _StreamResultIterator now stops all communication as soon as StopIteration occurred, this avoids unnecessary close calls to remote iterators.
 
 
 **Pyro 4.56**
