@@ -841,6 +841,17 @@ class _AsyncRemoteMethod(object):
                 # use a copy of the proxy otherwise calls would still be done in sequence,
                 # and use contextmanager to close the proxy after we're done
                 with self.__proxy.__copy__() as proxy:
+                    delay = 0.1 + random.random()/5
+                    while not proxy._pyroConnection:
+                        try:
+                            proxy._pyroBind()
+                        except errors.CommunicationError as x:
+                            if "no free workers" not in str(x):
+                                raise
+                            time.sleep(delay)   # wait a bit until a worker might be available again
+                            delay += 0.4 + random.random()/2
+                            if 0 < config.COMMTIMEOUT/2 < delay:
+                                raise
                     value = proxy._pyroInvoke(self.__name, args, kwargs)
                 asyncresult.value = value
                 return
