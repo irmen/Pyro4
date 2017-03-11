@@ -522,10 +522,10 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testAsyncProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            async = Pyro4.core.async(p)
-            async._pyroBind()  # force that any metadata is processed
+            Pyro4.core.async(p)
+            p._pyroBind()  # force that any metadata is processed
             begin = time.time()
-            result = async.delayAndId(1, 42)
+            result = p.delayAndId(1, 42)
             duration = time.time() - begin
             self.assertTrue(duration < 0.1)
             self.assertFalse(result.ready)
@@ -543,11 +543,11 @@ class ServerTestsOnce(unittest.TestCase):
                 return value + increase
 
         with Pyro4.core.Proxy(self.objectUri) as p:
-            async = Pyro4.core.async(p)
-            async._pyroBind()  # force that any metadata is processed
+            Pyro4.core.async(p)
+            p._pyroBind()  # force that any metadata is processed
             holder = FuncHolder()
             begin = time.time()
-            result = async.multiply(2, 3)
+            result = p.multiply(2, 3)
             result.then(holder.function, increase=10) \
                 .then(holder.function, increase=5) \
                 .then(holder.function)

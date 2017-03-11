@@ -30,7 +30,9 @@ class MandelWindow(object):
         print("{0} mandelbrot calculation servers found.".format(len(mandels)))
         if not mandels:
             raise ValueError("launch at least one mandelbrot calculation server before starting this")
-        self.mandels = [Pyro4.async(Pyro4.Proxy(uri)) for _, uri in mandels]
+        self.mandels = [Pyro4.Proxy(uri) for _, uri in mandels]
+        for m in self.mandels:
+            m._pyroAsync()   # set them to async mode
         for proxy in self.mandels:
             proxy._pyroBind()
         self.lines = list(reversed(range(res_y)))

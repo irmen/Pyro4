@@ -13,8 +13,8 @@ print("* normal call: (notice the delay)")
 print("result=", proxy.divide(100, 5))
 
 print("\n* async call:")
-async = Pyro4.async(proxy)
-asyncresult = async.divide(100, 5)  # returns immediately
+proxy._pyroAsync()
+asyncresult = proxy.divide(100, 5)  # returns immediately
 print("result value available?", asyncresult.ready)  # prints False because the server is still 'busy'
 print("client can do other stuff here.")
 print("getting result value...(will block until available)")
@@ -22,14 +22,14 @@ print("resultvalue=", asyncresult.value)  # blocks until the result is available
 
 print("\n* async call, with normal call inbetween:")
 normalproxy = Pyro4.Proxy(uri)
-asyncresult = async.divide(100, 5)  # returns immediately
+asyncresult = proxy.divide(100, 5)  # returns immediately
 print("client does normal call: ", normalproxy.multiply(5, 20))
 print("client does normal call: ", normalproxy.multiply(5, 30))
 print("getting result value of async call...(will block until available)")
 print("resultvalue=", asyncresult.value)  # blocks until the result is available
 
 print("\n* async call with exception:")
-asyncresult = async.divide(100, 0)  # will trigger a zero division error, 100//0
+asyncresult = proxy.divide(100, 0)  # will trigger a zero division error, 100//0
 print("getting result value...")
 try:
     value = asyncresult.value
@@ -38,7 +38,7 @@ except ZeroDivisionError as x:
     print("got exception (expected):", repr(x))
 
 print("\n* async call with timeout:")
-asyncresult = async.divide(100, 5)
+asyncresult = proxy.divide(100, 5)
 print("checking if ready within 2 seconds...")
 ready = asyncresult.wait(2)  # wait for ready within 2 seconds but the server takes 3
 print("status after waiting=", ready)  # should print False
@@ -50,11 +50,11 @@ print("resultvalue=", asyncresult.value)
 
 print("\n* a few async calls at the same time:")
 results = [
-    async.divide(100, 7),
-    async.divide(100, 6),
-    async.divide(100, 5),
-    async.divide(100, 4),
-    async.divide(100, 3),
+    proxy.divide(100, 7),
+    proxy.divide(100, 6),
+    proxy.divide(100, 5),
+    proxy.divide(100, 4),
+    proxy.divide(100, 3),
 ]
 print("getting values...")
 for result in results:

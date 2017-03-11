@@ -23,16 +23,16 @@ uri = input("enter async server object uri: ").strip()
 proxy = Pyro4.Proxy(uri)
 
 print("\n* async call with error:")
-async = Pyro4.async(proxy)
+proxy._pyroAsync()
 def resulthandler(result):
     print("RESULT: ", result)
 def errorhandler(error):
     print("ERRORHANDLER: ", error)
-asyncresult = async.divide(100, 0).iferror(errorhandler).then(resulthandler)
+asyncresult = proxy.divide(100, 0).iferror(errorhandler).then(resulthandler)
 time.sleep(4)
 print("^^^^ above an error message should be printed out...")
 print("\n* async call with error, but without errorhandler:")
-asyncresult = async.divide(100, 0).then(resulthandler)
+asyncresult = proxy.divide(100, 0).then(resulthandler)
 time.sleep(4)
 print("^^^^ above, no error message should be printed out...")
 try:
@@ -42,8 +42,7 @@ except ZeroDivisionError as x:
     print("expected error occurred when trying to obtain the result:", x)
 
 print("\n* async call with call chain:")
-async = Pyro4.async(proxy)
-asyncresult = async.divide(100, 5)
+asyncresult = proxy.divide(100, 5)
 # set a chain of callables to be invoked once the value is available
 asyncresult.then(asyncFunction) \
     .then(asyncFunction) \
@@ -56,8 +55,7 @@ print("final value=", asyncresult.value)
 assert asyncresult.value == 23
 
 print("\n* async call with call chain that is set 'too late':")
-async = Pyro4.async(proxy)
-asyncresult = async.divide(100, 5)
+asyncresult = proxy.divide(100, 5)
 # set a chain of callables to be invoked once the value is available
 # but we set it 'too late' (when the result is already available)
 time.sleep(4)  # result will appear in 3 seconds
@@ -69,8 +67,7 @@ print("final value=", asyncresult.value)
 assert asyncresult.value == 23
 
 print("\n* async call with call chain, where calls have extra arguments:")
-async = Pyro4.async(proxy)
-asyncresult = async.multiply(5, 6)
+asyncresult = proxy.multiply(5, 6)
 # set a chain of callables to be invoked once the value is available
 # the callable will be invoked like so:  function(asyncvalue, normalarg, kwarg=..., kwarg=...)
 # (the value from the previous call is passed as the first argument to the next call)
@@ -86,8 +83,7 @@ assert asyncresult.value == 36
 
 print("\n* async call with call chain, where calls are new non-async pyro calls:")
 normalproxy = Pyro4.Proxy(uri)
-async = Pyro4.async(proxy)
-asyncresult = async.divide(100, 5)
+asyncresult = proxy.divide(100, 5)
 # set a chain of callables to be invoked once the value is available
 # the callable will be invoked like so:  function(asyncvalue, kwarg=..., kwarg=...)
 asyncresult.then(normalproxy.add, increase=1) \

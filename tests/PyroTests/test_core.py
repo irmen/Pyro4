@@ -376,12 +376,12 @@ class CoreTests(unittest.TestCase):
         p._pyroRelease()
         p2._pyroRelease()
 
-    def testAsyncProxyAdapterCopy(self):
+    def testAsyncProxyCopy(self):
         try:
             config.METADATA = False
             with Pyro4.core.Proxy("PYRO:12345@hostname:9999") as proxy:
-                asyncproxy = proxy._pyroAsync()
-                p2 = copy.copy(asyncproxy)
+                proxy._pyroAsync()
+                p2 = copy.copy(proxy)
                 asynccall = p2.foobar()
                 self.assertIsInstance(asynccall, Pyro4.futures.FutureResult)
         finally:
@@ -776,7 +776,7 @@ class RemoteMethodTests(unittest.TestCase):
         def __exit__(self, *args):
             pass
 
-        def _pyroAsync(self):
+        def _pyroAsync(self, async=True):
             return self
 
         def __getattr__(self, item):
@@ -889,11 +889,18 @@ class RemoteMethodTests(unittest.TestCase):
         results = batch()
         self.assertEqual(0, len(list(results)))
 
+    def testAsyncLegacyApi(self):
+        proxy = Pyro4.Proxy("PYRO:test@addr:5555")
+        p1 = proxy._pyroAsync()
+        p2 = Pyro4.async(proxy)
+        self.assertIs(proxy, p1)
+        self.assertIs(proxy, p2)
+
     def testAsyncMethod(self):
         proxy = self.AsyncProxyMock()
-        async = Pyro4.core.async(proxy)
+        Pyro4.core.async(proxy)
         begin = time.time()
-        result = async.pause_and_divide(0.2, 10, 2)  # returns immediately
+        result = proxy.pause_and_divide(0.2, 10, 2)  # returns immediately
         duration = time.time() - begin
         self.assertLess(duration, 0.1)
         self.assertFalse(result.ready)
@@ -910,8 +917,8 @@ class RemoteMethodTests(unittest.TestCase):
                 return value + amount
 
         proxy = self.AsyncProxyMock()
-        async = Pyro4.core.async(proxy)
-        result = async.pause_and_divide(0.2, 10, 2)  # returns immediately
+        Pyro4.core.async(proxy)
+        result = proxy.pause_and_divide(0.2, 10, 2)  # returns immediately
         holder = AsyncFunctionHolder()
         result.then(holder.asyncFunction, amount=2) \
             .then(holder.asyncFunction, amount=4) \
@@ -929,8 +936,8 @@ class RemoteMethodTests(unittest.TestCase):
             return 1 // 0  # crash
 
         proxy = self.AsyncProxyMock()
-        async = Pyro4.core.async(proxy)
-        result = async.pause_and_divide(0.2, 10, 2)  # returns immediately
+        Pyro4.core.async(proxy)
+        result = proxy.pause_and_divide(0.2, 10, 2)  # returns immediately
         result.then(crashingAsyncFunction).then(normalAsyncFunction, 2)
         try:
             _ = result.value
@@ -941,8 +948,8 @@ class RemoteMethodTests(unittest.TestCase):
 
     def testAsyncMethodTimeout(self):
         proxy = self.AsyncProxyMock()
-        async = Pyro4.core.async(proxy)
-        result = async.pause_and_divide(1, 10, 2)  # returns immediately
+        Pyro4.core.async(proxy)
+        result = proxy.pause_and_divide(1, 10, 2)  # returns immediately
         self.assertFalse(result.ready)
         self.assertFalse(result.wait(0.5))  # won't be ready after 0.5 sec
         self.assertTrue(result.wait(1))  # will be ready within 1 seconds more

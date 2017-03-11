@@ -2,6 +2,12 @@
 Change Log
 **********
 
+**Pyro 4.57**
+
+- Pyro4.core.async() and proxy._pyroAsync() no longer return a copy of the proxy but rather modify the proxy itself,
+  in an attempt to reduce the number of socket connections to a server. They still return the proxy object for api compatibility reasons.
+
+
 **Pyro 4.56**
 
 - optional msgpack serializer added (requires msgpack-python library, see https://pypi.python.org/pypi/msgpack-python )
