@@ -89,6 +89,8 @@ class ServerTestObject(object):
         yield "one"
         yield "two"
         yield "three"
+        yield "four"
+        yield "five"
 
     def response_annotation(self):
         # part of the annotations tests
@@ -726,6 +728,15 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual("one", next(generator))
             self.assertEqual("two", next(generator))
             self.assertEqual("three", next(generator))
+            self.assertEqual("four", next(generator))
+            self.assertEqual("five", next(generator))
+            with self.assertRaises(StopIteration):
+                next(generator)
+            with self.assertRaises(StopIteration):
+                next(generator)
+            generator.close()
+            generator = p.generator()
+            [v for v in generator]
             with self.assertRaises(StopIteration):
                 next(generator)
             generator.close()
