@@ -243,6 +243,7 @@ class Proxy(object):
         util.get_serializer(config.SERIALIZER)  # assert that the configured serializer is available
         self.__async = False
         current_context.annotations = {}
+        current_context.response_annotations = {}
 
     @property
     def _pyroHmacKey(self):

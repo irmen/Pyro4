@@ -1114,6 +1114,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
             generator = p.generator()
             self.assertEqual("one", next(generator))
             p._pyroRelease()
+            time.sleep(0.2)
             with self.assertRaises(Pyro4.errors.ConnectionClosedError):
                 next(generator)
             p._pyroReconnect()
