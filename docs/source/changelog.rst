@@ -4,10 +4,13 @@ Change Log
 
 **Pyro 4.57**
 
+- [on branch: dispatch_blob] experimental feature to be able to pass through serialized arguments unchanged via core.SerializedBlob
+  See example 'blob-dispatch'
 - Pyro4.core.async() and proxy._pyroAsync() no longer return a copy of the proxy but rather modify the proxy itself,
   in an attempt to reduce the number of socket connections to a server. They still return the proxy object for api compatibility reasons.
 - async result now internally retries connection after a short delay, if it finds that the server has no free worker threads to accept the connection.
   If COMMTIMEOUT has been set, it retries until the timeout is exceeded. Otherwise it retries indefinitely util it gets a connection.
+- _StreamResultIterator now stops all communication as soon as StopIteration occurred, this avoids unnecessary close calls to remote iterators.
 
 
 **Pyro 4.56**
@@ -26,9 +29,6 @@ Change Log
 - improved the docs about binary data transfer a bit.
 - documentation is now also available on ReadTheDocs: http://pyro4.readthedocs.io/
 - fixed various examples
-- [on branch: dispatch_blob] experimental feature to be able to pass through serialized arguments unchanged via core.SerializedBlob
-  See example 'blob-dispatch'
-
 
 
 **Pyro 4.55**
