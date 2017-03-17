@@ -181,8 +181,7 @@ Pyro uses a network broadcast to see if there's a name server available somewher
 a broadcast responder that will respond "Yeah hi I'm here").  So in many cases you won't have to configure anything
 to be able to discover the name server. If nobody answers though, Pyro tries the configured default or custom location.
 If still nobody answers it prints a sad message and exits.
-However if it found the name server, it is then possible to talk to it and get the location of any other registered object.
-. This means that you won't have to hard code any object locations in your code,
+However if it found the name server, it is then possible to talk to it and get the location of any other registered object. This means that you won't have to hard code any object locations in your code,
 and that the code is capable of dynamically discovering everything at runtime.
 
 *But enough of that.* We need to start looking at how to actually write some code ourselves that uses Pyro!
@@ -195,7 +194,7 @@ Building a Warehouse
 
 .. hint:: All code of this part of the tutorial can be found in the :file:`examples/warehouse` directory.
 
-You'll build build a simple warehouse that stores items, and that everyone can visit.
+You'll build a simple warehouse that stores items, and that everyone can visit.
 Visitors can store items and retrieve other items from the warehouse (if they've been stored there).
 
 In this tutorial you'll first write a normal Python program that more or less implements the complete warehouse system,
@@ -312,7 +311,7 @@ the server that listens for and processes incoming remote method calls. One way 
                 },
                 ns = False)
 
-Next, we have to tell Pyro what parts of the class should be remotely accessible, and what pars aren't supposed
+Next, we have to tell Pyro what parts of the class should be remotely accessible, and what parts aren't supposed
 to be accessible. This has to do with security. We'll be adding a ``@Pyro4.expose`` decorator on the Warehouse
 class definition to tell Pyro it is allowed to access the class remotely.
 You can ignore the ``@Pyro4.behavior`` line we also added for now (but it is required to properly have a persistent warehouse inventory).
@@ -321,7 +320,6 @@ make the code now look like this (:file:`warehouse.py`)::
 
     from __future__ import print_function
     import Pyro4
-    import person
 
 
     @Pyro4.expose

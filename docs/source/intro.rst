@@ -260,7 +260,7 @@ Experiment with the ``benchmark``, ``batchedcalls`` and ``hugetransfer`` example
 
 .. [1] When configured to use the :py:mod:`pickle` or :py:mod:`dill` serializer,
     your system may be vulnerable
-    because of the sercurity risks of the pickle and dill protocols (possibility of arbitrary
+    because of the security risks of the pickle and dill protocols (possibility of arbitrary
     code execution).
     Pyro does have some security measures in place to mitigate this risk somewhat.
     They are described in the :doc:`security` chapter. It is strongly advised to read it.
