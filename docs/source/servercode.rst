@@ -761,7 +761,7 @@ Other features
 
 Attributes added to Pyro objects
 --------------------------------
-The following attributes will be added your object if you register it as a Pyro object:
+The following attributes will be added to your object if you register it as a Pyro object:
 
 * ``_pyroId`` - the unique id of this object (a ``str``)
 * ``_pyroDaemon`` - a reference to the :py:class:`Pyro4.core.Daemon` object that contains this object

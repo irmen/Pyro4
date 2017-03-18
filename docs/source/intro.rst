@@ -29,13 +29,13 @@ Here's a quick overview of Pyro's features:
 - supports different serializers (serpent, json, marshal, msgpack, pickle, dill).
 - support for all Python data types that are serializable when using the 'pickle' or 'dill' serializers [1]_.
 - runs on Python 2.7, Python 3.x, IronPython, Pypy.
-- works between different system architectures and operating systems
-- able to communicate between different Python versions transparantly
+- works between different system architectures and operating systems.
+- able to communicate between different Python versions transparently.
 - can use IPv4, IPv6 and Unix domain sockets.
 - lightweight client library available for .NET and Java native code ('Pyrolite', provided separately).
-- designed to be very easy to use and get out of your way as much as possible, but still provide a lot of flexibility when you do need it
+- designed to be very easy to use and get out of your way as much as possible, but still provide a lot of flexibility when you do need it.
 - name server that keeps track of your object's actual locations so you can move them around transparently.
-- yellow-pages type lookups possible, based on metadata tags on registrations in the name server
+- yellow-pages type lookups possible, based on metadata tags on registrations in the name server.
 - support for automatic reconnection to servers in case of interruptions.
 - automatic proxy-ing of Pyro objects which means you can return references to remote objects just as if it were normal objects.
 - one-way invocations for enhanced performance.
@@ -47,7 +47,7 @@ Here's a quick overview of Pyro's features:
 - http gateway available for clients wanting to use http+json (such as browser scripts).
 - stable network communication code that works reliably on many platforms.
 - possibility to use Pyro's own event loop, or integrate it into your own (or third party) event loop.
-- three different possible instance modes for your remote objects (singleton, one per session, one per call)
+- three different possible instance modes for your remote objects (singleton, one per session, one per call).
 - many simple examples included to show various features and techniques.
 - large amount of unit tests and high test coverage.
 - reliable and established: built upon more than 15 years of existing Pyro history, with ongoing support and development.
@@ -238,7 +238,7 @@ Performance
 ===========
 Pyro4 is pretty fast. On a typical networked system you can expect:
 
-- a few hundred new proxy connections per second to one sever
+- a few hundred new proxy connections per second to one server
 - similarly, a few hundred initial remote calls per second to one server
 - a few thousand remote method calls per second on a single proxy
 - tens of thousands batched or oneway remote calls per second
@@ -260,7 +260,7 @@ Experiment with the ``benchmark``, ``batchedcalls`` and ``hugetransfer`` example
 
 .. [1] When configured to use the :py:mod:`pickle` or :py:mod:`dill` serializer,
     your system may be vulnerable
-    because of the sercurity risks of the pickle and dill protocols (possibility of arbitrary
+    because of the security risks of the pickle and dill protocols (possibility of arbitrary
     code execution).
     Pyro does have some security measures in place to mitigate this risk somewhat.
     They are described in the :doc:`security` chapter. It is strongly advised to read it.
