@@ -24,7 +24,7 @@ The tutorial here consists of 2 phases:
 
 phase 1:
     Simple prototype code where everything is running in a single process.
-    viewer.py is the main program that creates all object, connects them
+    viewer.py is the main program that creates all objects, connects them
     together, and runs the main loop to display stock quotes.
     This code is fully operational but contains no Pyro code at all.
     It just shows what the system is going to look like later on.

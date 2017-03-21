@@ -694,7 +694,7 @@ The complete code for the Pyro version of :file:`stockmarket.py` is as follows::
 viewer
 ------
 You don't need to change the actual code in the ``Viewer``, other than how to tell it what stock market objects it should use.
-Rather than hard coding the fixed set of stockmarket names, it is more flexible to utilize Pyro's name sever and ask
+Rather than hard coding the fixed set of stockmarket names, it is more flexible to utilize Pyro's name server and ask
 that to return all stock markets it knows about.  The ``Viewer`` class itself remains unchanged::
 
 
@@ -818,8 +818,8 @@ For more details, refer to the chapters in this manual about the relevant Pyro c
     You'll have to modify the stockmarket source file because that is the one creating a daemon.
     But you'll only have to add the proper ``host`` argument to the construction of the Daemon,
     to set it to your machine name instead of the default of localhost.
-    Ofcourse you could also change the ``HOST`` config item (either in the code itself,
-    or by setting the ``PYRO_HOST`` environment variable before launching.
+    Of course, you could also change the ``HOST`` config item (either in the code itself,
+    or by setting the ``PYRO_HOST`` environment variable before launching).
 
 Other means of creating connections
 ===================================
