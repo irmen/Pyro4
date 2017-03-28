@@ -32,7 +32,7 @@ phase 1:
 phase 2:
     The components are now distributed and we use Pyro to make them
     talk to each other. You have to start both component by itself
-    (in seperate console windows for instance):
+    (in separate console windows for instance):
     - start a Pyro name server (python -m Pyro4.naming).
     - start the stockmarket.py (it will create several different markets)
     - start the viewer.py to see the stream of quotes coming in.
