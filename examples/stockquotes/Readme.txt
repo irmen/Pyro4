@@ -20,7 +20,7 @@ decide themselves when a new quote is available, can be found in the
 example 'stockquotes-old'.  It uses callbacks instead of generators.
 
 
-The tutorial here consists of 2 phases:
+The tutorial here consists of 3 phases:
 
 phase 1:
     Simple prototype code where everything is running in a single process.
@@ -44,3 +44,20 @@ phase 2:
     Support for remote iterators/generators is available since Pyro 4.49.
     In the viewer we didn't hardcode the stock market names but instead
     we ask the name server for all available stock markets.
+
+phase 3:
+    Similar to phase2, but now we make two small changes:
+    a) we use the Pyro name server in such a way that it is accessible 
+    from other machines, and b) we run the stock market server in a way 
+    that the host is not "localhost" by default and can be accessed by 
+    different machines. To do this, create the daemon with the 
+    arguments 'host' and 'port' set (i.e. host=HOST_IP, port=HOST_PORT). 
+    Again, you have to start both component by itself (in separate 
+    console windows for instance):
+    - start a Pyro name server like this:
+    (python -m Pyro4.naming -n 192.168.1.99 -p 9091) or
+    (pyro4-ns -n 192.168.1.99 -p 9091)
+    - start the stockmarket.py (set HOST_IP and HOST_PORT accordingly. 
+    Also, make sure HOST_PORT is already open).
+    - start the viewer.py in different remote machines to see the stream 
+    of quotes coming in on each window.
