@@ -783,43 +783,59 @@ If you're interested to see what the name server now contains, type :command:`py
 
 .. _not-localhost:
 
-Running it on different machines
-================================
-For security reasons, Pyro runs stuff on localhost by default.
-If you want to access things from different machines, you'll have to tell Pyro to do that explicitly.
-This paragraph shows you how very briefly you can do this.
-For more details, refer to the chapters in this manual about the relevant Pyro components.
 
-*Name server*
-    to start the nameserver in such a way that it is accessible from other machines,
-    start it with an appropriate -n argument, like this: :command:`python -m Pyro4.naming -n your_hostname`
-    (or simply: :command:`pyro4-ns -n your_hostname`)
+phase 3: running it on different machines
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Before presenting the changes in phase 3, let's introduce some additional notions when working with Pyro.
 
-*Warehouse server*
-    You'll have to modify :file:`warehouse.py`. Right before the ``serveSimple`` call you have to tell it to bind the daemon on your hostname
-    instead of localhost. One way to do this is by setting the ``HOST`` config item::
+It's important for you to understand that, for security reasons, Pyro runs stuff on localhost by default. 
+If you want to access things from different machines, you'll have to tell Pyro to do that explicitly. 
+Here we show you how you can do this:
 
-        Pyro4.config.HOST = "your_hostname_here"
-        Pyro4.Daemon.serveSimple(...)
+Let's assume that you want to start the *name server* in such a way that it is accessible from other machines. 
+To do that, type in the console one of two options (with an appropriate -n argument):
 
-    Optional: you can choose to leave the code alone, and instead set the ``PYRO_HOST`` environment variable
-    before starting the warehouse server.
-    Another choice is to pass the required host (and perhaps even port) arguments to ``serveSimple``::
+    $ python -m Pyro4.naming -n your_hostname    # i.e. your_hostname = "192.168.1.99"
 
-        Pyro4.Daemon.serveSimple(
-                {
-                    Warehouse: "example.warehouse"
-                },
-                host = 'your_hostname_here',
-                ns = True)
+or simply:
 
-*Stock market server*
-    This example already creates a daemon object instead of using the :py:meth:`serveSimple` call.
-    You'll have to modify the stockmarket source file because that is the one creating a daemon.
-    But you'll only have to add the proper ``host`` argument to the construction of the Daemon,
-    to set it to your machine name instead of the default of localhost.
-    Of course, you could also change the ``HOST`` config item (either in the code itself,
-    or by setting the ``PYRO_HOST`` environment variable before launching).
+    $ pyro4-ns -n your_hostname
+
+If you want to implement this concept on the *warehouse server*, you'll have to modify :file:`warehouse.py`. 
+Then, right before the ``serveSimple`` call, you have to tell it to bind the daemon on your hostname instead 
+of localhost. One way to do this is by setting the ``HOST`` config item::
+
+    Pyro4.config.HOST = "your_hostname_here"
+    Pyro4.Daemon.serveSimple(...)
+
+Optionally, you can choose to leave the code alone, and instead set the ``PYRO_HOST`` environment variable 
+before starting the warehouse server. Another choice is to pass the required host (and perhaps even port) 
+arguments to ``serveSimple``::
+
+    Pyro4.Daemon.serveSimple(
+            {
+                Warehouse: "example.warehouse"
+            },
+            host = 'your_hostname_here',
+            ns = True)
+
+Remember that if you want more details, refer to the chapters in this manual about the relevant Pyro components.
+
+Now, back on the new version of the *stock market server*, notice that this example already creates a daemon 
+object instead of using the :py:meth:`serveSimple` call. You'll have to modify :file:`stockmarket.py` because 
+that is the one creating a daemon. But you'll only have to add the proper ``host``and ``port`` arguments to 
+the construction of the Daemon, to set it to your machine name instead of the default of localhost. Let's see 
+the few minor changes that are required in the code:
+
+    ...
+    HOST_IP = "192.168.1.99"
+    HOST_PORT = 9092
+    ...
+    with Pyro4.Daemon(host=HOST_IP, port=HOST_PORT) as daemon:
+    ...
+
+Of course, you could also change the ``HOST`` config item (either in the code itself, or by setting 
+the ``PYRO_HOST`` environment variable before launching).
 
 Other means of creating connections
 ===================================
