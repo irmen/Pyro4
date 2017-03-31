@@ -24,7 +24,7 @@ This avoids initial networking complexity.
     For security reasons, Pyro runs stuff on localhost by default.
     If you want to access things from different machines, you'll have to tell Pyro
     to do that explicitly.
-    At the end is a small paragraph :ref:`not-localhost` that tells you
+    At the end is a small section :ref:`not-localhost` that tells you
     how you can run the various components on different machines.
 
 .. note::
@@ -512,7 +512,7 @@ What you can see now is that you not only get the usual exception traceback, *bu
 that occurred in the remote warehouse object on the server* (the "remote traceback"). This can greatly
 help locating problems! As you can see it contains the source code lines from the warehouse code that
 is running in the server, as opposed to the normal local traceback that only shows the remote method
-call taking place inside Pyro...
+call taking place inside Pyro.
 
 
 .. index::
@@ -782,7 +782,6 @@ If you're interested to see what the name server now contains, type :command:`py
     double: tutorial; running on different machines
 
 .. _not-localhost:
-
 
 phase 3: running it on different machines
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
