@@ -8,7 +8,7 @@ quotes. There is an aggregator that combines the quotes from all stock
 markets. Finally there are multiple viewers that can register themselves
 by the aggregator and let it know what stock symbols they're interested in.
 The viewers will then receive near-real-time stock quote updates for the
-symbols they selected.  (Everything is fictional, ofcourse).
+symbols they selected.  (Everything is fictional, of course).
 
 
  Stockmarket  ->-----\                /----> Viewer

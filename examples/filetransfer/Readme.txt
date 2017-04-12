@@ -18,7 +18,7 @@ If the binary data is very large it is better to store it first as temporary fil
 the disk in the server, otherwise you risk running out of system memory which will crash
 your python process.  The client code as given selects the file storage approach.
 It will then stream the data from the server, thereby avoiding the need to allocate
-a huge amount of memory.  (ofcourse if you need to process all of the data at once
+a huge amount of memory.  (If you need to process all of the data at once
 you end up collecting it together anyway, but you'll be able to do this yourself in
 the most efficient way suitable for your application)
 
