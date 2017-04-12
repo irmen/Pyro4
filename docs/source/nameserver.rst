@@ -170,7 +170,7 @@ the name server is located). Often these can be overridden with a command line o
 ================== ===========
 Configuration item description
 ================== ===========
-HOST               hostname that the name sever will bind on (being a regular Pyro daemon).
+HOST               hostname that the name server will bind on (being a regular Pyro daemon).
 NS_HOST            the hostname or ip address of the name server. Used for locating in clients only.
 NS_PORT            the port number of the name server. Used by the server and for locating in clients.
 NS_BCHOST          the hostname or ip address of the name server's broadcast responder. Used only by the server.

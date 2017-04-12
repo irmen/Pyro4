@@ -16,7 +16,7 @@ This is in a windows console and will only use one CPU core.
 
 The 'client_asciizoom' program uses Pyro to offload the calculations to whatever
 mandelbrot server processes that are available.
-It discovers the available servers by using the metadata in the name sever.
+It discovers the available servers by using the metadata in the name server.
 To distribute the load evenly, it hands out the calculation of a single line in the
 frame to each server in a cyclic sequence. It uses Pyro batch calls to cluster these
 calls again to avoid having to do hundreds of remote calls per second, instead it
