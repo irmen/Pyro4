@@ -4,14 +4,14 @@ Change Log
 
 **Pyro 4.58**
 
+- [on branch: dispatch_blob] experimental feature to be able to pass through serialized arguments unchanged via core.SerializedBlob
+  See example 'blob-dispatch'
 - Fixed a fair amount of typos in the manual and readme texts.
 - The stockquotes tutorial example now also has a 'phase 3' just like the warehouse tutorial example, to show how to run it on different machines.
 
 
 **Pyro 4.57**
 
-- [on branch: dispatch_blob] experimental feature to be able to pass through serialized arguments unchanged via core.SerializedBlob
-  See example 'blob-dispatch'
 - Pyro4.core.async() and proxy._pyroAsync() no longer return a copy of the proxy but rather modify the proxy itself,
   in an attempt to reduce the number of socket connections to a server. They still return the proxy object for api compatibility reasons.
 - async result now internally retries connection after a short delay, if it finds that the server has no free worker threads to accept the connection.
