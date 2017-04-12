@@ -8,7 +8,7 @@ quotes. There is an aggregator that combines the quotes from all stock
 markets. Finally there are multiple viewers that can register themselves
 by the aggregator and let it know what stock symbols they're interested in.
 The viewers will then receive near-real-time stock quote updates for the
-symbols they selected.  (Everything is fictional, ofcourse).
+symbols they selected.  (Everything is fictional, of course).
 
 
  Stockmarket  ->-----\                /----> Viewer
@@ -20,7 +20,7 @@ The tutorial consists of 3 phases:
 
 phase 1:
     Simple prototype code where everything is running in a single process.
-    Main.py creates all object, connects them together, and contains a loop
+    Main.py creates all objects, connects them together, and contains a loop
     that drives the stockmarket quote generation.
     This code is fully operational but contains no Pyro code at all and
     shows what the system is going to look like later on.
@@ -39,7 +39,7 @@ phase 2:
 phase 3:
     The components are now fully distributed and we used Pyro to make them
     talk to each other. There is no main.py anymore because you have to start
-    every component by itself: (in seperate console windows for instance)
+    every component by itself: (in separate console windows for instance)
     - start a Pyro name server (python -m Pyro4.naming).
     - start the stockmarket
     - start the aggregator

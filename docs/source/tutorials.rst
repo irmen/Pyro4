@@ -24,7 +24,7 @@ This avoids initial networking complexity.
     For security reasons, Pyro runs stuff on localhost by default.
     If you want to access things from different machines, you'll have to tell Pyro
     to do that explicitly.
-    At the end is a small paragraph :ref:`not-localhost` that tells you
+    At the end is a small section :ref:`not-localhost` that tells you
     how you can run the various components on different machines.
 
 .. note::
@@ -512,7 +512,7 @@ What you can see now is that you not only get the usual exception traceback, *bu
 that occurred in the remote warehouse object on the server* (the "remote traceback"). This can greatly
 help locating problems! As you can see it contains the source code lines from the warehouse code that
 is running in the server, as opposed to the normal local traceback that only shows the remote method
-call taking place inside Pyro...
+call taking place inside Pyro.
 
 
 .. index::
@@ -694,7 +694,7 @@ The complete code for the Pyro version of :file:`stockmarket.py` is as follows::
 viewer
 ------
 You don't need to change the actual code in the ``Viewer``, other than how to tell it what stock market objects it should use.
-Rather than hard coding the fixed set of stockmarket names, it is more flexible to utilize Pyro's name sever and ask
+Rather than hard coding the fixed set of stockmarket names, it is more flexible to utilize Pyro's name server and ask
 that to return all stock markets it knows about.  The ``Viewer`` class itself remains unchanged::
 
 
@@ -783,43 +783,58 @@ If you're interested to see what the name server now contains, type :command:`py
 
 .. _not-localhost:
 
-Running it on different machines
-================================
-For security reasons, Pyro runs stuff on localhost by default.
-If you want to access things from different machines, you'll have to tell Pyro to do that explicitly.
-This paragraph shows you how very briefly you can do this.
-For more details, refer to the chapters in this manual about the relevant Pyro components.
+phase 3: running it on different machines
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Before presenting the changes in phase 3, let's introduce some additional notions when working with Pyro.
 
-*Name server*
-    to start the nameserver in such a way that it is accessible from other machines,
-    start it with an appropriate -n argument, like this: :command:`python -m Pyro4.naming -n your_hostname`
-    (or simply: :command:`pyro4-ns -n your_hostname`)
+It's important for you to understand that, for security reasons, Pyro runs stuff on localhost by default. 
+If you want to access things from different machines, you'll have to tell Pyro to do that explicitly. 
+Here we show you how you can do this:
 
-*Warehouse server*
-    You'll have to modify :file:`warehouse.py`. Right before the ``serveSimple`` call you have to tell it to bind the daemon on your hostname
-    instead of localhost. One way to do this is by setting the ``HOST`` config item::
+Let's assume that you want to start the *name server* in such a way that it is accessible from other machines. 
+To do that, type in the console one of two options (with an appropriate -n argument):
 
-        Pyro4.config.HOST = "your_hostname_here"
-        Pyro4.Daemon.serveSimple(...)
+    $ python -m Pyro4.naming -n your_hostname    # i.e. your_hostname = "192.168.1.99"
 
-    Optional: you can choose to leave the code alone, and instead set the ``PYRO_HOST`` environment variable
-    before starting the warehouse server.
-    Another choice is to pass the required host (and perhaps even port) arguments to ``serveSimple``::
+or simply:
 
-        Pyro4.Daemon.serveSimple(
-                {
-                    Warehouse: "example.warehouse"
-                },
-                host = 'your_hostname_here',
-                ns = True)
+    $ pyro4-ns -n your_hostname
 
-*Stock market server*
-    This example already creates a daemon object instead of using the :py:meth:`serveSimple` call.
-    You'll have to modify the stockmarket source file because that is the one creating a daemon.
-    But you'll only have to add the proper ``host`` argument to the construction of the Daemon,
-    to set it to your machine name instead of the default of localhost.
-    Ofcourse you could also change the ``HOST`` config item (either in the code itself,
-    or by setting the ``PYRO_HOST`` environment variable before launching.
+If you want to implement this concept on the *warehouse server*, you'll have to modify :file:`warehouse.py`. 
+Then, right before the ``serveSimple`` call, you have to tell it to bind the daemon on your hostname instead 
+of localhost. One way to do this is by setting the ``HOST`` config item::
+
+    Pyro4.config.HOST = "your_hostname_here"
+    Pyro4.Daemon.serveSimple(...)
+
+Optionally, you can choose to leave the code alone, and instead set the ``PYRO_HOST`` environment variable 
+before starting the warehouse server. Another choice is to pass the required host (and perhaps even port) 
+arguments to ``serveSimple``::
+
+    Pyro4.Daemon.serveSimple(
+            {
+                Warehouse: "example.warehouse"
+            },
+            host = 'your_hostname_here',
+            ns = True)
+
+Remember that if you want more details, refer to the chapters in this manual about the relevant Pyro components.
+
+Now, back on the new version of the *stock market server*, notice that this example already creates a daemon 
+object instead of using the :py:meth:`serveSimple` call. You'll have to modify :file:`stockmarket.py` because 
+that is the one creating a daemon. But you'll only have to add the proper ``host``and ``port`` arguments to 
+the construction of the Daemon, to set it to your machine name instead of the default of localhost. Let's see 
+the few minor changes that are required in the code:
+
+    ...
+    HOST_IP = "192.168.1.99"
+    HOST_PORT = 9092
+    ...
+    with Pyro4.Daemon(host=HOST_IP, port=HOST_PORT) as daemon:
+    ...
+
+Of course, you could also change the ``HOST`` config item (either in the code itself, or by setting 
+the ``PYRO_HOST`` environment variable before launching).
 
 Other means of creating connections
 ===================================

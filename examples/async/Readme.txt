@@ -15,5 +15,5 @@ Oneway calls never return a result.
 client_callchain.py shows the 'call chain' feature, where you can chain
 one or more asynchronous function calls to be performed as soon as the
 async call result became available. You can chain normal functions but
-also more pyro calls ofcourse. The result of the previous call is passed
+also more pyro calls. The result of the previous call is passed
 to the next call as argument.

@@ -419,7 +419,7 @@ So you can write in your client::
     for item in proxy.things():
         print(item)
 
-The implementation of the ``things`` method can ofcourse return a normal list but can
+The implementation of the ``things`` method can return a normal list but can
 also return an iterator or even be a generator function itself. This has the usual benefits of "lazy" generators:
 no need to create the full collection upfront which can take a lot of memory, possibility
 of infinite sequences, and spreading computation load more evenly.

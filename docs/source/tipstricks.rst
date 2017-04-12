@@ -682,7 +682,7 @@ individual annotation cannot be larger than 64 Kb.
 An annotation is a low level datastructure (to optimize the generation of network messages):
 a chunk identifier string of exactly 4 characters (such as "CODE"), and its value, a byte sequence.
 If you want to put specific data structures into an annotation chunk value, you have to
-encode them to a byte sequence yourself (ofcourse, you could utilize a Pyro serializer for this).
+encode them to a byte sequence yourself (of course, you could utilize a Pyro serializer for this).
 When processing a custom annotation, you have to decode it yourself as well.
 Communicating annotations with Pyro is done via a normal dictionary of chunk id -> data bytes.
 Pyro will take care of encoding this dictionary into the wire message and extracting it out of a response message.

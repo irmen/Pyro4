@@ -89,7 +89,7 @@ NS_HOST                 str     *equal to       Hostname for the name server. Us
                                 HOST*
 NS_PORT                 int     9090            TCP port of the name server. Used by the server and for locating in clients.
 NS_BCPORT               int     9091            UDP port of the broadcast responder from the name server. Used by the server and for locating in clients.
-NS_BCHOST               str     None            Hostname for the broadcast responder of the name sever. Used by the server only.
+NS_BCHOST               str     None            Hostname for the broadcast responder of the name server. Used by the server only.
 NS_AUTOCLEAN            float   0.0             Specify a recurring period in seconds where the Name server checks its registrations and removes the ones that are not available anymore. (0=disabled, otherwise should be >=3)
 NATHOST                 str     None            External hostname in case of NAT (used by the server)
 NATPORT                 int     None            External port in case of NAT (used by the server)
