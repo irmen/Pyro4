@@ -2,6 +2,12 @@
 Change Log
 **********
 
+**Pyro 4.58**
+
+- Fixed a fair amount of typos in the manual and readme texts.
+- The stockquotes tutorial example now also has a 'phase 3' just like the warehouse tutorial example, to show how to run it on different machines.
+
+
 **Pyro 4.57**
 
 - Pyro4.core.async() and proxy._pyroAsync() no longer return a copy of the proxy but rather modify the proxy itself,
