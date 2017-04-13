@@ -741,3 +741,40 @@ if you subclass the proxy and override :py:meth:`Pyro4.core.Proxy._pyroValidateH
 
 For an example of how you can work with connections handshake validation, see the :py:mod:`handshake` example.
 It implements a (bad!) security mechanism that requires the client to supply a "secret" password to be able to connect to the daemon.
+
+
+.. index:: dispatcher, gateway
+
+Efficient dispatchers or gateways that don't de/reserialize messages
+====================================================================
+
+.. sidebar:: advanced topic
+
+    This is an advanced/low-level Pyro topic.
+
+Imagine you're designing a setup where a Pyro call is essentially dispatched or forwarded
+to another server. The dispatcher (sometimes also called gateway) does nothing else than
+deciding who the message is for, and then forwarding the Pyro call to the actual object that
+performs the operation.
+
+This can be built easily with Pyro by 'intercepting' the call in a dispatcher object,
+and performing the remote method call *again* on the actual server object. There's nothing wrong
+with this except for perhaps two things:
+
+#. Pyro will deserialize and reserialize the remote method call parameters on every hop, this can
+   be quite inefficient if you're dealing with many calls or large argument data structures.
+
+#. The dispatcher object is now dependent on the method call argument data types, because Pyro
+   has to be able to de/reserialize them. This often means the dispatcher also needs to have access
+   to the same source code files that define the argument data types, that the client and server use.
+
+As long as the dispatcher itself  *doesn't have to know what is even in the actual
+message*, Pyro provides a way to avoid both issues mentioned above: use the :py:class:`Pyro4.core.SerializedBlob`.
+If you use that as the (single) argument to a remote method call, Pyro will not deserialize the message payload
+*until you ask for it* by calling the ``deserialized()`` method on it. Which is something you only do in the
+actual server object, and not in the dispatcher.
+Because the message is then never de/reserialized in the dispatcher code, you avoid the serializer overhead,
+and also don't have to include the source code for the serialized types in the dispatcher.
+It just deals with a blob of serialized bytes.
+
+An example that shows how this mechanism can be used, can be found as ``blob-dispatch`` in the examples folder.

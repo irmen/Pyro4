@@ -4,8 +4,7 @@ Change Log
 
 **Pyro 4.58**
 
-- [on branch: dispatch_blob] experimental feature to be able to pass through serialized arguments unchanged via core.SerializedBlob
-  See example 'blob-dispatch'
+- Added feature to be able to pass through serialized arguments unchanged via ``Pyro4.core.SerializedBlob``, see example 'blob-dispatch'
 - Fixed a fair amount of typos in the manual and readme texts.
 - The stockquotes tutorial example now also has a 'phase 3' just like the warehouse tutorial example, to show how to run it on different machines.
 
