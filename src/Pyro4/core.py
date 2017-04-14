@@ -1687,8 +1687,7 @@ class Daemon(object):
     def __deserializeBlobArgs(self, protocolmsg):
         import marshal
         blobinfo, objId, method = marshal.loads(protocolmsg.annotations["BLBI"])
-        blob = SerializedBlob(blobinfo, protocolmsg)
-        blob._contains_blob = True
+        blob = SerializedBlob(blobinfo, protocolmsg, is_blob=True)
         return objId, method, (blob,), {}  # object, method, vargs, kwargs
 
 
@@ -1917,10 +1916,10 @@ class SerializedBlob(object):
     ``data`` = the actual client data payload that you want to transfer in the blob. Can be anything that you would
     otherwise have used as regular remote call arguments.
     """
-    def __init__(self, info, data):
+    def __init__(self, info, data, is_blob=False):
         self.info = info
         self._data = data
-        self._contains_blob = False
+        self._contains_blob = is_blob
 
     def deserialized(self):
         """Retrieves the client data stored in this blob. Deserializes the data automatically if required."""

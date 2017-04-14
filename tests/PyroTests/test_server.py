@@ -48,6 +48,9 @@ class ServerTestObject(object):
     def echo(self, obj):
         return obj
 
+    def blob(self, blob):
+        return blob.info, blob.deserialized()
+
     @Pyro4.core.oneway
     def oneway_delay(self, delay):
         time.sleep(delay)
@@ -299,7 +302,7 @@ class ServerTestsOnce(unittest.TestCase):
             p._pyroBind()
             self.assertEqual({'value', 'dictionary'}, p._pyroAttrs)
             self.assertEqual({'echo', 'getDict', 'divide', 'nonserializableException', 'ping', 'oneway_delay', 'delayAndId', 'delay', 'testargs',
-                                  'multiply', 'oneway_multiply', 'getDictAttr', 'iterator', 'generator', 'response_annotation'}, p._pyroMethods)
+                                  'multiply', 'oneway_multiply', 'getDictAttr', 'iterator', 'generator', 'response_annotation', 'blob'}, p._pyroMethods)
             self.assertEqual({'oneway_multiply', 'oneway_delay'}, p._pyroOneway)
             p._pyroAttrs = None
             p._pyroGetMetadata()
@@ -756,6 +759,25 @@ class ServerTestsOnce(unittest.TestCase):
         p1._pyroRelease()
         p2._pyroRelease()
         p3._pyroRelease()
+
+    def testSerializedBlob(self):
+        sb = Pyro4.core.SerializedBlob("blobname", [1, 2, 3])
+        self.assertEqual("blobname", sb.info)
+        self.assertEqual([1, 2, 3],  sb.deserialized())
+
+    def testSerializedBlobMessage(self):
+        serializer = Pyro4.util.get_serializer("serpent")
+        data, _ = serializer.serializeCall("object", "method", ([1, 2, 3],), False)
+        msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, data, serializer.serializer_id, 0, 42)
+        sb = Pyro4.core.SerializedBlob("blobname", msg, is_blob=True)
+        self.assertEqual("blobname", sb.info)
+        self.assertEqual(([1, 2, 3],), sb.deserialized())
+
+    def testProxySerializedBlobArg(self):
+        with Pyro4.core.Proxy(self.objectUri) as p:
+            blobinfo, blobdata = p.blob(Pyro4.core.SerializedBlob("blobname", [1, 2, 3]))
+            self.assertEqual("blobname", blobinfo)
+            self.assertEqual([1, 2, 3], blobdata)
 
 
 class ServerTestsThreadNoTimeout(unittest.TestCase):
