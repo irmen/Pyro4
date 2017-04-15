@@ -1686,7 +1686,11 @@ class Daemon(object):
 
     def __deserializeBlobArgs(self, protocolmsg):
         import marshal
-        blobinfo, objId, method = marshal.loads(protocolmsg.annotations["BLBI"])
+        blobinfo = protocolmsg.annotations["BLBI"]
+        if sys.platform == "cli" and type(blobinfo) is not str:
+            # Ironpython's marshal expects str...
+            blobinfo = str(blobinfo)
+        blobinfo, objId, method = marshal.loads(blobinfo)
         blob = SerializedBlob(blobinfo, protocolmsg, is_blob=True)
         return objId, method, (blob,), {}  # object, method, vargs, kwargs
 
