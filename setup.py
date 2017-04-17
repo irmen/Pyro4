@@ -72,7 +72,7 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
                 'pyro4-ns = Pyro4.naming:main',
                 'pyro4-nsc = Pyro4.nsc:main',
                 'pyro4-test-echoserver = Pyro4.test.echoserver:main',
-                'pyro4-check-config = Pyro4.configuration:configuration_dump',
+                'pyro4-check-config = Pyro4.configuration:main',
                 'pyro4-flameserver = Pyro4.utils.flameserver:main',
                 'pyro4-httpgateway = Pyro4.utils.httpgateway:main'
             ]

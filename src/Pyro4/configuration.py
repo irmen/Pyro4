@@ -142,5 +142,10 @@ class Configuration(object):
 config = Configuration()
 
 
-if __name__ == "__main__":
+# entrypoint from script
+def main():
     print(config.dump())
+
+
+if __name__ == "__main__":
+    main()

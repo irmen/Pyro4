@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.59**
+
+- Fixed pyro4-check-config script.
+
+
 **Pyro 4.58**
 
 - Added feature to be able to pass through serialized arguments unchanged via ``Pyro4.core.SerializedBlob``, see example 'blob-dispatch'
