@@ -2,6 +2,17 @@
 Change Log
 **********
 
+**Pyro 4.60**
+
+- ``Pyro4.core.async()`` and ``proxy._pyroAsync()`` now return ``None``, instead of the proxy object.
+  This means you'll have to change your code that expects a proxy as return value, for instance by creating a
+  copy of the proxy yourself first.
+  This change was done to avoid subtle errors where older code still assumed it got a *copy* of the proxy,
+  but since 4.57 that is no longer done and it is handed back the same proxy.
+  By returning ``None`` now, at least the old code will now crash with a clear error, instead of silently continuing
+  with the possibility of failing in weird ways later.
+
+
 **Pyro 4.59**
 
 - Fixed pyro4-check-config script.

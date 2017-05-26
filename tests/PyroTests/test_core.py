@@ -889,12 +889,24 @@ class RemoteMethodTests(unittest.TestCase):
         results = batch()
         self.assertEqual(0, len(list(results)))
 
-    def testAsyncLegacyApi(self):
-        proxy = Pyro4.Proxy("PYRO:test@addr:5555")
-        p1 = proxy._pyroAsync()
-        p2 = Pyro4.async(proxy)
-        self.assertIs(proxy, p1)
-        self.assertIs(proxy, p2)
+    def testChangedAsyncLegacyApi(self):
+        try:
+            Pyro4.config.METADATA = False
+            proxy = Pyro4.Proxy("PYRO:test@addr:5555")
+            self.assertIsNone(proxy._pyroAsync())
+            m = proxy.foo
+            self.assertIsInstance(m, Pyro4.core._AsyncRemoteMethod)
+            self.assertIsNone(proxy._pyroAsync(False))
+            m = proxy.foo
+            self.assertIsInstance(m, Pyro4.core._RemoteMethod)
+            self.assertIsNone(Pyro4.async(proxy))
+            m = proxy.foo
+            self.assertIsInstance(m, Pyro4.core._AsyncRemoteMethod)
+            self.assertIsNone(Pyro4.async(proxy, False))
+            m = proxy.foo
+            self.assertIsInstance(m, Pyro4.core._RemoteMethod)
+        finally:
+            Pyro4.config.METADATA = True
 
     def testAsyncMethod(self):
         proxy = self.AsyncProxyMock()
