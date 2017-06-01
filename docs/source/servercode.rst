@@ -29,23 +29,26 @@ Make sure you are familiar with Pyro's :ref:`keyconcepts` before reading on.
 
 .. _decorating-pyro-class:
 
-Creating a Pyro class and exposing its methods
-==============================================
-
-In the spirit of being secure by default, Pyro doesn't allow remote access to anything of your class unless
-explicitly told to do so. It will never allow remote access to private methods and attributes.
-(where private means that the name is starting with a single or double underscore,
-with an exception of the special 'dunder' names with double underscores such as ``__len__``)
+Creating a Pyro class and exposing its methods and properties
+=============================================================
 
 Exposing classes, methods and properties is done using the ``@Pyro4.expose`` decorator.
 It lets you mark the following items to be available for remote access:
 
-- methods (including classmethod and staticmethod. You cannot expose a private method, i.e. name starting with underscore). You *can* expose a 'dunder' method with double underscore such as ``__len__``. There is a list of dunder methods that will never be remoted though (because they are essential to let the Pyro proxy function correctly).
-- properties (will be available as remote attributes on the proxy)
-- classes (exposing a class has the effect of exposing every method and property of the class automatically)
+- methods (including classmethod and staticmethod). You cannot expose a 'private' method, i.e. name starting with underscore.
+  You *can* expose a 'dunder' method with double underscore for example ``__len__``. There is a short list of dunder methods that
+  will never be remoted though (because they are essential to let the Pyro proxy function correctly).
+- properties (these will be available as remote attributes on the proxy) It's not possible to expose a 'private' property
+  (name starting with underscore). You can't expose attributes directly. It is required to provide a @property for them
+  and decorate that with ``@expose``, if you want to provide a remotely accessible attribute.
+- classes as a whole (exposing a class has the effect of exposing every nonprivate method and property of the class automatically)
 
-Because it is not possible to decorate attributes on a class, it is required to provide a @property for them
-and decorate that with ``@expose``, if you want to provide a remotely accessible attribute.
+.. sidebar:: private members
+
+    In the spirit of being secure by default, Pyro doesn't allow remote access to anything of your class unless
+    explicitly told to do so. It will never allow remote access to 'private' members
+    (where private means that the name starts with a single or double underscore,
+    with a special exception for the regular 'dunder' names with double underscores such as ``__len__``)
 
 Anything that isn't decorated with ``@expose`` is not remotely accessible.
 
