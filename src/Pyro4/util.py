@@ -594,7 +594,10 @@ class JsonSerializer(SerializerBase):
         data = self._convertToBytes(data).decode("utf-8")
         data = json.loads(data)
         vargs = self.recreate_classes(data["params"])
-        kwargs = self.recreate_classes(data["kwargs"])
+        if 'kwargs' in data:
+            kwargs = self.recreate_classes(data["kwargs"])
+        else:
+            kwargs = {}
         return data["object"], data["method"], vargs, kwargs
 
     def loads(self, data):
