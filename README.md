@@ -6,6 +6,8 @@
 PYRO - Python Remote Objects
 ============================
 
+[![Join the chat at https://gitter.im/Pyro4/Lobby](https://badges.gitter.im/Pyro4/Lobby.svg)](https://gitter.im/Pyro4/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Pyro enables you to build applications in which objects can talk
 to each other over the network, with minimal programming effort.
 You can just use normal Python method calls to call objects on
