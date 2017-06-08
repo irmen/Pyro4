@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.61**
+
+- serpent 1.22 library now required.
+
+
 **Pyro 4.60**
 
 - ``Pyro4.core.async()`` and ``proxy._pyroAsync()`` now return ``None``, instead of the proxy object.
