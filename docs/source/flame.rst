@@ -77,6 +77,9 @@ Its interface is described in the API documentation, see :py:class:`Pyro4.utils.
 
 Connecting to the flame server can be done as usual (by creating a Pyro proxy yourself)
 or by using the convenience function :py:func:`Pyro4.utils.flame.connect`.
+It creates a Pyro proxy to the flame server for you using a slightly simpler interface.
+(If you started the flame server with a hmac key, you also must provide the ``hmac_key`` parameter here.)
+
 A little example follows. You have to have running flame server, and then you can write a client like this::
 
     import Pyro4.utils.flame

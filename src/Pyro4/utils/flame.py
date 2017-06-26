@@ -308,7 +308,7 @@ def start(daemon):
         raise errors.SecurityError("Flame is disabled in the server configuration")
 
 
-def connect(location):
+def connect(location, hmac_key=None):
     """
     Connect to a Flame server on the given location, for instance localhost:9999 or ./u:unixsock
     This is just a convenience function to creates an appropriate Pyro proxy.
@@ -316,5 +316,7 @@ def connect(location):
     if config.SERIALIZER != "pickle":
         raise errors.SerializeError("Flame requires the pickle serializer")
     proxy = core.Proxy("PYRO:%s@%s" % (constants.FLAME_NAME, location))
+    if hmac_key:
+        proxy._pyroHmacKey = hmac_key
     proxy._pyroBind()
     return proxy

@@ -5,7 +5,11 @@ Change Log
 **Pyro 4.61**
 
 - serpent 1.22 library now required.
-
+- Pyro4.utils.flame.connect now has an optional ``hmac_key`` argument. You can now use this
+  utility function to connect to a flame server running with a hmac_key. (Previously it didn't
+  let you specify the client hmac_key so you had to create a flame proxy manually, on which you
+  then had to set the _pyroHmacKey property).
+  
 
 **Pyro 4.60**
 
