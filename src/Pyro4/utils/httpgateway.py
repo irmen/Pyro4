@@ -107,10 +107,10 @@ index_page_template = """<!DOCTYPE html>
         }});
     }}
     </script>
-<div id="title-logo"><img src="http://pythonhosted.org/Pyro4/_static/pyro.png"></div>
+<div id="title-logo"><img src="http://pyro4.readthedocs.io/en/stable/_static/pyro.png"></div>
 <div id="title-text">
 <h1>Pyro HTTP gateway</h1>
-<p>Use http+json to talk to Pyro objects. <a href="https://pythonhosted.org/Pyro4/tipstricks.html#pyro-via-http-and-json">Docs.</a></p>
+<p>Use http+json to talk to Pyro objects. <a href="http://pyro4.readthedocs.io/en/stable/tipstricks.html#pyro-via-http-and-json">Docs.</a></p>
 </div>
 <p><em>Note: performance isn't maxed; it is stateless. Does a name lookup and uses a new Pyro proxy for each request.</em></p>
 <h2>Currently exposed contents of name server on {hostname}:</h2>

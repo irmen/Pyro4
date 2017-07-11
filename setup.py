@@ -36,11 +36,13 @@ Pyro is written in 100% pure Python and therefore runs on many platforms and Pyt
 including Python 2.x, Python 3.x, IronPython, and Pypy.
 
 The source code repository is on Github: https://github.com/irmen/Pyro4
+
+The documentation can be found here: http://pyro4.readthedocs.io
 """,
         "author": "Irmen de Jong",
         "author_email": "irmen@razorvine.net",
         "keywords": ["distributed objects", "RPC", "remote method call", "IPC"],
-        "url": "http://pythonhosted.org/Pyro4/",
+        "url": "http://pyro4.readthedocs.io",
         "package_dir": {'': 'src'},
         "packages": ['Pyro4', 'Pyro4.socketserver', 'Pyro4.test', 'Pyro4.utils'],
         "scripts": [],

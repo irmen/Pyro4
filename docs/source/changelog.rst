@@ -9,6 +9,7 @@ Change Log
   utility function to connect to a flame server running with a hmac_key. (Previously it didn't
   let you specify the client hmac_key so you had to create a flame proxy manually, on which you
   then had to set the _pyroHmacKey property).
+- main documentation is now http://pyro4.readthedocs.io instead of http://pythonhosted.org/Pyro4/
   
 
 **Pyro 4.60**

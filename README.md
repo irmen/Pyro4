@@ -13,7 +13,7 @@ other machines. Pyro is written in 100% pure Python and so it
 runs on many platforms and Python versions, including Python 3.x.
 
 
-Documentation can be found online at: http://pythonhosted.org/Pyro4/
+Documentation can be found online at: http://pyro4.readthedocs.io
 (or unformatted here in the repo at: docs/source/intro.rst)
 
 
