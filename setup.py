@@ -39,7 +39,7 @@ The source code repository is on Github: https://github.com/irmen/Pyro4
 """,
         "author": "Irmen de Jong",
         "author_email": "irmen@razorvine.net",
-        "keywords": "distributed objects, middleware, network communication, remote method call, IPC",
+        "keywords": ["distributed objects", "RPC", "remote method call", "IPC"],
         "url": "http://pythonhosted.org/Pyro4/",
         "package_dir": {'': 'src'},
         "packages": ['Pyro4', 'Pyro4.socketserver', 'Pyro4.test', 'Pyro4.utils'],
