@@ -520,16 +520,17 @@ You can control its behavior by setting certain Pyro config items before startin
 
 .. index::
     double: name server; pickle
+    double: name server; cloudpickle
     double: name server; dill
 
 .. _nameserver-pickle:
 
-Using the name server with pickle or dill serializers
-=====================================================
-If you find yourself in the unfortunate situation where you absolutely have to use the pickle
+Using the name server with pickle, cloudpickle or dill serializers
+==================================================================
+If you find yourself in the unfortunate situation where you absolutely have to use the pickle, cloudpickle
 or dill serializers, you have to pay attention when also using the name server.
-Because pickle and dill are disabled by default, the name server will not reply to messages from clients
-that are using those serializers, unless you enable them in the name server as well.
+Because these serializers are disabled by default, the name server will not reply to messages from clients
+that are using them, unless you enable them in the name server as well.
 
 The symptoms are usually that your client code seems unable to contact the name server::
 
@@ -546,15 +547,15 @@ And if you enable logging for the name server you will likely see in its logfile
     ...
     Pyro4.errors.ProtocolError: message used serializer that is not accepted: [4,5]
 
-The way to solve this is to stop using the pickle and dill serializers, or if you must use them,
+The way to solve this is to stop using the these serializers, or if you must use them,
 tell the name server that it is okay to accept them. You do that by
-setting the ``SERIALIZERS_ACCEPTED`` config item to a set of serializers that includes pickle or dill,
+setting the ``SERIALIZERS_ACCEPTED`` config item to a set of serializers that includes them,
 and then restart the name server. For instance::
 
-    $ export PYRO_SERIALIZERS_ACCEPTED=serpent,json,marshal,pickle,dill
+    $ export PYRO_SERIALIZERS_ACCEPTED=serpent,json,marshal,pickle,cloudpickle,dill
     $ pyro4-ns
 
-If you enable logging you will then see that the name server says that pickle and dill are among
+If you enable logging you will then see that the name server says that pickle, cloudpickle and dill are among
 the accepted serializers.
 
 

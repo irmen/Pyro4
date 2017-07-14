@@ -114,6 +114,7 @@ For normal usage, there's not a single line of Pyro specific code once you have 
 .. index::
     single: object serialization
     double: serialization; pickle
+    double: serialization; cloudpickle
     double: serialization; dill
     double: serialization; serpent
     double: serialization; marshal
@@ -167,6 +168,9 @@ on what objects you can use.
   but it's safe to add to the accepted serializers config item if you have it installed.
 * **pickle**: the legacy serializer. Fast and supports almost all types. Part of the standard library.
   Has security problems, so it's better to avoid using it.
+* **cloudpickle**: See https://pypi.python.org/pypi/cloudpickle It is similar to pickle serializer, but more capable. Extends python's 'pickle' module
+  for serializing and de-serializing python objects to the majority of the built-in python types.
+  Has security problems though, just as pickle.
 * **dill**: See https://pypi.python.org/pypi/dill It is similar to pickle serializer, but more capable. Extends python's 'pickle' module
   for serializing and de-serializing python objects to the majority of the built-in python types.
   Has security problems though, just as pickle.
@@ -177,6 +181,7 @@ You select the serializer to be used by setting the ``SERIALIZER`` config item. 
 The valid choices are the names of the serializer from the list mentioned above.
 If you're using pickle or dill, and need to control the protocol version that is used,
 you can do so with the ``PICKLE_PROTOCOL_VERSION`` or ``DILL_PROTOCOL_VERSION`` config items.
+If you're using cloudpickle, you can control the protocol version with ``PICKLE_PROTOCOL_VERSION`` as well.
 By default Pyro will use the highest one available.
 
 It is possible to override the serializer on a particular proxy. This allows you to connect to one server
@@ -192,15 +197,15 @@ serializer, for instance. Set the desired serializer name in ``proxy._pyroSerial
 .. note::
     The serializer(s) that a Pyro server/daemon accepts, is controlled by a different
     config item (``SERIALIZERS_ACCEPTED``). This can be a set of one or more serializers.
-    By default it accepts the set of 'safe' serializers, so "``pickle``" and "``dill``" are excluded.
-    If the server doesn't accept the serializer that you configured
+    By default it accepts the set of 'safe' serializers, so "``pickle``", "``cloudpickle``"
+    and "``dill``" are excluded. If the server doesn't accept the serializer that you configured
     for your client, it will refuse the requests and respond with an exception that tells
     you about the unsupported serializer choice. If it *does* accept your requests,
     the server response will use the same serializer that was used for the request.
 
 .. note::
     Because the name server is just a regular Pyro server as well, you will have to tell
-    it to allow the pickle or dill serializers if your client code uses them.
+    it to allow the pickle, cloudpickle or dill serializers if your client code uses them.
     See :ref:`nameserver-pickle`.
 
 
@@ -212,7 +217,7 @@ Changing the way your custom classes are (de)serialized
 -------------------------------------------------------
 
 .. note::
-    The information in this paragraph is not relevant when using the pickle or dill serialization protocols,
+    The information in this paragraph is not relevant when using the pickle, cloudpickle or dill serialization protocols,
     they have their own ways of serializing custom classes.
 
 By default, custom classes are serialized into a dict.
@@ -356,7 +361,7 @@ The signature of the batch proxy call is as follows:
     Invoke the batch and when done, returns a generator that produces the results of every call, in order.
     If ``oneway==True``, perform the whole batch as one-way calls, and return ``None`` immediately.
     If ``async==True``, perform the batch asynchronously, and return an asynchronous call result object immediately.
-    
+
 **Simple example**::
 
     batch = Pyro4.batch(proxy)

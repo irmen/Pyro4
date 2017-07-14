@@ -157,8 +157,8 @@ class SerializeTests_pickle(unittest.TestCase):
                 obj.name = "hello"
                 daemon.register(obj)
                 o, _ = self.ser.serializeData(obj)
-                if self.SERIALIZER in ("pickle", "dill"):
-                    # only pickle and dill can deserialize the PrettyPrinter class without the need of explicit deserialization function
+                if self.SERIALIZER in ("pickle", "cloudpickle", "dill"):
+                    # only pickle, cloudpickle and dill can deserialize the PrettyPrinter class without the need of explicit deserialization function
                     o2 = self.ser.deserializeData(o)
                     self.assertEqual("hello", o2.name)
                     self.assertEqual(42, o2._width)
@@ -316,8 +316,8 @@ class SerializeTests_pickle(unittest.TestCase):
             self.assertEqual({'oneway'}, p1._pyroOneway)
 
     def testCustomClassFail(self):
-        if self.SERIALIZER in ("pickle", "dill"):
-            self.skipTest("pickle and dill simply serialize custom classes")
+        if self.SERIALIZER in ("pickle", "cloudpickle", "dill"):
+            self.skipTest("pickle, cloudpickle and dill simply serialize custom classes")
         o = pprint.PrettyPrinter(stream="dummy", width=42)
         s, c = self.ser.serializeData(o)
         try:
@@ -327,8 +327,8 @@ class SerializeTests_pickle(unittest.TestCase):
             pass
 
     def testCustomClassOk(self):
-        if self.SERIALIZER in ("pickle", "dill"):
-            self.skipTest("pickle and dill simply serialize custom classes just fine")
+        if self.SERIALIZER in ("pickle", "cloudpickle", "dill"):
+            self.skipTest("pickle, cloudpickle and dill simply serialize custom classes just fine")
         o = MyThingPartlyExposed("test")
         Pyro4.util.SerializerBase.register_class_to_dict(MyThingPartlyExposed, mything_dict)
         Pyro4.util.SerializerBase.register_dict_to_class("CUSTOM-Mythingymabob", mything_creator)
@@ -567,6 +567,27 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual([4, 5, 6], d)
 
 
+class SerializeTests_cloudpickle(SerializeTests_pickle):
+    SERIALIZER = "cloudpickle"
+
+    @unittest.skip('not implemented')
+    def testUriSerializationWithoutSlots(self):
+        pass
+
+    def testSerializeLambda(self):
+        l = lambda x: x * x
+        ser, compressed = self.ser.serializeData(l)
+        l2 = self.ser.deserializeData(ser, compressed=compressed)
+        self.assertEqual(l2(3.), 9.)
+
+    def testSerializeLocalFunction(self):
+        def f(x):
+            return x * x
+        ser, compressed = self.ser.serializeData(f)
+        f2 = self.ser.deserializeData(ser, compressed=compressed)
+        self.assertEqual(f2(3.), 9.)
+
+
 is_ironpython_without_dill = False
 try:
     import dill
@@ -721,6 +742,11 @@ class GenericTests(unittest.TestCase):
         except ImportError:
             pass
         try:
+            import cloudpickle
+            Pyro4.util.get_serializer("cloudpickle")
+        except ImportError:
+            pass
+        try:
             import dill
             Pyro4.util.get_serializer("dill")
         except ImportError:
@@ -733,15 +759,16 @@ class GenericTests(unittest.TestCase):
         self.assertEqual(4, Pyro4.util.PickleSerializer.serializer_id)
         self.assertEqual(5, Pyro4.util.DillSerializer.serializer_id)
         self.assertEqual(6, Pyro4.util.MsgpackSerializer.serializer_id)
+        self.assertEqual(7, Pyro4.util.CloudpickleSerializer.serializer_id)
 
     def testSerializersAvailableById(self):
         Pyro4.util.get_serializer_by_id(1)  # serpent
         Pyro4.util.get_serializer_by_id(2)  # json
         Pyro4.util.get_serializer_by_id(3)  # marshal
         Pyro4.util.get_serializer_by_id(4)  # pickle
-        # ids 5 and 6 (dill, msgpack) are not always available, so we skip those.
+        # ids 5, 6 and 7 (dill, msgpack, cloudpickle) are not always available, so we skip those.
         self.assertRaises(Pyro4.errors.SerializeError, lambda: Pyro4.util.get_serializer_by_id(0))
-        self.assertRaises(Pyro4.errors.SerializeError, lambda: Pyro4.util.get_serializer_by_id(7))
+        self.assertRaises(Pyro4.errors.SerializeError, lambda: Pyro4.util.get_serializer_by_id(8))
 
     def testDictClassFail(self):
         o = pprint.PrettyPrinter(stream="dummy", width=42)
