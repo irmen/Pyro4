@@ -190,7 +190,7 @@ class SocketServer_Threadpool(object):
             if self.shutting_down:
                 csock.close()
                 return
-            if csock.__class__.__name__.lower().startswith("ssl"):
+            if hasattr(csock, "getpeercert"):
                 log.debug("connected %s - SSL", caddr)
             else:
                 log.debug("connected %s - unencrypted", caddr)

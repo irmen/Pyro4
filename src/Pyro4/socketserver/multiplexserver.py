@@ -114,7 +114,7 @@ class SocketServer_Multiplex(object):
             if sock is None:
                 return
             csock, caddr = sock.accept()
-            if csock.__class__.__name__.lower().startswith("ssl"):
+            if hasattr(csock, "getpeercert"):
                 log.debug("connected %s - SSL", caddr)
             else:
                 log.debug("connected %s - unencrypted", caddr)

@@ -137,13 +137,14 @@ def receiveData(sock, size):
         retrydelay = 0.0
         msglen = 0
         chunks = []
-        if config.USE_MSG_WAITALL:
+        if config.USE_MSG_WAITALL and not hasattr(sock, "getpeercert"):
             # waitall is very convenient and if a socket error occurs,
             # we can assume the receive has failed. No need for a loop,
             # unless it is a retryable error.
             # Some systems have an erratic MSG_WAITALL and sometimes still return
             # less bytes than asked. In that case, we drop down into the normal
             # receive loop to finish the task.
+            # Also note that on SSL sockets, you cannot use MSG_WAITALL (or any other flag)
             while True:
                 try:
                     data = sock.recv(size, socket.MSG_WAITALL)
