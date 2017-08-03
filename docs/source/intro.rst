@@ -19,20 +19,18 @@ and return value type, and Pyro takes care of locating the right object on the r
 computer to execute the method. It is designed to be very easy to use, and to
 generally stay out of your way. But it also provides a set of powerful features that
 enables you to build distributed applications rapidly and effortlessly.
-Pyro is written in **100% pure Python** and therefore runs on many platforms and Python versions,
-**including Python 3.x**.
+Pyro is a pure Python library and runs on many different platforms and Python versions.
 
 Here's a quick overview of Pyro's features:
 
-- written in 100% Python so extremely portable.
+- written in 100% Python so extremely portable, runs on Python 2.7, Python 3.x, IronPython, Pypy.
+- works between different system architectures and operating systems.
+- able to communicate between different Python versions transparently.
 - defaults to a safe serializer (`serpent <https://pypi.python.org/pypi/serpent>`_) that supports many Python data types.
 - supports different serializers (serpent, json, marshal, msgpack, pickle, dill).
 - support for all Python data types that are serializable when using the 'pickle' or 'dill' serializers [1]_.
-- runs on Python 2.7, Python 3.x, IronPython, Pypy.
-- works between different system architectures and operating systems.
-- able to communicate between different Python versions transparently.
 - can use IPv4, IPv6 and Unix domain sockets.
-- optional encryped connections via SSL/TLS.
+- optional encryped connections via SSL/TLS, including certificate validation on both ends (2-way ssl).
 - lightweight client library available for .NET and Java native code ('Pyrolite', provided separately).
 - designed to be very easy to use and get out of your way as much as possible, but still provide a lot of flexibility when you do need it.
 - name server that keeps track of your object's actual locations so you can move them around transparently.

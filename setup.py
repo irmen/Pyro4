@@ -32,8 +32,7 @@ and return value type, and Pyro takes care of locating the right object on the r
 computer to execute the method. It is designed to be very easy to use, and to 
 generally stay out of your way. But it also provides a set of powerful features that
 enables you to build distributed applications rapidly and effortlessly.
-Pyro is written in 100% pure Python and therefore runs on many platforms and Python versions,
-including Python 2.x, Python 3.x, IronPython, and Pypy.
+Pyro is a pure Python library and runs on many different platforms and Python versions.
 
 The source code repository is on Github: https://github.com/irmen/Pyro4
 

@@ -11,7 +11,7 @@ This chapter will show how to obtain and install Pyro.
 
 Compatibility
 -------------
-Pyro is written in 100% pure Python. It works on any recent operating system where a suitable Python implementation is available
+Pyro is written in 100% Python. It works on any recent operating system where a suitable Python implementation is available
 (2.7, 3.3 and newer). It also works with Pypy and IronPython.
 It will probably not work with Jython 2.7 at this time of writing. If you need this, try Pyro version 4.34 or older instead.
 (if you only need to write *client* code in Jython/Java, consider using :doc:`pyrolite` instead!)

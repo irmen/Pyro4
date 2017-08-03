@@ -9,8 +9,8 @@ PYRO - Python Remote Objects
 Pyro enables you to build applications in which objects can talk
 to each other over the network, with minimal programming effort.
 You can just use normal Python method calls to call objects on
-other machines. Pyro is written in 100% pure Python and so it
-runs on many platforms and Python versions, including Python 3.x.
+other machines. Pyro is a pure Python library so it
+runs on many different platforms and Python versions.
 
 
 Documentation can be found online at: http://pyro4.readthedocs.io

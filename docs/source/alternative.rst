@@ -4,7 +4,7 @@
 Running on alternative Python implementations
 *********************************************
 
-Pyro is written in 100% pure Python which -theoretically- enables it to be used with
+Pyro is a pure Python library so you should be able to use it with
 any compatible Python implementation. There are a few gotchas however.
 If possible please use the most recent version available of your Python implementation.
 
