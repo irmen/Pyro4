@@ -25,7 +25,9 @@ class Configuration(object):
                  "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
                  "METADATA", "REQUIRE_EXPOSE", "USE_MSG_WAITALL", "JSON_MODULE",
                  "MAX_RETRIES", "DILL_PROTOCOL_VERSION", "ITER_STREAMING", "ITER_STREAM_LIFETIME",
-                 "ITER_STREAM_LINGER")
+                 "ITER_STREAM_LINGER", "SSL", "SSL_CLIENT_CERTVALIDATION", "SSL_REQUIRECLIENTCERT",
+                 "SSL_SERVERCERT", "SSL_SERVERKEY", "SSL_SERVERKEYPASSWD",
+                 "SSL_CLIENTCERT", "SSL_CLIENTKEY", "SSL_CLIENTKEYPASSWD")
 
     def __init__(self):
         self.reset()
@@ -75,6 +77,15 @@ class Configuration(object):
         self.ITER_STREAMING = True
         self.ITER_STREAM_LIFETIME = 0.0
         self.ITER_STREAM_LINGER = 30.0
+        self.SSL = False
+        self.SSL_SERVERCERT = "certs/server_cert.pem"
+        self.SSL_SERVERKEY = "certs/server_key.pem"
+        self.SSL_SERVERKEYPASSWD = ""
+        self.SSL_REQUIRECLIENTCERT = False
+        self.SSL_CLIENTCERT = ""
+        self.SSL_CLIENTKEY = ""
+        self.SSL_CLIENTKEYPASSWD = ""
+        self.SSL_CLIENT_CERTVALIDATION = True
 
         if useenvironment:
             # process environment variables

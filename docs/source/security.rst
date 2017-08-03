@@ -60,12 +60,14 @@ You may need additional security measures to prevent random users from calling y
 .. index::
     double: security; encryption
 
-Protocol encryption
-===================
-Pyro doesn't encrypt the data it sends over the network. This means you must not transfer
-sensitive data on untrusted networks (especially user data, passwords, and such) because it is
-possible to eavesdrop. Either encrypt the data yourself before passing it to Pyro, or run Pyro
-over a secure network (VPN, ssl/ssh tunnel).
+Protocol encryption @todo SSL docs
+==================================
+Pyro itself doesn't encrypt the data it sends over the network. This means if you use the default
+configuration, you must never transfer sensitive data on untrusted networks
+(especially user data, passwords, and such) because eavesdropping is possible.
+If you enable SSL/TLS however, all communication is encrypted and you are safe to send any sensitive data.
+Another option is running Pyro over a secure network (VPN, ssl/ssh tunnel) where the encryption
+is taken care of externally.
 
 
 .. index::
@@ -92,8 +94,8 @@ See :doc:`config` for the proper way to do this.
 .. index::
     double: security; HMAC signature
 
-Preventing arbitrary connections: HMAC signature
-================================================
+Preventing arbitrary connections: HMAC signature  @todo SSL client-and-server-cert validation
+=============================================================================================
 You can use a `HMAC signature <http://docs.python.org/library/hmac.html>`_ on every network transfer
 to prevent malicious requests. The idea is to only have legit clients connect to your Pyro server.
 Using the HMAC signature ensures that only clients with the correct secret key can create valid requests,

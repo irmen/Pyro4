@@ -245,6 +245,7 @@ class Proxy(object):
         self.__async = False
         current_context.annotations = {}
         current_context.response_annotations = {}
+        self._pyroAttrs
 
     @property
     def _pyroHmacKey(self):
@@ -502,7 +503,11 @@ class Proxy(object):
             try:
                 if self._pyroConnection is not None:
                     return False  # already connected
-                sock = socketutil.createSocket(connect=connect_location, reuseaddr=config.SOCK_REUSE, timeout=self.__pyroTimeout, nodelay=config.SOCK_NODELAY)
+                if config.SSL:
+                    sslContext = socketutil.getSSLcontext(clientcert=config.SSL_CLIENTCERT, clientkey=config.SSL_CLIENTKEY, keypassword=config.SSL_CLIENTKEYPASSWD)
+                else:
+                    sslContext = None
+                sock = socketutil.createSocket(connect=connect_location, reuseaddr=config.SOCK_REUSE, timeout=self.__pyroTimeout, nodelay=config.SOCK_NODELAY, sslContext=sslContext)
                 conn = socketutil.SocketConnection(sock, uri.object)
                 # Do handshake.
                 serializer = util.get_serializer(self._pyroSerializer or config.SERIALIZER)
@@ -558,7 +563,7 @@ class Proxy(object):
                     if replaceUri:
                         self._pyroUri = uri
                     self._pyroValidateHandshake(handshake_response)
-                    log.debug("connected to %s - %s", self._pyroUri, conn.family())
+                    log.debug("connected to %s - %s - %s", self._pyroUri, conn.family(), "SSL" if sslContext else "unencrypted")
                     if msg.annotations:
                         self._pyroResponseAnnotations(msg.annotations, msg.type)
                 else:

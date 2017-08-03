@@ -32,6 +32,7 @@ Here's a quick overview of Pyro's features:
 - works between different system architectures and operating systems.
 - able to communicate between different Python versions transparently.
 - can use IPv4, IPv6 and Unix domain sockets.
+- optional encryped connections via SSL/TLS.
 - lightweight client library available for .NET and Java native code ('Pyrolite', provided separately).
 - designed to be very easy to use and get out of your way as much as possible, but still provide a lot of flexibility when you do need it.
 - name server that keeps track of your object's actual locations so you can move them around transparently.

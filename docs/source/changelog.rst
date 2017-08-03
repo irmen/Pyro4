@@ -2,6 +2,14 @@
 Change Log
 **********
 
+**Pyro 4.62**
+
+- **SSL/TLS support added** - a handful of new config items ('SSL' prefixed), supports
+  server-only certificate and also 2-way-ssl (client certificate as well).
+  @todo custom cert validation hooks are still missing.
+  For testing purposes, self-signed server and client certificates are available in the 'certs' directory.
+
+
 **Pyro 4.61**
 
 - serpent 1.23 library now required.

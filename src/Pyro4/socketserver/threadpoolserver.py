@@ -112,7 +112,13 @@ class SocketServer_Threadpool(object):
         self.daemon = daemon
         self.sock = None
         bind_location = unixsocket if unixsocket else (host, port)
-        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=config.SOCK_REUSE, timeout=config.COMMTIMEOUT, noinherit=True, nodelay=config.SOCK_NODELAY)
+        if config.SSL:
+            sslContext = socketutil.getSSLcontext(servercert=config.SSL_SERVERCERT, serverkey=config.SSL_SERVERKEY, keypassword=config.SSL_SERVERKEYPASSWD)
+            log.info("using SSL")
+        else:
+            sslContext = None
+            log.info("not using SSL")
+        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=config.SOCK_REUSE, timeout=config.COMMTIMEOUT, noinherit=True, nodelay=config.SOCK_NODELAY, sslContext=sslContext)
         self._socketaddr = self.sock.getsockname()
         if not unixsocket and self._socketaddr[0].startswith("127."):
             if host is None or host.lower() != "localhost" and not host.startswith("127."):
@@ -150,16 +156,15 @@ class SocketServer_Threadpool(object):
         while (self.sock is not None) and not self.shutting_down and loopCondition():
             try:
                 self.events([self.sock])
-            except socket.error as x:
-                err = getattr(x, "errno", x.args[0])
+            except (socket.error, OSError) as x:
                 if not loopCondition():
                     # swallow the socket error if loop terminates anyway
                     # this can occur if we are asked to shutdown, socket can be invalid then
                     break
-                if err in socketutil.ERRNO_RETRIES:
-                    continue
-                else:
-                    raise
+                # socket errors may not lead to a server abort, so we log it and continue
+                err = getattr(x, "errno", x.args[0])
+                log.warning("socket error '%s' with errno=%d, shouldn't happen", x, err)
+                continue
             except KeyboardInterrupt:
                 log.debug("stopping on break signal")
                 break
@@ -177,7 +182,10 @@ class SocketServer_Threadpool(object):
             if self.shutting_down:
                 csock.close()
                 return
-            log.debug("connected %s", caddr)
+            if csock.__class__.__name__.lower().startswith("ssl"):
+                log.debug("connected %s - SSL", caddr)
+            else:
+                log.debug("connected %s - unencrypted", caddr)
             if config.COMMTIMEOUT:
                 csock.settimeout(config.COMMTIMEOUT)
             job = ClientConnectionJob(csock, caddr, self.daemon)
@@ -204,7 +212,7 @@ class SocketServer_Threadpool(object):
             sockname = None
             try:
                 sockname = self.sock.getsockname()
-            except socket.error:
+            except (socket.error, OSError):
                 pass
             try:
                 self.sock.close()

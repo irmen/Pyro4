@@ -47,7 +47,13 @@ class SocketServer_Multiplex(object):
         log.debug("selector implementation: %s.%s", self.selector.__class__.__module__, self.selector.__class__.__name__)
         self.sock = None
         bind_location = unixsocket if unixsocket else (host, port)
-        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=config.SOCK_REUSE, timeout=config.COMMTIMEOUT, noinherit=True, nodelay=config.SOCK_NODELAY)
+        if config.SSL:
+            sslContext = socketutil.getSSLcontext(servercert=config.SSL_SERVERCERT, serverkey=config.SSL_SERVERKEY, keypassword=config.SSL_SERVERKEYPASSWD)
+            log.info("using SSL")
+        else:
+            sslContext = None
+            log.info("not using SSL")
+        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=config.SOCK_REUSE, timeout=config.COMMTIMEOUT, noinherit=True, nodelay=config.SOCK_NODELAY, sslContext=sslContext)
         self.daemon = daemon
         self._socketaddr = sockaddr = self.sock.getsockname()
         if not unixsocket and sockaddr[0].startswith("127."):
@@ -100,19 +106,21 @@ class SocketServer_Multiplex(object):
             if sock is None:
                 return
             csock, caddr = sock.accept()
-            log.debug("connected %s", caddr)
+            if csock.__class__.__name__.lower().startswith("ssl"):
+                log.debug("connected %s - SSL", caddr)
+            else:
+                log.debug("connected %s - unencrypted", caddr)
             if config.COMMTIMEOUT:
                 csock.settimeout(config.COMMTIMEOUT)
-        except socket.error as x:
+        except (socket.error, OSError) as x:
             err = getattr(x, "errno", x.args[0])
-            if err in socketutil.ERRNO_RETRIES:
-                # just ignore this error for now and continue
-                log.warning("accept() failed errno=%d, shouldn't happen", err)
-                return None
             if err in socketutil.ERRNO_BADF or err in socketutil.ERRNO_ENOTSOCK:
                 # our server socket got destroyed
                 raise errors.ConnectionClosedError("server socket closed")
-            raise
+            # socket errors may not lead to a server abort, so we log it and continue
+            err = getattr(x, "errno", x.args[0])
+            log.warning("accept() failed '%s' with errno=%d, shouldn't happen", x, err)
+            return None
         try:
             conn = socketutil.SocketConnection(csock)
             if self.daemon._handshake(conn):
@@ -142,7 +150,7 @@ class SocketServer_Multiplex(object):
             sockname = None
             try:
                 sockname = self.sock.getsockname()
-            except socket.error:
+            except (socket.error, OSError):
                 pass
             self.sock.close()
             if type(sockname) is str:

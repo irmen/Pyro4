@@ -4,11 +4,16 @@ Low level socket utilities.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
+import os
 import socket
 import errno
 import time
 import sys
 import select
+try:
+    import ssl
+except ImportError:
+    ssl = None
 from Pyro4.configuration import config
 from Pyro4.errors import CommunicationError, TimeoutError, ConnectionClosedError
 
@@ -222,7 +227,7 @@ def sendData(sock, data):
 _GLOBAL_DEFAULT_TIMEOUT = object()
 
 
-def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False, ipv6=False, nodelay=True):
+def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False, ipv6=False, nodelay=True, sslContext=None):
     """
     Create a socket. Default socket options are keepalive and IPv4 family, and nodelay (nagle disabled).
     If 'bind' or 'connect' is a string, it is assumed a Unix domain socket is requested.
@@ -268,6 +273,11 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
     else:
         raise ValueError("unknown bind or connect format.")
     sock = socket.socket(family, socket.SOCK_STREAM)
+    if sslContext:
+        if bind:
+            sock = sslContext.wrap_socket(sock, server_side=True)
+        else:
+            sock = sslContext.wrap_socket(sock, server_side=False, server_hostname=connect[0])
     if nodelay:
         setNoDelay(sock)
     if reuseaddr:
@@ -536,3 +546,46 @@ def interruptSocket(address):
         sock.close()
     except socket.error:
         pass
+
+
+__ssl_server_context = None
+__ssl_client_context = None
+
+
+def getSSLcontext(servercert="", serverkey="", clientcert="", clientkey="", keypassword=""):
+    """creates an SSL context and caches it, so you have to set the parameters correctly before doing anything"""
+    global __ssl_client_context, __ssl_server_context
+    if not ssl:
+        raise ValueError("SSL requested but ssl module is not available")
+    # @todo we want a custom cert validator hook (server AND client) as well...
+    if servercert:
+        if clientcert:
+            raise ValueError("can't have both server cert and client cert")
+        # server context
+        if __ssl_server_context:
+            return __ssl_server_context
+        if not os.path.isfile(servercert):
+            raise IOError("server cert file not found")
+        if serverkey and not os.path.isfile(serverkey):
+            raise IOError("server key file not found")
+        __ssl_server_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        __ssl_server_context.load_cert_chain(servercert, serverkey or None, keypassword or None)
+        if config.SSL_REQUIRECLIENTCERT:
+            __ssl_server_context.verify_mode = ssl.CERT_REQUIRED   # 2-way ssl, encryption + client trust
+        else:
+            __ssl_server_context.verify_mode = ssl.CERT_NONE   # 1-way ssl, encryption only, no client trust
+        return __ssl_server_context
+    else:
+        # client context
+        if __ssl_client_context:
+            return __ssl_client_context
+        __ssl_client_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        if clientcert:
+            if not os.path.isfile(clientcert):
+                raise IOError("client cert file not found")
+            __ssl_client_context.load_cert_chain(clientcert, clientkey or None, keypassword or None)
+        if not config.SSL_CLIENT_CERTVALIDATION:
+            # this is dangerous! but very useful when dealing with test certs / self-signed certs
+            __ssl_client_context.check_hostname = False
+            __ssl_client_context.verify_mode = ssl.CERT_NONE
+        return __ssl_client_context
