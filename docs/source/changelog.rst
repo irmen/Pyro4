@@ -7,7 +7,11 @@ Change Log
 - **SSL/TLS support added** - a handful of new config items ('SSL' prefixed), supports
   server-only certificate and also 2-way-ssl (client certificate as well).
   @todo custom cert validation hooks are still missing.
+  @todo docs are mostly still missing.
   For testing purposes, self-signed server and client certificates are available in the 'certs' directory.
+  SSL/TLS in Pyro is supported on Python 2.7.9+ or Python 3.4.0+
+- daemon is now more resilient to exceptions occurring with socket communications (it logs them but is otherwise not interrupted)
+  (this was required to avoid errors occurring in the SSL layer stopping the server)
 
 
 **Pyro 4.61**
