@@ -124,8 +124,6 @@ SSL_REQUIRECLIENTCERT     bool    False                   Should the server requ
 SSL_CLIENTCERT            str     *empty str*             Location of the client's certificate file
 SSL_CLIENTKEY             str     *empty str*             Location of the client's private key file
 SSL_CLIENTKEYPASSWD       str     *empty str*             Password for the client's private key
-SSL_CLIENT_CERTVALIDATION bool    True                    Should the client validate the server's certificate (WARNING: leave this on or you compromise security.
-                                                          Only disable if you really know what you are doing)
 ========================= ======= ======================= =======
 
 .. index::

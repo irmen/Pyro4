@@ -25,7 +25,7 @@ class Configuration(object):
                  "FLAME_ENABLED", "SERIALIZER", "SERIALIZERS_ACCEPTED", "LOGWIRE",
                  "METADATA", "REQUIRE_EXPOSE", "USE_MSG_WAITALL", "JSON_MODULE",
                  "MAX_RETRIES", "DILL_PROTOCOL_VERSION", "ITER_STREAMING", "ITER_STREAM_LIFETIME",
-                 "ITER_STREAM_LINGER", "SSL", "SSL_CLIENT_CERTVALIDATION", "SSL_REQUIRECLIENTCERT",
+                 "ITER_STREAM_LINGER", "SSL", "SSL_REQUIRECLIENTCERT", "SSL_CACERTS",
                  "SSL_SERVERCERT", "SSL_SERVERKEY", "SSL_SERVERKEYPASSWD",
                  "SSL_CLIENTCERT", "SSL_CLIENTKEY", "SSL_CLIENTKEYPASSWD")
 
@@ -85,7 +85,7 @@ class Configuration(object):
         self.SSL_CLIENTCERT = ""
         self.SSL_CLIENTKEY = ""
         self.SSL_CLIENTKEYPASSWD = ""
-        self.SSL_CLIENT_CERTVALIDATION = True
+        self.SSL_CACERTS = ""
 
         if useenvironment:
             # process environment variables

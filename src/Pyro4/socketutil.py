@@ -480,6 +480,12 @@ class SocketConnection(object):
     def getTimeout(self):
         return self.sock.gettimeout()
 
+    def servercert(self):
+        try:
+            return self.sock.getpeercert()
+        except AttributeError:
+            return None
+
     timeout = property(getTimeout, setTimeout)
 
 
@@ -552,12 +558,11 @@ __ssl_server_context = None
 __ssl_client_context = None
 
 
-def getSSLcontext(servercert="", serverkey="", clientcert="", clientkey="", keypassword=""):
+def getSSLcontext(servercert="", serverkey="", clientcert="", clientkey="", cacerts="", keypassword=""):
     """creates an SSL context and caches it, so you have to set the parameters correctly before doing anything"""
     global __ssl_client_context, __ssl_server_context
     if not ssl:
         raise ValueError("SSL requested but ssl module is not available")
-    # @todo we want a custom cert validator hook (server AND client) as well...
     if servercert:
         if clientcert:
             raise ValueError("can't have both server cert and client cert")
@@ -570,10 +575,15 @@ def getSSLcontext(servercert="", serverkey="", clientcert="", clientkey="", keyp
             raise IOError("server key file not found")
         __ssl_server_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         __ssl_server_context.load_cert_chain(servercert, serverkey or None, keypassword or None)
+        if cacerts:
+            if os.path.isdir(cacerts):
+                __ssl_server_context.load_verify_locations(capath=cacerts)
+            else:
+                __ssl_server_context.load_verify_locations(cafile=cacerts)
         if config.SSL_REQUIRECLIENTCERT:
-            __ssl_server_context.verify_mode = ssl.CERT_REQUIRED   # 2-way ssl, encryption + client trust
+            __ssl_server_context.verify_mode = ssl.CERT_REQUIRED   # 2-way ssl, server+client certs
         else:
-            __ssl_server_context.verify_mode = ssl.CERT_NONE   # 1-way ssl, encryption only, no client trust
+            __ssl_server_context.verify_mode = ssl.CERT_NONE   # 1-way ssl, server cert only
         return __ssl_server_context
     else:
         # client context
@@ -584,8 +594,9 @@ def getSSLcontext(servercert="", serverkey="", clientcert="", clientkey="", keyp
             if not os.path.isfile(clientcert):
                 raise IOError("client cert file not found")
             __ssl_client_context.load_cert_chain(clientcert, clientkey or None, keypassword or None)
-        if not config.SSL_CLIENT_CERTVALIDATION:
-            # this is dangerous! but very useful when dealing with test certs / self-signed certs
-            __ssl_client_context.check_hostname = False
-            __ssl_client_context.verify_mode = ssl.CERT_NONE
+        if cacerts:
+            if os.path.isdir(cacerts):
+                __ssl_client_context.load_verify_locations(capath=cacerts)
+            else:
+                __ssl_client_context.load_verify_locations(cafile=cacerts)
         return __ssl_client_context

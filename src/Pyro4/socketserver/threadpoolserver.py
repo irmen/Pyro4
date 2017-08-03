@@ -113,12 +113,20 @@ class SocketServer_Threadpool(object):
         self.sock = None
         bind_location = unixsocket if unixsocket else (host, port)
         if config.SSL:
-            sslContext = socketutil.getSSLcontext(servercert=config.SSL_SERVERCERT, serverkey=config.SSL_SERVERKEY, keypassword=config.SSL_SERVERKEYPASSWD)
-            log.info("using SSL")
+            sslContext = socketutil.getSSLcontext(servercert=config.SSL_SERVERCERT,
+                                                  serverkey=config.SSL_SERVERKEY,
+                                                  keypassword=config.SSL_SERVERKEYPASSWD,
+                                                  cacerts=config.SSL_CACERTS)
+            log.info("using SSL,  cert=%s  key=%s  cacerts=%s", config.SSL_SERVERCERT, config.SSL_SERVERKEY, config.SSL_CACERTS)
         else:
             sslContext = None
             log.info("not using SSL")
-        self.sock = socketutil.createSocket(bind=bind_location, reuseaddr=config.SOCK_REUSE, timeout=config.COMMTIMEOUT, noinherit=True, nodelay=config.SOCK_NODELAY, sslContext=sslContext)
+        self.sock = socketutil.createSocket(bind=bind_location,
+                                            reuseaddr=config.SOCK_REUSE,
+                                            timeout=config.COMMTIMEOUT,
+                                            noinherit=True,
+                                            nodelay=config.SOCK_NODELAY,
+                                            sslContext=sslContext)
         self._socketaddr = self.sock.getsockname()
         if not unixsocket and self._socketaddr[0].startswith("127."):
             if host is None or host.lower() != "localhost" and not host.startswith("127."):
