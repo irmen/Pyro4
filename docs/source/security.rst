@@ -25,9 +25,7 @@ When configured to do so, Pyro is able to use the :py:mod:`pickle` module or the
 It is well known that using pickle or dill for this purpose is a security risk.
 The main problem is that allowing a program to unpickle or undill arbitrary data
 can cause arbitrary code execution and this may wreck or compromise your system.
-
-Because of this, by default, a different serializer is used (serpent) that doesn't
-have this security problem.
+Because of this the default serializer is serpent, which doesn't have this security problem.
 Some other means to enhance security are discussed below.
 
 .. index::
@@ -37,11 +35,11 @@ Network interface binding
 =========================
 By default Pyro binds every server on localhost, to avoid exposing things on a public network or over the internet by mistake.
 If you want to expose your Pyro objects to anything other than localhost, you have to explicitly tell Pyro the
-network interface address it should use. This means it is a conscious effort to expose Pyro objects to remote machines.
+network interface address it should use. This means it is a conscious effort to expose Pyro objects to other machines.
 
-It is possible to tell Pyro the interface address by means of an environment variable or global config item (``HOST``).
-In some situations, or if you're paranoid, it is advisable to override this setting in your server program
-by setting the config item from within your own code instead of depending on an externally configured setting.
+It is possible to tell Pyro the interface address via an environment variable or global config item (``HOST``).
+In some situations - or if you're paranoid - it is advisable to override this setting in your server program
+by setting the config item from within your own code, instead of depending on an externally configured setting.
 
 
 .. index::
@@ -57,18 +55,37 @@ Treat this situation as if you're exposing your server on the internet (even whe
 Keep in mind that it is still possible that a random user on the same machine connects to the local server.
 You may need additional security measures to prevent random users from calling your Pyro objects.
 
-.. index::
+.. index:: SSL, TLS
     double: security; encryption
 
-Protocol encryption @todo SSL docs
-==================================
+Protocol encryption via SSL/TLS
+===============================
 Pyro itself doesn't encrypt the data it sends over the network. This means if you use the default
 configuration, you must never transfer sensitive data on untrusted networks
 (especially user data, passwords, and such) because eavesdropping is possible.
-If you enable SSL/TLS however, all communication is encrypted and you are safe to send any sensitive data.
-Another option is running Pyro over a secure network (VPN, ssl/ssh tunnel) where the encryption
-is taken care of externally.
 
+You can run Pyro over a secure network (VPN, ssl/ssh tunnel) where the encryption
+is taken care of externally. It is also possible however to enable SSL/TLS in Pyro itself,
+so that all communication is encrypted.
+
+**Using SSL/TLS**
+
+Enable it by setting the ``SSL`` config item to True, and configure the other SSL config items
+as required. You'll need to specify the cert files to use, private keys, and passwords if any.
+By default, the SSL mode only has a cert on the server (which is similar to visiting a https url
+in your browser). This means your *clients* can be sure that they are connecting to the expected
+server, but the *server* has no way to know what clients are connecting.
+You can solve this by using a HMAC key (see :ref:`hmackey`), but if you're already using SSL,
+a better way is to do custom certificate verification.
+You can do this in your client (checks the server's cert) but you can also tell your clients
+to use certs as well and check these in your server. This makes it 2-way-SSL or mutual authentication.
+For more details see here :ref:`cert_verification`. The SSL config items are in :ref:`config-items`.
+
+For example code on how to set up a 2-way-SSL Pyro client and server, with cert verification,
+see the ``ssl`` example.
+
+.. important::
+    You must use at least Python 2.7.9 / 3.4.3 or newer for proper SSL support.
 
 .. index::
     double: security; object traversal
@@ -94,13 +111,24 @@ See :doc:`config` for the proper way to do this.
 .. index::
     double: security; HMAC signature
 
-Preventing arbitrary connections: HMAC signature  @todo SSL client-and-server-cert validation
-=============================================================================================
+Preventing arbitrary connections
+================================
+
+.. _hmackey:
+
+by using a HMAC signature via a shared private key
+--------------------------------------------------
+
 You can use a `HMAC signature <http://docs.python.org/library/hmac.html>`_ on every network transfer
 to prevent malicious requests. The idea is to only have legit clients connect to your Pyro server.
 Using the HMAC signature ensures that only clients with the correct secret key can create valid requests,
 and that it is impossible to modify valid requests (even though the network data is not encrypted).
 The hashing algorithm that is used in the HMAC is SHA-1.
+
+.. sidebar:: consider alternatives
+
+    For industry standard encryption and connection verification, consider using SSL/TLS instead.
+
 
 You need to create and configure a secure shared key yourself.
 The key is a byte string and must be cryptographically secure (there are various methods to create such a key).
@@ -118,3 +146,28 @@ set it. You can set the shared key via the ``_pyroHmacKey`` property on a proxy 
     The Diffie-Hellman Key Exchange algorithm is one example of a secure solution to this problem.
     There's the ``diffie-hellman`` example that shows the basics, but DO NOT use it directly
     as being "the secure way to do this" -- it's only demo code.
+
+
+.. index:: certificate verification, 2-way-SSL
+
+.. _cert_verification:
+
+by using 2-way-SSL and certificate verficiation
+-----------------------------------------------
+
+When using SSL, you should also do some custom certificate verification, such as checking the serial number
+and commonName. This way your code is not only certain that the communication is encrypted, but also
+that it is talking to the intended party and nobody else (middleman).
+The server hostname and cert expiration dates *are* checked automatically, but
+other attributes you have to verify yourself.
+
+This is fairly easy to do: you can use :ref:`conn_handshake` for this. You can then get the peer certificate
+using :py:meth:`Pyro4.socketutil.SocketConnection.getpeercert`.
+
+If you configure a client cert as well as a server cert, you can/should also do verification of
+client certificates in your server. This is a good way to be absolutely certain that you only
+allow clients that you know and trust, because you can check the required unique certificate attributes.
+
+Having certs on both client and server is called 2-way-SSL or mutual authentication.
+
+The ``ssl`` example shows how to do this.

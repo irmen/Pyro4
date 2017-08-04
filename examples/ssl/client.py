@@ -43,7 +43,7 @@ def verify_cert(cert):
 # to make Pyro verify the certificate on new connections, use the handshake mechanism:
 class CertCheckingProxy(Pyro4.core.Proxy):
     def _pyroValidateHandshake(self, response):
-        cert = self._pyroConnection.servercert()
+        cert = self._pyroConnection.getpeercert()
         verify_cert(cert)
 
 
@@ -53,7 +53,7 @@ class CertCheckingProxy(Pyro4.core.Proxy):
 # However some other Proxy subclass can (will) override this again!
 #
 # def certverifier(self, response):
-#     cert = self._pyroConnection.servercert()
+#     cert = self._pyroConnection.getpeercert()
 #     verify_cert(cert)
 # Pyro4.core.Proxy._pyroValidateHandshake = certverifier
 

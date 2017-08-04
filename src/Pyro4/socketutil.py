@@ -481,7 +481,7 @@ class SocketConnection(object):
     def getTimeout(self):
         return self.sock.gettimeout()
 
-    def servercert(self):
+    def getpeercert(self):
         try:
             return self.sock.getpeercert()
         except AttributeError:

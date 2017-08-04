@@ -718,6 +718,8 @@ For an example of how you can work with custom message annotations, see the :py:
 
 .. index:: handshake
 
+.. _conn_handshake:
+
 Connection handshake
 ====================
 

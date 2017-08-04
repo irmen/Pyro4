@@ -19,7 +19,7 @@ print("SSL enabled (2-way).")
 
 class CertValidatingDaemon(Pyro4.core.Daemon):
     def validateHandshake(self, conn, data):
-        cert = conn.servercert()
+        cert = conn.getpeercert()
         if not cert:
             raise Pyro4.errors.CommunicationError("client cert missing")
         # note: hostname and expiry date validation is already successfully performed by the SSL layer itself
