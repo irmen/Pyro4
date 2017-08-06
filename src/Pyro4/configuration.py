@@ -78,8 +78,8 @@ class Configuration(object):
         self.ITER_STREAM_LIFETIME = 0.0
         self.ITER_STREAM_LINGER = 30.0
         self.SSL = False
-        self.SSL_SERVERCERT = "certs/server_cert.pem"
-        self.SSL_SERVERKEY = "certs/server_key.pem"
+        self.SSL_SERVERCERT = ""
+        self.SSL_SERVERKEY = ""
         self.SSL_SERVERKEYPASSWD = ""
         self.SSL_REQUIRECLIENTCERT = False
         self.SSL_CLIENTCERT = ""

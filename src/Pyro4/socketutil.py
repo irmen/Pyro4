@@ -277,8 +277,10 @@ def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeo
     if sslContext:
         if bind:
             sock = sslContext.wrap_socket(sock, server_side=True)
-        else:
+        elif connect:
             sock = sslContext.wrap_socket(sock, server_side=False, server_hostname=connect[0])
+        else:
+            sock = sslContext.wrap_socket(sock, server_side=False)
     if nodelay:
         setNoDelay(sock)
     if reuseaddr:

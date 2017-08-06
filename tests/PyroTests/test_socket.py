@@ -12,6 +12,10 @@ import platform
 import threading
 import time
 import unittest
+try:
+    import ssl
+except ImportError:
+    ssl = None
 import Pyro4.socketutil as SU
 import Pyro4.util
 import Pyro4.constants
@@ -438,6 +442,10 @@ class TestServerDOS_multiplex(unittest.TestCase):
         serv_thread.start()
         time.sleep(0.2)
         self.assertTrue(serv_thread.is_alive(), "server thread failed to start")
+        threadpool = getattr(serv_thread.serv, "pool", None)
+        if threadpool:
+            self.assertEqual(1, len(threadpool.idle))
+            self.assertEqual(0, len(threadpool.busy))
         try:
             host, port = serv_thread.locationStr.split(':')
             port = int(port)
@@ -457,7 +465,8 @@ class TestServerDOS_multiplex(unittest.TestCase):
             except errors.ConnectionClosedError:
                 pass
         finally:
-            conn.close()
+            if conn:
+                conn.close()
             serv_thread.stop_loop.set()
             serv_thread.join()
 
@@ -466,6 +475,10 @@ class TestServerDOS_multiplex(unittest.TestCase):
         serv_thread.start()
         time.sleep(0.2)
         self.assertTrue(serv_thread.is_alive(), "server thread failed to start")
+        threadpool = getattr(serv_thread.serv, "pool", None)
+        if threadpool:
+            self.assertEqual(1, len(threadpool.idle))
+            self.assertEqual(0, len(threadpool.busy))
 
         def connect(host, port):
             # connect to the server
@@ -499,6 +512,9 @@ class TestServerDOS_multiplex(unittest.TestCase):
                 self.assertIn("Traceback", data)
                 self.assertIn("ProtocolError", data)
                 self.assertIn("version", data)
+            except errors.ProtocolError as px:
+                # @todo this is strange, it sometimes occurs in Travis. should have been handled server-side.
+                self.fail("unexpected ProtocolError in testInvalidMessageCrash: \n" + "".join(Pyro4.util.getPyroTraceback()))
             except errors.ConnectionClosedError:
                 # invalid message can cause the connection to be closed, this is fine
                 pass
@@ -530,6 +546,31 @@ class TestServerDOS_threading(TestServerDOS_multiplex):
     def tearDown(self):
         config.THREADPOOL_SIZE = self.orig_numthreads
         config.THREADPOOL_SIZE_MIN = self.orig_numthreads_min
+
+
+@unittest.skipIf(not ssl, "ssl tests requires ssl module")
+class TestSSL(unittest.TestCase):
+    def testContextAndSock(self):
+        cert_dir = "../../certs"
+        if not os.path.isdir(cert_dir):
+            cert_dir = "../certs"
+            if not os.path.isdir(cert_dir):
+                self.fail("cannot locate test certs directory")
+        try:
+            config.SSL = True
+            config.SSL_REQUIRECLIENTCERT = True
+            server_ctx = SU.getSSLcontext(cert_dir+"/server_cert.pem", cert_dir+"/server_key.pem")
+            client_ctx = SU.getSSLcontext(clientcert=cert_dir+"/client_cert.pem", clientkey=cert_dir+"/client_key.pem")
+            self.assertEqual(ssl.CERT_REQUIRED, server_ctx.verify_mode)
+            self.assertEqual(ssl.CERT_REQUIRED, client_ctx.verify_mode)
+            self.assertTrue(client_ctx.check_hostname)
+            sock = SU.createSocket(sslContext=server_ctx)
+            try:
+                self.assertTrue(hasattr(sock, "getpeercert"))
+            finally:
+                sock.close()
+        finally:
+            config.SSL = False
 
 
 if __name__ == "__main__":
