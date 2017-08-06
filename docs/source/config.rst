@@ -116,11 +116,11 @@ MAX_RETRIES               int     0                       Automatically retry ne
 ITER_STREAMING            bool    True                    Should iterator item streaming support be enabled in the server (default=True)
 ITER_STREAM_LIFETIME      float   0.0                     Maximum lifetime in seconds for item streams (default=0, no limit - iterator only stops when exhausted or client disconnects)
 ITER_STREAM_LINGER        float   30.0                    Linger time in seconds to keep an item stream alive after proxy disconnects (allows to reconnect to stream)
-SSL                       bool    False                   Should SSL/TSL encryption be used
+SSL                       bool    False                   Should SSL/TSL communication security be used
 SSL_SERVERCERT            str     certs/server_cert.pem   Location of the server's certificate file
 SSL_SERVERKEY             str     certs/server_key.pem    Location of the server's private key file
 SSL_SERVERKEYPASSWD       str     *empty str*             Password for the server's private key
-SSL_REQUIRECLIENTCERT     bool    False                   Should the server require clients to connect with a certificate (2-way-ssl)
+SSL_REQUIRECLIENTCERT     bool    False                   Should the server require clients to connect with their own certificate (2-way-ssl)
 SSL_CLIENTCERT            str     *empty str*             Location of the client's certificate file
 SSL_CLIENTKEY             str     *empty str*             Location of the client's private key file
 SSL_CLIENTKEYPASSWD       str     *empty str*             Password for the client's private key

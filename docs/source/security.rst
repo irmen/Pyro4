@@ -58,15 +58,16 @@ You may need additional security measures to prevent random users from calling y
 .. index:: SSL, TLS
     double: security; encryption
 
-Protocol encryption via SSL/TLS
-===============================
+Secure communication via SSL/TLS
+================================
 Pyro itself doesn't encrypt the data it sends over the network. This means if you use the default
 configuration, you must never transfer sensitive data on untrusted networks
 (especially user data, passwords, and such) because eavesdropping is possible.
 
 You can run Pyro over a secure network (VPN, ssl/ssh tunnel) where the encryption
 is taken care of externally. It is also possible however to enable SSL/TLS in Pyro itself,
-so that all communication is encrypted.
+so that all communication is secured via this industry standard that
+provides encryption, authentication, and anti-tampering (message integrity).
 
 **Using SSL/TLS**
 

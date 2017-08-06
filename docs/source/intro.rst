@@ -30,7 +30,7 @@ Here's a quick overview of Pyro's features:
 - supports different serializers (serpent, json, marshal, msgpack, pickle, dill).
 - support for all Python data types that are serializable when using the 'pickle' or 'dill' serializers [1]_.
 - can use IPv4, IPv6 and Unix domain sockets.
-- optional encryped connections via SSL/TLS, including certificate validation on both ends (2-way ssl).
+- optional secure connections via SSL/TLS (encryption, authentication and integrity), including certificate validation on both ends (2-way ssl).
 - lightweight client library available for .NET and Java native code ('Pyrolite', provided separately).
 - designed to be very easy to use and get out of your way as much as possible, but still provide a lot of flexibility when you do need it.
 - name server that keeps track of your object's actual locations so you can move them around transparently.

@@ -15,7 +15,10 @@ This shared secret key is then used as Pyro HMAC key to authenticate the message
 
 A few IMPORTANT notes:
 
-- there is NO ENCRYPTION done whatsoever, that's something else! Which Pyro doesn't provide by itself.
+- in this particular example there is NO ENCRYPTION done whatsoever. Encryption is a different topic!
+  If you want, you can enable SSL/TLS in Pyro as well to provide this. However, if you use 2-way-ssl,
+  this makes the use of the HMAC key somewhat obsolete, because mutual verification of the SSL certificates
+  essentially then does the same thing. See the SSL example for more details.
 - this example shows an approach on a safe way to agree on a shared secret key. It then uses this
   for Pyro's HMAC key but that's just for the sake of example.
 - it's a rather silly example because in Pyro, the HMAC key is a per-daemon setting. ALL calls to objects
