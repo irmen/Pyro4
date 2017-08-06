@@ -569,7 +569,7 @@ def getSSLcontext(servercert="", serverkey="", clientcert="", clientkey="", cace
     else:
         if sys.version_info < (2, 7, 9):
             raise RuntimeError("need Python 2.7.9 or newer to properly use SSL")
-        if sys.version_info < (3, 4, 3):
+        if (3, 0) < sys.version_info < (3, 4, 3):
             raise RuntimeError("need Python 3.4.3 or newer to properly use SSL")
     if servercert:
         if clientcert:

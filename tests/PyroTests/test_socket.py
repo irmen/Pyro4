@@ -457,6 +457,10 @@ class TestServerDOS_multiplex(unittest.TestCase):
             except errors.ConnectionClosedError:
                 pass
             conn.close()
+            time.sleep(0.1)
+            if threadpool:
+                self.assertEqual(1, len(threadpool.idle))
+                self.assertEqual(0, len(threadpool.busy))
             try:
                 # second connection attempt, should still work (i.e. server should still be running)
                 csock = SU.createSocket(connect=(host, port))
@@ -512,15 +516,20 @@ class TestServerDOS_multiplex(unittest.TestCase):
                 self.assertIn("Traceback", data)
                 self.assertIn("ProtocolError", data)
                 self.assertIn("version", data)
-            except errors.ProtocolError as px:
-                # @todo this is strange, it sometimes occurs in Travis. should have been handled server-side.
-                self.fail("unexpected ProtocolError in testInvalidMessageCrash: \n" + "".join(Pyro4.util.getPyroTraceback()))
             except errors.ConnectionClosedError:
                 # invalid message can cause the connection to be closed, this is fine
                 pass
             # invoke something again, this should still work (server must still be running, but our client connection was terminated)
             conn.close()
-            conn = connect(host, port)
+            time.sleep(0.1)
+            if threadpool:
+                self.assertEqual(1, len(threadpool.idle))
+                self.assertEqual(0, len(threadpool.busy))
+            try:
+                conn = connect(host, port)
+            except errors.ProtocolError as px:
+                # @todo this is strange, it sometimes occurs in Travis.
+                self.fail("unexpected ProtocolError in testInvalidMessageCrash: \n" + "".join(Pyro4.util.getPyroTraceback()))
             msg = Pyro4.message.Message(Pyro4.message.MSG_PING, b"something", 42, 0, 999)  # a valid message this time
             conn.send(msg.to_bytes())
             msg = Pyro4.message.Message.recv(conn, [Pyro4.message.MSG_PING])
@@ -549,6 +558,7 @@ class TestServerDOS_threading(TestServerDOS_multiplex):
 
 
 @unittest.skipIf(not ssl, "ssl tests requires ssl module")
+@unittest.skipIf((3, 0) < sys.version_info < (3, 4, 3), "proper ssl requires python 3.4.3+")
 class TestSSL(unittest.TestCase):
     def testContextAndSock(self):
         cert_dir = "../../certs"
