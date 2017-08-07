@@ -1,8 +1,8 @@
-.PHONY: all sdist wheel docs install upload upload_docs clean test
+.PHONY: all sdist wheel docs install upload clean test
 PYTHON=python3
 
 all:
-	@echo "targets include sdist, wheel, docs, upload, upload_docs, install, clean"
+	@echo "targets include sdist, wheel, docs, upload, install, clean"
 
 sdist: 
 	$(PYTHON) setup.py sdist
@@ -15,19 +15,10 @@ wheel:
 docs:
 	$(PYTHON) setup.py build_sphinx
 
-upload: upload_docs
+upload:
 	$(PYTHON) setup.py sdist bdist_wheel upload
-	@echo "Don't forget to package and upload the documentation!"
+	@echo "Don't forget to check the doc builds on RTD!"
 	
-upload_docs: docs
-	#  $(PYTHON) setup.py upload_docs --upload-dir=build/sphinx/html
-	rm -f build/sphinx/docs.zip
-	cd build/sphinx/html && zip -qr ../docs.zip .
-	@echo
-	@echo "@todo the setuptools upload_docs command / pypi doc upload have problems lately."
-	@echo "Upload build/sphinx/docs.zip manually at the bottom of this page:"
-	@echo "https://pypi.python.org/pypi?:action=pkg_edit&name=Pyro4"
-
 install:
 	$(PYTHON) setup.py install
 
