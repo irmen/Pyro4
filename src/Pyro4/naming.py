@@ -328,7 +328,7 @@ class AutoCleaner(threading.Thread):
     def __init__(self, nameserver):
         assert config.NS_AUTOCLEAN > 0
         if not self.override_autoclean_min and config.NS_AUTOCLEAN < self.min_autoclean_value:
-            raise ValueError("NS_AUTOCLEAN cannot be smaller than "+str(self.min_autoclean_value))
+            raise ValueError("NS_AUTOCLEAN cannot be smaller than " + str(self.min_autoclean_value))
         super(AutoCleaner, self).__init__()
         self.nameserver = nameserver
         self.stop = False
@@ -457,7 +457,8 @@ class BroadcastServer(object):
         self.close()
 
 
-def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None, nathost=None, natport=None, storage=None, hmac=None):
+def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None,
+                unixsocket=None, nathost=None, natport=None, storage=None, hmac=None):
     """utility function that starts a new Name server and enters its requestloop."""
     daemon = NameServerDaemon(host, port, unixsocket, nathost=nathost, natport=natport, storage=storage)
     daemon._pyroHmacKey = hmac
@@ -480,7 +481,7 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
             # Make sure to pass the internal uri to the broadcast responder.
             # It is almost always useless to let it return the external uri,
             # because external systems won't be able to talk to this thing anyway.
-            bcserver = BroadcastServer(internalUri, bchost, bcport, ipv6=daemon.sock.family==socket.AF_INET6)
+            bcserver = BroadcastServer(internalUri, bchost, bcport, ipv6=daemon.sock.family == socket.AF_INET6)
             print("Broadcast server running on %s" % bcserver.locationStr)
             bcserver.runInThread()
     existing = daemon.nameserver.count()
@@ -503,7 +504,8 @@ def startNSloop(host=None, port=None, enableBroadcast=True, bchost=None, bcport=
     print("NS shut down.")
 
 
-def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None, unixsocket=None, nathost=None, natport=None, storage=None, hmac=None):
+def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None,
+            unixsocket=None, nathost=None, natport=None, storage=None, hmac=None):
     """utility fuction to quickly get a Name server daemon to be used in your own event loops.
     Returns (nameserverUri, nameserverDaemon, broadcastServer)."""
     daemon = NameServerDaemon(host, port, unixsocket, nathost=nathost, natport=natport, storage=storage)
@@ -517,14 +519,15 @@ def startNS(host=None, port=None, enableBroadcast=True, bchost=None, bcport=None
             enableBroadcast = False
         if enableBroadcast:
             internalUri = daemon.uriFor(daemon.nameserver, nat=False)
-            bcserver = BroadcastServer(internalUri, bchost, bcport, ipv6=daemon.sock.family==socket.AF_INET6)
+            bcserver = BroadcastServer(internalUri, bchost, bcport, ipv6=daemon.sock.family == socket.AF_INET6)
     return nsUri, daemon, bcserver
 
 
 def type_meta(class_or_object, prefix="class:"):
     """extracts type metadata from the given class or object, can be used as Name server metadata."""
     if hasattr(class_or_object, "__mro__"):
-        return {prefix+c.__module__+"."+c.__name__ for c in class_or_object.__mro__ if c.__module__ not in ("builtins", "__builtin__")}
+        return {prefix + c.__module__ + "." + c.__name__
+                for c in class_or_object.__mro__ if c.__module__ not in ("builtins", "__builtin__")}
     if hasattr(class_or_object, "__class__"):
         return type_meta(class_or_object.__class__)
     return frozenset()

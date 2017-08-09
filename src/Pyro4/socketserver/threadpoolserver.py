@@ -78,7 +78,7 @@ class ClientConnectionJob(object):
         return False
 
     def denyConnection(self, reason):
-        log.warning("client connection was denied: "+reason)
+        log.warning("client connection was denied: " + reason)
         # return failed handshake
         self.daemon._handshake(self.csock, denied_reason=reason)
         self.csock.close()

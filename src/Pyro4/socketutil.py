@@ -228,7 +228,8 @@ def sendData(sock, data):
 _GLOBAL_DEFAULT_TIMEOUT = object()
 
 
-def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True, timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False, ipv6=False, nodelay=True, sslContext=None):
+def createSocket(bind=None, connect=None, reuseaddr=False, keepalive=True,
+                 timeout=_GLOBAL_DEFAULT_TIMEOUT, noinherit=False, ipv6=False, nodelay=True, sslContext=None):
     """
     Create a socket. Default socket options are keepalive and IPv4 family, and nodelay (nagle disabled).
     If 'bind' or 'connect' is a string, it is assumed a Unix domain socket is requested.

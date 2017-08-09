@@ -145,7 +145,8 @@ class URI(object):
     def __eq__(self, other):
         if not isinstance(other, URI):
             return False
-        return (self.protocol, self.object, self.sockname, self.host, self.port) == (other.protocol, other.object, other.sockname, other.host, other.port)
+        return (self.protocol, self.object, self.sockname, self.host, self.port) ==\
+               (other.protocol, other.object, other.sockname, other.host, other.port)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -236,7 +237,7 @@ class Proxy(object):
         self._pyroOneway = set()  # oneway-methods of the remote object, gotten from meta-data
         self._pyroSeq = 0  # message sequence number
         self._pyroRawWireResponse = False  # internal switch to enable wire level responses
-        self._pyroHandshake = "hello"  # the data object that should be sent in the initial connection handshake message (can be any serializable object)
+        self._pyroHandshake = "hello"  # the data object that should be sent in the initial connection handshake message
         self._pyroMaxRetries = config.MAX_RETRIES
         self.__pyroHmacKey = None
         self.__pyroTimeout = config.COMMTIMEOUT
@@ -297,7 +298,7 @@ class Proxy(object):
 
     def __repr__(self):
         if self._pyroConnection:
-            connected = "connected "+self._pyroConnection.family()
+            connected = "connected " + self._pyroConnection.family()
         else:
             connected = "not connected"
         return "<%s.%s at 0x%x; %s; for %s>" % (self.__class__.__module__, self.__class__.__name__,
@@ -309,7 +310,7 @@ class Proxy(object):
     def __getstate_for_dict__(self):
         encodedHmac = None
         if self._pyroHmacKey is not None:
-            encodedHmac = "b64:"+(base64.b64encode(self._pyroHmacKey).decode("ascii"))
+            encodedHmac = "b64:" + (base64.b64encode(self._pyroHmacKey).decode("ascii"))
         # for backwards compatibility reasons we also put the timeout and maxretries into the state
         return self._pyroUri.asString(), tuple(self._pyroOneway), tuple(self._pyroMethods), tuple(self._pyroAttrs),\
             self.__pyroTimeout, encodedHmac, self._pyroHandshake, self._pyroMaxRetries, self._pyroSerializer
@@ -333,8 +334,8 @@ class Proxy(object):
 
     def __getstate__(self):
         # for backwards compatibility reasons we also put the timeout and maxretries into the state
-        return self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout,\
-               self._pyroHmacKey, self._pyroHandshake, self._pyroMaxRetries, self._pyroSerializer
+        return self._pyroUri, self._pyroOneway, self._pyroMethods, self._pyroAttrs, self.__pyroTimeout, \
+            self._pyroHmacKey, self._pyroHandshake, self._pyroMaxRetries, self._pyroSerializer
 
     def __setstate__(self, state):
         # Note that the timeout and maxretries are also part of the state (for backwards compatibility reasons),
@@ -436,7 +437,8 @@ class Proxy(object):
             if methodname in self._pyroOneway:
                 flags |= message.FLAGS_ONEWAY
             self._pyroSeq = (self._pyroSeq + 1) & 0xffff
-            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq, annotations=annotations, hmac_key=self._pyroHmacKey)
+            msg = message.Message(message.MSG_INVOKE, data, serializer.serializer_id, flags, self._pyroSeq,
+                                  annotations=annotations, hmac_key=self._pyroHmacKey)
             if config.LOGWIRE:
                 _log_wiredata(log, "proxy wiredata sending", msg)
             try:
@@ -617,7 +619,8 @@ class Proxy(object):
         self._pyroMethods = set(metadata["methods"])
         self._pyroAttrs = set(metadata["attrs"])
         if log.isEnabledFor(logging.DEBUG):
-            log.debug("from meta: methods=%s, oneway methods=%s, attributes=%s", sorted(self._pyroMethods), sorted(self._pyroOneway), sorted(self._pyroAttrs))
+            log.debug("from meta: methods=%s, oneway methods=%s, attributes=%s",
+                      sorted(self._pyroMethods), sorted(self._pyroOneway), sorted(self._pyroAttrs))
         if not self._pyroMethods and not self._pyroAttrs:
             raise errors.PyroError("remote object doesn't expose any methods or attributes. Did you forget setting @expose on them?")
 
@@ -645,7 +648,8 @@ class Proxy(object):
         return _BatchProxyAdapter(self)
 
     def _pyroAsync(self, async=True):
-        """turns the proxy into async mode so you can do asynchronous method calls, or sets it back to normal sync mode if you set async=False."""
+        """turns the proxy into async mode so you can do asynchronous method calls,
+        or sets it back to normal sync mode if you set async=False."""
         self.__async = async
 
     def _pyroInvokeBatch(self, calls, oneway=False):
@@ -758,7 +762,8 @@ class _StreamResultIterator(object):
         if self.proxy and self.proxy._pyroConnection is not None:
             if self.pyroseq == self.proxy._pyroSeq:
                 # we're still in sync, it's okay to use the same proxy to close this stream
-                self.proxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
+                self.proxy._pyroInvoke("close_stream", [self.streamId], {},
+                                       flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
             else:
                 # The proxy's sequence number has diverged.
                 # One of the reasons this can happen is because this call is being done from python's GC where
@@ -767,7 +772,8 @@ class _StreamResultIterator(object):
                 # We create a temporary second proxy to call close_stream on. This is inefficient, but avoids the problem.
                 try:
                     with self.proxy.__copy__() as closingProxy:
-                        closingProxy._pyroInvoke("close_stream", [self.streamId], {}, flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
+                        closingProxy._pyroInvoke("close_stream", [self.streamId], {},
+                                                 flags=message.FLAGS_ONEWAY, objectId=constants.DAEMON_NAME)
                 except errors.CommunicationError:
                     pass
         self.proxy = None
@@ -860,7 +866,7 @@ class _AsyncRemoteMethod(object):
                 # use a copy of the proxy otherwise calls would still be done in sequence,
                 # and use contextmanager to close the proxy after we're done
                 with self.__proxy.__copy__() as proxy:
-                    delay = 0.1 + random.random()/5
+                    delay = 0.1 + random.random() / 5
                     while not proxy._pyroConnection:
                         try:
                             proxy._pyroBind()
@@ -868,8 +874,8 @@ class _AsyncRemoteMethod(object):
                             if "no free workers" not in str(x):
                                 raise
                             time.sleep(delay)   # wait a bit until a worker might be available again
-                            delay += 0.4 + random.random()/2
-                            if 0 < config.COMMTIMEOUT/2 < delay:
+                            delay += 0.4 + random.random() / 2
+                            if 0 < config.COMMTIMEOUT / 2 < delay:
                                 raise
                     value = proxy._pyroInvoke(self.__name, args, kwargs)
                 asyncresult.value = value
@@ -972,7 +978,7 @@ def behavior(instance_mode="session", instance_creator=None):
         if not inspect.isclass(clazz):
             raise TypeError("behavior decorator can only be used on a class")
         if instance_mode not in ("single", "session", "percall"):
-            raise ValueError("invalid instance mode: "+instance_mode)
+            raise ValueError("invalid instance mode: " + instance_mode)
         if instance_creator and not callable(instance_creator):
             raise TypeError("instance_creator must be a callable")
         clazz._pyroInstancing = (instance_mode, instance_creator)
@@ -1289,7 +1295,8 @@ class Daemon(object):
                 _log_wiredata(log, "daemon wiredata received", msg)
             if msg.type == message.MSG_PING:
                 # return same seq, but ignore any data (it's a ping, not an echo). Nothing is deserialized.
-                msg = message.Message(message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq, annotations=self.__annotations(), hmac_key=self._pyroHmacKey)
+                msg = message.Message(message.MSG_PING, b"pong", msg.serializer_id, 0, msg.seq,
+                                      annotations=self.__annotations(), hmac_key=self._pyroHmacKey)
                 if config.LOGWIRE:
                     _log_wiredata(log, "daemon wiredata sending", msg)
                 conn.send(msg.to_bytes())
@@ -1304,7 +1311,7 @@ class Daemon(object):
                 # normal deserialization of remote call arguments
                 objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
             current_context.client = conn
-            current_context.client_sock_addr = conn.sock.getpeername()   # store this because on oneway calls the socket will be disconnected
+            current_context.client_sock_addr = conn.sock.getpeername()   # store, because on oneway calls, socket will be disconnected
             current_context.seq = msg.seq
             current_context.annotations = msg.annotations
             current_context.msg_flags = msg.flags
@@ -1506,7 +1513,8 @@ class Daemon(object):
             flags |= message.FLAGS_COMPRESSED
         annotations = dict(annotations or {})
         annotations.update(self.annotations())
-        msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq, annotations=annotations, hmac_key=self._pyroHmacKey)
+        msg = message.Message(message.MSG_RESULT, data, serializer.serializer_id, flags, seq,
+                              annotations=annotations, hmac_key=self._pyroHmacKey)
         if config.LOGWIRE:
             _log_wiredata(log, "daemon wiredata sending (error response)", msg)
         connection.send(msg.to_bytes())

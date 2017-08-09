@@ -99,10 +99,12 @@ class Message(object):
             self.annotations["HMAC"] = self.hmac()   # should be done last because it calculates hmac over other annotations
         self.annotations_size = sum([6 + len(v) for v in self.annotations.values()])
         if 0 < config.MAX_MESSAGE_SIZE < (self.data_size + self.annotations_size):
-            raise errors.MessageTooLargeError("max message size exceeded (%d where max=%d)" % (self.data_size + self.annotations_size, config.MAX_MESSAGE_SIZE))
+            raise errors.MessageTooLargeError("max message size exceeded (%d where max=%d)" %
+                                              (self.data_size + self.annotations_size, config.MAX_MESSAGE_SIZE))
 
     def __repr__(self):
-        return "<%s.%s at %x; type=%d flags=%d seq=%d datasize=%d #ann=%d>" % (self.__module__, self.__class__.__name__, id(self), self.type, self.flags, self.seq, self.data_size, len(self.annotations))
+        return "<%s.%s at %x; type=%d flags=%d seq=%d datasize=%d #ann=%d>" %\
+               (self.__module__, self.__class__.__name__, id(self), self.type, self.flags, self.seq, self.data_size, len(self.annotations))
 
     def to_bytes(self):
         """creates a byte stream containing the header followed by annotations (if any) followed by the data"""
@@ -111,8 +113,10 @@ class Message(object):
     def __header_bytes(self):
         if not (0 <= self.data_size <= 0x7fffffff):
             raise ValueError("invalid message size (outside range 0..2Gb)")
-        checksum = (self.type + constants.PROTOCOL_VERSION + self.data_size + self.annotations_size + self.serializer_id + self.flags + self.seq + self.checksum_magic) & 0xffff
-        return struct.pack(self.header_format, b"PYRO", constants.PROTOCOL_VERSION, self.type, self.flags, self.seq, self.data_size, self.serializer_id, self.annotations_size, 0, checksum)
+        checksum = (self.type + constants.PROTOCOL_VERSION + self.data_size + self.annotations_size +
+                    self.serializer_id + self.flags + self.seq + self.checksum_magic) & 0xffff
+        return struct.pack(self.header_format, b"PYRO", constants.PROTOCOL_VERSION, self.type, self.flags,
+                           self.seq, self.data_size, self.serializer_id, self.annotations_size, 0, checksum)
 
     def __annotations_bytes(self):
         if self.annotations:
@@ -143,14 +147,14 @@ class Message(object):
         """Parses a message header. Does not yet process the annotations chunks and message data."""
         if not headerData or len(headerData) != cls.header_size:
             raise errors.ProtocolError("header data size mismatch")
-        tag, ver, msg_type, flags, seq, data_size, serializer_id, annotations_size, _, checksum = struct.unpack(cls.header_format, headerData)
+        tag, ver, msg_type, flags, seq, data_size, serializer_id, anns_size, _, checksum = struct.unpack(cls.header_format, headerData)
         if tag != b"PYRO" or ver != constants.PROTOCOL_VERSION:
             raise errors.ProtocolError("invalid data or unsupported protocol version")
-        if checksum != (msg_type + ver + data_size + annotations_size + flags + serializer_id + seq + cls.checksum_magic) & 0xffff:
+        if checksum != (msg_type + ver + data_size + anns_size + flags + serializer_id + seq + cls.checksum_magic) & 0xffff:
             raise errors.ProtocolError("header checksum mismatch")
         msg = Message(msg_type, b"", serializer_id, flags, seq)
         msg.data_size = data_size
-        msg.annotations_size = annotations_size
+        msg.annotations_size = anns_size
         return msg
 
     @classmethod
@@ -166,7 +170,7 @@ class Message(object):
         if 0 < config.MAX_MESSAGE_SIZE < (msg.data_size + msg.annotations_size):
             errorMsg = "max message size exceeded (%d where max=%d)" % (msg.data_size + msg.annotations_size, config.MAX_MESSAGE_SIZE)
             log.error("connection " + str(connection) + ": " + errorMsg)
-            connection.close()  # close the socket because at this point we can't return the correct sequence number for returning an error message
+            connection.close()  # close the socket because at this point we can't return the correct seqnr for returning an errormsg
             exc = errors.MessageTooLargeError(errorMsg)
             exc.pyroMsg = msg
             raise exc

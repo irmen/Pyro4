@@ -76,7 +76,7 @@ class SqlStorage(MutableMapping):
             );""")
 
     def __getattr__(self, item):
-        raise NotImplementedError("SqlStorage doesn't implement method/attribute '"+item+"'")
+        raise NotImplementedError("SqlStorage doesn't implement method/attribute '" + item + "'")
 
     def __getitem__(self, item):
         try:
@@ -89,7 +89,7 @@ class SqlStorage(MutableMapping):
                 else:
                     raise KeyError(item)
         except sqlite3.DatabaseError as e:
-            raise NamingError("sqlite error in getitem: "+str(e))
+            raise NamingError("sqlite error in getitem: " + str(e))
 
     def __setitem__(self, key, value):
         uri, metadata = value
@@ -110,21 +110,21 @@ class SqlStorage(MutableMapping):
                 cursor.close()
                 db.commit()
         except sqlite3.DatabaseError as e:
-            raise NamingError("sqlite error in setitem: "+str(e))
+            raise NamingError("sqlite error in setitem: " + str(e))
 
     def __len__(self):
         try:
             with closing(sqlite3.connect(self.dbfile)) as db:
                 return db.execute("SELECT count(*) FROM pyro_names").fetchone()[0]
         except sqlite3.DatabaseError as e:
-            raise NamingError("sqlite error in len: "+str(e))
+            raise NamingError("sqlite error in len: " + str(e))
 
     def __contains__(self, item):
         try:
             with closing(sqlite3.connect(self.dbfile)) as db:
                 return db.execute("SELECT EXISTS(SELECT 1 FROM pyro_names WHERE name=? LIMIT 1)", (item,)).fetchone()[0]
         except sqlite3.DatabaseError as e:
-            raise NamingError("sqlite error in contains: "+str(e))
+            raise NamingError("sqlite error in contains: " + str(e))
 
     def __delitem__(self, key):
         try:
@@ -137,7 +137,7 @@ class SqlStorage(MutableMapping):
                     db.execute("DELETE FROM pyro_names WHERE id=?", (dbid,))
                 db.commit()
         except sqlite3.DatabaseError as e:
-            raise NamingError("sqlite error in delitem: "+str(e))
+            raise NamingError("sqlite error in delitem: " + str(e))
 
     def __iter__(self):
         try:
@@ -145,7 +145,7 @@ class SqlStorage(MutableMapping):
                 result = db.execute("SELECT name FROM pyro_names")
                 return iter([n[0] for n in result.fetchall()])
         except sqlite3.DatabaseError as e:
-            raise NamingError("sqlite error in iter: "+str(e))
+            raise NamingError("sqlite error in iter: " + str(e))
 
     def clear(self):
         try:
@@ -157,22 +157,22 @@ class SqlStorage(MutableMapping):
             with closing(sqlite3.connect(self.dbfile, isolation_level=None)) as db:
                 db.execute("VACUUM")  # this cannot run inside a transaction.
         except sqlite3.DatabaseError as e:
-            raise NamingError("sqlite error in clear: "+str(e))
+            raise NamingError("sqlite error in clear: " + str(e))
 
     def optimized_prefix_list(self, prefix, return_metadata=False):
         try:
             with closing(sqlite3.connect(self.dbfile)) as db:
                 names = {}
                 if return_metadata:
-                    for dbid, name, uri in db.execute("SELECT id, name, uri FROM pyro_names WHERE name LIKE ?", (prefix+'%',)).fetchall():
+                    for dbid, name, uri in db.execute("SELECT id, name, uri FROM pyro_names WHERE name LIKE ?", (prefix + '%',)).fetchall():
                         metadata = {m[0] for m in db.execute("SELECT metadata FROM pyro_metadata WHERE object=?", (dbid,)).fetchall()}
                         names[name] = uri, metadata
                 else:
-                    for name, uri in db.execute("SELECT name, uri FROM pyro_names WHERE name LIKE ?", (prefix+'%',)).fetchall():
+                    for name, uri in db.execute("SELECT name, uri FROM pyro_names WHERE name LIKE ?", (prefix + '%',)).fetchall():
                         names[name] = uri
                 return names
         except sqlite3.DatabaseError as e:
-            raise NamingError("sqlite error in optimized_prefix_list: "+str(e))
+            raise NamingError("sqlite error in optimized_prefix_list: " + str(e))
 
     def optimized_regex_list(self, regex, return_metadata=False):
         # defining a regex function isn't much better than simply regexing ourselves over the full table.
@@ -185,13 +185,13 @@ class SqlStorage(MutableMapping):
                     # any of the given metadata
                     params = list(metadata_any)
                     sql = "SELECT id, name, uri FROM pyro_names WHERE id IN (SELECT object FROM pyro_metadata WHERE metadata IN ({seq}))" \
-                          .format(seq=",".join(['?']*len(metadata_any)))
+                          .format(seq=",".join(['?'] * len(metadata_any)))
                 else:
                     # all of the given metadata
                     params = list(metadata_all)
                     params.append(len(metadata_all))
                     sql = "SELECT id, name, uri FROM pyro_names WHERE id IN (SELECT object FROM pyro_metadata WHERE metadata IN ({seq}) " \
-                          "GROUP BY object HAVING COUNT(metadata)=?)".format(seq=",".join(['?']*len(metadata_all)))
+                          "GROUP BY object HAVING COUNT(metadata)=?)".format(seq=",".join(['?'] * len(metadata_all)))
                 result = db.execute(sql, params).fetchall()
                 if return_metadata:
                     names = {}
@@ -202,7 +202,7 @@ class SqlStorage(MutableMapping):
                     names = {name: uri for (dbid, name, uri) in result}
                 return names
         except sqlite3.DatabaseError as e:
-            raise NamingError("sqlite error in optimized_metadata_search: "+str(e))
+            raise NamingError("sqlite error in optimized_metadata_search: " + str(e))
 
     def remove_items(self, items):
         try:
@@ -216,7 +216,7 @@ class SqlStorage(MutableMapping):
                         db.execute("DELETE FROM pyro_names WHERE id=?", (dbid,))
                 db.commit()
         except sqlite3.DatabaseError as e:
-            raise NamingError("sqlite error in remove_items: "+str(e))
+            raise NamingError("sqlite error in remove_items: " + str(e))
 
     def everything(self, return_metadata=False):
         try:
@@ -231,7 +231,7 @@ class SqlStorage(MutableMapping):
                         names[name] = uri
                 return names
         except sqlite3.DatabaseError as e:
-            raise NamingError("sqlite error in everything: "+str(e))
+            raise NamingError("sqlite error in everything: " + str(e))
 
     def close(self):
         pass
@@ -254,7 +254,7 @@ class DbmStorage(MutableMapping):
         self.lock = threading.Lock()
 
     def __getattr__(self, item):
-        raise NotImplementedError("DbmStorage doesn't implement method/attribute '"+item+"'")
+        raise NotImplementedError("DbmStorage doesn't implement method/attribute '" + item + "'")
 
     def __getitem__(self, item):
         item = item.encode("utf-8")
@@ -263,7 +263,7 @@ class DbmStorage(MutableMapping):
                 with closing(dbm.open(self.dbmfile)) as db:
                     return db[item].decode("utf-8"), frozenset()    # always return empty metadata
             except dbm.error as e:
-                raise NamingError("dbm error in getitem: "+str(e))
+                raise NamingError("dbm error in getitem: " + str(e))
 
     def __setitem__(self, key, value):
         uri, metadata = value
@@ -276,7 +276,7 @@ class DbmStorage(MutableMapping):
                 with closing(dbm.open(self.dbmfile, "w")) as db:
                     db[key] = uri
             except dbm.error as e:
-                raise NamingError("dbm error in setitem: "+str(e))
+                raise NamingError("dbm error in setitem: " + str(e))
 
     def __len__(self):
         with self.lock:
@@ -284,7 +284,7 @@ class DbmStorage(MutableMapping):
                 with closing(dbm.open(self.dbmfile)) as db:
                     return len(db)
             except dbm.error as e:
-                raise NamingError("dbm error in len: "+str(e))
+                raise NamingError("dbm error in len: " + str(e))
 
     def __contains__(self, item):
         item = item.encode("utf-8")
@@ -293,7 +293,7 @@ class DbmStorage(MutableMapping):
                 with closing(dbm.open(self.dbmfile)) as db:
                     return item in db
             except dbm.error as e:
-                raise NamingError("dbm error in contains: "+str(e))
+                raise NamingError("dbm error in contains: " + str(e))
 
     def __delitem__(self, key):
         key = key.encode("utf-8")
@@ -302,7 +302,7 @@ class DbmStorage(MutableMapping):
                 with closing(dbm.open(self.dbmfile, "w")) as db:
                     del db[key]
             except dbm.error as e:
-                raise NamingError("dbm error in delitem: "+str(e))
+                raise NamingError("dbm error in delitem: " + str(e))
 
     def __iter__(self):
         with self.lock:
@@ -310,7 +310,7 @@ class DbmStorage(MutableMapping):
                 with closing(dbm.open(self.dbmfile)) as db:
                     return iter([key.decode("utf-8") for key in db.keys()])
             except dbm.error as e:
-                raise NamingError("dbm error in iter: "+str(e))
+                raise NamingError("dbm error in iter: " + str(e))
 
     def clear(self):
         with self.lock:
@@ -322,7 +322,7 @@ class DbmStorage(MutableMapping):
                         for key in db.keys():
                             del db[key]
             except dbm.error as e:
-                raise NamingError("dbm error in clear: "+str(e))
+                raise NamingError("dbm error in clear: " + str(e))
 
     def optimized_prefix_list(self, prefix, return_metadata=False):
         with self.lock:
@@ -343,7 +343,7 @@ class DbmStorage(MutableMapping):
                                 result[keystr] = (uri, frozenset()) if return_metadata else uri     # always return empty metadata
                     return result
             except dbm.error as e:
-                raise NamingError("dbm error in optimized_prefix_list: "+str(e))
+                raise NamingError("dbm error in optimized_prefix_list: " + str(e))
 
     def optimized_regex_list(self, regex, return_metadata=False):
         try:
@@ -368,7 +368,7 @@ class DbmStorage(MutableMapping):
                                 result[keystr] = (uri, frozenset()) if return_metadata else uri    # always return empty metadata
                     return result
             except dbm.error as e:
-                raise NamingError("dbm error in optimized_regex_list: "+str(e))
+                raise NamingError("dbm error in optimized_regex_list: " + str(e))
 
     def optimized_metadata_search(self, metadata_all=None, metadata_any=None, return_metadata=False):
         if metadata_all or metadata_any:
@@ -385,7 +385,7 @@ class DbmStorage(MutableMapping):
                         except KeyError:
                             pass
             except dbm.error as e:
-                raise NamingError("dbm error in remove_items: "+str(e))
+                raise NamingError("dbm error in remove_items: " + str(e))
 
     def everything(self, return_metadata=False):
         with self.lock:
@@ -402,7 +402,7 @@ class DbmStorage(MutableMapping):
                             result[key.decode("utf-8")] = (uri, frozenset()) if return_metadata else uri    # always return empty metadata
                     return result
             except dbm.error as e:
-                raise NamingError("dbm error in everything: "+str(e))
+                raise NamingError("dbm error in everything: " + str(e))
 
     def close(self):
         pass

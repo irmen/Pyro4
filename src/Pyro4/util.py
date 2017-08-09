@@ -311,7 +311,9 @@ class SerializerBase(object):
                 value["__class__"] = obj.__class__.__module__ + "." + obj.__class__.__name__
                 return value
             else:
-                raise errors.SerializeError("don't know how to serialize class " + str(obj.__class__) + " using serializer " + str(cls.__name__) + ". Give it vars() or an appropriate __getstate__")
+                raise errors.SerializeError("don't know how to serialize class " + str(obj.__class__) +
+                                            " using serializer " + str(cls.__name__) +
+                                            ". Give it vars() or an appropriate __getstate__")
 
     @classmethod
     def dict_to_class(cls, data):
@@ -680,7 +682,7 @@ class MsgpackSerializer(SerializerBase):
             return datetime.datetime.fromtimestamp(struct.unpack("d", data)[0])
         if code == 0x33:
             return datetime.date.fromordinal(struct.unpack("l", data)[0])
-        raise errors.SerializeError("invalid ext code for msgpack: "+str(code))
+        raise errors.SerializeError("invalid ext code for msgpack: " + str(code))
 
     @classmethod
     def register_type_replacement(cls, object_type, replacement_function):
@@ -809,12 +811,14 @@ def fixIronPythonExceptionForPickle(exceptionObject, addAttributes):
 
 __exposed_member_cache = {}
 
+
 def reset_exposed_members(obj, only_exposed=True, as_lists=False):
     """Delete any cached exposed members forcing recalculation on next request"""
     if not inspect.isclass(obj):
         obj = obj.__class__
     cache_key = (obj, only_exposed, as_lists)
     __exposed_member_cache.pop(cache_key, None)
+
 
 def get_exposed_members(obj, only_exposed=True, as_lists=False, use_cache=True):
     """

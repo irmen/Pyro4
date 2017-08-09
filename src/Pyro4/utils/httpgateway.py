@@ -110,7 +110,10 @@ index_page_template = """<!DOCTYPE html>
 <div id="title-logo"><img src="http://pyro4.readthedocs.io/en/stable/_static/pyro.png"></div>
 <div id="title-text">
 <h1>Pyro HTTP gateway</h1>
-<p>Use http+json to talk to Pyro objects. <a href="http://pyro4.readthedocs.io/en/stable/tipstricks.html#pyro-via-http-and-json">Docs.</a></p>
+<p>
+    Use http+json to talk to Pyro objects.
+    <a href="http://pyro4.readthedocs.io/en/stable/tipstricks.html#pyro-via-http-and-json">Docs.</a>
+</p>
 </div>
 <p><em>Note: performance isn't maxed; it is stateless. Does a name lookup and uses a new Pyro proxy for each request.</em></p>
 <h2>Currently exposed contents of name server on {hostname}:</h2>
@@ -118,16 +121,27 @@ index_page_template = """<!DOCTYPE html>
 {name_server_contents_list}
 <p>Name server examples: (these examples are working if you expose the Pyro.NameServer object)</p>
 <ul>
-<li><a href="Pyro.NameServer/$meta" onclick="pyro_call('Pyro.NameServer','$meta'); return false;">Pyro.NameServer/$meta</a> -- gives meta info of the name server (methods)</li>
-<li><a href="Pyro.NameServer/list" onclick="pyro_call('Pyro.NameServer','list'); return false;">Pyro.NameServer/list</a> -- lists the contents of the name server</li>
-<li><a href="Pyro.NameServer/list?prefix=test." onclick="pyro_call('Pyro.NameServer','list', {{'prefix':'test.'}}); return false;">Pyro.NameServer/list?prefix=test.</a> -- lists the contents of the name server starting with 'test.'</li>
-<li><a href="Pyro.NameServer/lookup?name=Pyro.NameServer" onclick="pyro_call('Pyro.NameServer','lookup', {{'name':'Pyro.NameServer'}}); return false;">Pyro.NameServer/lookup?name=Pyro.NameServer</a> -- perform lookup method of the name server</li>
-<li><a href="Pyro.NameServer/lookup?name=test.echoserver" onclick="pyro_call('Pyro.NameServer','lookup', {{'name':'test.echoserver'}}); return false;">Pyro.NameServer/lookup?name=test.echoserver</a> -- perform lookup method of the echo server</li>
+<li><a href="Pyro.NameServer/$meta" onclick="pyro_call('Pyro.NameServer','$meta'); return false;">Pyro.NameServer/$meta</a>
+     -- gives meta info of the name server (methods)</li>
+<li><a href="Pyro.NameServer/list" onclick="pyro_call('Pyro.NameServer','list'); return false;">Pyro.NameServer/list</a>
+     -- lists the contents of the name server</li>
+<li><a href="Pyro.NameServer/list?prefix=test."
+       onclick="pyro_call('Pyro.NameServer','list', {{'prefix':'test.'}}); return false;">
+       Pyro.NameServer/list?prefix=test.</a> -- lists the contents of the name server starting with 'test.'</li>
+<li><a href="Pyro.NameServer/lookup?name=Pyro.NameServer"
+       onclick="pyro_call('Pyro.NameServer','lookup', {{'name':'Pyro.NameServer'}}); return false;">
+       Pyro.NameServer/lookup?name=Pyro.NameServer</a> -- perform lookup method of the name server</li>
+<li><a href="Pyro.NameServer/lookup?name=test.echoserver"
+       onclick="pyro_call('Pyro.NameServer','lookup', {{'name':'test.echoserver'}}); return false;">
+       Pyro.NameServer/lookup?name=test.echoserver</a> -- perform lookup method of the echo server</li>
 </ul>
 <p>Echoserver examples: (these examples are working if you expose the test.echoserver object)</p>
 <ul>
-<li><a href="test.echoserver/error" onclick="pyro_call('test.echoserver','error'); return false;">test.echoserver/error</a> -- perform error call on echoserver</li>
-<li><a href="test.echoserver/echo?message=Hi there, browser script!" onclick="pyro_call('test.echoserver','echo', {{'message':'Hi there, browser script!'}}); return false;">test.echoserver/echo?message=Hi there, browser script!</a> -- perform echo call on echoserver</li>
+<li><a href="test.echoserver/error" onclick="pyro_call('test.echoserver','error'); return false;">test.echoserver/error</a>
+     -- perform error call on echoserver</li>
+<li><a href="test.echoserver/echo?message=Hi there, browser script!"
+       onclick="pyro_call('test.echoserver','echo', {{'message':'Hi there, browser script!'}}); return false;">
+       test.echoserver/echo?message=Hi there, browser script!</a> -- perform echo call on echoserver</li>
 </ul>
 <h2>Pyro response data (via Ajax):</h2>
 Call: <pre id="pyro_call"> &nbsp; </pre>
@@ -158,8 +172,11 @@ def return_homepage(environ, start_response):
                     proxy._pyroHmacKey = pyro_app.hmac_key
                     proxy._pyroBind()
                     methods = " &nbsp; ".join(proxy._pyroMethods) or "-"
-                    attributes = ["<a href=\"{name}/{attribute}\" onclick=\"pyro_call('{name}','{attribute}'); return false;\">{attribute}</a>"
-                                  .format(name=name, attribute=attribute) for attribute in proxy._pyroAttrs]
+                    attributes = [
+                        "<a href=\"{name}/{attribute}\" onclick=\"pyro_call('{name}','{attribute}'); return false;\">{attribute}</a>"
+                        .format(name=name, attribute=attribute)
+                        for attribute in proxy._pyroAttrs
+                    ]
                     attributes = " &nbsp; ".join(attributes) or "-"
             except errors.PyroError as x:
                 stderr = environ["wsgi.errors"]
@@ -167,7 +184,8 @@ def return_homepage(environ, start_response):
                 traceback.print_exc(file=stderr)
                 methods = "??error:%s??" % str(x)
             nslist.append(
-                "<tr><td><a href=\"{name}/$meta\" onclick=\"pyro_call('{name}','$meta'); return false;\">{name}</a></td><td>{methods}</td><td>{attributes}</td></tr>"
+                "<tr><td><a href=\"{name}/$meta\" onclick=\"pyro_call('{name}','$meta'); "
+                "return false;\">{name}</a></td><td>{methods}</td><td>{attributes}</td></tr>"
                 .format(name=name, methods=methods, attributes=attributes))
     nslist.append("</table>")
     index_page = index_page_template.format(ns_regex=pyro_app.ns_regex,
@@ -294,7 +312,8 @@ def main(args=None):
     parser.add_option("-e", "--expose", default=pyro_app.ns_regex, help="a regex of object names to expose (default=%default)")
     parser.add_option("-k", "--pyrokey", help="the HMAC key to use to connect with Pyro")
     parser.add_option("-g", "--gatewaykey", help="the api key to use to connect to the gateway itself")
-    parser.add_option("-t", "--timeout", type="float", default=pyro_app.comm_timeout, help="Pyro timeout value to use (COMMTIMEOUT setting, default=%default)")
+    parser.add_option("-t", "--timeout", type="float", default=pyro_app.comm_timeout,
+                      help="Pyro timeout value to use (COMMTIMEOUT setting, default=%default)")
 
     options, args = parser.parse_args(args)
     pyro_app.hmac_key = (options.pyrokey or "").encode("utf-8")
