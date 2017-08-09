@@ -246,7 +246,6 @@ class Proxy(object):
         self.__async = False
         current_context.annotations = {}
         current_context.response_annotations = {}
-        self._pyroAttrs
 
     @property
     def _pyroHmacKey(self):
