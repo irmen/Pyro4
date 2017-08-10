@@ -469,7 +469,7 @@ class Proxy(object):
                     if msg.flags & message.FLAGS_EXCEPTION:
                         if sys.platform == "cli":
                             util.fixIronPythonExceptionForPickle(data, False)
-                        raise data
+                        raise data  # if you see this in your traceback, you should probably inspect the remote traceback as well
                     else:
                         return data
             except (errors.CommunicationError, KeyboardInterrupt):
