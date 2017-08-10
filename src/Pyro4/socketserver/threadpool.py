@@ -42,8 +42,8 @@ class Worker(threading.Thread):
                 break
             try:
                 self.job()
-            except Exception:
-                log.exception("unhandled exception from job in worker thread %s: %s", self.name)
+            except Exception as x:
+                log.exception("unhandled exception from job in worker thread %s: %s", self.name, x)
             self.job = None
             self.pool.notify_done(self)
         self.pool = None
