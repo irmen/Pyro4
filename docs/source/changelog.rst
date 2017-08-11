@@ -15,6 +15,8 @@ Change Log
   invalid protected members showing up on pypy3)
 - the ``raise data`` line in a traceback coming from Pyro now has a comment after it,
   telling you that you probably should inspect the remote traceback as well.
+- *note*: if you're using Python 3 only and are interested in a modernized version of Pyro,
+  have a look at Pyro5: https://github.com/irmen/Pyro5  It's experimental work in progress, but it works pretty well.
 
 
 **Pyro 4.61**
