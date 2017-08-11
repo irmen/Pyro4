@@ -906,7 +906,7 @@ def set_exposed_property_value(obj, propname, value, only_exposed=True):
 _private_dunder_methods = frozenset([
     "__init__", "__call__", "__new__", "__del__", "__repr__", "__unicode__",
     "__str__", "__format__", "__nonzero__", "__bool__", "__coerce__",
-    "__cmp__", "__eq__", "__ne__", "__hash__",
+    "__cmp__", "__eq__", "__ne__", "__hash__", "__ge__", "__gt__", "__le__", "__lt__",
     "__dir__", "__enter__", "__exit__", "__copy__", "__deepcopy__", "__sizeof__",
     "__getattr__", "__setattr__", "__hasattr__", "__getattribute__", "__delattr__",
     "__instancecheck__", "__subclasscheck__", "__getinitargs__", "__getnewargs__",
