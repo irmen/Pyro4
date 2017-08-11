@@ -568,10 +568,13 @@ def getSSLcontext(servercert="", serverkey="", clientcert="", clientkey="", cace
     if not ssl:
         raise ValueError("SSL requested but ssl module is not available")
     else:
-        if sys.version_info < (2, 7, 9):
-            raise RuntimeError("need Python 2.7.9 or newer to properly use SSL")
-        if (3, 0) < sys.version_info < (3, 4, 3):
-            raise RuntimeError("need Python 3.4.3 or newer to properly use SSL")
+        # Theoretically, the SSL support works on python versions older than the ones checked below.
+        # however, a few important security changes were included in these versions
+        # (disabling vulnerable cyphers and protocols by default). So change this at your own peril.
+        if sys.version_info < (2, 7, 11):
+            raise RuntimeError("need Python 2.7.11 or newer to properly use SSL")
+        if (3, 0) < sys.version_info < (3, 4, 4):
+            raise RuntimeError("need Python 3.4.4 or newer to properly use SSL")
     if servercert:
         if clientcert:
             raise ValueError("can't have both server cert and client cert")

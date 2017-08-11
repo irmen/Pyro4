@@ -7,7 +7,8 @@ Change Log
 - **major new feature: SSL/TLS support added** - a handful of new config items ('SSL' prefixed), supports
   server-only certificate and also 2-way-ssl (server+client certificates).
   For testing purposes, self-signed server and client certificates are available in the 'certs' directory.
-  SSL/TLS in Pyro is supported on Python 2.7.9+ or Python 3.4.3+
+  SSL/TLS in Pyro is supported on Python 2.7.11+ or Python 3.4.4+
+  (these versions have various important security related changes such as disabling vulnerable cyphers or protocols by default)
 - added SSL example that shows how to configure 2-way-SSL in Pyro and how to do certificate verification on both sides.
 - daemon is now more resilient to exceptions occurring with socket communications (it logs them but is otherwise not interrupted)
   (this was required to avoid errors occurring in the SSL layer stopping the server)

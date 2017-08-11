@@ -86,7 +86,7 @@ For example code on how to set up a 2-way-SSL Pyro client and server, with cert 
 see the ``ssl`` example.
 
 .. important::
-    You must use at least Python 2.7.9 / 3.4.3 or newer for proper SSL support.
+    You must use at least Python 2.7.11 / 3.4.4 or newer for proper SSL support.
 
 .. index::
     double: security; object traversal

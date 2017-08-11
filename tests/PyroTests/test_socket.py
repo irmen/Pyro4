@@ -558,7 +558,6 @@ class TestServerDOS_threading(TestServerDOS_multiplex):
 
 
 @unittest.skipIf(not ssl, "ssl tests requires ssl module")
-@unittest.skipIf((3, 0) < sys.version_info < (3, 4, 3), "proper ssl requires python 3.4.3+")
 class TestSSL(unittest.TestCase):
     def testContextAndSock(self):
         cert_dir = "../../certs"
