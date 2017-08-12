@@ -19,6 +19,9 @@ Change Log
   telling you that you probably should inspect the remote traceback as well.
 - *note*: if you're using Python 3 only and are interested in a modernized version of Pyro,
   have a look at Pyro5: https://github.com/irmen/Pyro5  It's experimental work in progress, but it works pretty well.
+- *note*: Pyro4 is reaching a state where I consider it "feature complete":
+  I'm considering not adding more new features but only doing bug-fixes.
+  New features (if any) will then appear only in Pyro5.
 
 
 **Pyro 4.61**
