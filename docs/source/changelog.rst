@@ -10,10 +10,11 @@ Change Log
   SSL/TLS in Pyro is supported on Python 2.7.11+ or Python 3.4.4+
   (these versions have various important security related changes such as disabling vulnerable cyphers or protocols by default)
 - added SSL example that shows how to configure 2-way-SSL in Pyro and how to do certificate verification on both sides.
+- added cloudpickle serialization support (https://github.com/cloudpipe/cloudpickle/)
+- added a small extended-pickle example that shows what dill and cloudpickle can do (send actual functions)
 - daemon is now more resilient to exceptions occurring with socket communications (it logs them but is otherwise not interrupted)
   (this was required to avoid errors occurring in the SSL layer stopping the server)
-- some small bugs fixed (crash when logging certain errors in thread server,
-  invalid protected members showing up on pypy3)
+- some small bugs fixed (crash when logging certain errors in thread server, invalid protected members showing up on pypy3)
 - the ``raise data`` line in a traceback coming from Pyro now has a comment after it,
   telling you that you probably should inspect the remote traceback as well.
 - *note*: if you're using Python 3 only and are interested in a modernized version of Pyro,

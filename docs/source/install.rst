@@ -59,6 +59,28 @@ Obtaining and installing Pyro
     The required serpent serializer library is there as well: https://github.com/irmen/Serpent
 
 
+Third party libraries that Pyro4 uses
+-------------------------------------
+
+`serpent <https://pypi.python.org/pypi/serpent>`_ - required, 1.23 or newer
+    Should be installed automatically when you install Pyro4.
+
+`selectors34 <https://pypi.python.org/pypi/selectors34>`_ - required on Python 3.3 or older
+    Should be installed automatically when you install Pyro4.
+
+`selectors2 <https://pypi.python.org/pypi/selectors2>`_ - optional on Python 3.4 or older
+    Install this if you want better behavior for interrupted system calls on Python 3.4 or older.
+
+`dill <https://pypi.python.org/pypi/dill>`_ - optional, 0.2.6 or newer
+    Install this if you want to use the dill serializer.
+
+`cloudpickle <https://pypi.python.org/pypi/cloudpickle>`_ - optional, 0.4.0 or newer
+    Install this if you want to use the cloudpickle serializer.
+
+`msgpack-python <https://pypi.python.org/pypi/msgpack-python>`_ - optional, 0.4.6 or newer
+    Install this if you want to use the msgpack serializer.
+
+
 Stuff you get extra in the source distribution archive and not with packaged versions
 -------------------------------------------------------------------------------------
 If you decide to download the distribution (.tar.gz) you have a bunch of extras over simply installing the Pyro library directly.
