@@ -356,6 +356,8 @@ class SerializerBase(object):
                 return JsonSerializer()
             elif classname == "Pyro4.util.MsgpackSerializer":
                 return MsgpackSerializer()
+            elif classname == "Pyro4.util.CloudpickleSerializer":
+                return CloudpickleSerializer()
             elif classname == "Pyro4.util.DillSerializer":
                 return DillSerializer()
         elif classname.startswith("Pyro4.errors."):
@@ -447,6 +449,36 @@ class PickleSerializer(SerializerBase):
     def loads(self, data):
         data = self._convertToBytes(data)
         return pickle.loads(data)
+
+    @classmethod
+    def register_type_replacement(cls, object_type, replacement_function):
+        def copyreg_function(obj):
+            return replacement_function(obj).__reduce__()
+
+        try:
+            copyreg.pickle(object_type, copyreg_function)
+        except TypeError:
+            pass
+
+
+class CloudpickleSerializer(SerializerBase):
+    """
+    A (de)serializer that wraps the Cloudpickle serialization protocol.
+    It can optionally compress the serialized data, and is thread safe.
+    """
+    serializer_id = 7  # never change this
+
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        return cloudpickle.dumps((obj, method, vargs, kwargs), config.PICKLE_PROTOCOL_VERSION)
+
+    def dumps(self, data):
+        return cloudpickle.dumps(data, config.PICKLE_PROTOCOL_VERSION)
+
+    def loadsCall(self, data):
+        return cloudpickle.loads(data)
+
+    def loads(self, data):
+        return cloudpickle.loads(data)
 
     @classmethod
     def register_type_replacement(cls, object_type, replacement_function):
@@ -720,6 +752,13 @@ import marshal
 _ser = MarshalSerializer()
 _serializers["marshal"] = _ser
 _serializers_by_id[_ser.serializer_id] = _ser
+try:
+    import cloudpickle
+    _ser = CloudpickleSerializer()
+    _serializers["cloudpickle"] = _ser
+    _serializers_by_id[_ser.serializer_id] = _ser
+except ImportError:
+    pass
 try:
     import dill
     _ser = DillSerializer()

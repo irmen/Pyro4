@@ -16,14 +16,15 @@ Security
 
 .. index::
     double: security; pickle
+    double: security; cloudpickle
     double: security; dill
 
-Pickle and dill as serialization formats (optional)
-===================================================
-When configured to do so, Pyro is able to use the :py:mod:`pickle` module or the
-:py:mod:`dill` module to serialize objects and then sends them over the network.
-It is well known that using pickle or dill for this purpose is a security risk.
-The main problem is that allowing a program to unpickle or undill arbitrary data
+Pickle, cloudpickle and dill as serialization formats (optional)
+================================================================
+When configured to do so, Pyro is able to use the :py:mod:`pickle`, :py:mod:`cloudpickle`
+or :py:mod:`dill` modules to serialize objects and then sends them over the network.
+It is well known that using these serializers for this purpose is a security risk.
+The main problem is that allowing a program to deserialize this type of serialized data
 can cause arbitrary code execution and this may wreck or compromise your system.
 Because of this the default serializer is serpent, which doesn't have this security problem.
 Some other means to enhance security are discussed below.

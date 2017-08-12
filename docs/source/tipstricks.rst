@@ -142,16 +142,16 @@ The success ratio of all this depends heavily on your network setup.
 
 .. index:: same Python version
 
-Same major Python version required when using pickle, dill or marshal
-=====================================================================
+Same major Python version required when using pickle, cloudpickle, dill or marshal
+==================================================================================
 
-When Pyro is configured to use pickle, dill or marshal as its serialization format, it is required to have the same *major* Python versions
+When Pyro is configured to use pickle, cloudpickle, dill or marshal as its serialization format, it is required to have the same *major* Python versions
 on your clients and your servers. Otherwise the different parties cannot decipher each others serialized data.
-This means you cannot let Python 2.x talk to Python 3.x with Pyro when using pickle, dill or marshal as serialization protocols. However
+This means you cannot let Python 2.x talk to Python 3.x with Pyro when using these serializers. However
 it should be fine to have Python 3.3 talk to Python 3.4 for instance.
 It may still be required to specify the pickle or dill protocol version though, because that needs to be the same on both ends as well.
 For instance, Python 3.4 introduced version 4 of the pickle protocol and as such won't be able to talk to Python 3.3 which is stuck
-on version 3 pickle protocol. You'll have to tell the Python 3.4 side to step down to protocol 3. There is a config item for that. The same will apply for dill protocol versions.
+on version 3 pickle protocol. You'll have to tell the Python 3.4 side to step down to protocol 3. There is a config item for that. The same will apply for dill protocol versions. If you are using cloudpickle, you can just set the pickle protocol version (as pickle is used under the hood).
 
 The implementation independent serialization protocols serpent and json don't have these limitations.
 
@@ -488,8 +488,9 @@ So if you want to use them with Pyro, and pass them over the wire, you'll have t
     ``list(na)`` doesn't work: it seems to return a regular python list but the elements are still numpy datatypes.
     You have to use the full conversions as mentioned earlier.
 #.  Don't return arrays at all. Redesign your API so that you might perhaps only return a single element from it.
-#.  Tell Pyro to use :py:mod:`pickle` or :py:mod:`dill` as serializer. Pickle and Dill can deal with numpy datatypes. However they have security implications.
-    See :doc:`security`. If you choose to use pickle or dill anyway, also be aware that you must tell your name server
+#.  Tell Pyro to use :py:mod:`pickle`, :py:mod:`cloudpickle` or :py:mod:`dill` as serializer. These serializers
+    can deal with numpy datatypes. However they have security implications.
+    See :doc:`security`. If you choose to use them anyway, also be aware that you must tell your name server
     about it as well, see :ref:`nameserver-pickle`.
 
 

@@ -62,6 +62,7 @@ class DaemonTests(unittest.TestCase):
     def testSerializerAccepted(self):
         self.assertIn("marshal", config.SERIALIZERS_ACCEPTED)
         self.assertNotIn("pickle", config.SERIALIZERS_ACCEPTED)
+        self.assertNotIn("cloudpickle", config.SERIALIZERS_ACCEPTED)
         self.assertNotIn("dill", config.SERIALIZERS_ACCEPTED)
         with Pyro4.core.Daemon(port=0) as d:
             msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.util.MarshalSerializer.serializer_id, 0, 0, hmac_key=d._pyroHmacKey)
@@ -75,6 +76,13 @@ class DaemonTests(unittest.TestCase):
             except Pyro4.errors.ProtocolError as x:
                 self.assertIn("serializer that is not accepted", str(x))
                 pass
+            msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.util.CloudpickleSerializer.serializer_id, 0, 0, hmac_key=d._pyroHmacKey)
+            cm = ConnectionMock(msg)
+            try:
+                d.handleRequest(cm)
+                self.fail("should crash")
+            except Pyro4.errors.ProtocolError as x:
+                self.assertTrue("no serializer available for id" in str(x) or "serializer that is not accepted" in str(x))
             msg = Pyro4.message.Message(Pyro4.message.MSG_INVOKE, b"", Pyro4.util.DillSerializer.serializer_id, 0, 0, hmac_key=d._pyroHmacKey)
             cm = ConnectionMock(msg)
             try:

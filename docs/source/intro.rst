@@ -27,8 +27,8 @@ Here's a quick overview of Pyro's features:
 - works between different system architectures and operating systems.
 - able to communicate between different Python versions transparently.
 - defaults to a safe serializer (`serpent <https://pypi.python.org/pypi/serpent>`_) that supports many Python data types.
-- supports different serializers (serpent, json, marshal, msgpack, pickle, dill).
-- support for all Python data types that are serializable when using the 'pickle' or 'dill' serializers [1]_.
+- supports different serializers (serpent, json, marshal, msgpack, pickle, cloudpickle, dill).
+- support for all Python data types that are serializable when using the 'pickle', 'cloudpickle' or 'dill' serializers [1]_.
 - can use IPv4, IPv6 and Unix domain sockets.
 - optional secure connections via SSL/TLS (encryption, authentication and integrity), including certificate validation on both ends (2-way ssl).
 - lightweight client library available for .NET and Java native code ('Pyrolite', provided separately).
@@ -93,7 +93,7 @@ Remote controlling resources or other programs is a nice application as well.
 For instance, you could write a simple
 remote controller for your media server that is running on a machine somewhere in a closet.
 A simple remote control client program could be used to instruct the media server
-to play music, switch playlists, etc. 
+to play music, switch playlists, etc.
 
 Another example is the use of Pyro to implement a form of `privilege separation <http://en.wikipedia.org/wiki/Privilege_separation>`_.
 There is a small component running with higher privileges, but just able to execute the few tasks (and nothing else)
@@ -257,9 +257,9 @@ Experiment with the ``benchmark``, ``batchedcalls`` and ``hugetransfer`` example
 
 .. rubric:: Footnotes
 
-.. [1] When configured to use the :py:mod:`pickle` or :py:mod:`dill` serializer,
+.. [1] When configured to use the :py:mod:`pickle`, :py:mod:`cloudpickle` or :py:mod:`dill` serializer,
     your system may be vulnerable
-    because of the security risks of the pickle and dill protocols (possibility of arbitrary
+    because of the security risks of these serialization protocols (possibility of arbitrary
     code execution).
     Pyro does have some security measures in place to mitigate this risk somewhat.
     They are described in the :doc:`security` chapter. It is strongly advised to read it.
