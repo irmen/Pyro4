@@ -56,6 +56,7 @@ Avoid large binary blobs over the wire.
 Pyro is not designed to efficiently transfer large amounts of binary data over the network.
 Try to find another protocol that better suits this requirement.
 Read :ref:`binarytransfer` for some more details about this.
+How to deal with Numpy data (large *or* small) is explained here :ref:`numpy`.
 
 Note that Pyro has a 2 gigabyte message size limitation at this time.
 
@@ -67,6 +68,8 @@ Minimize object graphs that travel over the wire.
 Pyro will serialize the whole object graph you're passing, even when only a tiny fraction
 of it is used on the receiving end. Be aware of this: it may be necessary to define special lightweight objects
 for your Pyro interfaces that hold the data you need, rather than passing a huge object structure.
+It's good design practice as well to have an "external API" that is different from your internal code,
+and tuned for minimal communication overhead or complexity.
 
 
 Consider using basic data types instead of custom classes.
@@ -470,28 +473,45 @@ it needs to deal with an ipv6 address rather than ipv4, but these are rarely use
 
 Pyro and Numpy
 ==============
-More than once questions have been asked about Pyro and Numpy. More specifically, why certain errors occur when
-people try to use numpy arrays with Pyro. Errors such as::
+Pyro doesn't support Numpy out of the box. You'll see certain errors occur when
+trying to use numpy objects (ndarrays, etcetera) with Pyro::
 
     TypeError: array([1, 2, 3]) is not JSON serializable
       or
-    SerializeError: don't know how to serialize class <type 'numpy.ndarray'>
+    TypeError: don't know how to serialize class <type 'numpy.ndarray'>
+      or
+    TypeError: don't know how to serialize class <class 'numpy.int64'>
 
 These errors are caused by Numpy datatypes not being serializable by serpent or json serializers.
-So if you want to use them with Pyro, and pass them over the wire, you'll have to chose one of the following options:
+There are several reasons these datatypes are not supported out of the box:
 
-#.  Don't use Numpy datatypes. Convert them to standard Python datatypes before using them in Pyro. So instead of just
+#. numpy is a third party library and there are many, many others. It is not Pyro's responsibility to understand all of them.
+#. numpy is often used in scenarios with large amounts of data. Sending these large arrays over the wire through Pyro
+   is often not the best solution. It is not useful to provide transparent support for numpy types
+   when you'll be running into trouble often such as slow calls and large network overhead.
+#. Pyrolite (:doc:`pyrolite`) would have to get numpy support as well and that is a lot of work (because every numpy type
+   would require a mapping to the appropriate Java or .NET type)
+
+
+If you understand this but still want to use numpy with Pyro, and pass numpy objects over the wire, you can do it!
+Choose one of the following options:
+
+#.  Don't use Numpy datatypes as arguments or return values.
+    Convert them to standard Python datatypes before using them in Pyro. So instead of just
     ``na = numpy.array(...); return na;``, use this instead:  ``return na.tolist()``.
-    Or perhaps even ``return array.array('i', na)`` (serpent understands ``array.array``, but json doesn't)
+    Or perhaps even ``return array.array('i', na)`` (serpent understands ``array.array`` just fine).
     Note that the elements of a numpy array usually are of a special numpy datatype as well (such as ``numpy.int32``).
     If you don't convert these individually as well, you will still get serialization errors. That is why something like
     ``list(na)`` doesn't work: it seems to return a regular python list but the elements are still numpy datatypes.
     You have to use the full conversions as mentioned earlier.
-#.  Don't return arrays at all. Redesign your API so that you might perhaps only return a single element from it.
+    Note that you'll have to do a bit more work to deal with multi-dimensional arrays: you have to convert
+    the shape of the array separately.
+#.  If possible don't return the whole array. Redesign your API so that you might perhaps only return a single element from it,
+    or a few, if that is all the client really needs.
 #.  Tell Pyro to use :py:mod:`pickle`, :py:mod:`cloudpickle` or :py:mod:`dill` as serializer. These serializers
-    can deal with numpy datatypes. However they have security implications.
-    See :doc:`security`. If you choose to use them anyway, also be aware that you must tell your name server
-    about it as well, see :ref:`nameserver-pickle`.
+    *can* deal with numpy datatypes out of the box. However they have security implications.
+    See :doc:`security`. (If you choose to use them anyway, also be aware that you must tell your name server
+    about it as well, see :ref:`nameserver-pickle`)
 
 
 .. index::
@@ -589,7 +609,7 @@ Client information on the current_context, correlation id
 
 .. sidebar:: advanced topic
 
-    This is a very advanced/low-level Pyro topic.
+    This is an advanced/low-level Pyro topic.
 
 Pyro provides a *thread-local* object with some information about the current Pyro method call,
 such as the client that's performing the call. It is available as :py:data:`Pyro4.current_context`
@@ -664,7 +684,7 @@ Message annotations
 
 .. sidebar:: advanced topic
 
-    This is a very advanced/low-level Pyro topic.
+    This is an advanced/low-level Pyro topic.
 
 Pyro's wire protocol allows for a very flexible messaging format by means of *annotations*.
 Annotations are extra information chunks that are added to the pyro messages traveling
@@ -726,7 +746,7 @@ Connection handshake
 
 .. sidebar:: advanced topic
 
-    This is a very advanced/low-level Pyro topic.
+    This is an advanced/low-level Pyro topic.
 
 When a proxy is first connecting to a Pyro daemon, it exchanges a few messages to set up and validate the connection.
 This is called the connection *handshake*. Part of it is the daemon returning the object's metadata (see :ref:`metadata`).
