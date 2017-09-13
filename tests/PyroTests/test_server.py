@@ -104,6 +104,9 @@ class ServerTestObject(object):
         Pyro4.core.current_context.response_annotations["ANN2"] = b"daemon annotation via new api"
         return {"annotations_in_daemon": Pyro4.core.current_context.annotations}
 
+    def new_test_object(self):
+        return ServerTestObject()
+
 
 class NotEverythingExposedClass(object):
     def __init__(self, name):
@@ -302,7 +305,7 @@ class ServerTestsOnce(unittest.TestCase):
             p._pyroBind()
             self.assertEqual({'value', 'dictionary'}, p._pyroAttrs)
             self.assertEqual({'echo', 'getDict', 'divide', 'nonserializableException', 'ping', 'oneway_delay', 'delayAndId', 'delay', 'testargs',
-                                  'multiply', 'oneway_multiply', 'getDictAttr', 'iterator', 'generator', 'response_annotation', 'blob'}, p._pyroMethods)
+                                  'multiply', 'oneway_multiply', 'getDictAttr', 'iterator', 'generator', 'response_annotation', 'blob', 'new_test_object'}, p._pyroMethods)
             self.assertEqual({'oneway_multiply', 'oneway_delay'}, p._pyroOneway)
             p._pyroAttrs = None
             p._pyroGetMetadata()
@@ -654,12 +657,20 @@ class ServerTestsOnce(unittest.TestCase):
                 self.daemon.unregister(obj)
                 result = p.echo(obj)
                 self.assertIsInstance(result, ServerTestObject, "serialized object must still be normal object")
+                self.daemon.register(ServerTestObject)
+                new_result = result.new_test_object()
+                self.assertIsInstance(new_result, ServerTestObject, "serialized pyro object must be a normal object")
+                self.daemon.unregister(ServerTestObject)
                 config.AUTOPROXY = True  # make sure autoproxying is enabled
                 result = p.echo(obj)
                 self.assertIsInstance(result, ServerTestObject, "non-pyro object must be returned as normal class")
                 self.daemon.register(obj)
                 result = p.echo(obj)
                 self.assertIsInstance(result, Pyro4.core.Proxy, "serialized pyro object must be a proxy")
+                self.daemon.register(ServerTestObject)
+                new_result = result.new_test_object()
+                self.assertIsInstance(new_result, Pyro4.core.Proxy, "serialized pyro object must be a proxy")
+                self.daemon.unregister(ServerTestObject)
                 self.daemon.unregister(obj)
                 result = p.echo(obj)
                 self.assertIsInstance(result, ServerTestObject, "unregistered pyro object must be normal class again")

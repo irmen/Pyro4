@@ -1550,7 +1550,10 @@ class Daemon(object):
             # register a custom serializer for the type to automatically return proxies
             # we need to do this for all known serializers
             for ser in util._serializers.values():
-                ser.register_type_replacement(type(obj_or_class), pyroObjectToAutoProxy)
+                if inspect.isclass(obj_or_class):
+                    ser.register_type_replacement(obj_or_class, pyroObjectToAutoProxy)
+                else:
+                    ser.register_type_replacement(type(obj_or_class), pyroObjectToAutoProxy)
         # register the object/class in the mapping
         self.objectsById[obj_or_class._pyroId] = obj_or_class
         return self.uriFor(objectId)
