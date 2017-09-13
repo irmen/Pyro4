@@ -2,6 +2,12 @@
 Change Log
 **********
 
+**Pyro 4.63**
+
+- fixed bug in autoproxy logic where it registered the wrong type if daemon.register() was called with
+  a class instead of an object (internal register_type_replacement method)
+
+
 **Pyro 4.62**
 
 - **major new feature: SSL/TLS support added** - a handful of new config items ('SSL' prefixed), supports

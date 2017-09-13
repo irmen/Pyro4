@@ -315,6 +315,15 @@ class SerializeTests_pickle(unittest.TestCase):
             self.assertEqual({'classmethod', 'method', 'oneway', 'staticmethod', 'exposed', "__dunder__"}, p1._pyroMethods)
             self.assertEqual({'oneway'}, p1._pyroOneway)
 
+    def testRegisterTypeReplacementSanity(self):
+        if self.SERIALIZER == "marshal":
+            self.skipTest("marshal can't serialize custom objects")
+        self.ser.register_type_replacement(int, lambda: None)
+        with self.assertRaises(ValueError):
+            self.ser.register_type_replacement(type, lambda: None)
+        with self.assertRaises(ValueError):
+            self.ser.register_type_replacement(42, lambda: None)
+
     def testCustomClassFail(self):
         if self.SERIALIZER in ("pickle", "cloudpickle", "dill"):
             self.skipTest("pickle, cloudpickle and dill simply serialize custom classes")
