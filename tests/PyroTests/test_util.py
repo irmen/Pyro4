@@ -260,7 +260,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(((1, 2, 3), {unichr(0x20ac): 42}), processed_args)
 
 
-class TestMeta(unittest.TestCase):
+class TestMetaAndExpose(unittest.TestCase):
     def setUp(self):
         config.REQUIRE_EXPOSE = True
 
@@ -370,6 +370,35 @@ class TestMeta(unittest.TestCase):
                 pass
         self.assertTrue(Test2._pyroExposed)
         self.assertTrue(Test2.__dunder__._pyroExposed)
+
+    def testClassmethodExposeWrongOrderFail(self):
+        with self.assertRaises(AttributeError) as ax:
+            class TestClass:
+                @Pyro4.core.expose
+                @classmethod
+                def cmethod(cls):
+                    pass
+        self.assertTrue("must be done after" in str(ax.exception))
+        with self.assertRaises(AttributeError) as ax:
+            class TestClass:
+                @Pyro4.core.expose
+                @staticmethod
+                def smethod(cls):
+                    pass
+        self.assertTrue("must be done after" in str(ax.exception))
+
+    def testClassmethodExposeCorrectOrderOkay(self):
+        class TestClass:
+            @classmethod
+            @Pyro4.core.expose
+            def cmethod(cls):
+                pass
+            @staticmethod
+            @Pyro4.core.expose
+            def smethod(cls):
+                pass
+        self.assertTrue(TestClass.cmethod._pyroExposed)
+        self.assertTrue(TestClass.smethod._pyroExposed)
 
     def testGetExposedProperty(self):
         o = MyThingFullExposed("irmen")

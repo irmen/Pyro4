@@ -646,6 +646,7 @@ class CoreTests(unittest.TestCase):
 
 
 class ExposeDecoratorTests(unittest.TestCase):
+    # note: the bulk of the tests for the @expose decorator are found in the test_util module
     def testExposeInstancemodeDefault(self):
         @Pyro4.core.expose
         class TestClassOne:
