@@ -943,7 +943,16 @@ def expose(method_or_class):
             raise AttributeError("exposing private names (starting with _) is not allowed")
         func._pyroExposed = True
         return method_or_class
-    if util.is_private_attribute(method_or_class.__name__):
+    attrname = getattr(method_or_class, "__name__", None)
+    if not attrname:
+        # we could be dealing with a descriptor (classmethod/staticmethod), this means the order of the decorators is wrong
+        if inspect.ismethoddescriptor(method_or_class):
+            attrname = method_or_class.__get__(None, dict).__name__
+            raise AttributeError("using @expose on a classmethod/staticmethod must be done "
+                                 "after @classmethod/@taticmethod. Method: " + attrname)
+        else:
+            raise AttributeError("@expose cannot determine what this is: "+repr(method_or_class))
+    if util.is_private_attribute(attrname):
         raise AttributeError("exposing private names (starting with _) is not allowed")
     if inspect.isclass(method_or_class):
         clazz = method_or_class

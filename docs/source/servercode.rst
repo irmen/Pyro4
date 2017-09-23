@@ -38,6 +38,7 @@ It lets you mark the following items to be available for remote access:
 - methods (including classmethod and staticmethod). You cannot expose a 'private' method, i.e. name starting with underscore.
   You *can* expose a 'dunder' method with double underscore for example ``__len__``. There is a short list of dunder methods that
   will never be remoted though (because they are essential to let the Pyro proxy function correctly).
+  Make sure you put the ``@expose`` decorator after other decorators on the method, if any.
 - properties (these will be available as remote attributes on the proxy) It's not possible to expose a 'private' property
   (name starting with underscore). You can't expose attributes directly. It is required to provide a @property for them
   and decorate that with ``@expose``, if you want to provide a remotely accessible attribute.

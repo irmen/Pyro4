@@ -6,6 +6,8 @@ Change Log
 
 - fixed bug in autoproxy logic where it registered the wrong type if daemon.register() was called with
   a class instead of an object (internal register_type_replacement method)
+- added check in @expose method to validate the order of decorators on a method (@expose should come last,
+  after @classmethod or @staticmethod).
 
 
 **Pyro 4.62**
