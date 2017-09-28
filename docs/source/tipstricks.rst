@@ -700,10 +700,11 @@ are allocated, thereby making them tracked resources on the client connection.
 These tracked resources will be automatically freed by Pyro if the client connection is closed.
 
 For this to work, the resource object should have a ``close`` method (Pyro will call this).
-You can also override :py:meth:`Pyro4.core.Daemon.clientDisconnect` and do the cleanup
+If needed, you can also override :py:meth:`Pyro4.core.Daemon.clientDisconnect` and do the cleanup
 yourself with the ``tracked_resources`` on the connection object.
 
-Resource tracking and untracking is done on the ``Pyro4.current_context`` object:
+
+Resource tracking and untracking is done in your server class on the ``Pyro4.current_context`` object:
 
 .. py:method:: Pyro4.current_context.track_resource(resource)
 
