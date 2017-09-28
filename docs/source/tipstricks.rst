@@ -676,6 +676,47 @@ see the :file:`callcontext` example.
 See the :file:`usersession` example to learn how you could use it to build user-bound resource access without concurrency problems.
 
 
+.. index:: resource-tracking
+.. _resource_tracking:
+
+Automatically freeing resources when client connection gets closed
+==================================================================
+
+.. sidebar:: advanced topic
+
+    This is an advanced/low-level Pyro topic.
+
+
+A client can call remote methods that allocate stuff in the server.
+Normally the client is responsible to call other methods once the resources should be freed.
+
+However if the client forgets this or the connection to the server is forcefully closed before
+the client can free the resources, the resources in the server will usually not be freed anymore.
+
+You may be able to solve this in your server code yourself (perhaps using some form of
+keepalive/timeout mechanism) but Pyro 4.63 and newer provides a built-in mechanism that can help:
+resource tracking on the client connection. Your server will register the resources when they
+are allocated, thereby making them tracked resources on the client connection.
+These tracked resources will be automatically freed by Pyro if the client connection is closed.
+
+For this to work, the resource object should have a ``close`` method (Pyro will call this).
+You can also override :py:meth:`Pyro4.core.Daemon.clientDisconnect` and do the cleanup
+yourself with the ``tracked_resources`` on the connection object.
+
+Resource tracking and untracking is done on the ``Pyro4.current_context`` object:
+
+.. py:method:: Pyro4.current_context.track_resource(resource)
+
+    Let Pyro track the resource on the current client connection.
+
+.. py:method:: Pyro4.current_context.untrack_resource(resource)
+
+    Untrack a previously tracked resource, useful if you have freed it normally.
+
+
+See the ``resourcetracking`` example for working code utilizing this.
+
+
 .. index:: annotations
 .. _msg_annotations:
 

@@ -1805,6 +1805,20 @@ class _CallContext(threading.local):
         self.correlation_id = values["correlation_id"]
         self.client_sock_addr = values["client_sock_addr"]
 
+    def track_resource(self, resource):
+        """keep a weak reference to the resource to be tracked for this connection"""
+        if self.client:
+            self.client.tracked_resources.add(resource)
+        else:
+            raise errors.PyroError("cannot track resource on a connectionless call")
+
+    def untrack_resource(self, resource):
+        """no longer track the resource for this connection"""
+        if self.client:
+            self.client.tracked_resources.discard(resource)
+        else:
+            raise errors.PyroError("cannot untrack resource on a connectionless call")
+
 
 class _OnewayCallThread(threading.Thread):
     def __init__(self, target, args, kwargs):

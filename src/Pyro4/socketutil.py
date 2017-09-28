@@ -10,6 +10,7 @@ import errno
 import time
 import sys
 import select
+import weakref
 try:
     import ssl
 except ImportError:
@@ -439,12 +440,11 @@ except ImportError:
 
 class SocketConnection(object):
     """A wrapper class for plain sockets, containing various methods such as :meth:`send` and :meth:`recv`"""
-    __slots__ = ["sock", "objectId", "pyroInstances"]
-
     def __init__(self, sock, objectId=None):
         self.sock = sock
         self.objectId = objectId
         self.pyroInstances = {}    # pyro objects for instance_mode=session
+        self.tracked_resources = weakref.WeakSet()      # weakrefs to resources for this connection
 
     def __del__(self):
         self.close()
@@ -470,7 +470,13 @@ class SocketConnection(object):
             self.sock.close()
         except:
             pass
-        self.pyroInstances = {}   # force releasing the session instances
+        self.pyroInstances.clear()   # release the session instances
+        for rsc in self.tracked_resources:
+            try:
+                rsc.close()     # it is assumed a 'resource' has a close method.
+            except Exception:
+                pass
+        self.tracked_resources.clear()
 
     def fileno(self):
         return self.sock.fileno()
