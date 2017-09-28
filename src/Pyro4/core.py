@@ -1031,7 +1031,9 @@ class DaemonObject(object):
                 # Something seems wrong: nothing is remotely exposed.
                 # Possibly because older code not using @expose is now running with a more recent Pyro version
                 # where @expose is mandatory in the default configuration. Give a hint to the user.
-                warnings.warn("Class %r doesn't expose any methods or attributes. Did you forget setting @expose on them?" % type(obj))
+                if not inspect.isclass(obj):
+                    obj = type(obj)
+                warnings.warn("Class %r doesn't expose any methods or attributes. Did you forget setting @expose on them?" % obj)
             return metadata
         else:
             log.debug("unknown object requested: %s", objectId)

@@ -8,6 +8,7 @@ Change Log
   a class instead of an object (internal register_type_replacement method)
 - added check in @expose method to validate the order of decorators on a method (@expose should come last,
   after @classmethod or @staticmethod).
+- the warning about a class not exposing anything now actually tells you the correct class
 
 
 **Pyro 4.62**
