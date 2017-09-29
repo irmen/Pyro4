@@ -8,14 +8,14 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 import sys
 import pickle
 import threading
-from Pyro4 import errors, core
+from Pyro4 import errors, core, expose, behavior, current_context
 from Pyro4.configuration import config
 
 
 __all__ = ["tobytes", "tostring", "unicode", "unichr", "basestring", "StringIO",
            "NonserializableError", "MyThingPartlyExposed", "MyThingFullExposed",
            "MyThingExposedSub", "MyThingPartlyExposedSub", "ConnectionMock",
-           "AtomicCounter"]
+           "AtomicCounter", "ResourceService", "Resource"]
 
 
 config.reset(False)   # reset the config to default
@@ -257,3 +257,38 @@ class AtomicCounter(object):
     @property
     def value(self):
         return self.__value
+
+
+class Resource(object):
+    # a fictional resource that gets allocated and must be freed again later.
+    def __init__(self, name, collection):
+        self.name = name
+        self.collection = collection
+        self.close_called = False
+
+    def close(self):
+        # Pyro will call this on a tracked resource once the client's connection gets closed!
+        self.collection.discard(self)
+        self.close_called = True
+
+
+@expose
+@behavior(instance_mode="single")
+class ResourceService(object):
+    def __init__(self):
+        self.resources = set()      # the allocated resources
+
+    def allocate(self, name):
+        resource = Resource(name, self.resources)
+        self.resources.add(resource)
+        current_context.track_resource(resource)
+
+    def free(self, name):
+        resources = {r for r in self.resources if r.name == name}
+        self.resources -= resources
+        for r in resources:
+            r.close()
+            current_context.untrack_resource(r)
+
+    def list(self):
+        return [r.name for r in self.resources]

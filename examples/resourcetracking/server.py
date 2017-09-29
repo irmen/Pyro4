@@ -10,17 +10,19 @@ class CustomDaemon(Pyro4.Daemon):
         # this method is called by Pyro itself once the client connection gets closed.
         # In this example this override is only used to print out some info.
         print("client disconnects:", conn.sock.getpeername())
-        print("    resources: ", set(conn.tracked_resources))
+        print("    resources: ", [r.name for r in conn.tracked_resources])
 
 
 class Resource(object):
     # a fictional resource that gets allocated and must be freed again later.
-    def __init__(self, name):
+    def __init__(self, name, collection):
         self.name = name
+        self.collection = collection
 
     def close(self):
         # Pyro will call this on a tracked resource once the client's connection gets closed!
         print("Resource: closing", self.name)
+        self.collection.discard(self)
 
 
 @Pyro4.expose
@@ -30,7 +32,7 @@ class Service(object):
         self.resources = set()      # the allocated resources
 
     def allocate(self, name):
-        resource = Resource(name)
+        resource = Resource(name, self.resources)
         self.resources.add(resource)
         Pyro4.current_context.track_resource(resource)
 
@@ -42,7 +44,7 @@ class Service(object):
             Pyro4.current_context.untrack_resource(r)
 
     def list(self):
-        return self.resources
+        return [r.name for r in self.resources]
 
 
 with CustomDaemon() as daemon:

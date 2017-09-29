@@ -790,6 +790,25 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertEqual("blobname", blobinfo)
             self.assertEqual([1, 2, 3], blobdata)
 
+    def testResourceFreeing(self):
+        rsvc = ResourceService()
+        uri = self.daemon.register(rsvc)
+        with Pyro4.core.Proxy(uri) as p:
+            p.allocate("r1")
+            p.allocate("r2")
+            resources = {r.name: r for r in rsvc.resources}
+            p.free("r1")
+            rsc = p.list()
+            self.assertEqual(["r2"], rsc)
+            self.assertTrue(resources["r1"].close_called)
+            self.assertFalse(resources["r2"].close_called)
+        time.sleep(0.02)
+        self.assertTrue(resources["r1"].close_called)
+        self.assertTrue(resources["r2"].close_called)
+        with Pyro4.core.Proxy(uri) as p:
+            rsc = p.list()
+            self.assertEqual([], rsc, "r2 must now be freed due to connection loss earlier")
+
 
 class ServerTestsThreadNoTimeout(unittest.TestCase):
     SERVERTYPE = "thread"
