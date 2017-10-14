@@ -717,6 +717,12 @@ Resource tracking and untracking is done in your server class on the ``Pyro4.cur
 
 See the ``resourcetracking`` example for working code utilizing this.
 
+.. note::
+    The order in which the resources are freed is arbitrary.
+    Also, if the resource can be garbage collected normally by Python,
+    it is removed from the tracked resources. So the ``close`` method should
+    not be the only way to properly free such resources (maybe you need a ``__del__`` as well).
+
 
 .. index:: annotations
 .. _msg_annotations:

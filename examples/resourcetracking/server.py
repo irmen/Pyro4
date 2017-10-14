@@ -21,6 +21,7 @@ class Resource(object):
 
     def close(self):
         # Pyro will call this on a tracked resource once the client's connection gets closed!
+        # (Unless the resource can be carbage collected normally by Python.)
         print("Resource: closing", self.name)
         self.collection.discard(self)
 
@@ -35,6 +36,7 @@ class Service(object):
         resource = Resource(name, self.resources)
         self.resources.add(resource)
         Pyro4.current_context.track_resource(resource)
+        print("service: allocated resource", name, " for client", Pyro4.current_context.client_sock_addr)
 
     def free(self, name):
         resources = {r for r in self.resources if r.name == name}
