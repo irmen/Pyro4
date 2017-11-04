@@ -23,7 +23,7 @@ Pyro is a pure Python library and runs on many different platforms and Python ve
 
 Here's a quick overview of Pyro's features:
 
-- written in 100% Python so extremely portable, runs on Python 2.7, Python 3.x, IronPython, Pypy.
+- written in 100% Python so extremely portable, runs on Python 2.7, Python 3.4 and newer, IronPython, Pypy 2 and 3.
 - works between different system architectures and operating systems.
 - able to communicate between different Python versions transparently.
 - defaults to a safe serializer (`serpent <https://pypi.python.org/pypi/serpent>`_) that supports many Python data types.

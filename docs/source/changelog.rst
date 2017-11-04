@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.64**
+
+- dropped support for Python 3.3 (which has reached end-of-life status). Supported Python versions are now 2.7, and 3.4 or newer.
+
+
 **Pyro 4.63**
 
 - fixed bug in autoproxy logic where it registered the wrong type if daemon.register() was called with

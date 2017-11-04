@@ -151,7 +151,7 @@ Same major Python version required when using pickle, cloudpickle, dill or marsh
 When Pyro is configured to use pickle, cloudpickle, dill or marshal as its serialization format, it is required to have the same *major* Python versions
 on your clients and your servers. Otherwise the different parties cannot decipher each others serialized data.
 This means you cannot let Python 2.x talk to Python 3.x with Pyro when using these serializers. However
-it should be fine to have Python 3.3 talk to Python 3.4 for instance.
+it should be fine to have Python 3.5 talk to Python 3.6 for instance.
 It may still be required to specify the pickle or dill protocol version though, because that needs to be the same on both ends as well.
 For instance, Python 3.4 introduced version 4 of the pickle protocol and as such won't be able to talk to Python 3.3 which is stuck
 on version 3 pickle protocol. You'll have to tell the Python 3.4 side to step down to protocol 3. There is a config item for that. The same will apply for dill protocol versions. If you are using cloudpickle, you can just set the pickle protocol version (as pickle is used under the hood).
