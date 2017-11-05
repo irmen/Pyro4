@@ -4,6 +4,8 @@ Change Log
 
 **Pyro 4.64**
 
+- **incompatible API change** for python 3.7 compatibility: renamed core.async to core.asyncproxy and the async keyword to asynchronous.
+  This had to be done because `async` (and `await`) are keywords in Python 3.7 and using them otherwise would result in a SyntaxError.
 - dropped support for Python 3.3 (which has reached end-of-life status). Supported Python versions are now 2.7, and 3.4 or newer.
 
 

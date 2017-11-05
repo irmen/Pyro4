@@ -45,7 +45,7 @@ class TestPackage(unittest.TestCase):
         self.assertIs(Pyro4.core.URI, Pyro4.URI)
         self.assertIs(Pyro4.core.callback, Pyro4.callback)
         self.assertIs(Pyro4.core.oneway, Pyro4.oneway)
-        self.assertIs(Pyro4.core.async, Pyro4.async)
+        self.assertIs(Pyro4.core.asyncproxy, Pyro4.asyncproxy)
         self.assertIs(Pyro4.core.batch, Pyro4.batch)
         self.assertIs(Pyro4.core.expose, Pyro4.expose)
         self.assertIs(Pyro4.core.behavior, Pyro4.behavior)

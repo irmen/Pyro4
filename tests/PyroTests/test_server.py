@@ -530,7 +530,7 @@ class ServerTestsOnce(unittest.TestCase):
 
     def testAsyncProxy(self):
         with Pyro4.core.Proxy(self.objectUri) as p:
-            Pyro4.core.async(p)
+            Pyro4.core.asyncproxy(p)
             p._pyroBind()  # force that any metadata is processed
             begin = time.time()
             result = p.delayAndId(1, 42)
@@ -551,7 +551,7 @@ class ServerTestsOnce(unittest.TestCase):
                 return value + increase
 
         with Pyro4.core.Proxy(self.objectUri) as p:
-            Pyro4.core.async(p)
+            Pyro4.core.asyncproxy(p)
             p._pyroBind()  # force that any metadata is processed
             holder = FuncHolder()
             begin = time.time()
@@ -585,7 +585,7 @@ class ServerTestsOnce(unittest.TestCase):
             self.assertIsNone(batch.delay(1))  # a delay shouldn't matter with async
             self.assertIsNone(batch.multiply(3, 4))
             begin = time.time()
-            asyncresult = batch(async=True)
+            asyncresult = batch(asynchronous=True)
             duration = time.time() - begin
             self.assertTrue(duration < 0.1, "async batch with delay should return almost immediately")
             results = asyncresult.value
@@ -607,7 +607,7 @@ class ServerTestsOnce(unittest.TestCase):
             batch = Pyro4.core.batch(p)
             self.assertIsNone(batch.multiply(7, 6))
             self.assertIsNone(batch.multiply(3, 4))
-            result = batch(async=True)
+            result = batch(asynchronous=True)
             holder = FuncHolder()
             result.then(holder.function).then(holder.function)
             value = result.value

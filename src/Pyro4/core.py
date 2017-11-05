@@ -24,7 +24,7 @@ from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 from Pyro4.configuration import config
 
 
-__all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "async", "expose", "behavior",
+__all__ = ["URI", "Proxy", "Daemon", "current_context", "callback", "batch", "asyncproxy", "expose", "behavior",
            "oneway", "SerializedBlob", "_resolve", "_locateNS"]
 
 if sys.version_info >= (3, 0):
@@ -646,10 +646,10 @@ class Proxy(object):
         """returns a helper class that lets you create batched method calls on the proxy"""
         return _BatchProxyAdapter(self)
 
-    def _pyroAsync(self, async=True):
+    def _pyroAsync(self, asynchronous=True):
         """turns the proxy into async mode so you can do asynchronous method calls,
-        or sets it back to normal sync mode if you set async=False."""
-        self.__async = async
+        or sets it back to normal sync mode if you set asynchronous=False."""
+        self.__async = asynchronous
 
     def _pyroInvokeBatch(self, calls, oneway=False):
         flags = message.FLAGS_BATCH
@@ -824,10 +824,10 @@ class _BatchProxyAdapter(object):
             else:
                 yield result  # it is a regular result object, yield that and continue.
 
-    def __call__(self, oneway=False, async=False):
-        if oneway and async:
+    def __call__(self, oneway=False, asynchronous=False):
+        if oneway and asynchronous:
             raise errors.PyroError("async oneway calls make no sense")
-        if async:
+        if asynchronous:
             return _AsyncRemoteMethod(self, "<asyncbatch>", self.__proxy._pyroMaxRetries)()
         else:
             results = self.__proxy._pyroInvokeBatch(self.__calls, oneway)
@@ -896,9 +896,9 @@ def batch(proxy):
     return proxy._pyroBatch()
 
 
-def async(proxy, async=True):
+def asyncproxy(proxy, asynchronous=True):
     """convenience method to set proxy to async or sync mode."""
-    proxy._pyroAsync(async)
+    proxy._pyroAsync(asynchronous)
 
 
 def pyroObjectToAutoProxy(obj):
