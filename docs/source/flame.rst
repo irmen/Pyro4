@@ -135,6 +135,18 @@ A remote interactive console can be started like this::
     anything you like. Be very careful.
 
 .. note::
+    The remote module proxy that Flame provides does *not* support direct attribute access.
+    For instance, you cannot do the following::
+
+        flame = Pyro4.utils.flame.connect("....")
+        ros = flame.module("os")
+        print(ros.name)      #  doesn't work as you might expect
+
+    The ``flame.evaluate`` method (:py:meth:`Pyro4.utils.flame.Flame.evaluate`) provides an alternative though::
+
+        print(flame.evaluate("os.name"))     # properly prints the os.name of the remote server
+
+.. note::
 
     :doc:`pyrolite` also supports convenient access to a Pyro Flame server. This includes the remote interactive console.
 

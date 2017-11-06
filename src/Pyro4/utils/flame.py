@@ -198,7 +198,11 @@ class Flame(object):
             raise RuntimeError("flame requires the pickle serializer exclusively")
 
     def module(self, name):
-        """import a module on the server given by the module name and returns a proxy to it"""
+        """
+        Import a module on the server given by the module name and returns a proxy to it.
+        The returned proxy does not support direct attribute access, if you want that,
+        you should use the ``evaluate`` method instead.
+        """
         if importlib:
             importlib.import_module(name)
         else:
