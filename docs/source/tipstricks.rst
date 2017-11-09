@@ -202,17 +202,17 @@ To find out the protocol version that your client code is using, you can use thi
 
 
 
-.. index:: async, futures
+.. index:: asynchronous, futures
 
 .. _future-functions:
 
 Asynchronous ('future') normal function calls
 =============================================
-Pyro provides an async proxy to call remote methods asynchronously, see :ref:`async-calls`.
+Pyro provides an asynchronous proxy to call remote methods asynchronously, see :ref:`async-calls`.
 For normal Python code, Python provides a similar mechanism in the form of the
 :py:class:`Pyro4.futures.Future` class (also available as ``Pyro4.Future``).
 With a syntax that is slightly different from normal method calls,
-it provides the same asynchronous function calls as the async proxy has.
+it provides the same asynchronous function calls as the asynchronous proxy has.
 Note that Python itself has a similar thing in the standard library since version 3.2, see
 http://docs.python.org/3/library/concurrent.futures.html#future-objects . However Pyro's Future
 object is available on older Python versions too. It works slightly differently and perhaps
@@ -230,7 +230,7 @@ and receive its results somewhere in the future::
     summation = result.value
 
 Actually calling the `Future` object returns control immediately and results in a :py:class:`Pyro4.futures.FutureResult`
-object. This is the exact same class as with the async proxy. The most important attributes are ``value``, ``ready``
+object. This is the exact same class as with the asynchrnous proxy. The most important attributes are ``value``, ``ready``
 and the ``wait`` method. See :ref:`async-calls` for more details.
 
 You can also chain multiple calls, so that the whole call chain is executed sequentially in the background.

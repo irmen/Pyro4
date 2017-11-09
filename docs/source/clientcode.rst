@@ -356,11 +356,11 @@ How it works:
 You create a batch proxy using this: ``batch = Pyro4.batch(proxy)`` or this (equivalent): ``batch = proxy._pyroBatch()``.
 The signature of the batch proxy call is as follows:
 
-.. py:method:: batchproxy.__call__([oneway=False, async=False])
+.. py:method:: batchproxy.__call__([oneway=False, asynchronous=False])
 
     Invoke the batch and when done, returns a generator that produces the results of every call, in order.
     If ``oneway==True``, perform the whole batch as one-way calls, and return ``None`` immediately.
-    If ``async==True``, perform the batch asynchronously, and return an asynchronous call result object immediately.
+    If ``asynchronous==True``, perform the batch asynchronously, and return an asynchronous call result object immediately.
 
 **Simple example**::
 
@@ -383,8 +383,8 @@ The signature of the batch proxy call is as follows:
 The result value of an asynchronous batch call is a special object. See :ref:`async-calls` for more details about it.
 This is some simple code doing an asynchronous batch::
 
-    results = batch(async=True)
-    # do some stuff... until you're ready and require the results of the async batch:
+    results = batch(asynchronous=True)
+    # do some stuff... until you're ready and require the results of the asynchronous batch:
     for result in results.value:
         print(result)    # process the results
 
@@ -452,7 +452,7 @@ Have a look at the :file:`stockquotes` tutorial example, or the :file:`filetrans
 
 
 
-.. index:: async call, future, call chaining
+.. index:: asynchronous call, future, call chaining
 
 .. _async-calls:
 
@@ -467,8 +467,8 @@ meantime, the code doesn't block at all and can process the results immediately.
 It is possible to define one or more callables (the "call chain") that should be invoked
 automatically by Pyro as soon as the result value becomes available.
 
-You set a proxy in async mode using this: ``Pyro4.async(proxy)`` or (equivalent): ``proxy._pyroAsync()``.
-Every remote method call you make on the async proxy, returns a
+You set a proxy in asynchronous mode using this: ``Pyro4.asyncproxy(proxy)`` or (equivalent): ``proxy._pyroAsync()``.
+Every remote method call you make on the asynchronous proxy, returns a
 :py:class:`Pyro4.futures.FutureResult` object immediately.
 This object means 'the result of this will be available at some moment in the future' and has the following interface:
 
@@ -520,7 +520,7 @@ See the :file:`async` example for more details and example code for call chains.
 
 Async calls for normal callables (not only for Pyro proxies)
 ------------------------------------------------------------
-The async proxy discussed above is only available when you are dealing with Pyro proxies.
+The asynchrnous proxy discussed above is only available when you are dealing with Pyro proxies.
 It provides a convenient syntax to call the methods on the proxy asynchronously.
 For normal Python code it is sometimes useful to have a similar mechanism as well.
 Pyro provides this too, see :ref:`future-functions` for more information.

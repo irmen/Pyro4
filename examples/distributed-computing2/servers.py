@@ -45,13 +45,13 @@ class Dispatcher(object):
             all_counters = ns.list(prefix="example.dc.wordcount.")
         counters = [Pyro4.Proxy(uri) for uri in all_counters.values()]
         for c in counters:
-            c._pyroAsync()   # set proxy in async mode
+            c._pyroAsync()   # set proxy in asynchronous mode
         roundrobin_counters = cycle(counters)
 
         # chop the text into chunks that can be distributed across the workers
-        # uses async proxy so that we can hand off everything in parallel
+        # uses asynchronous proxy so that we can hand off everything in parallel
         # counter is selected in a round-robin fashion from list of all available counters
-        # (This is a brain dead way because it doesn't scale - all the async calls are hogging
+        # (This is a brain dead way because it doesn't scale - all the asynchronous calls are hogging
         # the worker threads in the server. That's why we've increased that a lot at the start
         # of this file, just for the sake of this example!)
         async_results = []

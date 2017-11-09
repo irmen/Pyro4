@@ -582,7 +582,7 @@ class ServerTestsOnce(unittest.TestCase):
         with Pyro4.core.Proxy(self.objectUri) as p:
             batch = Pyro4.core.batch(p)
             self.assertIsNone(batch.multiply(7, 6))
-            self.assertIsNone(batch.delay(1))  # a delay shouldn't matter with async
+            self.assertIsNone(batch.delay(1))  # a delay shouldn't matter with asynchronous
             self.assertIsNone(batch.multiply(3, 4))
             begin = time.time()
             asyncresult = batch(asynchronous=True)

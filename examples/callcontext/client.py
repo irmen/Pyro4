@@ -53,8 +53,8 @@ with CustomAnnotationProxy(uri) as proxy:
     proxy.oneway("hello-ONEWAY-1")
     print("Sending another oneway message... (should not print a response at all)")
     proxy.oneway("hello-ONEWAY-2")
-    # async
-    print("Async proxy message...")
+    # asynchronous
+    print("Asynchronous proxy message...")
     proxy._pyroAsync()
     result = proxy.echo("hello-ASYNC")
     _ = result.value

@@ -850,14 +850,14 @@ class RemoteMethodTests(unittest.TestCase):
         results = batch(oneway=True)
         self.assertIsNone(results)  # oneway always returns None
         self.assertEqual(4, len(proxy.result))  # should have done 4 calls, not 5
-        self.assertRaises(Pyro4.errors.PyroError, batch, oneway=True, asynchronous=True)  # oneway+async=booboo
+        self.assertRaises(Pyro4.errors.PyroError, batch, oneway=True, asynchronous=True)  # oneway+asynchronous=booboo
 
     def testBatchMethodAsync(self):
         proxy = self.BatchProxyMock()
         batch = Pyro4.core.batch(proxy)
         self.assertIsNone(batch.foo(42))
         self.assertIsNone(batch.bar("abc"))
-        self.assertIsNone(batch.pause(0.5))  # pause shouldn't matter with async
+        self.assertIsNone(batch.pause(0.5))  # pause shouldn't matter with asynchronous
         self.assertIsNone(batch.baz(42, "abc", arg=999))
         begin = time.time()
         asyncresult = batch(asynchronous=True)

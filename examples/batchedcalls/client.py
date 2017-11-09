@@ -70,16 +70,16 @@ duration = time.time() - begin
 print("total time taken {0:.2f} seconds ({1:.0f} calls/sec)".format(duration, NUMBER_OF_LOOPS * 2.0 / duration // 100 * 100))
 print("oneway batched calls were {0:.1f} times faster than normal remote calls".format(duration_normal / duration))
 
-# Batches can be executed async as well
-print("\nBatched remote calls, async...")
+# Batches can be executed asynchronous as well
+print("\nBatched remote calls, asynchronous...")
 batch = Pyro4.batch(p)  # get a batched call proxy for 'p'
 batch.printmessage("beginning batch #3")
 batch.multiply(7, 6)  # queue a call, note that it returns 'None' immediately
 batch.add(10, 20)  # queue a call, note that it returns 'None' immediately
-batch.delay(2)  # queue a delay, but this doesn't matter with async
+batch.delay(2)  # queue a delay, but this doesn't matter with asynchronous proxy
 batch.printmessage("end of batch #3")
 print("executing the batch... (should return immediately because async)")
-asyncresult = batch(async=True)  # execute the batch, async (return immediately)
+asyncresult = batch(asynchronous=True)  # execute the batch, asynchronously (return immediately)
 print("processing the results...(should wait until async results become available)")
 results = list(asyncresult.value)
 print("results=", results)

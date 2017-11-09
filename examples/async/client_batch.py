@@ -24,7 +24,7 @@ batch.divide(100, 5)
 batch.divide(99, 9)
 batch.divide(555, 2)
 print("getting results...")
-asyncresults = batch(async=True)  # returns immediately
+asyncresults = batch(asynchronous=True)  # returns immediately
 print("result value available?", asyncresults.ready)  # prints False because the server is still 'busy'
 print("client can do other stuff here.")
 time.sleep(2)
@@ -41,7 +41,7 @@ batch = Pyro4.batch(proxy)
 batch.divide(100, 5)
 batch.divide(99, 9)
 batch.divide(555, 2)
-asyncresults = batch(async=True)  # returns immediately
+asyncresults = batch(asynchronous=True)  # returns immediately
 asyncresults.then(asyncFunction) \
     .then(asyncFunction) \
     .then(asyncFunction)
@@ -52,7 +52,7 @@ print("\n* batch async call with exception:")
 batch = Pyro4.batch(proxy)
 batch.divide(1, 1)  # first call is ok
 batch.divide(100, 0)  # second call will trigger a zero division error, 100//0
-asyncresults = batch(async=True)  # returns immediately
+asyncresults = batch(asynchronous=True)  # returns immediately
 print("getting result values...")
 try:
     value = asyncresults.value
@@ -65,7 +65,7 @@ batch = Pyro4.batch(proxy)
 batch.divide(100, 5)
 batch.divide(99, 9)
 batch.divide(555, 2)
-asyncresults = batch(async=True)  # returns immediately
+asyncresults = batch(asynchronous=True)  # returns immediately
 print("checking if ready within 2 seconds...")
 ready = asyncresults.wait(2)  # wait for ready within 2 seconds but the server takes 3
 print("status after wait=", ready)  # should print False

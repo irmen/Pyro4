@@ -647,7 +647,7 @@ class Proxy(object):
         return _BatchProxyAdapter(self)
 
     def _pyroAsync(self, asynchronous=True):
-        """turns the proxy into async mode so you can do asynchronous method calls,
+        """turns the proxy into asynchronous mode so you can do asynchronous method calls,
         or sets it back to normal sync mode if you set asynchronous=False."""
         self.__async = asynchronous
 
@@ -843,7 +843,7 @@ class _BatchProxyAdapter(object):
 
 
 class _AsyncRemoteMethod(object):
-    """async method call abstraction (call will run in a background thread)"""
+    """asynchronous method call abstraction (call will run in a background thread)"""
     def __init__(self, proxy, name, max_retries):
         self.__proxy = proxy
         self.__name = name
@@ -882,11 +882,11 @@ class _AsyncRemoteMethod(object):
             except (errors.ConnectionClosedError, errors.TimeoutError) as x:
                 # only retry for recoverable network errors
                 if attempt >= self.__max_retries:
-                    # ignore any exceptions here, return them as part of the async result instead
+                    # ignore any exceptions here, return them as part of the asynchronous result instead
                     asyncresult.value = futures._ExceptionWrapper(x)
                     return
             except Exception as x:
-                # ignore any exceptions here, return them as part of the async result instead
+                # ignore any exceptions here, return them as part of the asynchronous result instead
                 asyncresult.value = futures._ExceptionWrapper(x)
                 return
 
@@ -897,7 +897,7 @@ def batch(proxy):
 
 
 def asyncproxy(proxy, asynchronous=True):
-    """convenience method to set proxy to async or sync mode."""
+    """convenience method to set proxy to asynchronous or sync mode."""
     proxy._pyroAsync(asynchronous)
 
 

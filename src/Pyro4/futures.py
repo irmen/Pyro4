@@ -110,7 +110,7 @@ class Future(object):
         """
         Specify the exception handler to be invoked (with the exception object as only
         argument) when calculating the result raises an exception.
-        If no exception handler is set, any exception raised in the async call will be silently ignored.
+        If no exception handler is set, any exception raised in the asynchronous call will be silently ignored.
         Returns self so you can easily chain other calls.
         """
         self.exceptionhandler = exceptionhandler
@@ -143,7 +143,7 @@ class FutureResult(object):
 
     @property
     def ready(self):
-        """Boolean that contains the readiness of the async result"""
+        """Boolean that contains the readiness of the asynchronous result"""
         return self.__ready.isSet()
 
     def get_value(self):

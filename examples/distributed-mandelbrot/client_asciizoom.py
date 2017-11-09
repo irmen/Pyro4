@@ -47,7 +47,7 @@ class MandelZoomer(object):
             server = servers[i % len(servers)]
             server.calc_line(start, self.res_x, i*di, dr, i)
         for batch in servers:
-            batch(async=True).then(self.batch_result)
+            batch(asynchronous=True).then(self.batch_result)
         self.all_lines_ready.wait(timeout=5)
         return "\n".join(self.result)
 
