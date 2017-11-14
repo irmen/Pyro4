@@ -20,4 +20,4 @@ install:
   - pip install -r test_requirements.txt
 script:
   - cd tests
-  - python -E run_testsuite.py
+  - python -E -Wall -tt -bb run_testsuite.py
