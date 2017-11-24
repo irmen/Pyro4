@@ -4,10 +4,16 @@ Change Log
 
 **Pyro 4.64**
 
-- **incompatible API change** for python 3.7 compatibility: renamed ``core.async`` to ``core.asyncproxy``
+- **incompatible API change** for python 3.7 compatibility: renaming of ``async`` function and keyword arguments in the API:
+  Renamed ``Pyro4.core.async`` to ``Pyro4.core.asyncproxy`` (and its occurrence in ``Pyro4``)
   and the ``async`` keyword argument in some methods to ``asynchronous``.
   This had to be done because ``async`` (and ``await``) are now parsed as keywords in Python 3.7 and using them otherwise will result
   in a SyntaxError when loading the module.
+  It is suggested you stop using the ``asyncproxy`` function and instead create asynchronous proxies using the ``_pyroAsync``
+  method on the regular proxy.
+- For *existing code* running on Python *older than 3.7*, a backwards compatibility feature is present to still provide the
+  ``async`` function and keyword arguments as they were supported on previous Pyro versions.
+  Still, it's advised to migrate away from them and start using the new names.
 - dropped support for Python 3.3 (which has reached end-of-life status). Supported Python versions are now 2.7, and 3.4 or newer.
 
 

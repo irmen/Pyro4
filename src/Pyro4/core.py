@@ -651,6 +651,18 @@ class Proxy(object):
         or sets it back to normal sync mode if you set asynchronous=False."""
         self.__async = asynchronous
 
+    if sys.version_info < (3, 7):
+        # async keyword backwards compatibility
+        _pyroAsync_37 = _pyroAsync
+
+        def _pyroAsync(self, asynchronous=True, **kwargs):
+            if kwargs:
+                kword = list(kwargs.keys())
+                if kword != ["async"]:
+                    raise TypeError("_pyroAsync() got an unexpected keyword argument '{:s}'".format(kword[0]))
+                asynchronous = kwargs["async"]
+            return Proxy._pyroAsync_37(self, asynchronous)
+
     def _pyroInvokeBatch(self, calls, oneway=False):
         flags = message.FLAGS_BATCH
         if oneway:
@@ -835,6 +847,20 @@ class _BatchProxyAdapter(object):
             if not oneway:
                 return self.__resultsgenerator(results)
 
+    if sys.version_info < (3, 7):
+        # async keyword backwards compatibility
+        call_37 = __call__
+
+        def __call__(self, oneway=False, **kwargs):
+            if kwargs:
+                kword = list(kwargs.keys())
+                if kword != ["async"] and kword != ["asynchronous"]:
+                    raise TypeError("__call__() got an unexpected keyword argument '{:s}'".format(kword[0]))
+                if kword == ["async"]:
+                    kwargs = {"asynchronous": kwargs["async"]}
+            kwargs["oneway"] = oneway
+            return _BatchProxyAdapter.call_37(self, **kwargs)
+
     def _pyroInvoke(self, name, args, kwargs):
         # ignore all parameters, we just need to execute the batch
         results = self.__proxy._pyroInvokeBatch(self.__calls)
@@ -951,7 +977,7 @@ def expose(method_or_class):
             raise AttributeError("using @expose on a classmethod/staticmethod must be done "
                                  "after @classmethod/@taticmethod. Method: " + attrname)
         else:
-            raise AttributeError("@expose cannot determine what this is: "+repr(method_or_class))
+            raise AttributeError("@expose cannot determine what this is: " + repr(method_or_class))
     if util.is_private_attribute(attrname):
         raise AttributeError("exposing private names (starting with _) is not allowed")
     if inspect.isclass(method_or_class):
@@ -1986,3 +2012,18 @@ class SerializedBlob(object):
 
 current_context = _CallContext()
 """the context object for the current call. (thread-local)"""
+
+
+# 'async' keyword backwards compatibility
+if sys.version_info < (3, 7):
+    def asyncproxy(proxy, asynchronous=True, **kwargs):
+        """convenience method to set proxy to asynchronous or sync mode."""
+        if kwargs:
+            kword = list(kwargs.keys())
+            if kword != ["async"]:
+                raise TypeError("asyncproxy() got an unexpected keyword argument '{:s}'".format(kword[0]))
+            asynchronous = kwargs["async"]
+        proxy._pyroAsync(asynchronous)
+    current_module = sys.modules[__name__]
+    pyro4_module = __import__("Pyro4")
+    current_module.__dict__["async"] = pyro4_module.__dict__["async"] = asyncproxy

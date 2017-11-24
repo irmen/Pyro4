@@ -55,6 +55,29 @@ class TestPackage(unittest.TestCase):
         self.assertIs(Pyro4.core._resolve, Pyro4.naming.resolve, "old API function location must still be valid")
         self.assertIsInstance(Pyro4.current_context, Pyro4.core._CallContext)
 
+    @unittest.skipIf(sys.version_info >= (3, 7), "async is kw on 3.7+")
+    def testAsyncKeywordBackwardsCompatibility(self):
+        # 'async' function
+        async_function = getattr(Pyro4, "async")
+        self.assertIs(async_function, Pyro4.asyncproxy)
+        async_function = getattr(Pyro4.core, "async")
+        self.assertIs(async_function, Pyro4.core.asyncproxy)
+        # 'async' keyword on batch proxy's __call__
+        proxy = Pyro4.Proxy("PYRO:dummy@localhost:9999")
+        batch = Pyro4.batch(proxy)
+        result = batch(**{"async": True})
+        result.set_cancelled()
+        result = batch(asynchronous=True)
+        result.set_cancelled()
+        # 'async' keyword on 'proxy._pyroAsync' method
+        proxy._pyroAsync(**{"async": True})
+        proxy._pyroAsync(asynchronous=True)
+        proxy._pyroAsync(True)
+        # 'async' keyword on 'async' function
+        Pyro4.asyncproxy(proxy, **{"async": True})
+        Pyro4.asyncproxy(proxy, asynchronous=True)
+        Pyro4.asyncproxy(proxy, True)
+
 
 if __name__ == "__main__":
     unittest.main()
