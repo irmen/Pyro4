@@ -143,7 +143,7 @@ you don't want to 'taint' with a Pyro dependency because it's used elsewhere too
 
 There are a few possibilities to deal with this:
 
-**Don't use @expose at all**
+**Don't use @expose at all** (not recommended)
 
 You can disable the requirement for adding ``@expose`` to classes/methods by setting ``REQUIRE_EXPOSE`` back to False.
 This is a global setting however and will affect all your Pyro classes in the server, so be careful.

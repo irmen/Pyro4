@@ -13,6 +13,21 @@ Best practices
 
 .. index:: circular topology
 
+Avoid using insecure features.
+------------------------------
+
+Avoid using the ``pickle`` (and ``dill``, and ``cloudpickle``) serializers, they will make your solution insecure.
+Avoid using Flame (it requires pickle, but has severe security implications by itself).
+
+
+Make as little as possible remotely accessible.
+-----------------------------------------------
+
+Avoid sticking a ``@expose`` on the whole class, and instead mark only those methods exposed that you really
+want to be remotely accessible. Alternatively, make sure your exposed Pyro server class only consists of methods
+that are okay to be accessed remotely.
+
+
 Avoid circular communication topologies.
 ----------------------------------------
 
