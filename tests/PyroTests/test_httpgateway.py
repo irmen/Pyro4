@@ -18,7 +18,7 @@ from Pyro4.configuration import config
 # a bit of hackery to avoid having to launch a live name server
 def get_nameserver_dummy(hmac=None):
     class NameServerDummyProxy(NameServer):
-		_pyroUri = "PYRO:dummy12345@localhost:59999"
+        _pyroUri = "PYRO:dummy12345@localhost:59999"
         def __init__(self):
             super(NameServerDummyProxy, self).__init__()
             self.register("http.ObjectName", "PYRO:dummy12345@localhost:59999")
