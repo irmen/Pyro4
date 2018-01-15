@@ -2014,7 +2014,7 @@ current_context = _CallContext()
 """the context object for the current call. (thread-local)"""
 
 
-# 'async' keyword backwards compatibility
+# 'async' keyword backwards compatibility for Python versions older than 3.7. New code should not use this!
 if sys.version_info < (3, 7):
     def asyncproxy(proxy, asynchronous=True, **kwargs):
         """convenience method to set proxy to asynchronous or sync mode."""
