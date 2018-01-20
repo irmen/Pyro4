@@ -751,6 +751,7 @@ def get_serializer_by_id(sid):
     except KeyError:
         raise errors.SerializeError("no serializer available for id %d" % sid)
 
+
 # determine the serializers that are supported
 try:
     import cPickle as pickle
