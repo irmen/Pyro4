@@ -394,6 +394,8 @@ class Proxy(object):
         """release the connection to the pyro daemon"""
         with self.__pyroConnLock:
             if self._pyroConnection is not None:
+                if self._pyroConnection.keep_open:
+                    return
                 self._pyroConnection.close()
                 self._pyroConnection = None
                 log.debug("connection released")

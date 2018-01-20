@@ -217,6 +217,7 @@ class MyThingPartlyExposedSub(MyThingPartlyExposed):
 
 class ConnectionMock(object):
     def __init__(self, initial_msg=None):
+        self.keep_open = False
         if not initial_msg:
             self.received = b""
         elif isinstance(initial_msg, (str, bytes)):

@@ -118,6 +118,27 @@ class DaemonTests(unittest.TestCase):
             obj = d.objectsById[Pyro4.constants.DAEMON_NAME]
             self.assertEqual(42, obj.custom_daemon_method())
 
+    def testDaemonConnectedSocket(self):
+        try:
+            Pyro4.config.SERVERTYPE = "thread"
+            with Pyro4.core.Daemon() as d:
+                self.assertTrue("Thread" in d.transportServer.__class__.__name__)
+            s1, s2 = socket.socketpair()
+            with Pyro4.core.Daemon(connected_socket=s1) as d:
+                self.assertEqual("./u:<<not-bound>>", d.locationStr)
+                self.assertFalse("Thread" in d.transportServer.__class__.__name__)
+                self.assertTrue("Existing" in d.transportServer.__class__.__name__)
+            Pyro4.config.SERVERTYPE = "multiplex"
+            with Pyro4.core.Daemon() as d:
+                self.assertTrue("Multiplex" in d.transportServer.__class__.__name__)
+            s1, s2 = socket.socketpair()
+            with Pyro4.core.Daemon(connected_socket=s1) as d:
+                self.assertEqual("./u:<<not-bound>>", d.locationStr)
+                self.assertFalse("Multiplex" in d.transportServer.__class__.__name__)
+                self.assertTrue("Existing" in d.transportServer.__class__.__name__)
+        finally:
+            Pyro4.config.SERVERTYPE = "thread"
+
     @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "unix domain sockets required")
     def testDaemonUnixSocket(self):
         SOCKNAME = "test_unixsocket"

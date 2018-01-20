@@ -15,6 +15,10 @@ Change Log
 - For existing code running on Python *older than 3.7*, a backwards compatibility feature is present to still provide the
   ``async`` function and keyword arguments as they were supported on previous Pyro versions.
   But also for that older environments, it's advised to migrate away from them and start using the new names.
+- Proxy and Daemon have a new 'connected_socket' parameter. You can set it to a user-supplied connected socket that must
+  be used by them instead of creating a new socket for you. Connected sockets can be created using the socket.socketpair()
+  function for instance, and allow for easy and efficient communication over an internal socket between
+  parent-child processes or threads, using Pyro.  Also see the new 'socketpair' example.
 - dropped support for Python 3.3 (which has reached end-of-life status). Supported Python versions are now 2.7, and 3.4 or newer.
   (the life cycle status of the Python versions can be seen here https://devguide.python.org/#status-of-python-branches)
 

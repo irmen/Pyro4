@@ -11,6 +11,7 @@ import os
 import sys
 import time
 import uuid
+import socket
 import unittest
 import warnings
 import Pyro4.core
@@ -343,6 +344,23 @@ class CoreTests(unittest.TestCase):
         self.assertFalse(Pyro4.core.URI.isUnixsockLocation("./x:name"))
         self.assertFalse(Pyro4.core.URI.isUnixsockLocation("foobar"))
 
+    def testProxyConnectedSocket(self):
+        s1, s2 = socket.socketpair()
+        s1.settimeout(1)
+        s2.settimeout(1)
+        try:
+            Pyro4.config.METADATA = False
+            with self.assertRaises(Pyro4.errors.PyroError):
+                Pyro4.Proxy("test")
+            with Pyro4.Proxy("test", connected_socket=s1) as p:
+                self.assertEquals("<<connected-socket>>:0", p._pyroUri.location)
+                self.assertIsNotNone(p._pyroConnection)
+                p._pyroRelease()
+                self.assertIsNotNone(p._pyroConnection)
+            self.assertIsNotNone(p._pyroConnection)
+        finally:
+            Pyro4.config.METADATA = True
+
     def testProxyCopy(self):
         u = Pyro4.core.URI("PYRO:12345@hostname:9999")
         p1 = Pyro4.core.Proxy(u)
@@ -498,6 +516,7 @@ class CoreTests(unittest.TestCase):
     def testProxyWithStmt(self):
         class ConnectionMock(object):
             closeCalled = False
+            keep_open = False
 
             def close(self):
                 self.closeCalled = True
@@ -535,8 +554,9 @@ class CoreTests(unittest.TestCase):
 
     def testProxyHmac(self):
         class ConnectionMock(object):
-            def __int__(self):
+            def __init__(self):
                 self.msgbytes = None
+                self.keep_open = False
             def close(self):
                 pass
             def send(self, msgbytes):
@@ -573,6 +593,7 @@ class CoreTests(unittest.TestCase):
         class ConnectionMock(object):
             def __init__(self):
                 self.timeout = config.COMMTIMEOUT
+                self.keep_open = False
 
             def close(self):
                 pass
