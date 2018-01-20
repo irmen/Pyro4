@@ -346,8 +346,8 @@ class CoreTests(unittest.TestCase):
 
     def testProxyConnectedSocket(self):
         s1, s2 = socket.socketpair()
-        s1.settimeout(1)
-        s2.settimeout(1)
+        s1.settimeout(0.1)
+        s2.settimeout(0.1)
         try:
             Pyro4.config.METADATA = False
             with self.assertRaises(Pyro4.errors.PyroError):

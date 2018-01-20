@@ -125,7 +125,7 @@ class DaemonTests(unittest.TestCase):
                 self.assertTrue("Thread" in d.transportServer.__class__.__name__)
             s1, s2 = socket.socketpair()
             with Pyro4.core.Daemon(connected_socket=s1) as d:
-                self.assertEqual("./u:<<not-bound>>", d.locationStr)
+                self.assertTrue(d.locationStr=="./u:<<not-bound>>" or d.locationStr.startswith("127.0."))
                 self.assertFalse("Thread" in d.transportServer.__class__.__name__)
                 self.assertTrue("Existing" in d.transportServer.__class__.__name__)
             Pyro4.config.SERVERTYPE = "multiplex"
@@ -133,7 +133,7 @@ class DaemonTests(unittest.TestCase):
                 self.assertTrue("Multiplex" in d.transportServer.__class__.__name__)
             s1, s2 = socket.socketpair()
             with Pyro4.core.Daemon(connected_socket=s1) as d:
-                self.assertEqual("./u:<<not-bound>>", d.locationStr)
+                self.assertTrue(d.locationStr=="./u:<<not-bound>>" or d.locationStr.startswith("127.0."))
                 self.assertFalse("Multiplex" in d.transportServer.__class__.__name__)
                 self.assertTrue("Existing" in d.transportServer.__class__.__name__)
         finally:
