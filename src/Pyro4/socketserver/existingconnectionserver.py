@@ -30,7 +30,7 @@ class SocketServer_ExistingConnection(object):
         self.sock = connected_socket
         log.info("starting server on user-supplied connected socket " + str(connected_socket))
         sn = connected_socket.getsockname()
-        if connected_socket.family == socket.AF_UNIX:
+        if hasattr(socket, "AF_UNIX") and connected_socket.family == socket.AF_UNIX:
             self.locationStr = "./u:" + (sn or "<<not-bound>>")
         else:
             host, port = sn[:2]

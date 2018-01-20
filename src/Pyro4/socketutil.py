@@ -508,7 +508,7 @@ def family_str(sock):
         return "IPv4"
     if f == socket.AF_INET6:
         return "IPv6"
-    if f == socket.AF_UNIX:
+    if hasattr(socket, "AF_UNIX") and f == socket.AF_UNIX:
         return "Unix"
     return "???"
 
