@@ -19,7 +19,7 @@ log = logging.getLogger("Pyro4.existingconnectionserver")
 
 class SocketServer_ExistingConnection(object):
     def __init__(self):
-        self.sock = self.daemon = self.locationStr = None
+        self.sock = self.daemon = self.locationStr = self.conn = None
         self.shutting_down = False
 
     def init(self, daemon, connected_socket):
