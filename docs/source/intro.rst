@@ -45,6 +45,7 @@ Here's a quick overview of Pyro's features:
 - remote exceptions will be raised in the caller, as if they were local. You can extract detailed remote traceback information.
 - http gateway available for clients wanting to use http+json (such as browser scripts).
 - stable network communication code that works reliably on many platforms.
+- can hook onto existing sockets created for instance with socketpair() to communicate efficiently between threads or sub-processes.
 - possibility to use Pyro's own event loop, or integrate it into your own (or third party) event loop.
 - three different possible instance modes for your remote objects (singleton, one per session, one per call).
 - many simple examples included to show various features and techniques.

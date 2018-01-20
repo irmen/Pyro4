@@ -864,3 +864,28 @@ and also don't have to include the source code for the serialized types in the d
 It just deals with a blob of serialized bytes.
 
 An example that shows how this mechanism can be used, can be found as ``blob-dispatch`` in the examples folder.
+
+
+.. index:: socketpair, user provided sockets
+
+Hooking onto existing connected sockets such as from socketpair()
+=================================================================
+
+For communication between threads or sub-processes, there is ``socket.socketpair()``. It creates
+spair of connected sockets that you can share between the threads or processes.
+Since Pyro 4.70 it is possible to tell Pyro to use a user-created socket like that, instead of creating
+new sockets itself, which means you can use Pyro to talk between threads or sub-processes
+over an efficient and isolated channel.
+You do this by creating a socket (or a pair) and providing it as the ``connected_socket`` parameter
+to the ``Daemon`` and ``Proxy`` classes. For the Daemon, don't pass any other arguments because they
+won't be used anyway. For the Proxy, set only the first parameter (``uri``) to just the *name* of the
+object in the daemon you want to connect to. So don't use a PYRO or PYRONAME prefix for the uri in this case.
+
+Closing the proxy or the daemon will *not* close the underlying user-supplied socket so you can use it again
+for another proxy (to access a different object). You created the socket(s) yourself,
+and you also have to close the socket(s) yourself. Also because the socketpair is internal
+to the process that created it, it's safe to use the pickle
+serializer on this connection. This can improve communication performance even further.
+
+See the ``socketpair`` example for two example programs (one using threads, the other using fork
+to create a child process).

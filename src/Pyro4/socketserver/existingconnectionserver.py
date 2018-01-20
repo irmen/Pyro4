@@ -45,7 +45,6 @@ class SocketServer_ExistingConnection(object):
 
     def __del__(self):
         if self.sock is not None:
-            self.sock.close()
             self.sock = None
             self.conn = None
 
@@ -70,17 +69,7 @@ class SocketServer_ExistingConnection(object):
         self.conn = None
 
     def close(self):
-        if self.sock:
-            sockname = None
-            try:
-                sockname = self.sock.getsockname()
-            except (socket.error, OSError):
-                pass
-            self.sock.close()
-            if type(sockname) is str:
-                # it was a Unix domain socket, remove it from the filesystem
-                if os.path.exists(sockname):
-                    os.remove(sockname)
+        # don't close the socket itself, that's the user's responsibility
         self.sock = None
         self.conn = None
 
