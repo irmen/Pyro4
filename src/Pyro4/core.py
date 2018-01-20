@@ -10,6 +10,7 @@ import collections
 import re
 import logging
 import sys
+import ssl
 import os
 import time
 import threading
@@ -19,8 +20,6 @@ import warnings
 import socket
 import random
 from Pyro4 import errors, socketutil, util, constants, message, futures
-from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
-from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
 from Pyro4.configuration import config
 
 
@@ -224,7 +223,9 @@ class Proxy(object):
          "_pyroRawWireResponse", "_pyroHandshake", "_pyroMaxRetries", "_pyroSerializer", "_Proxy__async",
          "_Proxy__pyroHmacKey", "_Proxy__pyroTimeout", "_Proxy__pyroConnLock"])
 
-    def __init__(self, uri):
+    def __init__(self, uri, connected_socket=None):
+        if connected_socket:
+            uri = URI("PYRO:" + uri + "@<<connected-socket>>:0")
         if isinstance(uri, basestring):
             uri = URI(uri)
         elif not isinstance(uri, URI):
@@ -246,6 +247,8 @@ class Proxy(object):
         self.__async = False
         current_context.annotations = {}
         current_context.response_annotations = {}
+        if connected_socket:
+            self.__pyroCreateConnection(False, connected_socket)
 
     @property
     def _pyroHmacKey(self):
@@ -488,19 +491,12 @@ class Proxy(object):
             log.error(err)
             raise errors.ProtocolError(err)
 
-    def __pyroCreateConnection(self, replaceUri=False):
+    def __pyroCreateConnection(self, replaceUri=False, connected_socket=None):
         """
         Connects this proxy to the remote Pyro daemon. Does connection handshake.
         Returns true if a new connection was made, false if an existing one was already present.
         """
-        with self.__pyroConnLock:
-            if self._pyroConnection is not None:
-                return False  # already connected
-            uri = _resolve(self._pyroUri, self._pyroHmacKey)
-            # socket connection (normal or Unix domain socket)
-            conn = None
-            log.debug("connecting to %s", uri)
-            connect_location = uri.sockname or (uri.host, uri.port)
+        def connect_and_handshake(conn):
             try:
                 if self._pyroConnection is not None:
                     return False  # already connected
@@ -579,6 +575,24 @@ class Proxy(object):
                     err = "cannot connect to %s: invalid msg type %d received" % (connect_location, msg.type)
                     log.error(err)
                     raise errors.ProtocolError(err)
+
+        with self.__pyroConnLock:
+            if self._pyroConnection is not None:
+                return False  # already connected
+            if connected_socket:
+                if config.SSL and not isinstance(connected_socket, ssl.SSLSocket):
+                    raise socket.error("SSL configured for Pyro but existing socket is not a SSL socket")
+                uri = self._pyroUri
+            else:
+                uri = _resolve(self._pyroUri, self._pyroHmacKey)
+            # socket connection (normal or Unix domain socket)
+            conn = None
+            log.debug("connecting to %s", uri)
+            connect_location = uri.sockname or (uri.host, uri.port)
+            if connected_socket:
+                self._pyroConnection = socketutil.SocketConnection(connected_socket, uri.object, True)
+            else:
+                connect_and_handshake(conn)
             if config.METADATA:
                 # obtain metadata if this feature is enabled, and the metadata is not known yet
                 if self._pyroMethods or self._pyroAttrs:
@@ -1090,28 +1104,38 @@ class Daemon(object):
     to the appropriate objects.
     """
 
-    def __init__(self, host=None, port=0, unixsocket=None, nathost=None, natport=None, interface=DaemonObject):
-        if host is None:
-            host = config.HOST
-        if nathost is None:
-            nathost = config.NATHOST
-        if natport is None:
-            natport = config.NATPORT or None
-        if nathost and unixsocket:
-            raise ValueError("cannot use nathost together with unixsocket")
-        if (nathost is None) ^ (natport is None):
-            raise ValueError("must provide natport with nathost")
-        if config.SERVERTYPE == "thread":
-            self.transportServer = SocketServer_Threadpool()
-        elif config.SERVERTYPE == "multiplex":
-            self.transportServer = SocketServer_Multiplex()
+    def __init__(self, host=None, port=0, unixsocket=None, nathost=None, natport=None, interface=DaemonObject, connected_socket=None):
+        if connected_socket:
+            nathost = natport = None
         else:
-            raise errors.PyroError("invalid server type '%s'" % config.SERVERTYPE)
+            if host is None:
+                host = config.HOST
+            if nathost is None:
+                nathost = config.NATHOST
+            if natport is None:
+                natport = config.NATPORT or None
+            if nathost and unixsocket:
+                raise ValueError("cannot use nathost together with unixsocket")
+            if (nathost is None) ^ (natport is None):
+                raise ValueError("must provide natport with nathost")
         self.__mustshutdown = threading.Event()
         self.__mustshutdown.set()
         self.__loopstopped = threading.Event()
         self.__loopstopped.set()
-        self.transportServer.init(self, host, port, unixsocket)
+        if connected_socket:
+            from Pyro4.socketserver.existingconnectionserver import SocketServer_ExistingConnection
+            self.transportServer = SocketServer_ExistingConnection()
+            self.transportServer.init(self, connected_socket)
+        else:
+            if config.SERVERTYPE == "thread":
+                from Pyro4.socketserver.threadpoolserver import SocketServer_Threadpool
+                self.transportServer = SocketServer_Threadpool()
+            elif config.SERVERTYPE == "multiplex":
+                from Pyro4.socketserver.multiplexserver import SocketServer_Multiplex
+                self.transportServer = SocketServer_Multiplex()
+            else:
+                raise errors.PyroError("invalid server type '%s'" % config.SERVERTYPE)
+            self.transportServer.init(self, host, port, unixsocket)
         #: The location (str of the form ``host:portnumber``) on which the Daemon is listening
         self.locationStr = self.transportServer.locationStr
         log.debug("daemon created on %s - %s (pid %d)", self.locationStr, socketutil.family_str(self.transportServer.sock), os.getpid())
@@ -1347,7 +1371,10 @@ class Daemon(object):
                 # normal deserialization of remote call arguments
                 objId, method, vargs, kwargs = serializer.deserializeCall(msg.data, compressed=msg.flags & message.FLAGS_COMPRESSED)
             current_context.client = conn
-            current_context.client_sock_addr = conn.sock.getpeername()   # store, because on oneway calls, socket will be disconnected
+            try:
+                current_context.client_sock_addr = conn.sock.getpeername()   # store, because on oneway calls, socket will be disconnected
+            except socket.error:
+                current_context.client_sock_addr = None   # sometimes getpeername() doesn't work...
             current_context.seq = msg.seq
             current_context.annotations = msg.annotations
             current_context.msg_flags = msg.flags

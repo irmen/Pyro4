@@ -2,8 +2,9 @@
 Change Log
 **********
 
-**Pyro 4.64**
+**Pyro 4.70**
 
+- bump to version 4.70 to emphasize the following change:
 - **incompatible API change** for python 3.7 compatibility: renaming of ``async`` function and keyword arguments in the API:
   Renamed ``Pyro4.core.async`` to ``Pyro4.core.asyncproxy`` (and its occurrence in ``Pyro4``)
   and the ``async`` keyword argument in some methods to ``asynchronous``.
@@ -11,10 +12,11 @@ Change Log
   in a SyntaxError when loading the module.
   It is suggested you stop using the ``asyncproxy`` function and instead create asynchronous proxies using the ``_pyroAsync``
   method on the regular proxy.
-- For *existing code* running on Python *older than 3.7*, a backwards compatibility feature is present to still provide the
+- For existing code running on Python *older than 3.7*, a backwards compatibility feature is present to still provide the
   ``async`` function and keyword arguments as they were supported on previous Pyro versions.
-  Still, it's advised to migrate away from them and start using the new names.
+  But also for that older environments, it's advised to migrate away from them and start using the new names.
 - dropped support for Python 3.3 (which has reached end-of-life status). Supported Python versions are now 2.7, and 3.4 or newer.
+  (the life cycle status of the Python versions can be seen here https://devguide.python.org/#status-of-python-branches)
 
 
 **Pyro 4.63**
@@ -57,7 +59,7 @@ Change Log
   let you specify the client hmac_key so you had to create a flame proxy manually, on which you
   then had to set the _pyroHmacKey property).
 - main documentation is now http://pyro4.readthedocs.io instead of http://pythonhosted.org/Pyro4/
-  
+
 
 **Pyro 4.60**
 
