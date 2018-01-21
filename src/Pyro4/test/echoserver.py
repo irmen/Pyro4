@@ -44,7 +44,7 @@ class EchoServer(object):
         """generates a simple exception without text"""
         if self._verbose:
             print("%s - error: generating exception" % time.asctime())
-        raise ValueError("expected valueerror from echoserver error()")
+        raise ValueError("expected error from echoserver error() method")
 
     def error_with_text(self):
         """generates a simple exception with message"""

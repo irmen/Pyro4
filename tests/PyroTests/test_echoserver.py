@@ -60,7 +60,7 @@ class TestEchoserver(unittest.TestCase):
                 tb = "".join(Pyro4.util.getPyroTraceback())
                 self.assertIn("Remote traceback", tb)
                 self.assertIn("ValueError", tb)
-                self.assertEqual("", str(x))
+                self.assertEqual("expected error from echoserver error() method", str(x))
             try:
                 echo.error_with_text()
                 self.fail("expected exception")
