@@ -20,6 +20,7 @@ def get_nameserver_dummy(hmac=None):
     class NameServerDummyProxy(NameServer):
         def __init__(self):
             super(NameServerDummyProxy, self).__init__()
+            self._pyroUri = Pyro4.core.URI("PYRO:dummy12345@localhost:59999")
             self.register("http.ObjectName", "PYRO:dummy12345@localhost:59999")
         def _pyroBatch(self):
             return self
