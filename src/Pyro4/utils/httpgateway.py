@@ -115,7 +115,7 @@ index_page_template = """<!DOCTYPE html>
     <a href="http://pyro4.readthedocs.io/en/stable/tipstricks.html#pyro-via-http-and-json">Docs.</a>
 </p>
 </div>
-<p><em>Note: performance isn't maxed; it is stateless. Does a name lookup and uses a new Pyro proxy for each request.</em></p>
+<p><em>Note: performance isn't a key concern here; it is a stateless server. It does a name lookup and uses a new Pyro proxy for each request.</em></p>
 <h2>Currently exposed contents of name server on {hostname}:</h2>
 <p>(Limited to 10 entries, exposed name pattern = '{ns_regex}')</p>
 {name_server_contents_list}
@@ -191,7 +191,7 @@ def return_homepage(environ, start_response):
     index_page = index_page_template.format(ns_regex=pyro_app.ns_regex,
                                             name_server_contents_list="".join(nslist),
                                             pyro_version=constants.VERSION,
-                                            hostname=environ["SERVER_NAME"])
+                                            hostname=nameserver._pyroUri.location)
     return [index_page.encode("utf-8")]
 
 
