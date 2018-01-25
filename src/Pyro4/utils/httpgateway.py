@@ -168,6 +168,8 @@ def return_homepage(environ, start_response):
         for name, uri in zip(names, nsbatch()):
             attributes = "-"
             try:
+                if name == nameserver._pyroUri.object and uri.host == '0.0.0.0':
+                    uri = nameserver._pyroUri
                 with core.Proxy(uri) as proxy:
                     proxy._pyroHmacKey = pyro_app.hmac_key
                     proxy._pyroBind()
