@@ -77,7 +77,7 @@ Third party libraries that Pyro4 uses
 `cloudpickle <https://pypi.python.org/pypi/cloudpickle>`_ - optional, 0.4.0 or newer
     Install this if you want to use the cloudpickle serializer.
 
-`msgpack <https://pypi.python.org/pypi/msgpack-python>`_ - optional, 0.5 or newer
+`msgpack <https://pypi.python.org/pypi/msgpack>`_ - optional, 0.5 or newer
     Install this if you want to use the msgpack serializer.
 
 
