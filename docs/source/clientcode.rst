@@ -163,7 +163,7 @@ on what objects you can use.
   the advanced parameters such as `default`, not all 3rd party implementations do that.
 * **marshal**: a very limited but fast serializer. Can deal with a small range of builtin types only,
   no custom classes can be serialized. Part of the standard library.
-* **msgpack**: See https://pypi.python.org/pypi/msgpack-python Reasonably fast serializer (and a lot faster if you're using the C module extension).
+* **msgpack**: See https://pypi.python.org/pypi/msgpack Reasonably fast serializer (and a lot faster if you're using the C module extension).
   Can deal with many builtin types, but not all.   Not enabled by default because it's optional,
   but it's safe to add to the accepted serializers config item if you have it installed.
 * **pickle**: the legacy serializer. Fast and supports almost all types. Part of the standard library.

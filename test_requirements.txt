@@ -1,4 +1,4 @@
 -r requirements.txt
 cloudpickle>=0.4.0
 dill>=0.2.6
-msgpack-python>=0.4.6
+msgpack>=0.5
