@@ -28,11 +28,10 @@ The .NET version is available using the nuget package manager, package name is `
 *Getting the Java version:*
 The Java library can be obtained from `Maven <http://search.maven.org/#search|ga|1|razorvine>`_, groupid ``net.razorvine`` artifactid ``pyrolite``.
 
-Readme: http://irmen.home.xs4all.nl/pyrolite/README.txt
-
-License (same as Pyro): http://irmen.home.xs4all.nl/pyrolite/LICENSE
-
 Source is on Github: https://github.com/irmen/Pyrolite
+
+Readme: https://raw.githubusercontent.com/irmen/Pyrolite/master/README.txt
+
 
 Small code example in Java:
 
