@@ -678,12 +678,12 @@ class MsgpackSerializer(SerializerBase):
 
     def loadsCall(self, data):
         data = self._convertToBytes(data)
-        obj, method, vargs, kwargs = msgpack.unpackb(data, encoding="utf-8", object_hook=self.object_hook)
+        obj, method, vargs, kwargs = msgpack.unpackb(data, raw=False, object_hook=self.object_hook)
         return obj, method, vargs, kwargs
 
     def loads(self, data):
         data = self._convertToBytes(data)
-        return msgpack.unpackb(data, encoding="utf-8", object_hook=self.object_hook, ext_hook=self.ext_hook)
+        return msgpack.unpackb(data, raw=False, object_hook=self.object_hook, ext_hook=self.ext_hook)
 
     def default(self, obj):
         replacer = self.__type_replacements.get(type(obj), None)
