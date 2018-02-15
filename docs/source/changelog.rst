@@ -5,7 +5,8 @@ Change Log
 **Pyro 4.71**
 
 - updated ``msgpack`` dependency (was ``msgpack-python`` but that name is now deprecated)
-
+- fixed restart and force reload commands of the contrib/init.d/pyro4-nsd script, and changed its port binding
+  from 9999 back to 9090 which is Pyro's default.
 
 
 **Pyro 4.70**

@@ -18,7 +18,7 @@
 
 
 LISTEN_ADDRESS=0.0.0.0
-LISTEN_PORT=9999
+LISTEN_PORT=9090
 MESSAGEDIR=/var/log/Pyro4
 MESSAGELOG=/var/log/Pyro4/NameServer.log
 PID=/var/run/Pyro4-NameServer.pid
@@ -60,7 +60,7 @@ case "$1" in
     # create the log directory if not exist
     [ ! -d "$MESSAGEDIR" ] && mkdir -p "$MESSAGEDIR"
 
-    echo "Starting Pyro4 Name Server"
+    echo "Starting Pyro4 Name Server" $PYTHON
     # test if not already running
     if [ ! -f "/proc/$(cat $PID)/exe" ]; then
       $PYTHON -m Pyro4.naming -n "$LISTEN_ADDRESS" -p "$LISTEN_PORT" >/dev/null 2>&1 &
@@ -80,12 +80,12 @@ case "$1" in
     fi
     ;;
   restart)
-    $0 start
     $0 stop
+    $0 start
     ;;
   force-reload)
-    $0 start
     $0 stop
+    $0 start
     ;;
   *)
     echo "usage: $0 {start|stop|restart|force-reload}"
