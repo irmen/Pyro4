@@ -4,11 +4,11 @@ PYTHON=python3
 all:
 	@echo "targets include sdist, wheel, docs, upload, install, clean"
 
-sdist: 
+sdist:
 	$(PYTHON) setup.py sdist
 	@echo "Look in the dist/ directory"
 
-wheel: 
+wheel:
 	$(PYTHON) setup.py bdist_wheel
 	@echo "Look in the dist/ directory"
 
@@ -18,12 +18,12 @@ docs:
 upload:
 	$(PYTHON) setup.py sdist bdist_wheel upload
 	@echo "Don't forget to check the doc builds on RTD!"
-	
+
 install:
 	$(PYTHON) setup.py install
 
 test:
-	$(PYTHON) tests/run_testsuite.py
+	PYTHONPATH=./src $(PYTHON) tests/run_testsuite.py
 
 clean:
 	@echo "Removing tox dirs, logfiles, Pyro URI dumps, .pyo/.pyc files..."
@@ -38,7 +38,7 @@ clean:
 	find . -name \*.DS_Store -print0 | xargs -0  rm -f
 	find . -name \.coverage -print0 | xargs -0  rm -f
 	find . -name \coverage.xml -print0 | xargs -0  rm -f
-	rm -f MANIFEST 
+	rm -f MANIFEST
 	rm -rf build
 	rm -rf tests/test-reports
 	find . -name  '.#*' -print0 | xargs -0  rm -f
