@@ -53,6 +53,7 @@ The documentation can be found here: http://pyro4.readthedocs.io
         "requires": ["serpent"],
         "classifiers": [
             "Development Status :: 5 - Production/Stable",
+            "Development Status :: 6 - Mature",
             "Intended Audience :: Developers",
             "License :: OSI Approved :: MIT License",
             "Natural Language :: English",
