@@ -8,7 +8,10 @@ import re
 import logging
 import sys
 import threading
-from collections import MutableMapping
+if sys.version_info <= (3, 4):
+    from collections import MutableMapping
+else:
+    from collections.abc import MutableMapping
 from contextlib import closing
 from Pyro4.errors import NamingError
 

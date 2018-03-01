@@ -6,7 +6,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import print_function, division
 import inspect
-import collections
 import re
 import logging
 import sys
@@ -1761,7 +1760,11 @@ class Daemon(object):
         __lazy_dict_iterator_types = (type({}.keys()), type({}.values()), type({}.items()))
 
     def _streamResponse(self, data, client):
-        if isinstance(data, collections.Iterator) or inspect.isgenerator(data):
+        if sys.version_info < (3, 4):
+            from collections import Iterator
+        else:
+            from collections.abc import Iterator
+        if isinstance(data, Iterator) or inspect.isgenerator(data):
             if config.ITER_STREAMING:
                 if type(data) in self.__lazy_dict_iterator_types:
                     raise errors.PyroError("won't serialize or stream lazy dict iterators, convert to list yourself")

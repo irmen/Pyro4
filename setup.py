@@ -46,7 +46,7 @@ The documentation can be found here: http://pyro4.readthedocs.io
         "packages": ['Pyro4', 'Pyro4.socketserver', 'Pyro4.test', 'Pyro4.utils'],
         "scripts": [],
         "platforms": "any",
-        "install_requires": ["serpent>=1.23"],
+        "install_requires": ["serpent>=1.24"],
         "extras_require": {
             ":python_version<'3.4'": ["selectors34"]
         },
