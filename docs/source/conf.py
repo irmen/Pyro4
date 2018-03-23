@@ -25,7 +25,7 @@ import Pyro4.constants
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.5.3'      # 1.5.3 is the version that ReadTheDocs.org has
+needs_sphinx = '1.5.3'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
@@ -104,7 +104,7 @@ html_theme = 'sphinx_rtd_theme'
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    "rightsidebar": True,
+#    "rightsidebar": True,
 #    "bodyfont": "Tahoma,Helvetica,\"Helvetica Neue\",Arial,sans-serif",
 #    "linkcolor": "#3070a0",
 #    "visitedlinkcolor": "#3070a0",
