@@ -8,6 +8,7 @@ Change Log
 - fixed restart and force reload commands of the contrib/init.d/pyro4-nsd script, and changed its port binding
   from 9999 back to 9090 which is Pyro's default.
 - serpent 1.24 library now required to fix some api deprecation warnings when using Python 3.7 or newer.
+- updated sphinx documentation theme
 
 
 **Pyro 4.70**
