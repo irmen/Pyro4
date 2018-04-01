@@ -1,0 +1,7 @@
+* text=auto
+*.py text=auto
+*.rst text=auto
+*.txt text=auto
+*.sh text=lf
+*.png -text
+*.jpg -text
