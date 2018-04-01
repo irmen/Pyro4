@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.72**
+
+- ...
+
+
 **Pyro 4.71**
 
 - updated ``msgpack`` dependency (was ``msgpack-python`` but that name is now deprecated)
