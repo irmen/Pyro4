@@ -15,6 +15,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 from __future__ import print_function
 import sys
 import time
+import warnings
 import threading
 from optparse import OptionParser
 from Pyro4 import core, naming
@@ -150,8 +151,12 @@ def main(args=None, returnWithoutLooping=False):
     parser.add_option("-N", "--nameserver", action="store_true", default=False, help="also start a nameserver")
     parser.add_option("-v", "--verbose", action="store_true", default=False, help="verbose output")
     parser.add_option("-q", "--quiet", action="store_true", default=False, help="don't output anything")
-    parser.add_option("-k", "--key", help="the HMAC key to use")
+    parser.add_option("-k", "--key", help="the HMAC key to use (deprecated)")
     options, args = parser.parse_args(args)
+
+    if options.key:
+        warnings.warn("using -k to supply HMAC key on the command line is a security problem "
+                      "and is deprecated since Pyro 4.72. See the documentation for an alternative.")
 
     if options.verbose:
         options.quiet = False

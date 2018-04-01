@@ -5,7 +5,11 @@ Change Log
 **Pyro 4.72**
 
 - (source files: normalized line endings to LF)
-
+- the -k command line option to supply a HMAC encryption key on the command line for the name server, nsc,
+  echoserver, flameserver and httpgateway tools is now deprecated (and will print a warning if used).
+  It is a security issue because the key used is plainly visible.
+  If you require proper security, use Pyro's 2-way SSL feature. Alternatively, set the HMAC key in the (new) environment
+  variable PYRO_HMAC_KEY if you still have to use it before launching the aforementioned tools.
 
 
 **Pyro 4.71**

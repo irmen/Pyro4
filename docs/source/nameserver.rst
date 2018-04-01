@@ -136,7 +136,8 @@ There are several command line options for this tool:
 
 .. option:: -k, --key
 
-   Specify hmac key to use.
+   Specify hmac key to use. Deprecated: use SSL instead, or if you must, set the key via
+   the PYRO_HMAC_KEY environment variable before starting the name server.
 
 
 Starting the Name Server from within your own code
@@ -216,7 +217,8 @@ synopsis: :command:`python -m Pyro4.nsc [options] command [arguments]` (or simpl
 
 .. option:: -k, --key
 
-   Specify hmac key to use.
+   Specify hmac key to use. Deprecated: use SSL instead, or if you must, set the key via
+   the PYRO_HMAC_KEY environment variable before starting the nsc tool.
 
 .. option:: -v, --verbose
 

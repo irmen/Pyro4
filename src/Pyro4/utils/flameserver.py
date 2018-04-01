@@ -16,6 +16,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import print_function
 import sys
+import warnings
 from Pyro4.configuration import config
 from Pyro4 import core
 from Pyro4.utils import flame
@@ -29,8 +30,12 @@ def main(args=None, returnWithoutLooping=False):
     parser.add_option("-p", "--port", type="int", default=0, help="port to bind server on")
     parser.add_option("-u", "--unixsocket", help="Unix domain socket name to bind server on")
     parser.add_option("-q", "--quiet", action="store_true", default=False, help="don't output anything")
-    parser.add_option("-k", "--key", help="the HMAC key to use")
+    parser.add_option("-k", "--key", help="the HMAC key to use (deprecated)")
     options, args = parser.parse_args(args)
+
+    if options.key:
+        warnings.warn("using -k to supply HMAC key on the command line is a security problem "
+                      "and is deprecated since Pyro 4.72. See the documentation for an alternative.")
 
     if not options.quiet:
         print("Starting Pyro Flame server.")

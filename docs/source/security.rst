@@ -118,8 +118,8 @@ Preventing arbitrary connections
 
 .. _hmackey:
 
-by using a HMAC signature via a shared private key
---------------------------------------------------
+...by using a HMAC signature via a shared private key
+-----------------------------------------------------
 
 You can use a `HMAC signature <http://docs.python.org/library/hmac.html>`_ on every network transfer
 to prevent malicious requests. The idea is to only have legit clients connect to your Pyro server.
@@ -154,8 +154,8 @@ set it. You can set the shared key via the ``_pyroHmacKey`` property on a proxy 
 
 .. _cert_verification:
 
-by using 2-way-SSL and certificate verficiation
------------------------------------------------
+...by using 2-way-SSL and certificate verificiation
+---------------------------------------------------
 
 When using SSL, you should also do some custom certificate verification, such as checking the serial number
 and commonName. This way your code is not only certain that the communication is encrypted, but also
@@ -172,4 +172,7 @@ allow clients that you know and trust, because you can check the required unique
 
 Having certs on both client and server is called 2-way-SSL or mutual authentication.
 
-The ``ssl`` example shows how to do this.
+It's a bit too involved to fully describe here but it not much harder than the basic SSL configuration
+described earlier. You just have to make sure you supply a client certificate and that the server requires
+a client certificate (and verifies some properties of it).
+The ``ssl`` example shows how to do all this.

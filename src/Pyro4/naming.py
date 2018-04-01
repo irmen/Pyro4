@@ -547,8 +547,11 @@ def main(args=None):
     parser.add_option("", "--natport", dest="natport", type="int", help="external port in case of NAT")
     parser.add_option("-x", "--nobc", dest="enablebc", action="store_false", default=True,
                       help="don't start a broadcast server")
-    parser.add_option("-k", "--key", help="the HMAC key to use")
+    parser.add_option("-k", "--key", help="the HMAC key to use (deprecated)")
     options, args = parser.parse_args(args)
+    if options.key:
+        warnings.warn("using -k to supply HMAC key on the command line is a security problem "
+                      "and is deprecated since Pyro 4.72. See the documentation for an alternative.")
     startNSloop(options.host, options.port, enableBroadcast=options.enablebc,
                 bchost=options.bchost, bcport=options.bcport, unixsocket=options.unixsocket,
                 nathost=options.nathost, natport=options.natport, storage=options.storage,

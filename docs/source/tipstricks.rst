@@ -572,6 +572,13 @@ are exposed. This regex is the same as used when listing objects from the name s
 ``nsc`` tool to check it (with the listmatching command).
 
 
+*Setting Hmac keys for use by the gateway:*
+
+The ``-k`` and/or ``-g`` command line options to set the optional Hmac keys are deprecated since Pyro 4.72
+because setting a hmac key like this is a security issue. You should set these keys with the PYRO_HMAC_KEY
+and PYRO_HTTPGATEWAY_KEY environment variables instead, before starting the gateway.
+
+
 *Using the gateway:*
 
 You request the url ``http://localhost:8080/pyro/<<objectname>>/<<method>>`` to invoke a method on the

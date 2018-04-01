@@ -27,6 +27,7 @@ import sys
 import re
 import cgi
 import uuid
+import warnings
 from wsgiref.simple_server import make_server
 import traceback
 from Pyro4.util import json     # don't import stdlib json directly, we want to use the JSON_MODULE config item
@@ -310,12 +311,15 @@ def main(args=None):
     parser.add_option("-H", "--host", default="localhost", help="hostname to bind server on (default=%default)")
     parser.add_option("-p", "--port", type="int", default=8080, help="port to bind server on (default=%default)")
     parser.add_option("-e", "--expose", default=pyro_app.ns_regex, help="a regex of object names to expose (default=%default)")
-    parser.add_option("-k", "--pyrokey", help="the HMAC key to use to connect with Pyro")
+    parser.add_option("-k", "--pyrokey", help="the HMAC key to use to connect with Pyro (deprecated)")
     parser.add_option("-g", "--gatewaykey", help="the api key to use to connect to the gateway itself")
     parser.add_option("-t", "--timeout", type="float", default=pyro_app.comm_timeout,
                       help="Pyro timeout value to use (COMMTIMEOUT setting, default=%default)")
 
     options, args = parser.parse_args(args)
+    if options.pyrokey or options.gatewaykey:
+        warnings.warn("using -k and/or -g to supply keys on the command line is a security problem "
+                      "and is deprecated since Pyro 4.72. See the documentation for an alternative.")
     pyro_app.hmac_key = (options.pyrokey or "").encode("utf-8")
     pyro_app.gateway_key = (options.gatewaykey or "").encode("utf-8")
     pyro_app.ns_regex = options.expose
