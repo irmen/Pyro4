@@ -4,7 +4,8 @@ Change Log
 
 **Pyro 4.72**
 
-- ...
+- (source files: normalized line endings to LF)
+
 
 
 **Pyro 4.71**
