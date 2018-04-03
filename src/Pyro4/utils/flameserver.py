@@ -16,6 +16,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import print_function
 import sys
+import os
 import warnings
 from Pyro4.configuration import config
 from Pyro4 import core
@@ -36,6 +37,11 @@ def main(args=None, returnWithoutLooping=False):
     if options.key:
         warnings.warn("using -k to supply HMAC key on the command line is a security problem "
                       "and is deprecated since Pyro 4.72. See the documentation for an alternative.")
+
+    if "PYRO_HMAC_KEY" in os.environ:
+        if options.key:
+            raise SystemExit("error: don't use -k and PYRO_HMAC_KEY at the same time")
+        options.key = os.environ["PYRO_HMAC_KEY"]
 
     if not options.quiet:
         print("Starting Pyro Flame server.")

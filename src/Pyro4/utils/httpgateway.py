@@ -26,6 +26,7 @@ from __future__ import print_function
 import sys
 import re
 import cgi
+import os
 import uuid
 import warnings
 from wsgiref.simple_server import make_server
@@ -320,6 +321,15 @@ def main(args=None):
     if options.pyrokey or options.gatewaykey:
         warnings.warn("using -k and/or -g to supply keys on the command line is a security problem "
                       "and is deprecated since Pyro 4.72. See the documentation for an alternative.")
+    if "PYRO_HMAC_KEY" in os.environ:
+        if options.pyrokey:
+            raise SystemExit("error: don't use -k and PYRO_HMAC_KEY at the same time")
+        options.pyrokey = os.environ["PYRO_HMAC_KEY"]
+    if "PYRO_HTTPGATEWAY_KEY" in os.environ:
+        if options.gatewaykey:
+            raise SystemExit("error: don't use -g and PYRO_HTTPGATEWAY_KEY at the same time")
+        options.gatewaykey = os.environ["PYRO_HTTPGATEWAY_KEY"]
+
     pyro_app.hmac_key = (options.pyrokey or "").encode("utf-8")
     pyro_app.gateway_key = (options.gatewaykey or "").encode("utf-8")
     pyro_app.ns_regex = options.expose

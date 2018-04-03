@@ -10,6 +10,7 @@ import re
 import logging
 import socket
 import sys
+import os
 import time
 import threading
 from Pyro4.errors import NamingError, PyroError, ProtocolError
@@ -552,6 +553,10 @@ def main(args=None):
     if options.key:
         warnings.warn("using -k to supply HMAC key on the command line is a security problem "
                       "and is deprecated since Pyro 4.72. See the documentation for an alternative.")
+    if "PYRO_HMAC_KEY" in os.environ:
+        if options.key:
+            raise SystemExit("error: don't use -k and PYRO_HMAC_KEY at the same time")
+        options.key = os.environ["PYRO_HMAC_KEY"]
     startNSloop(options.host, options.port, enableBroadcast=options.enablebc,
                 bchost=options.bchost, bcport=options.bcport, unixsocket=options.unixsocket,
                 nathost=options.nathost, natport=options.natport, storage=options.storage,
