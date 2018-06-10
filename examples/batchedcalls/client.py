@@ -99,6 +99,6 @@ try:
         divisor -= 1
         # this will raise the proper zerodivision exception once we're about
         # to process the batch result from the divide by 0 call.
-except Exception:
-    print("An error occurred during the batch! (expected)")
+except ZeroDivisionError:
+    print("A divide by zero error occurred during the batch! (expected)")
     print("".join(getPyroTraceback()))
