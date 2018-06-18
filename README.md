@@ -21,3 +21,7 @@ This software is copyright (c) by Irmen de Jong (irmen@razorvine.net).
 
 This software is released under the MIT software license.
 This license, including disclaimer, is available in the 'LICENSE' file.
+
+
+----
+_Are you interested in the most recent cutting edge Pyro version? Go try out Pyro5!  https://github.com/irmen/Pyro5_
