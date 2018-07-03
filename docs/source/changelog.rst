@@ -2,6 +2,12 @@
 Change Log
 **********
 
+**Pyro 4.73**
+
+- include LICENSE file in distribution
+- avoid decode error when dealing with memoryview annotations
+
+
 **Pyro 4.72**
 
 - (source files: normalized line endings to LF)
