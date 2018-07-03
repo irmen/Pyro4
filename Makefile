@@ -1,8 +1,11 @@
-.PHONY: all sdist wheel docs install upload clean test
+.PHONY: all sdist wheel docs install upload clean test lint
 PYTHON=python3
 
 all:
-	@echo "targets include sdist, wheel, docs, upload, install, clean"
+	@echo "targets include sdist, wheel, docs, upload, install, clean, lint"
+
+lint:
+	pycodestyle
 
 sdist:
 	$(PYTHON) setup.py sdist

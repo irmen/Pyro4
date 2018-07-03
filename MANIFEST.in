@@ -1,5 +1,7 @@
 include LICENSE
 include MANIFEST.in
+include README.md
+include tox.ini
 recursive-include tests *
 recursive-include examples *
 recursive-include docs *
