@@ -4,6 +4,7 @@ Change Log
 
 **Pyro 4.74**
 
+- serpent 1.27 required
 - fixed marshal serializer dumpsCall to be able to use the
   class_to_dict conversion for unmarshallable types (in simple situations, not recursively).
   This makes it possible again to use the marshal

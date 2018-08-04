@@ -62,7 +62,7 @@ Obtaining and installing Pyro
 Third party libraries that Pyro4 uses
 -------------------------------------
 
-`serpent <https://pypi.python.org/pypi/serpent>`_ - required, 1.24 or newer
+`serpent <https://pypi.python.org/pypi/serpent>`_ - required, 1.27 or newer
     Should be installed automatically when you install Pyro4.
 
 `selectors34 <https://pypi.python.org/pypi/selectors34>`_ - required on Python 3.3 or older
