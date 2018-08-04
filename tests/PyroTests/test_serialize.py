@@ -4,6 +4,7 @@ Tests for the data serializer.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
+import array
 import sys
 import collections
 import copy
@@ -577,11 +578,13 @@ class SerializeTests_pickle(unittest.TestCase):
         d = self.ser.loads(memoryview(ser))
         self.assertEqual([4, 5, 6], d)
 
-    def testSerializeDumps(self):
+    def testSerializeDumpsAndDumpsCall(self):
         self.ser.dumps(uuid.uuid4())
         self.ser.dumps(Pyro4.URI("PYRO:test@test:4444"))
         self.ser.dumps(Pyro4.Proxy("PYRONAME:foobar"))
         self.ser.dumpsCall("obj", "method", (1, 2, 3), {"arg1": 999})
+        self.ser.dumpsCall("obj", "method", (1, 2, array.array('i', [1, 2, 3])), {"arg1": 999})
+        self.ser.dumpsCall("obj", "method", (1, 2, array.array('i', [1, 2, 3])), {"arg1": array.array('i', [1, 2, 3])})
         self.ser.dumpsCall("obj", "method", (1, 2, Pyro4.URI("PYRO:test@test:4444")), {"arg1": 999})
         self.ser.dumpsCall("obj", "method", (1, 2, Pyro4.URI("PYRO:test@test:4444")), {"arg1": Pyro4.URI("PYRO:test@test:4444")})
         self.ser.dumpsCall("obj", "method", (1, 2, Pyro4.Proxy("PYRONAME:foobar")), {"arg1": 999})

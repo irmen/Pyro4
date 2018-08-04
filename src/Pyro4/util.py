@@ -4,6 +4,7 @@ Miscellaneous utilities, and serializers.
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
+import array
 import sys
 import zlib
 import uuid
@@ -570,7 +571,8 @@ class MarshalSerializer(SerializerBase):
             return self.recreate_classes(marshal.loads(data))
 
     def convert_obj_into_marshallable(self, obj):
-        marshalable_types = {str, int, float, type(None), bool, complex, bytes, bytearray, tuple, set, frozenset, list, dict}
+        marshalable_types = {str, int, float, type(None), bool, complex, bytes, bytearray,
+                             array.array, tuple, set, frozenset, list, dict}
         if sys.version_info < (3, 0):
             marshalable_types.add(unicode)
         if type(obj) in marshalable_types:
@@ -665,6 +667,8 @@ class JsonSerializer(SerializerBase):
             return obj.isoformat()
         if isinstance(obj, decimal.Decimal):
             return str(obj)
+        if isinstance(obj, array.array):
+            return list(obj)
         return self.class_to_dict(obj)
 
     @classmethod
@@ -717,6 +721,8 @@ class MsgpackSerializer(SerializerBase):
             return str(obj)
         if isinstance(obj, numbers.Number):
             return msgpack.ExtType(0x31, str(obj).encode("ascii"))     # long
+        if isinstance(obj, array.array):
+            return list(obj)
         return self.class_to_dict(obj)
 
     def object_hook(self, obj):

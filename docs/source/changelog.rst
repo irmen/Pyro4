@@ -9,6 +9,7 @@ Change Log
   This makes it possible again to use the marshal
   serializer to register objects with the name server, something basic that
   previously resulted in a ValueError: unmarshallable object.
+- msgpack, json and marshal serializers now understand how to serialize array.array
 
 
 **Pyro 4.73**
