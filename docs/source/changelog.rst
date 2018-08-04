@@ -2,6 +2,15 @@
 Change Log
 **********
 
+**Pyro 4.74**
+
+- fixed marshal serializer dumpsCall to be able to use the
+  class_to_dict conversion for unmarshallable types (in simple situations, not recursively).
+  This makes it possible again to use the marshal
+  serializer to register objects with the name server, something basic that
+  previously resulted in a ValueError: unmarshallable object.
+
+
 **Pyro 4.73**
 
 - include LICENSE file in distribution

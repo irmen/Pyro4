@@ -398,13 +398,15 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual(42, data2[0])
 
     def testCallPlain(self):
-        ser, compressed = self.ser.serializeCall("object", "method", "vargs", "kwargs")
+        ser, compressed = self.ser.serializeCall("object", "method", ("vargs1", "vargs2"), {"kwargs": 999})
         self.assertFalse(compressed)
         obj, method, vargs, kwargs = self.ser.deserializeCall(ser, compressed=False)
         self.assertEqual("object", obj)
         self.assertEqual("method", method)
-        self.assertEqual("vargs", vargs)
-        self.assertEqual("kwargs", kwargs)
+        self.assertTrue(len(vargs) == 2)
+        self.assertTrue(vargs[0] == "vargs1")
+        self.assertTrue(vargs[1] == "vargs2")
+        self.assertDictEqual({"kwargs": 999}, kwargs)
 
     def testCallPyroObjAsArg(self):
         if self.SERIALIZER == "marshal":
@@ -574,6 +576,16 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertEqual([1, 2, 3], vargs)
         d = self.ser.loads(memoryview(ser))
         self.assertEqual([4, 5, 6], d)
+
+    def testSerializeDumps(self):
+        self.ser.dumps(uuid.uuid4())
+        self.ser.dumps(Pyro4.URI("PYRO:test@test:4444"))
+        self.ser.dumps(Pyro4.Proxy("PYRONAME:foobar"))
+        self.ser.dumpsCall("obj", "method", (1, 2, 3), {"arg1": 999})
+        self.ser.dumpsCall("obj", "method", (1, 2, Pyro4.URI("PYRO:test@test:4444")), {"arg1": 999})
+        self.ser.dumpsCall("obj", "method", (1, 2, Pyro4.URI("PYRO:test@test:4444")), {"arg1": Pyro4.URI("PYRO:test@test:4444")})
+        self.ser.dumpsCall("obj", "method", (1, 2, Pyro4.Proxy("PYRONAME:foobar")), {"arg1": 999})
+        self.ser.dumpsCall("obj", "method", (1, 2, Pyro4.Proxy("PYRONAME:foobar")), {"arg1": Pyro4.Proxy("PYRONAME:foobar")})
 
 
 class SerializeTests_cloudpickle(SerializeTests_pickle):

@@ -532,6 +532,8 @@ class MarshalSerializer(SerializerBase):
     serializer_id = 3  # never change this
 
     def dumpsCall(self, obj, method, vargs, kwargs):
+        vargs = [self.convert_obj_into_marshallable(value) for value in vargs]
+        kwargs = {key: self.convert_obj_into_marshallable(value) for key, value in kwargs.items()}
         return marshal.dumps((obj, method, vargs, kwargs))
 
     def dumps(self, data):
@@ -566,6 +568,14 @@ class MarshalSerializer(SerializerBase):
         def loads(self, data):
             data = self._convertToBytes(data)
             return self.recreate_classes(marshal.loads(data))
+
+    def convert_obj_into_marshallable(self, obj):
+        marshalable_types = {str, int, float, type(None), bool, complex, bytes, bytearray, tuple, set, frozenset, list, dict}
+        if sys.version_info < (3, 0):
+            marshalable_types.add(unicode)
+        if type(obj) in marshalable_types:
+            return obj
+        return self.class_to_dict(obj)
 
     @classmethod
     def class_to_dict(cls, obj):
