@@ -29,7 +29,7 @@ class SerializeTests_pickle(unittest.TestCase):
     def setUp(self):
         self.previous_serializer = config.SERIALIZER
         config.SERIALIZER = self.SERIALIZER
-        self.ser = Pyro4.util.get_serializer(config.SERIALIZER)
+        self.serializer = Pyro4.util.get_serializer(config.SERIALIZER)
         config.REQUIRE_EXPOSE = True
 
     def tearDown(self):
@@ -37,30 +37,30 @@ class SerializeTests_pickle(unittest.TestCase):
 
     def testSerItself(self):
         s = Pyro4.util.get_serializer(config.SERIALIZER)
-        p, _ = self.ser.serializeData(s)
-        s2 = self.ser.deserializeData(p)
+        p, _ = self.serializer.serializeData(s)
+        s2 = self.serializer.deserializeData(p)
         self.assertEqual(s, s2)
         self.assertTrue(s == s2)
         self.assertFalse(s != s2)
 
     def testSerUnicode(self):
         data = unicode("x")
-        self.ser.serializeData(data)
-        self.ser.serializeCall(data, unicode("method"), [], {})
+        self.serializer.serializeData(data)
+        self.serializer.serializeCall(data, unicode("method"), [], {})
 
     def testSerCompression(self):
-        d1, c1 = self.ser.serializeData("small data", compress=True)
-        d2, c2 = self.ser.serializeData("small data", compress=False)
+        d1, c1 = self.serializer.serializeData("small data", compress=True)
+        d2, c2 = self.serializer.serializeData("small data", compress=False)
         self.assertFalse(c1)
         self.assertEqual(d1, d2)
         bigdata = "x" * 1000
-        d1, c1 = self.ser.serializeData(bigdata, compress=False)
-        d2, c2 = self.ser.serializeData(bigdata, compress=True)
+        d1, c1 = self.serializer.serializeData(bigdata, compress=False)
+        d2, c2 = self.serializer.serializeData(bigdata, compress=True)
         self.assertFalse(c1)
         self.assertTrue(c2)
         self.assertTrue(len(d2) < len(d1))
-        self.assertEqual(bigdata, self.ser.deserializeData(d1, compressed=False))
-        self.assertEqual(bigdata, self.ser.deserializeData(d2, compressed=True))
+        self.assertEqual(bigdata, self.serializer.deserializeData(d1, compressed=False))
+        self.assertEqual(bigdata, self.serializer.deserializeData(d2, compressed=True))
 
     def testSerErrors(self):
         e1 = Pyro4.errors.NamingError(unicode("x"))
@@ -70,19 +70,19 @@ class SerializeTests_pickle(unittest.TestCase):
         e3 = Pyro4.errors.ProtocolError(unicode("x"))
         if sys.platform == "cli":
             Pyro4.util.fixIronPythonExceptionForPickle(e1, True)
-        p, _ = self.ser.serializeData(e1)
-        e = self.ser.deserializeData(p)
+        p, _ = self.serializer.serializeData(e1)
+        e = self.serializer.deserializeData(p)
         if sys.platform == "cli":
             Pyro4.util.fixIronPythonExceptionForPickle(e, False)
         self.assertIsInstance(e, Pyro4.errors.NamingError)
         self.assertEqual(repr(orig_e), repr(e))
         self.assertEqual(["this is the remote traceback"], e._pyroTraceback, "remote traceback info should be present")
-        p, _ = self.ser.serializeData(e2)
-        e = self.ser.deserializeData(p)
+        p, _ = self.serializer.serializeData(e2)
+        e = self.serializer.deserializeData(p)
         self.assertIsInstance(e, Pyro4.errors.PyroError)
         self.assertEqual(repr(e2), repr(e))
-        p, _ = self.ser.serializeData(e3)
-        e = self.ser.deserializeData(p)
+        p, _ = self.serializer.serializeData(e3)
+        e = self.serializer.deserializeData(p)
         self.assertIsInstance(e, Pyro4.errors.ProtocolError)
         self.assertEqual(repr(e3), repr(e))
 
@@ -90,8 +90,8 @@ class SerializeTests_pickle(unittest.TestCase):
         ex = ZeroDivisionError("test error")
         ex._pyroTraceback = ["test traceback payload"]
         Pyro4.util.fixIronPythonExceptionForPickle(ex, True)  # hack for ironpython
-        data, compressed = self.ser.serializeData(ex)
-        ex2 = self.ser.deserializeData(data, compressed)
+        data, compressed = self.serializer.serializeData(ex)
+        ex2 = self.serializer.deserializeData(data, compressed)
         Pyro4.util.fixIronPythonExceptionForPickle(ex2, False)  # hack for ironpython
         self.assertEqual(ZeroDivisionError, type(ex2))
         self.assertTrue(hasattr(ex2, "_pyroTraceback"))
@@ -99,8 +99,8 @@ class SerializeTests_pickle(unittest.TestCase):
 
     def testSerCoreOffline(self):
         uri = Pyro4.core.URI("PYRO:9999@host.com:4444")
-        p, _ = self.ser.serializeData(uri)
-        uri2 = self.ser.deserializeData(p)
+        p, _ = self.serializer.serializeData(uri)
+        uri2 = self.serializer.deserializeData(p)
         self.assertEqual(uri, uri2)
         self.assertEqual("PYRO", uri2.protocol)
         self.assertEqual("9999", uri2.object)
@@ -109,8 +109,8 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertIsNone(uri2.sockname)
 
         uri = Pyro4.core.URI("PYRO:12345@./u:/tmp/socketname")
-        p, _ = self.ser.serializeData(uri)
-        uri2 = self.ser.deserializeData(p)
+        p, _ = self.serializer.serializeData(uri)
+        uri2 = self.serializer.deserializeData(p)
         self.assertEqual(uri, uri2)
         self.assertEqual("PYRO", uri2.protocol)
         self.assertEqual("12345", uri2.object)
@@ -122,8 +122,8 @@ class SerializeTests_pickle(unittest.TestCase):
         proxy._pyroTimeout = 42
         proxy._pyroMaxRetries = 78
         self.assertIsNone(proxy._pyroConnection)
-        p, _ = self.ser.serializeData(proxy)
-        proxy2 = self.ser.deserializeData(p)
+        p, _ = self.serializer.serializeData(proxy)
+        proxy2 = self.serializer.deserializeData(p)
         self.assertIsNone(proxy._pyroConnection)
         self.assertIsNone(proxy2._pyroConnection)
         self.assertEqual(proxy2._pyroUri, proxy._pyroUri)
@@ -135,10 +135,10 @@ class SerializeTests_pickle(unittest.TestCase):
             self.skipTest("marshal can't serialize custom objects")
         uri1 = Pyro4.core.URI("PYRO:1111@host.com:111")
         uri2 = Pyro4.core.URI("PYRO:2222@host.com:222")
-        _ = self.ser.serializeData(uri1)
+        _ = self.serializer.serializeData(uri1)
         data = [uri1, uri2]
-        p, _ = self.ser.serializeData(data)
-        [u1, u2] = self.ser.deserializeData(p)
+        p, _ = self.serializer.serializeData(data)
+        [u1, u2] = self.serializer.deserializeData(p)
         self.assertEqual(uri1, u1)
         self.assertEqual(uri2, u2)
 
@@ -147,8 +147,8 @@ class SerializeTests_pickle(unittest.TestCase):
         # but only to support serializing Pyro objects.
         # The serialized form of a Daemon should be empty (and thus, useless)
         with Pyro4.core.Daemon(port=0) as daemon:
-            d, _ = self.ser.serializeData(daemon)
-            d2 = self.ser.deserializeData(d)
+            d, _ = self.serializer.serializeData(daemon)
+            d2 = self.serializer.deserializeData(d)
             self.assertTrue(len(d2.__dict__) == 0, "deserialized daemon should be empty")
             self.assertTrue("Pyro4.core.Daemon" in repr(d2))
             self.assertTrue("unusable" in repr(d2))
@@ -157,10 +157,10 @@ class SerializeTests_pickle(unittest.TestCase):
                 obj = pprint.PrettyPrinter(stream="dummy", width=42)
                 obj.name = "hello"
                 daemon.register(obj)
-                o, _ = self.ser.serializeData(obj)
+                o, _ = self.serializer.serializeData(obj)
                 if self.SERIALIZER in ("pickle", "cloudpickle", "dill"):
                     # only pickle, cloudpickle and dill can deserialize the PrettyPrinter class without the need of explicit deserialization function
-                    o2 = self.ser.deserializeData(o)
+                    o2 = self.serializer.deserializeData(o)
                     self.assertEqual("hello", o2.name)
                     self.assertEqual(42, o2._width)
             finally:
@@ -168,15 +168,15 @@ class SerializeTests_pickle(unittest.TestCase):
 
     def testPyroClasses(self):
         uri = Pyro4.core.URI("PYRO:object@host:4444")
-        s, c = self.ser.serializeData(uri)
-        x = self.ser.deserializeData(s, c)
+        s, c = self.serializer.serializeData(uri)
+        x = self.serializer.deserializeData(s, c)
         self.assertIsInstance(x, Pyro4.core.URI)
         self.assertEqual(uri, x)
         self.assertTrue("Pyro4.core.URI" in repr(uri))
         self.assertEqual("PYRO:object@host:4444", str(uri))
         uri = Pyro4.core.URI("PYRO:12345@./u:/tmp/socketname")
-        s, c = self.ser.serializeData(uri)
-        x = self.ser.deserializeData(s, c)
+        s, c = self.serializer.serializeData(uri)
+        x = self.serializer.deserializeData(s, c)
         self.assertIsInstance(x, Pyro4.core.URI)
         self.assertEqual(uri, x)
         proxy = Pyro4.core.Proxy(uri)
@@ -188,8 +188,8 @@ class SerializeTests_pickle(unittest.TestCase):
         proxy._pyroHandshake = "apples"
         proxy._pyroMaxRetries = 78
         proxy._pyroSerializer = "serializer"
-        s, c = self.ser.serializeData(proxy)
-        x = self.ser.deserializeData(s, c)
+        s, c = self.serializer.serializeData(proxy)
+        x = self.serializer.deserializeData(s, c)
         self.assertIsInstance(x, Pyro4.core.Proxy)
         self.assertEqual(proxy._pyroUri, x._pyroUri)
         self.assertEqual(set("abc"), x._pyroAttrs)
@@ -203,16 +203,16 @@ class SerializeTests_pickle(unittest.TestCase):
         self.assertTrue("Pyro4.core.Proxy" in repr(x))
         self.assertTrue("Pyro4.core.Proxy" in str(x))
         daemon = Pyro4.core.Daemon()
-        s, c = self.ser.serializeData(daemon)
-        x = self.ser.deserializeData(s, c)
+        s, c = self.serializer.serializeData(daemon)
+        x = self.serializer.deserializeData(s, c)
         self.assertIsInstance(x, Pyro4.core.Daemon)
         self.assertTrue("Pyro4.core.Daemon" in repr(x))
         self.assertTrue("unusable" in repr(x))
         self.assertTrue("Pyro4.core.Daemon" in str(x))
         self.assertTrue("unusable" in str(x))
         wrapper = Pyro4.futures._ExceptionWrapper(ZeroDivisionError("divided by zero"))
-        s, c = self.ser.serializeData(wrapper)
-        x = self.ser.deserializeData(s, c)
+        s, c = self.serializer.serializeData(wrapper)
+        x = self.serializer.deserializeData(s, c)
         self.assertIsInstance(x, Pyro4.futures._ExceptionWrapper)
         self.assertEqual("divided by zero", str(x.exception))
         self.assertTrue("ExceptionWrapper" in repr(x))
@@ -273,15 +273,15 @@ class SerializeTests_pickle(unittest.TestCase):
     def testAutoProxyPartlyExposed(self):
         if self.SERIALIZER == "marshal":
             self.skipTest("marshal can't serialize custom objects")
-        self.ser.register_type_replacement(MyThingPartlyExposed, Pyro4.core.pyroObjectToAutoProxy)
+        self.serializer.register_type_replacement(MyThingPartlyExposed, Pyro4.core.pyroObjectToAutoProxy)
         t1 = MyThingPartlyExposed("1")
         t2 = MyThingPartlyExposed("2")
         with Pyro4.core.Daemon() as d:
             d.register(t1, "thingy1")
             d.register(t2, "thingy2")
             data = [t1, ["apple", t2]]
-            s, c = self.ser.serializeData(data)
-            data = self.ser.deserializeData(s, c)
+            s, c = self.serializer.serializeData(data)
+            data = self.serializer.deserializeData(s, c)
             self.assertEqual("apple", data[1][0])
             p1 = data[0]
             p2 = data[1][1]
@@ -296,15 +296,15 @@ class SerializeTests_pickle(unittest.TestCase):
     def testAutoProxyFullExposed(self):
         if self.SERIALIZER == "marshal":
             self.skipTest("marshal can't serialize custom objects")
-        self.ser.register_type_replacement(MyThingPartlyExposed, Pyro4.core.pyroObjectToAutoProxy)
+        self.serializer.register_type_replacement(MyThingPartlyExposed, Pyro4.core.pyroObjectToAutoProxy)
         t1 = MyThingFullExposed("1")
         t2 = MyThingFullExposed("2")
         with Pyro4.core.Daemon() as d:
             d.register(t1, "thingy1")
             d.register(t2, "thingy2")
             data = [t1, ["apple", t2]]
-            s, c = self.ser.serializeData(data)
-            data = self.ser.deserializeData(s, c)
+            s, c = self.serializer.serializeData(data)
+            data = self.serializer.deserializeData(s, c)
             self.assertEqual("apple", data[1][0])
             p1 = data[0]
             p2 = data[1][1]
@@ -319,19 +319,19 @@ class SerializeTests_pickle(unittest.TestCase):
     def testRegisterTypeReplacementSanity(self):
         if self.SERIALIZER == "marshal":
             self.skipTest("marshal can't serialize custom objects")
-        self.ser.register_type_replacement(int, lambda: None)
+        self.serializer.register_type_replacement(int, lambda: None)
         with self.assertRaises(ValueError):
-            self.ser.register_type_replacement(type, lambda: None)
+            self.serializer.register_type_replacement(type, lambda: None)
         with self.assertRaises(ValueError):
-            self.ser.register_type_replacement(42, lambda: None)
+            self.serializer.register_type_replacement(42, lambda: None)
 
     def testCustomClassFail(self):
         if self.SERIALIZER in ("pickle", "cloudpickle", "dill"):
             self.skipTest("pickle, cloudpickle and dill simply serialize custom classes")
         o = pprint.PrettyPrinter(stream="dummy", width=42)
-        s, c = self.ser.serializeData(o)
+        s, c = self.serializer.serializeData(o)
         try:
-            _ = self.ser.deserializeData(s, c)
+            _ = self.serializer.deserializeData(s, c)
             self.fail("error expected, shouldn't deserialize unknown class")
         except Pyro4.errors.ProtocolError:
             pass
@@ -342,22 +342,22 @@ class SerializeTests_pickle(unittest.TestCase):
         o = MyThingPartlyExposed("test")
         Pyro4.util.SerializerBase.register_class_to_dict(MyThingPartlyExposed, mything_dict)
         Pyro4.util.SerializerBase.register_dict_to_class("CUSTOM-Mythingymabob", mything_creator)
-        s, c = self.ser.serializeData(o)
-        o2 = self.ser.deserializeData(s, c)
+        s, c = self.serializer.serializeData(o)
+        o2 = self.serializer.deserializeData(s, c)
         self.assertIsInstance(o2, MyThingPartlyExposed)
         self.assertEqual("test", o2.name)
         # unregister the deserializer
         Pyro4.util.SerializerBase.unregister_dict_to_class("CUSTOM-Mythingymabob")
         try:
-            self.ser.deserializeData(s, c)
+            self.serializer.deserializeData(s, c)
             self.fail("must fail")
         except Pyro4.errors.ProtocolError:
             pass  # ok
         # unregister the serializer
         Pyro4.util.SerializerBase.unregister_class_to_dict(MyThingPartlyExposed)
-        s, c = self.ser.serializeData(o)
+        s, c = self.serializer.serializeData(o)
         try:
-            self.ser.deserializeData(s, c)
+            self.serializer.deserializeData(s, c)
             self.fail("must fail")
         except Pyro4.errors.SerializeError as x:
             msg = str(x)
@@ -366,42 +366,42 @@ class SerializeTests_pickle(unittest.TestCase):
 
     def testData(self):
         data = [42, "hello"]
-        ser, compressed = self.ser.serializeData(data)
+        ser, compressed = self.serializer.serializeData(data)
         self.assertFalse(compressed)
-        data2 = self.ser.deserializeData(ser, compressed=False)
+        data2 = self.serializer.deserializeData(ser, compressed=False)
         self.assertEqual(data, data2)
 
     def testUnicodeData(self):
         data = u"euro\u20aclowbytes\u0000\u0001\u007f\u0080\u00ff"
-        ser, compressed = self.ser.serializeData(data)
-        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        ser, compressed = self.serializer.serializeData(data)
+        data2 = self.serializer.deserializeData(ser, compressed=compressed)
         self.assertEqual(data, data2)
 
     def testUUID(self):
         data = uuid.uuid1()
-        ser, compressed = self.ser.serializeData(data)
-        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        ser, compressed = self.serializer.serializeData(data)
+        data2 = self.serializer.deserializeData(ser, compressed=compressed)
         uuid_as_str = str(data)
         self.assertTrue(data2==data or data2==uuid_as_str)
 
     def testSet(self):
         data = {111, 222, 333}
-        ser, compressed = self.ser.serializeData(data)
-        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        ser, compressed = self.serializer.serializeData(data)
+        data2 = self.serializer.deserializeData(ser, compressed=compressed)
         self.assertEqual(data, data2)
 
     def testCircular(self):
         data = [42, "hello", Pyro4.core.Proxy("PYRO:dummy@dummy:4444")]
         data.append(data)
-        ser, compressed = self.ser.serializeData(data)
-        data2 = self.ser.deserializeData(ser, compressed)
+        ser, compressed = self.serializer.serializeData(data)
+        data2 = self.serializer.deserializeData(ser, compressed)
         self.assertIs(data2, data2[3])
         self.assertEqual(42, data2[0])
 
     def testCallPlain(self):
-        ser, compressed = self.ser.serializeCall("object", "method", ("vargs1", "vargs2"), {"kwargs": 999})
+        ser, compressed = self.serializer.serializeCall("object", "method", ("vargs1", "vargs2"), {"kwargs": 999})
         self.assertFalse(compressed)
-        obj, method, vargs, kwargs = self.ser.deserializeCall(ser, compressed=False)
+        obj, method, vargs, kwargs = self.serializer.deserializeCall(ser, compressed=False)
         self.assertEqual("object", obj)
         self.assertEqual("method", method)
         self.assertTrue(len(vargs) == 2)
@@ -413,9 +413,9 @@ class SerializeTests_pickle(unittest.TestCase):
         if self.SERIALIZER == "marshal":
             self.skipTest("marshal can't serialize custom objects")
         uri = Pyro4.core.URI("PYRO:555@localhost:80")
-        ser, compressed = self.ser.serializeCall("object", "method", [uri], {"thing": uri})
+        ser, compressed = self.serializer.serializeCall("object", "method", [uri], {"thing": uri})
         self.assertFalse(compressed)
-        obj, method, vargs, kwargs = self.ser.deserializeCall(ser, compressed=False)
+        obj, method, vargs, kwargs = self.serializer.deserializeCall(ser, compressed=False)
         self.assertEqual("object", obj)
         self.assertEqual("method", method)
         self.assertEqual([uri], vargs)
@@ -425,9 +425,9 @@ class SerializeTests_pickle(unittest.TestCase):
         if self.SERIALIZER == "marshal":
             self.skipTest("marshal can't serialize custom objects")
         e = ZeroDivisionError("hello")
-        ser, compressed = self.ser.serializeCall("object", "method", [e], {"thing": e})
+        ser, compressed = self.serializer.serializeCall("object", "method", [e], {"thing": e})
         self.assertFalse(compressed)
-        obj, method, vargs, kwargs = self.ser.deserializeCall(ser, compressed=False)
+        obj, method, vargs, kwargs = self.serializer.deserializeCall(ser, compressed=False)
         self.assertEqual("object", obj)
         self.assertEqual("method", method)
         self.assertIsInstance(vargs, list)
@@ -438,25 +438,25 @@ class SerializeTests_pickle(unittest.TestCase):
 
     def testSerializeException(self):
         e = ZeroDivisionError()
-        d, c = self.ser.serializeData(e)
-        e2 = self.ser.deserializeData(d, c)
+        d, c = self.serializer.serializeData(e)
+        e2 = self.serializer.deserializeData(d, c)
         self.assertIsInstance(e2, ZeroDivisionError)
         self.assertEqual("", str(e2))
         e = ZeroDivisionError("hello")
-        d, c = self.ser.serializeData(e)
-        e2 = self.ser.deserializeData(d, c)
+        d, c = self.serializer.serializeData(e)
+        e2 = self.serializer.deserializeData(d, c)
         self.assertIsInstance(e2, ZeroDivisionError)
         self.assertEqual("hello", str(e2))
         e = ZeroDivisionError("hello", 42)
-        d, c = self.ser.serializeData(e)
-        e2 = self.ser.deserializeData(d, c)
+        d, c = self.serializer.serializeData(e)
+        e2 = self.serializer.deserializeData(d, c)
         self.assertIsInstance(e2, ZeroDivisionError)
         self.assertIn(str(e2), ("('hello', 42)", "(u'hello', 42)"))
         e.custom_attribute = 999
         if sys.platform == "cli":
             Pyro4.util.fixIronPythonExceptionForPickle(e, True)
-        ser, compressed = self.ser.serializeData(e)
-        e2 = self.ser.deserializeData(ser, compressed)
+        ser, compressed = self.serializer.serializeData(e)
+        e2 = self.serializer.deserializeData(ser, compressed)
         if sys.platform == "cli":
             Pyro4.util.fixIronPythonExceptionForPickle(e2, False)
         self.assertIsInstance(e2, ZeroDivisionError)
@@ -466,22 +466,22 @@ class SerializeTests_pickle(unittest.TestCase):
     def testSerializeSpecialException(self):
         self.assertIn("GeneratorExit", Pyro4.util.all_exceptions)
         e = GeneratorExit()
-        d, c = self.ser.serializeData(e)
-        e2 = self.ser.deserializeData(d, c)
+        d, c = self.serializer.serializeData(e)
+        e2 = self.serializer.deserializeData(d, c)
         self.assertIsInstance(e2, GeneratorExit)
 
     def testRecreateClasses(self):
-        self.assertEqual([1, 2, 3], self.ser.recreate_classes([1, 2, 3]))
+        self.assertEqual([1, 2, 3], self.serializer.recreate_classes([1, 2, 3]))
         d = {"__class__": "invalid"}
         try:
-            self.ser.recreate_classes(d)
+            self.serializer.recreate_classes(d)
             self.fail("error expected")
         except Pyro4.errors.ProtocolError:
             pass  # ok
         d = {"__class__": "Pyro4.core.URI", "state": ['PYRO', '555', None, 'localhost', 80]}
-        uri = self.ser.recreate_classes(d)
+        uri = self.serializer.recreate_classes(d)
         self.assertEqual(Pyro4.core.URI("PYRO:555@localhost:80"), uri)
-        number, uri = self.ser.recreate_classes([1, {"uri": d}])
+        number, uri = self.serializer.recreate_classes([1, {"uri": d}])
         self.assertEqual(1, number)
         self.assertEqual(Pyro4.core.URI("PYRO:555@localhost:80"), uri["uri"])
 
@@ -494,7 +494,7 @@ class SerializeTests_pickle(unittest.TestCase):
         config.PICKLE_PROTOCOL_VERSION = 2
         try:
             u = Pyro4.core.URI("PYRO:obj@localhost:1234")
-            d, compr = self.ser.serializeData(u)
+            d, compr = self.serializer.serializeData(u)
             self.assertFalse(compr)
             import pickletools
             d = pickletools.optimize(d)
@@ -509,86 +509,137 @@ class SerializeTests_pickle(unittest.TestCase):
         f2 = 9876543212345.12345678987654321
         f3 = 11223344.556677889988776655e33
         floats = [f1, f2, f3]
-        d, compr = self.ser.serializeData(floats)
-        v = self.ser.deserializeData(d, compr)
+        d, compr = self.serializer.serializeData(floats)
+        v = self.serializer.deserializeData(d, compr)
         self.assertEqual(floats, v, "float precision must not be compromised in any serializer")
 
     def testSourceByteTypes_deserialize(self):
         # uncompressed
-        call_ser, _ = self.ser.serializeCall("object", "method", [1, 2, 3], {"kwarg": 42}, False)
-        ser, _ = self.ser.serializeData([4, 5, 6], False)
-        _, _, vargs, _ = self.ser.deserializeCall(bytearray(call_ser), False)
+        call_ser, _ = self.serializer.serializeCall("object", "method", [1, 2, 3], {"kwarg": 42}, False)
+        ser, _ = self.serializer.serializeData([4, 5, 6], False)
+        _, _, vargs, _ = self.serializer.deserializeCall(bytearray(call_ser), False)
         self.assertEqual([1, 2, 3], vargs)
-        d = self.ser.deserializeData(bytearray(ser), False)
+        d = self.serializer.deserializeData(bytearray(ser), False)
         self.assertEqual([4, 5, 6], d)
         if sys.version_info < (3, 0):
-            _, _, vargs, _ = self.ser.deserializeCall(buffer(call_ser), False)
+            _, _, vargs, _ = self.serializer.deserializeCall(buffer(call_ser), False)
             self.assertEqual([1, 2, 3], vargs)
-            d = self.ser.deserializeData(buffer(ser), False)
+            d = self.serializer.deserializeData(buffer(ser), False)
             self.assertEqual([4, 5, 6], d)
         # compressed
-        call_ser, _ = self.ser.serializeCall("object", "method", [1, 2, 3]*100, {"kwarg": 42}, True)
-        ser, _ = self.ser.serializeData([4, 5, 6]*100, True)
-        _, _, vargs, _ = self.ser.deserializeCall(bytearray(call_ser), True)
+        call_ser, _ = self.serializer.serializeCall("object", "method", [1, 2, 3] * 100, {"kwarg": 42}, True)
+        ser, _ = self.serializer.serializeData([4, 5, 6] * 100, True)
+        _, _, vargs, _ = self.serializer.deserializeCall(bytearray(call_ser), True)
         self.assertEqual(300, len(vargs))
-        d = self.ser.deserializeData(bytearray(ser), True)
+        d = self.serializer.deserializeData(bytearray(ser), True)
         self.assertEqual(300, len(d))
         if sys.version_info < (3, 0):
-            _, _, vargs, _ = self.ser.deserializeCall(buffer(call_ser), True)
+            _, _, vargs, _ = self.serializer.deserializeCall(buffer(call_ser), True)
             self.assertEqual(300, len(vargs))
-            d = self.ser.deserializeData(buffer(ser), True)
+            d = self.serializer.deserializeData(buffer(ser), True)
             self.assertEqual(300, len(d))
 
     @unittest.skipIf(sys.platform == "cli", "ironpython can't properly create memoryviews from serialized data")
     def testSourceByteTypes_deserialize_memoryview(self):
         # uncompressed
-        call_ser, _ = self.ser.serializeCall("object", "method", [1, 2, 3], {"kwarg": 42}, False)
-        ser, _ = self.ser.serializeData([4, 5, 6], False)
-        _, _, vargs, _ = self.ser.deserializeCall(memoryview(call_ser), False)
+        call_ser, _ = self.serializer.serializeCall("object", "method", [1, 2, 3], {"kwarg": 42}, False)
+        ser, _ = self.serializer.serializeData([4, 5, 6], False)
+        _, _, vargs, _ = self.serializer.deserializeCall(memoryview(call_ser), False)
         self.assertEqual([1, 2, 3], vargs)
-        d = self.ser.deserializeData(memoryview(ser), False)
+        d = self.serializer.deserializeData(memoryview(ser), False)
         self.assertEqual([4, 5, 6], d)
         # compressed
-        call_ser, _ = self.ser.serializeCall("object", "method", [1, 2, 3]*100, {"kwarg": 42}, True)
-        ser, _ = self.ser.serializeData([4, 5, 6]*100, True)
-        _, _, vargs, _ = self.ser.deserializeCall(memoryview(call_ser), True)
+        call_ser, _ = self.serializer.serializeCall("object", "method", [1, 2, 3] * 100, {"kwarg": 42}, True)
+        ser, _ = self.serializer.serializeData([4, 5, 6] * 100, True)
+        _, _, vargs, _ = self.serializer.deserializeCall(memoryview(call_ser), True)
         self.assertEqual(300, len(vargs))
-        d = self.ser.deserializeData(memoryview(ser), True)
+        d = self.serializer.deserializeData(memoryview(ser), True)
         self.assertEqual(300, len(d))
 
     def testSourceByteTypes_loads(self):
-        call_ser, _ = self.ser.serializeCall("object", "method", [1, 2, 3], {"kwarg": 42}, False)
-        ser, _ = self.ser.serializeData([4, 5, 6], False)
-        _, _, vargs, _ = self.ser.loadsCall(bytearray(call_ser))
+        call_ser, _ = self.serializer.serializeCall("object", "method", [1, 2, 3], {"kwarg": 42}, False)
+        ser, _ = self.serializer.serializeData([4, 5, 6], False)
+        _, _, vargs, _ = self.serializer.loadsCall(bytearray(call_ser))
         self.assertEqual([1, 2, 3], vargs)
-        d = self.ser.loads(bytearray(ser))
+        d = self.serializer.loads(bytearray(ser))
         self.assertEqual([4, 5, 6], d)
         if sys.version_info < (3, 0):
-            _, _, vargs, _ = self.ser.loadsCall(buffer(call_ser))
+            _, _, vargs, _ = self.serializer.loadsCall(buffer(call_ser))
             self.assertEqual([1, 2, 3], vargs)
-            d = self.ser.loads(buffer(ser))
+            d = self.serializer.loads(buffer(ser))
             self.assertEqual([4, 5, 6], d)
 
     @unittest.skipIf(sys.platform == "cli", "ironpython can't properly create memoryviews from serialized data")
     def testSourceByteTypes_loads_memoryview(self):
-        call_ser, _ = self.ser.serializeCall("object", "method", [1, 2, 3], {"kwarg": 42}, False)
-        ser, _ = self.ser.serializeData([4, 5, 6], False)
-        _, _, vargs, _ = self.ser.loadsCall(memoryview(call_ser))
+        call_ser, _ = self.serializer.serializeCall("object", "method", [1, 2, 3], {"kwarg": 42}, False)
+        ser, _ = self.serializer.serializeData([4, 5, 6], False)
+        _, _, vargs, _ = self.serializer.loadsCall(memoryview(call_ser))
         self.assertEqual([1, 2, 3], vargs)
-        d = self.ser.loads(memoryview(ser))
+        d = self.serializer.loads(memoryview(ser))
         self.assertEqual([4, 5, 6], d)
 
     def testSerializeDumpsAndDumpsCall(self):
-        self.ser.dumps(uuid.uuid4())
-        self.ser.dumps(Pyro4.URI("PYRO:test@test:4444"))
-        self.ser.dumps(Pyro4.Proxy("PYRONAME:foobar"))
-        self.ser.dumpsCall("obj", "method", (1, 2, 3), {"arg1": 999})
-        self.ser.dumpsCall("obj", "method", (1, 2, array.array('i', [1, 2, 3])), {"arg1": 999})
-        self.ser.dumpsCall("obj", "method", (1, 2, array.array('i', [1, 2, 3])), {"arg1": array.array('i', [1, 2, 3])})
-        self.ser.dumpsCall("obj", "method", (1, 2, Pyro4.URI("PYRO:test@test:4444")), {"arg1": 999})
-        self.ser.dumpsCall("obj", "method", (1, 2, Pyro4.URI("PYRO:test@test:4444")), {"arg1": Pyro4.URI("PYRO:test@test:4444")})
-        self.ser.dumpsCall("obj", "method", (1, 2, Pyro4.Proxy("PYRONAME:foobar")), {"arg1": 999})
-        self.ser.dumpsCall("obj", "method", (1, 2, Pyro4.Proxy("PYRONAME:foobar")), {"arg1": Pyro4.Proxy("PYRONAME:foobar")})
+        self.serializer.dumps(uuid.uuid4())
+        self.serializer.dumps(Pyro4.URI("PYRO:test@test:4444"))
+        self.serializer.dumps(Pyro4.Proxy("PYRONAME:foobar"))
+        self.serializer.dumpsCall("obj", "method", (1, 2, 3), {"arg1": 999})
+        self.serializer.dumpsCall("obj", "method", (1, 2, array.array('i', [1, 2, 3])), {"arg1": 999})
+        self.serializer.dumpsCall("obj", "method", (1, 2, array.array('i', [1, 2, 3])), {"arg1": array.array('i', [1, 2, 3])})
+        self.serializer.dumpsCall("obj", "method", (1, 2, Pyro4.URI("PYRO:test@test:4444")), {"arg1": 999})
+        self.serializer.dumpsCall("obj", "method", (1, 2, Pyro4.URI("PYRO:test@test:4444")), {"arg1": Pyro4.URI("PYRO:test@test:4444")})
+        self.serializer.dumpsCall("obj", "method", (1, 2, Pyro4.Proxy("PYRONAME:foobar")), {"arg1": 999})
+        self.serializer.dumpsCall("obj", "method", (1, 2, Pyro4.Proxy("PYRONAME:foobar")), {"arg1": Pyro4.Proxy("PYRONAME:foobar")})
+
+    def testArrays(self):
+        if sys.version_info < (3, 0):
+            a1 = array.array('c', b"hello")
+            ser = self.serializer.dumps(a1)
+            a2 = self.serializer.loads(ser)
+            if type(a2) is array.array:
+                self.assertEqual(a1, a2)
+            else:
+                self.assertEqual(b"hello", a2)
+        a1 = array.array('u', unicode("hello"))
+        ser = self.serializer.dumps(a1)
+        a2 = self.serializer.loads(ser)
+        if type(a2) is array.array:
+            self.assertEqual(a1, a2)
+        else:
+            self.assertEqual(unicode("hello"), a2)
+        a1 = array.array('h', [222, 333, 444, 555])
+        ser = self.serializer.dumps(a1)
+        a2 = self.serializer.loads(ser)
+        if type(a2) is array.array:
+            self.assertEqual(a1, a2)
+        else:
+            self.assertEqual([222, 333, 444, 555], a2)
+
+    def testArrays2(self):
+        if sys.version_info < (3, 0):
+            a1 = array.array('c', b"hello")
+            ser = self.serializer.dumpsCall("obj", "method", [a1], {})
+            a2 = self.serializer.loads(ser)
+            a2 = a2["params"][0] if self.SERIALIZER == "json" else a2[2][0]
+            if type(a2) is array.array:
+                self.assertEqual(a1, a2)
+            else:
+                self.assertEqual(b"hello", a2)
+        a1 = array.array('u', unicode("hello"))
+        ser = self.serializer.dumpsCall("obj", "method", [a1], {})
+        a2 = self.serializer.loads(ser)
+        a2 = a2["params"][0] if self.SERIALIZER == "json" else a2[2][0]
+        if type(a2) is array.array:
+            self.assertEqual(a1, a2)
+        else:
+            self.assertEqual(unicode("hello"), a2)
+        a1 = array.array('h', [222, 333, 444, 555])
+        ser = self.serializer.dumpsCall("obj", "method", [a1], {})
+        a2 = self.serializer.loads(ser)
+        a2 = a2["params"][0] if self.SERIALIZER == "json" else a2[2][0]
+        if type(a2) is array.array:
+            self.assertEqual(a1, a2)
+        else:
+            self.assertEqual([222, 333, 444, 555], a2)
 
 
 class SerializeTests_cloudpickle(SerializeTests_pickle):
@@ -600,15 +651,15 @@ class SerializeTests_cloudpickle(SerializeTests_pickle):
 
     def testSerializeLambda(self):
         l = lambda x: x * x
-        ser, compressed = self.ser.serializeData(l)
-        l2 = self.ser.deserializeData(ser, compressed=compressed)
+        ser, compressed = self.serializer.serializeData(l)
+        l2 = self.serializer.deserializeData(ser, compressed=compressed)
         self.assertEqual(l2(3.), 9.)
 
     def testSerializeLocalFunction(self):
         def f(x):
             return x * x
-        ser, compressed = self.ser.serializeData(f)
-        f2 = self.ser.deserializeData(ser, compressed=compressed)
+        ser, compressed = self.serializer.serializeData(f)
+        f2 = self.serializer.deserializeData(ser, compressed=compressed)
         self.assertEqual(f2(3.), 9.)
 
 
@@ -634,15 +685,15 @@ class SerializeTests_dill(SerializeTests_pickle):
 
     def testSerializeLambda(self):
         l = lambda x: x * x
-        ser, compressed = self.ser.serializeData(l)
-        l2 = self.ser.deserializeData(ser, compressed=compressed)
+        ser, compressed = self.serializer.serializeData(l)
+        l2 = self.serializer.deserializeData(ser, compressed=compressed)
         self.assertEqual(l2(3.), 9.)
 
     def testSerializeLocalFunction(self):
         def f(x):
             return x * x
-        ser, compressed = self.ser.serializeData(f)
-        f2 = self.ser.deserializeData(ser, compressed=compressed)
+        ser, compressed = self.serializer.serializeData(f)
+        f2 = self.serializer.deserializeData(ser, compressed=compressed)
         self.assertEqual(f2(3.), 9.)
 
 
@@ -656,8 +707,8 @@ class SerializeTests_serpent(SerializeTests_pickle):
     def testSet(self):
         # serpent serializes a set into a tuple on older python versions, so we override this
         data = {111, 222, 333}
-        ser, compressed = self.ser.serializeData(data)
-        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        ser, compressed = self.serializer.serializeData(data)
+        data2 = self.serializer.deserializeData(ser, compressed=compressed)
         if serpent.can_use_set_literals:
             self.assertEqual(data, data2)
         else:
@@ -666,8 +717,8 @@ class SerializeTests_serpent(SerializeTests_pickle):
     def testDeque(self):
         # serpent converts a deque into a primitive list
         deq = collections.deque([1, 2, 3, 4])
-        ser, compressed = self.ser.serializeData(deq)
-        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        ser, compressed = self.serializer.serializeData(deq)
+        data2 = self.serializer.deserializeData(ser, compressed=compressed)
         self.assertEqual([1, 2, 3, 4], data2)
 
     @unittest.skipIf(sys.version_info < (2, 7), "ordereddict is in Python 2.7+")
@@ -680,15 +731,15 @@ class SerializeTests_serpent(SerializeTests_pickle):
             self.assertEqual("collections.OrderedDict", name)
             return collections.OrderedDict(values["items"])
         Pyro4.util.SerializerBase.register_dict_to_class("collections.OrderedDict", recreate_OrderedDict)
-        ser, compressed = self.ser.serializeData(od)
+        ser, compressed = self.serializer.serializeData(od)
         self.assertIn(b"collections.OrderedDict", ser)
         self.assertIn(b"[('a',1),('b',2),('c',3)]", ser)
-        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        data2 = self.serializer.deserializeData(ser, compressed=compressed)
         self.assertEqual(od, data2)
 
     def testUriSerializationWithoutSlots(self):
         u = Pyro4.core.URI("PYRO:obj@localhost:1234")
-        d, compr = self.ser.serializeData(u)
+        d, compr = self.serializer.serializeData(u)
         self.assertFalse(compr)
         result1 = b"# serpent utf-8 python3.2\n{'__class__':'Pyro4.core.URI','state':('PYRO','obj',None,'localhost',1234)}"
         result2 = b"# serpent utf-8 python3.2\n{'state':('PYRO','obj',None,'localhost',1234),'__class__':'Pyro4.core.URI'}"
@@ -707,13 +758,13 @@ class SerializeTests_json(SerializeTests_pickle):
     def testSet(self):
         # json serializes a set into a list, so we override this
         data = {111, 222, 333}
-        ser, compressed = self.ser.serializeData(data)
-        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        ser, compressed = self.serializer.serializeData(data)
+        data2 = self.serializer.deserializeData(ser, compressed=compressed)
         self.assertEqual(list(data), data2)
 
     def testUriSerializationWithoutSlots(self):
         u = Pyro4.core.URI("PYRO:obj@localhost:1234")
-        d, compr = self.ser.serializeData(u)
+        d, compr = self.serializer.serializeData(u)
         self.assertFalse(compr)
         result1 = b'{"__class__": "Pyro4.core.URI", "state": ["PYRO", "obj", null, "localhost", 1234]}'
         result2 = b'{"state": ["PYRO", "obj", null, "localhost", 1234], "__class__": "Pyro4.core.URI"}'
@@ -742,8 +793,8 @@ class SerializeTests_msgpack(SerializeTests_pickle):
     def testSet(self):
         # msgpack serializes a set into a list, so we override this
         data = {111, 222, 333}
-        ser, compressed = self.ser.serializeData(data)
-        data2 = self.ser.deserializeData(ser, compressed=compressed)
+        ser, compressed = self.serializer.serializeData(data)
+        data2 = self.serializer.deserializeData(ser, compressed=compressed)
         self.assertEqual(list(data), data2)
 
     @unittest.skip("msgpack is implementation dependent")

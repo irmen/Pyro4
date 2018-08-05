@@ -538,10 +538,7 @@ class MarshalSerializer(SerializerBase):
         return marshal.dumps((obj, method, vargs, kwargs))
 
     def dumps(self, data):
-        try:
-            return marshal.dumps(data)
-        except (ValueError, TypeError):
-            return marshal.dumps(self.class_to_dict(data))
+        return marshal.dumps(self.convert_obj_into_marshallable(data))
 
     if sys.platform == "cli":
         def loadsCall(self, data):
@@ -570,13 +567,20 @@ class MarshalSerializer(SerializerBase):
             data = self._convertToBytes(data)
             return self.recreate_classes(marshal.loads(data))
 
+    marshalable_types = (str, int, float, type(None), bool, complex, bytes, bytearray,
+                         tuple, set, frozenset, list, dict)
+    if sys.version_info < (3, 0):
+        marshalable_types += (unicode,)
+
     def convert_obj_into_marshallable(self, obj):
-        marshalable_types = {str, int, float, type(None), bool, complex, bytes, bytearray,
-                             array.array, tuple, set, frozenset, list, dict}
-        if sys.version_info < (3, 0):
-            marshalable_types.add(unicode)
-        if type(obj) in marshalable_types:
+        if isinstance(obj, self.marshalable_types):
             return obj
+        if isinstance(obj, array.array):
+            if obj.typecode == 'c':
+                return obj.tostring()
+            if obj.typecode == 'u':
+                return obj.tounicode()
+            return obj.tolist()
         return self.class_to_dict(obj)
 
     @classmethod
@@ -668,7 +672,11 @@ class JsonSerializer(SerializerBase):
         if isinstance(obj, decimal.Decimal):
             return str(obj)
         if isinstance(obj, array.array):
-            return list(obj)
+            if obj.typecode == 'c':
+                return obj.tostring()
+            if obj.typecode == 'u':
+                return obj.tounicode()
+            return obj.tolist()
         return self.class_to_dict(obj)
 
     @classmethod
@@ -722,7 +730,11 @@ class MsgpackSerializer(SerializerBase):
         if isinstance(obj, numbers.Number):
             return msgpack.ExtType(0x31, str(obj).encode("ascii"))     # long
         if isinstance(obj, array.array):
-            return list(obj)
+            if obj.typecode == 'c':
+                return obj.tostring()
+            if obj.typecode == 'u':
+                return obj.tounicode()
+            return obj.tolist()
         return self.class_to_dict(obj)
 
     def object_hook(self, obj):
@@ -814,7 +826,7 @@ try:
         ver = serpent.__version__
     ver = tuple(map(int, ver.split(".")))
     if ver < (1, 27):
-        raise RuntimeError("requires serpent 1.27 or better")
+        raise RuntimeError("requires serpent 1.27 or later")
     _ser = SerpentSerializer()
     _serializers["serpent"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser
@@ -823,9 +835,13 @@ except ImportError:
     pass
 try:
     import msgpack
-    _ser = MsgpackSerializer()
-    _serializers["msgpack"] = _ser
-    _serializers_by_id[_ser.serializer_id] = _ser
+    if msgpack.version < (0, 5, 2):
+        import warnings
+        warnings.warn("msgpack serializer unavailable. requires msgpack 0.5.2+, found " + str(msgpack.version))
+    else:
+        _ser = MsgpackSerializer()
+        _serializers["msgpack"] = _ser
+        _serializers_by_id[_ser.serializer_id] = _ser
 except ImportError:
     pass
 del _ser

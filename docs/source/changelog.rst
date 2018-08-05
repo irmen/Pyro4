@@ -5,12 +5,10 @@ Change Log
 **Pyro 4.74**
 
 - serpent 1.27 required
-- fixed marshal serializer dumpsCall to be able to use the
-  class_to_dict conversion for unmarshallable types (in simple situations, not recursively).
-  This makes it possible again to use the marshal
-  serializer to register objects with the name server, something basic that
-  previously resulted in a ValueError: unmarshallable object.
-- msgpack, json and marshal serializers now understand how to serialize array.array
+- fixed marshal serializer problem that prevented it to even call register() in the name server.
+  Its dumpsCall is now able to use the class_to_dict conversion for unmarshallable types
+  (in simple situations, not recursively).  Previously, you would get a ValueError: unmarshallable object.
+- msgpack, json and marshal serializers now understand how to serialize array.array the same way serpent already did
 
 
 **Pyro 4.73**
