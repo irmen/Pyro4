@@ -216,9 +216,12 @@ serializer, for instance. Set the desired serializer name in ``proxy._pyroSerial
 Changing the way your custom classes are (de)serialized
 -------------------------------------------------------
 
-.. note::
-    The information in this paragraph is not relevant when using the pickle, cloudpickle or dill serialization protocols,
-    they have their own ways of serializing custom classes.
+.. sidebar::
+    Applicability
+
+    The information in this paragraph does not apply to the pickle, cloudpickle or dill serialization protocols.
+    They have their own ways of serializing custom classes.
+
 
 By default, custom classes are serialized into a dict.
 They are not deserialized back into instances of your custom class. This avoids possible security issues.

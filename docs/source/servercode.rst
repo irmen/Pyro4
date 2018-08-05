@@ -44,14 +44,13 @@ It lets you mark the following items to be available for remote access:
   and decorate that with ``@expose``, if you want to provide a remotely accessible attribute.
 - classes as a whole (exposing a class has the effect of exposing every nonprivate method and property of the class automatically)
 
-.. sidebar:: private members
-
-    In the spirit of being secure by default, Pyro doesn't allow remote access to anything of your class unless
-    explicitly told to do so. It will never allow remote access to 'private' members
-    (where private means that the name starts with a single or double underscore,
-    with a special exception for the regular 'dunder' names with double underscores such as ``__len__``)
-
 Anything that isn't decorated with ``@expose`` is not remotely accessible.
+
+.. important:: **Private methods and attributes**:
+    In the spirit of being secure by default, Pyro doesn't allow remote access to anything of your class unless
+    explicitly told to do so. It will never allow remote access to 'private' methods and attributes
+    (where 'private' means that their name starts with a single or double underscore).
+    There's a special exception for the regular 'dunder' names with double underscores such as ``__len__`` though.
 
 Here's a piece of example code that shows how a partially exposed Pyro class may look like::
 
