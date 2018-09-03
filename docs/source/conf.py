@@ -229,8 +229,8 @@ man_pages = [
 ]
 
 def setup(app):
+    # add custom css
+    app.add_stylesheet("css/customize.css")
     from sphinx.ext.autodoc import cut_lines
     # skip the copyright line in every module docstring (last line of docstring)
     app.connect('autodoc-process-docstring', cut_lines(pre=0, post=1, what=['module']))
-    # add custom css
-    app.add_stylesheet("css/customize.css")
