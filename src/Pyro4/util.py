@@ -226,7 +226,7 @@ class SerializerBase(object):
         if serpent_too:
             try:
                 get_serializer_by_id(SerpentSerializer.serializer_id)
-                import serpent
+                import serpent      # @todo not needed?
 
                 def serpent_converter(obj, serializer, stream, level):
                     d = converter(obj)
@@ -244,7 +244,7 @@ class SerializerBase(object):
             del cls.__custom_class_to_dict_registry[clazz]
         try:
             get_serializer_by_id(SerpentSerializer.serializer_id)
-            import serpent
+            import serpent          # @todo not needed?
             serpent.unregister_class(clazz)
         except errors.ProtocolError:
             pass
@@ -832,7 +832,6 @@ try:
     _serializers_by_id[_ser.serializer_id] = _ser
 except ImportError:
     log.warning("serpent serializer is not available")
-    pass
 try:
     import msgpack
     if msgpack.version < (0, 5, 2):

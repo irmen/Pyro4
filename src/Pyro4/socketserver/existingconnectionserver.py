@@ -8,7 +8,6 @@ from __future__ import print_function
 import socket
 import sys
 import logging
-import os
 import ssl
 from Pyro4 import socketutil, errors, util
 from Pyro4.configuration import config
@@ -81,8 +80,6 @@ class SocketServer_ExistingConnection(object):
         except (socket.error, errors.ConnectionClosedError, errors.SecurityError) as x:
             # client went away or caused a security error.
             # close the connection silently.
-            ex_t, ex_v, ex_tb = sys.exc_info()
-            tb = util.formatTraceback(ex_t, ex_v, ex_tb)
             try:
                 peername = self.conn.sock.getpeername()
                 log.debug("disconnected %s", peername)
