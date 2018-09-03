@@ -20,11 +20,10 @@ Pyro is copyright © Irmen de Jong (irmen@razorvine.net | http://www.razorvine.n
 Pyro can be found on Pypi as `Pyro4 <http://pypi.python.org/pypi/Pyro4/>`_.  Source on Github: https://github.com/irmen/Pyro4
 
 
-Contents
---------
 
 .. toctree::
    :maxdepth: 2
+   :caption: Contents of this manual:
    
    intro.rst
    install.rst
