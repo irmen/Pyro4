@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.75**
+
+- ...
+
+
 **Pyro 4.74**
 
 - serpent 1.27 required to avoid regression in previous version
