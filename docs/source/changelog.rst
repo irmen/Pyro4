@@ -4,7 +4,7 @@ Change Log
 
 **Pyro 4.74**
 
-- serpent 1.27 required
+- serpent 1.27 required to avoid regression in previous version
 - fixed marshal serializer problem that prevented it to even call register() in the name server.
   Its dumpsCall is now able to use the class_to_dict conversion for unmarshallable types
   (in simple situations, not recursively).  Previously, you would get a ValueError: unmarshallable object.
