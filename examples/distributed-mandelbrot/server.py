@@ -78,10 +78,11 @@ class MandelbrotColorPixels(object):
 
 if __name__ == "__main__":
     with Pyro4.Daemon() as d:
-        uri_1 = d.register(Mandelbrot)
-        uri_2 = d.register(MandelbrotColorPixels)
         with Pyro4.locateNS() as ns:
-            ns.register(Mandelbrot._pyroId, uri_1, safe=True, metadata={"class:mandelbrot_calc"})
-            ns.register(MandelbrotColorPixels._pyroId, uri_2, safe=True, metadata={"class:mandelbrot_calc_color"})
+            for num in range(8):
+                mandel_server = d.register(Mandelbrot())
+                mandel_color_server = d.register(MandelbrotColorPixels())
+                ns.register("mandelbrot_"+str(num), mandel_server, safe=True, metadata={"class:mandelbrot_calc"})
+                ns.register("mandelbrot_color"+str(num), mandel_color_server, safe=True, metadata={"class:mandelbrot_calc_color"})
         print("Mandelbrot calculation server ready.")
         d.requestLoop()
