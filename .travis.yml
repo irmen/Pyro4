@@ -6,8 +6,7 @@ python:
   - 3.5
   - 3.6
   - 3.7
-  - pypy
-  - pypy3
+  - pypy3.5
 
 # Use fast travis build infrastructure explicitly
 dist: xenial
