@@ -79,6 +79,7 @@ class NameServer(object):
         self.lock = threading.RLock()
 
     def count(self):
+        """Returns the number of name registrations."""
         return len(self.storage)
 
     def lookup(self, name, return_metadata=False):
