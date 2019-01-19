@@ -5,6 +5,8 @@ Change Log
 **Pyro 4.75**
 
 - fixed distributed-mandelbrot example to actually run multiple concurrent calculations.
+- CI build process now using more modern Python versions.
+- missing API method doc added on NameServer.count()
 
 
 **Pyro 4.74**
