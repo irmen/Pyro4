@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.76**
+
+- ...
+
+
 **Pyro 4.75**
 
 - fixed distributed-mandelbrot example to actually run multiple concurrent calculations.
