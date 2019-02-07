@@ -25,7 +25,7 @@ class Worker(threading.Thread):
     def __init__(self, pool):
         super(Worker, self).__init__()
         self.daemon = True
-        self.name = "Pyro-Worker-%d " % id(self)
+        self.name = "Pyro-Worker-%d" % id(self)
         self.job_available = threading.Event()
         self.job = None
         self.pool = pool
