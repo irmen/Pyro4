@@ -998,7 +998,7 @@ def expose(method_or_class):
     if inspect.isclass(method_or_class):
         clazz = method_or_class
         log.debug("exposing all members of %r", clazz)
-        for name in clazz.__dict__:
+        for name in dir(clazz):
             if util.is_private_attribute(name):
                 continue
             thing = getattr(clazz, name)
