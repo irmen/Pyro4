@@ -7,12 +7,15 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 from __future__ import print_function
+
+import selectors
 import socket
 import logging
 import sys
 import time
 import threading
 import os
+
 from Pyro4 import socketutil, errors, util
 from Pyro4.configuration import config
 from .threadpool import Pool, NoFreeWorkersError
@@ -106,6 +109,7 @@ class SocketServer_Threadpool(object):
         self.daemon = self.sock = self._socketaddr = self.locationStr = self.pool = None
         self.shutting_down = False
         self.housekeeper = None
+        self._selector = selectors.DefaultSelector()
 
     def init(self, daemon, host, port, unixsocket=None):
         log.info("starting thread pool socketserver")
@@ -143,6 +147,7 @@ class SocketServer_Threadpool(object):
         self.pool = Pool()
         self.housekeeper = Housekeeper(daemon)
         self.housekeeper.start()
+        self._selector.register(self.sock, selectors.EVENT_READ, self)
 
     def __del__(self):
         if self.sock is not None:
@@ -186,6 +191,9 @@ class SocketServer_Threadpool(object):
         # all other (client) sockets are owned by their individual threads.
         assert self.sock in eventsockets
         try:
+            events = self._selector.select(config.POLLTIMEOUT)
+            if not events:
+                return
             csock, caddr = self.sock.accept()
             if self.shutting_down:
                 csock.close()
