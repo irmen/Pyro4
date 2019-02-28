@@ -8,7 +8,6 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import print_function
 
-import selectors
 import socket
 import logging
 import sys
@@ -19,6 +18,8 @@ import os
 from Pyro4 import socketutil, errors, util
 from Pyro4.configuration import config
 from .threadpool import Pool, NoFreeWorkersError
+from .multiplexserver import selectors
+
 
 log = logging.getLogger("Pyro4.threadpoolserver")
 _client_disconnect_lock = threading.Lock()
