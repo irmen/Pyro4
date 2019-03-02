@@ -110,7 +110,7 @@ class SocketServer_Threadpool(object):
         self.daemon = self.sock = self._socketaddr = self.locationStr = self.pool = None
         self.shutting_down = False
         self.housekeeper = None
-        self._selector = selectors.DefaultSelector()
+        self._selector = selectors.DefaultSelector() if selectors else None
 
     def init(self, daemon, host, port, unixsocket=None):
         log.info("starting thread pool socketserver")
@@ -148,7 +148,8 @@ class SocketServer_Threadpool(object):
         self.pool = Pool()
         self.housekeeper = Housekeeper(daemon)
         self.housekeeper.start()
-        self._selector.register(self.sock, selectors.EVENT_READ, self)
+        if self._selector:
+            self._selector.register(self.sock, selectors.EVENT_READ, self)
 
     def __del__(self):
         if self.sock is not None:
@@ -192,9 +193,10 @@ class SocketServer_Threadpool(object):
         # all other (client) sockets are owned by their individual threads.
         assert self.sock in eventsockets
         try:
-            events = self._selector.select(config.POLLTIMEOUT)
-            if not events:
-                return
+            if self._selector:
+                events = self._selector.select(config.POLLTIMEOUT)
+                if not events:
+                    return
             csock, caddr = self.sock.accept()
             if self.shutting_down:
                 csock.close()

@@ -4,7 +4,9 @@ Change Log
 
 **Pyro 4.76**
 
-- ...
+- corrected bogus space in worker thread name
+- thread server can now be cleanly stopped with SIGINT / Ctrl-C on Windows
+  (if the selectors module is available which is also used by the multiplex server)
 
 
 **Pyro 4.75**
