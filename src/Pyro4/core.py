@@ -1113,8 +1113,8 @@ class Daemon(object):
                 host = config.HOST
             if nathost is None:
                 nathost = config.NATHOST
-            if natport is None:
-                natport = config.NATPORT or None
+            if natport is None and nathost is not None:
+                natport = config.NATPORT
             if nathost and unixsocket:
                 raise ValueError("cannot use nathost together with unixsocket")
             if (nathost is None) ^ (natport is None):
