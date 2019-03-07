@@ -91,7 +91,7 @@ NS_BCPORT                 int     9091                    UDP port of the broadc
 NS_BCHOST                 str     None                    Hostname for the broadcast responder of the name server. Used by the server only.
 NS_AUTOCLEAN              float   0.0                     Specify a recurring period in seconds where the Name server checks its registrations and removes the ones that are not available anymore. (0=disabled, otherwise should be >=3)
 NATHOST                   str     None                    External hostname in case of NAT (used by the server)
-NATPORT                   int     None                    External port in case of NAT (used by the server)
+NATPORT                   int     0                       External port in case of NAT (used by the server) 0=replicate internal port number as NAT port
 BROADCAST_ADDRS           str     <broadcast>, 0.0.0.0    List of comma separated addresses that Pyro should send broadcasts to (for NS locating in clients)
 ONEWAY_THREADED           bool    True                    Enable to make oneway calls be processed in their own separate thread
 POLLTIMEOUT               float   2.0                     For the multiplexing server only: the timeout of the select or poll calls

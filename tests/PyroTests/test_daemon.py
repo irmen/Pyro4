@@ -471,11 +471,8 @@ class DaemonTests(unittest.TestCase):
             self.assertEqual("nathosttest:12345", uri.location)
             uri = d.uriFor("object", nat=False)
             self.assertNotEqual("nathosttest:12345", uri.location)
-        try:
-            _ = Pyro4.core.Daemon(nathost="bla")
-            self.fail("expected error")
-        except ValueError:
-            pass
+            d = Pyro4.core.Daemon(nathost="bla")
+            self.assertTrue(d.natLocationStr.startswith("bla:"))
         try:
             _ = Pyro4.core.Daemon(natport=5555)
             self.fail("expected error")

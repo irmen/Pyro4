@@ -7,6 +7,9 @@ Change Log
 - corrected bogus space in worker thread name
 - thread server can now be cleanly stopped with SIGINT / Ctrl-C on Windows
   (if the selectors module is available which is also used by the multiplex server)
+- the behavior of the NATPORT config item has been corrected to be in line with the API behavior of the Daemon:
+  if you leave this at 0 (the default), it will now correctly replicate the internal port number as NAT port
+  (instead of crashing with a configuration error)
 
 
 **Pyro 4.75**
