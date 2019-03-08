@@ -6,6 +6,7 @@ recursive-include tests *
 recursive-include examples *
 recursive-include docs *
 recursive-include contrib *
+recursive-include certs *
 global-exclude */.svn/*
 global-exclude */.idea/*
 global-exclude *.class

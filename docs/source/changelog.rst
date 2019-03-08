@@ -10,6 +10,7 @@ Change Log
 - the behavior of the NATPORT config item has been corrected to be in line with the API behavior of the Daemon:
   if you leave this at 0 (the default), it will now correctly replicate the internal port number as NAT port
   (instead of crashing with a configuration error)
+- certs are now included in sdist archive so the ssl unit tests also run as intended
 
 
 **Pyro 4.75**

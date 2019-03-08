@@ -565,7 +565,9 @@ class TestSSL(unittest.TestCase):
         if not os.path.isdir(cert_dir):
             cert_dir = "../certs"
             if not os.path.isdir(cert_dir):
-                self.fail("cannot locate test certs directory")
+                cert_dir = "./certs"
+                if not os.path.isdir(cert_dir):
+                    self.fail("cannot locate test certs directory")
         try:
             config.SSL = True
             config.SSL_REQUIRECLIENTCERT = True

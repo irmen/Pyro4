@@ -7,6 +7,9 @@ all:
 lint:
 	pycodestyle
 
+test:
+	$(PYTHON) setup.py test
+
 sdist:
 	$(PYTHON) setup.py sdist
 	@echo "Look in the dist/ directory"
@@ -24,9 +27,6 @@ upload:
 
 install:
 	$(PYTHON) setup.py install
-
-test:
-	PYTHONPATH=./src $(PYTHON) tests/run_testsuite.py
 
 clean:
 	@echo "Removing tox dirs, logfiles, Pyro URI dumps, .pyo/.pyc files..."
