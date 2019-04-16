@@ -929,7 +929,7 @@ def get_exposed_members(obj, only_exposed=True, as_lists=False, use_cache=True):
         if is_private_attribute(m):
             continue
         v = getattr(obj, m)
-        if inspect.ismethod(v) or inspect.isfunction(v):
+        if inspect.ismethod(v) or inspect.isfunction(v) or inspect.ismethoddescriptor(v):
             if getattr(v, "_pyroExposed", not only_exposed):
                 methods.add(m)
                 # check if the method is marked with the 'oneway' decorator:
