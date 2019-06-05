@@ -11,6 +11,7 @@ Change Log
   if you leave this at 0 (the default), it will now correctly replicate the internal port number as NAT port
   (instead of crashing with a configuration error)
 - certs are now included in sdist archive so the ssl unit tests also run as intended
+- now correctly checks for write access to the correct logfile location, instead of assuming the current directory
 
 
 **Pyro 4.75**
