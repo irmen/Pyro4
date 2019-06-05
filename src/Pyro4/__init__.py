@@ -32,12 +32,15 @@ def _configLogging():
         if len(logging.root.handlers) == 0:
             # configure the logging with some sensible defaults.
             try:
-                import tempfile
-                tempfile = tempfile.TemporaryFile(dir=".")
-                tempfile.close()
-            except OSError:
+                if logfilename:
+                    import tempfile
+                    logfile_dir = os.path.dirname(os.path.expanduser(logfilename))
+                    tempfile = tempfile.TemporaryFile(dir=logfile_dir)
+                    tempfile.close()
+            except OSError as x:
                 # cannot write in current directory, use the default console logger
                 logging.basicConfig(level=levelvalue)
+                logging.getLogger("Pyro4").warn("unable to write to the given logfile (access rights?), falling back to console logger")
             else:
                 # set up a basic logfile in current directory
                 logging.basicConfig(
