@@ -74,6 +74,7 @@ The documentation can be found here: http://pyro4.readthedocs.io
             "Programming Language :: Python :: 3.5",
             "Programming Language :: Python :: 3.6",
             "Programming Language :: Python :: 3.7",
+            "Programming Language :: Python :: 3.8",
             "Topic :: Software Development :: Object Brokering",
             "Topic :: System :: Distributed Computing",
             "Topic :: System :: Networking"

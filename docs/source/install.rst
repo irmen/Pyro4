@@ -31,18 +31,18 @@ It will probably not work with Jython 2.7 at this time of writing. If you need t
 Obtaining and installing Pyro
 -----------------------------
 
-**Debian Linux (or Debian derived distributions)**
-    You can install via the package manager: ``apt install python3-pyro4`` (for Python 3.x) or ``apt install python2-pyro4`` (for Python 2.x).
-    Please pay attention to the packaged Pyro4 version, it can be quite old if you're not getting the package
-    from the testing or unstable repositories.
+**Linux**
+    Some Linux distributions offer Pyro4 through their package manager. Make sure you install the correct
+    one for the python version that you are using. It may be more convenient to just pip install it instead
+    in a virtualenv.
 
 **Anaconda**
     Anaconda users can install the Pyro4 package from conda-forge using ``conda install -c conda-forge pyro4``
 
-**Pip**
+**Pip install**
     ``pip install Pyro4`` should do the trick.   Pyro is available `here <http://pypi.python.org/pypi/Pyro4/>`_  on pypi.
 
-**Manual installation**
+**Manual installation from source**
     Download the source distribution archive (Pyro4-X.YZ.tar.gz) from Pypi or Github, extract and ``python setup.py install``.
     The `serpent <https://pypi.python.org/pypi/serpent>`_ serialization library must also be installed.
     If you're using a version of Python older than 3.4, the `selectors2 <https://pypi.python.org/pypi/selectors2>`_
