@@ -12,8 +12,7 @@ This chapter will show how to obtain and install Pyro.
 Compatibility
 -------------
 Pyro is written in 100% Python. It works on any recent operating system where a suitable supported Python implementation is available
-(2.7, or 3.4 and newer). It also works with Pypy (2 and 3) and IronPython.
-It will probably not work with Jython 2.7 at this time of writing. If you need this, try Pyro version 4.34 or older instead.
+(2.7, or 3.5 and newer). It also works with Pypy (2 and 3). Maybe it also works with other Python implementations, but those are not tested.
 (if you only need to write *client* code in Jython/Java, consider using :doc:`pyrolite` instead!)
 
 
@@ -45,14 +44,9 @@ Obtaining and installing Pyro
 **Manual installation from source**
     Download the source distribution archive (Pyro4-X.YZ.tar.gz) from Pypi or Github, extract and ``python setup.py install``.
     The `serpent <https://pypi.python.org/pypi/serpent>`_ serialization library must also be installed.
-    If you're using a version of Python older than 3.4, the `selectors2 <https://pypi.python.org/pypi/selectors2>`_
+    If you're using a version of Python older than 3.5, the `selectors2 <https://pypi.python.org/pypi/selectors2>`_
     or `selectors34 <https://pypi.python.org/pypi/selectors34>`_  backported module must also be installed
     to be able to use the multiplex server type.
-
-.. attention::
-    When using Python 3.4 or older it is better to install ``selectors2`` instead of ``selectors34``.
-    Pyro4's package requirements only refer to ``selectors34`` but Pyro will use ``selectors2`` first if it detects it.
-    (reason: selectors2 deals with interrupted system calls better. Python 3.5 and newer already have this built-in.)
 
 **Github**
     Source is on Github: https://github.com/irmen/Pyro4
