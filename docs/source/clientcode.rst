@@ -208,6 +208,10 @@ serializer, for instance. Set the desired serializer name in ``proxy._pyroSerial
     it to allow the pickle, cloudpickle or dill serializers if your client code uses them.
     See :ref:`nameserver-pickle`.
 
+.. caution::
+    Pyro5 won't support insecure serializers such as pickle, cloudpickle and dill.
+    If you want your code to be more easily ported to Pyro5 later, there's another reason to avoid using them.
+
 
 .. index:: deserialization, serializing custom classes, deserializing custom classes
 
@@ -518,6 +522,20 @@ A simple piece of code showing an asynchronous method call::
     :ref:`batched-calls` can also be executed asynchronously.
     Asynchronous calls are implemented using a background thread that waits for the results.
     Callables from the call chain are invoked sequentially in this background thread.
+
+.. note::
+    Be aware that the async setting is on a per-proxy basis (unless you make an
+    exact copy of a proxy using ``copy.copy``).  The async setting is not part of a
+    serialized proxy object. So this means for instance if you're using auto proxy and
+    use a method on an async proxy that returns a new proxy, those new proxies will *not*
+    be async automatically as well.
+
+.. caution::
+    The async proxy concept is not a part of Pyro5. It has been removed in favor of
+    an explicit user code solution such as using Python's ``concurrent.futures`` and
+    not relying on a 'hidden' background thread. It is advised to not use this feature
+    if you want your code to be easily portable to Pyro5 later.
+
 
 See the :file:`async` example for more details and example code for call chains.
 

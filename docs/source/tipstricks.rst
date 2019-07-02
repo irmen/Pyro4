@@ -19,6 +19,10 @@ Avoid using insecure features.
 Avoid using the ``pickle`` (and ``dill``, and ``cloudpickle``) serializers, they will make your solution insecure.
 Avoid using Flame (it requires pickle, but has severe security implications by itself).
 
+.. note::
+    These features are not available in Pyro5 as well, so if you want your code to be easily portable to Pyro5 later,
+    there's another reason to not use them.
+
 
 Make as little as possible remotely accessible.
 -----------------------------------------------
@@ -264,6 +268,10 @@ See the :file:`futures` example for more details and example code.
 You can delay the execution of the future for a number of seconds via the :py:meth:`Pyro4.futures.Future.delay` method,
 and you can cancel it altogether via the :py:meth:`Pyro4.futures.Future.cancel` method (which only works if the future
 hasn't been evaluated yet).
+
+.. note::
+    Async proxies are no longer available in Pyro5, so if you want your code to be easily portable to Pyro5 later,
+    it may be better to not use them.
 
 
 .. index:: DNS

@@ -29,6 +29,11 @@ can cause arbitrary code execution and this may wreck or compromise your system.
 Because of this the default serializer is serpent, which doesn't have this security problem.
 Some other means to enhance security are discussed below.
 
+.. caution::
+    Pyro5 won't support insecure serializers such as these. If you want your code to be
+    more easily ported to Pyro5 later, there's another reason to avoid using them.
+
+
 .. index::
     double: security; network interfaces
 

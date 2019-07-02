@@ -663,7 +663,9 @@ class Proxy(object):
 
     def _pyroAsync(self, asynchronous=True):
         """turns the proxy into asynchronous mode so you can do asynchronous method calls,
-        or sets it back to normal sync mode if you set asynchronous=False."""
+        or sets it back to normal sync mode if you set asynchronous=False.
+        This setting is strictly on a per-proxy basis (unless an exact clone is made
+        via copy.copy)."""
         self.__async = asynchronous
 
     if sys.version_info < (3, 7):
