@@ -30,7 +30,7 @@ The Java library can be obtained from `Maven <http://search.maven.org/#search|ga
 
 Source is on Github: https://github.com/irmen/Pyrolite
 
-Readme: https://raw.githubusercontent.com/irmen/Pyrolite/master/README.txt
+Readme: https://github.com/irmen/Pyrolite/blob/master/README.md
 
 
 Small code example in Java:
