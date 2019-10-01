@@ -41,6 +41,7 @@ def test():
 
 # pickle.
 print("\n******* pickle *******")
+print("******* (expecting no errors) ******")
 Pyro4.config.SERIALIZER = "pickle"
 try:
     test()

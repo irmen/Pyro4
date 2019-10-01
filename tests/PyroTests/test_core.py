@@ -132,6 +132,9 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(uri, str(p))
         self.assertEqual(unicodeuri, unicode(p))
         self.assertTrue(type(p.sockname) is unicode)
+        uri = "PYRO:12345@./u:sock name with strings"
+        p = Pyro4.core.URI(uri)
+        self.assertEqual(uri, str(p))
 
     def testUriParsingPyro(self):
         p = Pyro4.core.URI("PYRONAME:some_obj_name")
@@ -159,6 +162,9 @@ class CoreTests(unittest.TestCase):
         p = Pyro4.core.URI("PYRO:12345@./u:/tmp/sockname")
         self.assertEqual("12345", p.object)
         self.assertEqual("/tmp/sockname", p.sockname)
+        p = Pyro4.core.URI("PYRO:12345@./u:/path with spaces/sockname  ")
+        self.assertEqual("12345", p.object)
+        self.assertEqual("/path with spaces/sockname  ", p.sockname)
         p = Pyro4.core.URI("PYRO:12345@./u:../sockname")
         self.assertEqual("12345", p.object)
         self.assertEqual("../sockname", p.sockname)

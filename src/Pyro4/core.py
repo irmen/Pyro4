@@ -47,7 +47,7 @@ class URI(object):
     You can write the protocol in lowercase if you like (``pyro:...``) but it will
     automatically be converted to uppercase internally.
     """
-    uriRegEx = re.compile(r"(?P<protocol>[Pp][Yy][Rr][Oo][a-zA-Z]*):(?P<object>\S+?)(@(?P<location>\S+))?$")
+    uriRegEx = re.compile(r"(?P<protocol>[Pp][Yy][Rr][Oo][a-zA-Z]*):(?P<object>\S+?)(@(?P<location>.+))?$")
 
     def __init__(self, uri):
         if isinstance(uri, URI):
