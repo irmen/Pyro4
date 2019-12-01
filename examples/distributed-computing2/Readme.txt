@@ -1,6 +1,6 @@
 A simple distributed computing example with "push" model.
 
-There are a handfull of word-counter instances.
+There are a handful of word-counter instances.
 Each is able to count the word frequencies in the lines of text given to it.
 The counters are registered in the name server using a common name prefix,
 which is used by the dispatcher to get a list of all available counters.
@@ -13,8 +13,16 @@ a single counter to process the full text. Then it does it again but now
 uses the dispatcher counter instead - which distributes chunks of the text
 across all available counters in parallel.
 
-The actual counter implementation contains a small artificial delay,
-this helps dramatize the time saving effect of the parallel processing.
-
-
 Make sure a name server is running before starting this example.
+
+
+NOTE:
+-----
+This particular example is not a "real" distributed calculation because it uses
+*threads* to process multiple Pyro calls concurrently. Because of Python's GIL,
+threads will NOT run in parallel unless they wait for a signal or are doing I/O.
+This is why this example has an artificial timer delay to make the compute calls
+not cpu-bound thereby enabling actual parallel execution.
+
+For "true" distributed parallel calculations, have a look at the other
+distributed-computing examples.

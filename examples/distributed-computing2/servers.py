@@ -28,7 +28,7 @@ class WordCounter(object):
                 interesting_words = [w for w in line.split() if w.isalpha() and w not in self.filter_words]
                 counts.update(interesting_words)
             if num % 10 == 0:
-                time.sleep(0.01)  # artificial delay to dramatize execution time differences
+                time.sleep(0.01)  # artificial delay to show execution time differences (and make this not cpu-bound)
         return counts
 
 
