@@ -98,7 +98,7 @@ see the ``ssl`` example.
 Dotted names (object traversal)
 ===============================
 Using dotted names on Pyro proxies (such as ``proxy.aaa.bbb.ccc()``) is not possible in Pyro, because it is a security vulnerability
-(for similar reasons as described here http://www.python.org/news/security/PSF-2005-001/ ).
+(for similar reasons as described here https://legacy.python.org/news/security/PSF-2005-001/ ).
 
 
 .. index::
