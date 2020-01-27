@@ -55,7 +55,10 @@ The documentation can be found here: http://pyro4.readthedocs.io
         scripts=[],
         platforms="any",
         test_suite="setup.pyro_test_suite",
-        install_requires=["serpent>=1.27"],
+        install_requires=[
+            "serpent>=1.27,<1.30 ; python_version<'3.2'",
+            "serpent>=1.27 ; python_version>='3.2'",
+        ],
         extras_require={
             ":python_version<'3.4'": ["selectors34"]
         },
