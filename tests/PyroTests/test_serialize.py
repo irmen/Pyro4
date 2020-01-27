@@ -12,7 +12,6 @@ import pprint
 import pickle
 import base64
 import unittest
-import serpent
 import math
 import uuid
 import Pyro4.util
@@ -701,18 +700,15 @@ class SerializeTests_serpent(SerializeTests_pickle):
     SERIALIZER = "serpent"
 
     def testCircular(self):
-        with self.assertRaises(ValueError):  # serpent doesn't support object graphs (since serpent 1.7 reports ValueError instead of crashing)
+        # serpent doesn't support object graphs (since serpent 1.7 reports ValueError instead of crashing)
+        with self.assertRaises(ValueError):
             super(SerializeTests_serpent, self).testCircular()
 
     def testSet(self):
-        # serpent serializes a set into a tuple on older python versions, so we override this
         data = {111, 222, 333}
         ser, compressed = self.serializer.serializeData(data)
         data2 = self.serializer.deserializeData(ser, compressed=compressed)
-        if serpent.can_use_set_literals:
-            self.assertEqual(data, data2)
-        else:
-            self.assertEqual(tuple(data), data2)
+        self.assertEqual(tuple(data), tuple(data2))
 
     def testDeque(self):
         # serpent converts a deque into a primitive list
