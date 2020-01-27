@@ -4,7 +4,8 @@ Change Log
 
 **Pyro 4.78**
 
-- ...
+- stick to an older serpent library version to install as a dependency when installing on old python versions
+- explain the delay and threading in the distributed-computing2 example
 
 
 **Pyro 4.77**
