@@ -56,7 +56,7 @@ Obtaining and installing Pyro
 Third party libraries that Pyro4 uses
 -------------------------------------
 
-`serpent <https://pypi.python.org/pypi/serpent>`_ - required, 1.27 or newer
+`serpent <https://pypi.python.org/pypi/serpent>`_ - required
     Should be installed automatically when you install Pyro4.
 
 `selectors34 <https://pypi.python.org/pypi/selectors34>`_ - required on Python 3.3 or older
@@ -65,13 +65,13 @@ Third party libraries that Pyro4 uses
 `selectors2 <https://pypi.python.org/pypi/selectors2>`_ - optional on Python 3.4 or older
     Install this if you want better behavior for interrupted system calls on Python 3.4 or older.
 
-`dill <https://pypi.python.org/pypi/dill>`_ - optional, 0.2.6 or newer
+`dill <https://pypi.python.org/pypi/dill>`_ - optional
     Install this if you want to use the dill serializer.
 
-`cloudpickle <https://pypi.python.org/pypi/cloudpickle>`_ - optional, 0.4.0 or newer
+`cloudpickle <https://pypi.python.org/pypi/cloudpickle>`_ - optional
     Install this if you want to use the cloudpickle serializer.
 
-`msgpack <https://pypi.python.org/pypi/msgpack>`_ - optional, 0.5.2 or newer
+`msgpack <https://pypi.python.org/pypi/msgpack>`_ - optional
     Install this if you want to use the msgpack serializer.
 
 
