@@ -992,7 +992,7 @@ def expose(method_or_class):
         if inspect.ismethoddescriptor(method_or_class):
             attrname = method_or_class.__get__(None, dict).__name__
             raise AttributeError("using @expose on a classmethod/staticmethod must be done "
-                                 "after @classmethod/@taticmethod. Method: " + attrname)
+                                 "after @classmethod/@staticmethod. Method: " + attrname)
         else:
             raise AttributeError("@expose cannot determine what this is: " + repr(method_or_class))
     if util.is_private_attribute(attrname):
