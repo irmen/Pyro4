@@ -1004,7 +1004,7 @@ def expose(method_or_class):
             if util.is_private_attribute(name):
                 continue
             thing = getattr(clazz, name)
-            if inspect.isfunction(thing):
+            if inspect.isfunction(thing) or inspect.ismethoddescriptor(thing):
                 thing._pyroExposed = True
             elif inspect.ismethod(thing):
                 thing.__func__._pyroExposed = True
