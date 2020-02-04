@@ -21,8 +21,8 @@ wheel:
 docs:
 	$(PYTHON) setup.py build_sphinx
 
-upload:
-	$(PYTHON) setup.py sdist bdist_wheel upload
+upload: sdist wheel
+	twine upload dist/*
 	@echo "Don't forget to check the doc builds on RTD!"
 
 install:

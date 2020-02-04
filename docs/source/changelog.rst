@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.79**
+
+- cython compatibility fix
+
+
 **Pyro 4.78**
 
 - stick to an older serpent library version to install as a dependency when installing on old python versions
