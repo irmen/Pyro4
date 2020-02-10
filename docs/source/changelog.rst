@@ -5,6 +5,8 @@ Change Log
 **Pyro 4.79**
 
 - cython compatibility fix
+- removed explicit version checks of dependencies such as serpent.
+  This fixes crash error when dealing with prerelease versions that didn't match the pattern.
 
 
 **Pyro 4.78**

@@ -820,13 +820,6 @@ except ImportError:
     pass
 try:
     import serpent
-    if '-' in serpent.__version__:
-        ver = serpent.__version__.split('-', 1)[0]
-    else:
-        ver = serpent.__version__
-    ver = tuple(map(int, ver.split(".")))
-    if ver < (1, 27):
-        raise RuntimeError("requires serpent 1.27 or later")
     _ser = SerpentSerializer()
     _serializers["serpent"] = _ser
     _serializers_by_id[_ser.serializer_id] = _ser
@@ -834,13 +827,9 @@ except ImportError:
     log.warning("serpent serializer is not available")
 try:
     import msgpack
-    if msgpack.version < (0, 5, 2):
-        import warnings
-        warnings.warn("msgpack serializer unavailable. requires msgpack 0.5.2+, found " + str(msgpack.version))
-    else:
-        _ser = MsgpackSerializer()
-        _serializers["msgpack"] = _ser
-        _serializers_by_id[_ser.serializer_id] = _ser
+    _ser = MsgpackSerializer()
+    _serializers["msgpack"] = _ser
+    _serializers_by_id[_ser.serializer_id] = _ser
 except ImportError:
     pass
 del _ser
