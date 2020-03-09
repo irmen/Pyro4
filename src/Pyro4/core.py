@@ -1162,6 +1162,7 @@ class Daemon(object):
         self._pyroInstances = {}   # pyro objects for instance_mode=single (singletons, just one per daemon)
         self.streaming_responses = {}   # stream_id -> (client, creation_timestamp, linger_timestamp, stream)
         self.housekeeper_lock = threading.Lock()
+        self.create_single_instance_lock = threading.Lock()
         self.__mustshutdown.clear()
 
     @property
@@ -1534,12 +1535,13 @@ class Daemon(object):
         instance_mode, instance_creator = clazz._pyroInstancing
         if instance_mode == "single":
             # create and use one singleton instance of this class (not a global singleton, just exactly one per daemon)
-            instance = self._pyroInstances.get(clazz)
-            if not instance:
-                log.debug("instancemode %s: creating new pyro object for %s", instance_mode, clazz)
-                instance = createInstance(clazz, instance_creator)
-                self._pyroInstances[clazz] = instance
-            return instance
+            with self.create_single_instance_lock:
+                instance = self._pyroInstances.get(clazz)
+                if not instance:
+                    log.debug("instancemode %s: creating new pyro object for %s", instance_mode, clazz)
+                    instance = createInstance(clazz, instance_creator)
+                    self._pyroInstances[clazz] = instance
+                return instance
         elif instance_mode == "session":
             # Create and use one instance for this proxy connection
             # the instances are kept on the connection object.

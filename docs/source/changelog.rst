@@ -2,6 +2,11 @@
 Change Log
 **********
 
+**Pyro 4.80**
+
+- fix possible race condition when creating instances with instancemode "single"
+
+
 **Pyro 4.79**
 
 - cython compatibility fix
