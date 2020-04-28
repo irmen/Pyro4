@@ -26,6 +26,7 @@ Pyro4 is considered feature complete and is now in 'maintenance' mode.
 This means that only important bug fixes and security issues will be made to Pyro4.
 New development, improvements and new features will only be available in its successor
 Pyro5:  https://github.com/irmen/Pyro5
+New code should use Pyro5 if possible.
 
 Documentation
 =============

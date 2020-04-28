@@ -20,11 +20,16 @@ Pyro is copyright © Irmen de Jong (irmen@razorvine.net | http://www.razorvine.n
 Pyro can be found on Pypi as `Pyro4 <http://pypi.python.org/pypi/Pyro4/>`_.  Source on Github: https://github.com/irmen/Pyro4
 
 
+`Pyro6 <http://pypi.python.org/pypi/Pyro6/>`_ is the successor to this version of the library,
+and is considered to be the current version. Pyro4 is in maintenance mode and
+only gets important bugfixes and security fixes, but is otherwise no longer being improved.
+New code should use Pyro5 if possible.
+
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents of this manual:
-   
+
    intro.rst
    install.rst
    tutorials.rst
