@@ -23,7 +23,7 @@ Pyro can be found on Pypi as `Pyro4 <http://pypi.python.org/pypi/Pyro4/>`_.  Sou
 Pyro4 is considered feature complete and is now in 'maintenance' mode.
 This means that only important bug fixes and security issues will be made to Pyro4.
 New development, improvements and new features will only be available in its successor
-`Pyro5 <http://pypi.python.org/pypi/Pyro5/>`_ . New code should use Pyro5 if possible.
+`Pyro5 <https://pyro5.readthedocs.io/>`_ . New code should use Pyro5 if possible.
 
 
 .. toctree::
