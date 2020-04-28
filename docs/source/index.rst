@@ -20,10 +20,10 @@ Pyro is copyright © Irmen de Jong (irmen@razorvine.net | http://www.razorvine.n
 Pyro can be found on Pypi as `Pyro4 <http://pypi.python.org/pypi/Pyro4/>`_.  Source on Github: https://github.com/irmen/Pyro4
 
 
-`Pyro6 <http://pypi.python.org/pypi/Pyro6/>`_ is the successor to this version of the library,
-and is considered to be the current version. Pyro4 is in maintenance mode and
-only gets important bugfixes and security fixes, but is otherwise no longer being improved.
-New code should use Pyro5 if possible.
+Pyro4 is considered feature complete and is now in 'maintenance' mode.
+This means that only important bug fixes and security issues will be made to Pyro4.
+New development, improvements and new features will only be available in its successor
+`Pyro5 <http://pypi.python.org/pypi/Pyro5/>`_ . New code should use Pyro5 if possible.
 
 
 .. toctree::
