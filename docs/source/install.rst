@@ -6,12 +6,28 @@ Installing Pyro
 
 This chapter will show how to obtain and install Pyro.
 
+Pyro5
+-----
+
+.. image:: _static/pyro5.png
+    :align: right
+    :width: 120px
+
+Pyro4 is considered feature complete and new development is frozen.
+Only very important bug fixes (such as security issues) will still be made to Pyro4.
+New development, improvements and new features will only be available in its successor
+`Pyro5 <https://pyro5.readthedocs.io/>`_ . New code should use Pyro5 unless a feature
+of Pyro4 is strictly required.  Older code should consider migrating to Pyro5. It provides
+a (simple) backwards compatibility api layer to make the porting easier.
+
+
+
 .. index::
     double: installing Pyro; requirements for Pyro
 
 Compatibility
 -------------
-Pyro is written in 100% Python. It works on any recent operating system where a suitable supported Python implementation is available
+Pyro4 is written in 100% Python. It works on any recent operating system where a suitable supported Python implementation is available
 (2.7, or 3.5 and newer). It also works with Pypy (2 and 3). Maybe it also works with other Python implementations, but those are not tested.
 (if you only need to write *client* code in Jython/Java, consider using :doc:`pyrolite` instead!)
 

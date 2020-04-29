@@ -22,11 +22,12 @@ This license, including disclaimer, is available in the 'LICENSE' file.
 
 Pyro5
 -----
-Pyro4 is considered feature complete and is now in 'maintenance' mode.
-This means that only important bug fixes and security issues will be made to Pyro4.
+Pyro4 is considered feature complete and new development is frozen.
+Only very important bug fixes (such as security issues) will still be made to Pyro4.
 New development, improvements and new features will only be available in its successor
-Pyro5:  https://github.com/irmen/Pyro5
-New code should use Pyro5 if possible.
+Pyro5: https://pyro5.readthedocs.io New code should strongly consider using Pyro5 unless a feature
+of Pyro4 is strictly required.  Older code should consider migrating to Pyro5. It provides
+a (simple) backwards compatibility api layer to make the porting easier.
 
 Documentation
 =============
