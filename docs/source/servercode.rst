@@ -341,7 +341,7 @@ Pyro's daemon is ``Pyro4.Daemon`` (shortcut to :class:`Pyro4.core.Daemon`).
 It has a few optional arguments when you create it:
 
 
-.. function:: Daemon([host=None, port=0, unixsocket=None, nathost=None, natport=None, interface=DaemonObject])
+.. function:: Daemon([host=None, port=0, unixsocket=None, nathost=None, natport=None, interface=DaemonObject, connected_socket=None])
 
     Create a new Pyro daemon.
 
@@ -360,6 +360,8 @@ It has a few optional arguments when you create it:
     :type port: int
     :param interface: optional alternative daemon object implementation (that provides the Pyro API of the daemon itself)
     :type interface: Pyro4.core.DaemonObject
+    :param connected_socket: optional existing socket connection to use instead of creating a new server socket
+    :type interface: socket
 
 
 .. index::
