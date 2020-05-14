@@ -20,6 +20,7 @@ Pyrolite also contains a feature complete implementation of Python's :mod:`pickl
 and a small part of Pyro's client network protocol and proxy logic. It can  use
 the Serpent serialization format as well.
 
+*Use the 4.x version of the library with Pyro4.*
 
 *Getting the .NET version:*
 The .NET version is available using the nuget package manager, package name is ``Razorvine.Pyrolite``
@@ -28,9 +29,9 @@ The .NET version is available using the nuget package manager, package name is `
 *Getting the Java version:*
 The Java library can be obtained from `Maven <http://search.maven.org/#search|ga|1|razorvine>`_, groupid ``net.razorvine`` artifactid ``pyrolite``.
 
-Source is on Github: https://github.com/irmen/Pyrolite
+Source is on Github: https://github.com/irmen/Pyrolite/tree/pyro4-legacy  in the 'pyro4-legacy' branch.
 
-Readme: https://github.com/irmen/Pyrolite/blob/master/README.md
+Readme: https://github.com/irmen/Pyrolite/blob/pyro4-legacy/README.md
 
 
 Small code example in Java:
