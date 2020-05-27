@@ -631,6 +631,9 @@ Http response status codes:
 - 500 Internal server error: something went wrong during request processing, response is serialized exception object (if available)
 
 
+Look at the :file:`http` example for working code how you could set this up.
+
+
 .. index:: current_context, correlation_id
 .. _current_context:
 
