@@ -1458,7 +1458,7 @@ class Daemon(object):
                 request_serializer_id = msg.serializer_id
             if xt is not errors.ConnectionClosedError:
                 if xt not in (StopIteration, GeneratorExit):
-                    log.warning("Exception occurred while handling request: %r", xv, exc_info=True)
+                    log.warning("Exception occurred while handling request: %r. It will be raised again on the client side.", xv, exc_info=True)
                 if not request_flags & message.FLAGS_ONEWAY:
                     if isinstance(xv, errors.SerializeError) or not isinstance(xv, errors.CommunicationError):
                         # only return the error to the client if it wasn't a oneway call, and not a communication error
