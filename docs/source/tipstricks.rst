@@ -119,7 +119,7 @@ A little example to enable logging by setting the required environment variables
     $ export PYRO_LOGLEVEL=DEBUG
     $ python my_pyro_program.py
 
-Another way is by modifiying ``os.environ`` from within your code itself, *before* any import of Pyro4 is done::
+Another way is by modifying ``os.environ`` from within your code itself, *before* any import of Pyro4 is done::
 
     import os
     os.environ["PYRO_LOGFILE"] = "pyro.log"

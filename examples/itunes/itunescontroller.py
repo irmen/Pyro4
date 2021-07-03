@@ -35,7 +35,7 @@ class ITunes(object):
         subprocess.call(["osascript", "-e", "tell application \"iTunes\" to previous track"])
 
     def playlist(self, listname):
-        # start playling a defined play list
+        # start playing a defined play list
         subprocess.call(["osascript", "-e", "tell application \"iTunes\" to play playlist \"{0}\"".format(listname)])
 
     def currentsong(self):

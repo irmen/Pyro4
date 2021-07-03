@@ -78,7 +78,7 @@ class Future(object):
     def delay(self, seconds):
         """
         Delay the evaluation of the future for the given number of seconds.
-        Return True if succesful otherwise False if the future has already been evaluated.
+        Return True if successful otherwise False if the future has already been evaluated.
         """
         if self.completed:
             return False
@@ -88,7 +88,7 @@ class Future(object):
     def cancel(self):
         """
         Cancels the execution of the future altogether.
-        If the execution hasn't been started yet, the cancellation is succesful and returns True.
+        If the execution hasn't been started yet, the cancellation is successful and returns True.
         Otherwise, it failed and returns False.
         """
         if self.completed:
