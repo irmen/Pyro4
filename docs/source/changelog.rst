@@ -2,6 +2,14 @@
 Change Log
 **********
 
+**Pyro 4.81**
+
+- fix some typo's in docs
+- corrected some minor other things in docs
+- Python 3.9 is now included in the unit test runs
+- No actual code changes.
+
+
 **Pyro 4.80**
 
 - fix possible race condition when creating instances with instancemode "single"
