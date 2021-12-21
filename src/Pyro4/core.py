@@ -987,7 +987,7 @@ def expose(method_or_class):
         func._pyroExposed = True
         return method_or_class
     attrname = getattr(method_or_class, "__name__", None)
-    if not attrname:
+    if not attrname or attrname in ['cmethod', 'smethod']:
         # we could be dealing with a descriptor (classmethod/staticmethod), this means the order of the decorators is wrong
         if inspect.ismethoddescriptor(method_or_class):
             attrname = method_or_class.__get__(None, dict).__name__
