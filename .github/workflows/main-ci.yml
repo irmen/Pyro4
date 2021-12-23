@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r test-requirements.txt
+          pip install -r test_requirements.txt
       - name: build and install
         run:
           pip install .
