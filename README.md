@@ -1,5 +1,3 @@
-[![saythanks](https://img.shields.io/badge/say-thanks-ff69b4.svg)](https://saythanks.io/to/irmen)
-[![Build Status](https://travis-ci.org/irmen/Pyro4.svg?branch=master)](https://travis-ci.org/irmen/Pyro4)
 [![Latest Version](https://img.shields.io/pypi/v/Pyro4.svg)](https://pypi.python.org/pypi/Pyro4/)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/pyro4/badges/version.svg)](https://anaconda.org/conda-forge/pyro4)
 [![Code Quality: Python](https://img.shields.io/lgtm/grade/python/g/irmen/Pyro4.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/irmen/Pyro4/context:python)
