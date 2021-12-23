@@ -2,6 +2,12 @@
 Change Log
 **********
 
+**Pyro 4.82**
+
+- switched from travis to using github actions for CI builds and tests
+- Python 3.10 is now included in the unit test runs
+
+
 **Pyro 4.81**
 
 - fix some typo's in docs
