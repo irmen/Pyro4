@@ -23,11 +23,11 @@ jobs:
 
     steps:
       - name: Checkout source
-      - uses: actions/checkout@v2
+        uses: actions/checkout@v2
       - name: Set up Python
         uses: actions/setup-python@v2
-          with:
-            python-version: ${{ matrix.python-version }}
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
