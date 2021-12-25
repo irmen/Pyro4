@@ -1,7 +1,5 @@
 [![Latest Version](https://img.shields.io/pypi/v/Pyro4.svg)](https://pypi.python.org/pypi/Pyro4/)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/pyro4/badges/version.svg)](https://anaconda.org/conda-forge/pyro4)
-[![Code Quality: Python](https://img.shields.io/lgtm/grade/python/g/irmen/Pyro4.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/irmen/Pyro4/context:python)
-[![Total Alerts](https://img.shields.io/lgtm/alerts/g/irmen/Pyro4.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/irmen/Pyro4/alerts)
 
 PYRO - Python Remote Objects
 ============================

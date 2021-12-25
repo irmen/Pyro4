@@ -4,6 +4,7 @@ Change Log
 
 **Pyro 4.82**
 
+- fixed @expose issue on static method/classmethod due to API change in Python 3.10
 - switched from travis to using github actions for CI builds and tests
 - Python 3.10 is now included in the unit test runs
 
