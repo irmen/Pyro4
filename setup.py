@@ -50,6 +50,9 @@ The documentation can be found here: http://pyro4.readthedocs.io
         author_email="irmen@razorvine.net",
         keywords=["distributed objects", "RPC", "remote method call", "IPC"],
         url="http://pyro4.readthedocs.io",
+        project_urls={
+            "Source": "https://github.com/irmen/Pyro4",
+        },
         package_dir={'': 'src'},
         packages=['Pyro4', 'Pyro4.socketserver', 'Pyro4.test', 'Pyro4.utils'],
         scripts=[],
