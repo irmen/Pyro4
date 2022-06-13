@@ -898,7 +898,7 @@ class _AsyncRemoteMethod(object):
     def __call__(self, *args, **kwargs):
         result = futures.FutureResult()
         thread = threading.Thread(target=self.__asynccall, args=(result, args, kwargs))
-        thread.setDaemon(True)
+        thread.daemon = True
         thread.start()
         return result
 
@@ -1231,7 +1231,7 @@ class Daemon(object):
         log.info("daemon %s entering requestloop", self.locationStr)
         try:
             self.__loopstopped.clear()
-            condition = lambda: not self.__mustshutdown.isSet() and loopCondition()
+            condition = lambda: not self.__mustshutdown.is_set() and loopCondition()
             self.transportServer.loop(loopCondition=condition)
         finally:
             self.__loopstopped.set()

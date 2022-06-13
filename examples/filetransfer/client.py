@@ -16,7 +16,7 @@ def regular_pyro(uri):
     num_blobs = 10
     total_size = 0
     start = time.time()
-    name = threading.currentThread().name
+    name = threading.current_thread().name
     with Pyro4.core.Proxy(uri) as p:
         for _ in range(num_blobs):
             print("thread {0} getting a blob using regular Pyro call...".format(name))
@@ -33,7 +33,7 @@ def via_iterator(uri):
     num_blobs = 10
     total_size = 0
     start = time.time()
-    name = threading.currentThread().name
+    name = threading.current_thread().name
     with Pyro4.core.Proxy(uri) as p:
         for _ in range(num_blobs):
             print("thread {0} getting a blob using remote iterators...".format(name))
@@ -46,7 +46,7 @@ def via_iterator(uri):
 
 
 def via_annotation_stream(uri):
-    name = threading.currentThread().name
+    name = threading.current_thread().name
     start = time.time()
     total_size = 0
     print("thread {0} downloading via annotation stream...".format(name))
@@ -67,7 +67,7 @@ def raw_socket(uri):
     blobsize = 40*1024*1024
     num_blobs = 10
     total_size = 0
-    name = threading.currentThread().name
+    name = threading.current_thread().name
     with Pyro4.core.Proxy(uri) as p:
         print("thread {0} preparing {1} blobs of size {2} Mb".format(name, num_blobs, blobsize/1024.0/1024.0))
         blobs = {}

@@ -418,7 +418,7 @@ class BroadcastServer(object):
     def runInThread(self):
         """Run the broadcast server loop in its own thread."""
         thread = threading.Thread(target=self.__requestLoop)
-        thread.setDaemon(True)
+        thread.daemon = True
         thread.start()
         log.debug("broadcast server loop running in own thread")
         return thread

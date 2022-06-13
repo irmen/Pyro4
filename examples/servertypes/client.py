@@ -1,14 +1,8 @@
 from __future__ import print_function
-import sys
 import time
 import threading
 import Pyro4
 
-
-if sys.version_info < (3, 0):
-    current_thread = threading.currentThread
-else:
-    current_thread = threading.current_thread
 
 serv = Pyro4.core.Proxy("PYRONAME:example.servertypes")
 
@@ -68,14 +62,14 @@ def func(uri):
     # This will run in a thread. Create a proxy just for this thread:
     with Pyro4.core.Proxy(uri) as p:
         processed = p.delay()
-        print("[ thread %s called delay, processed by: %s ]  " % (current_thread().getName(), processed))
+        print("[ thread %s called delay, processed by: %s ]  " % (threading.current_thread().name, processed))
 
 
 serv._pyroBind()  # simplify the uri
 threads = []
 for i in range(5):
     t = threading.Thread(target=func, args=[serv._pyroUri])
-    t.setDaemon(True)
+    t.daemon = True
     threads.append(t)
     t.start()
 print("Waiting for threads to finish:")

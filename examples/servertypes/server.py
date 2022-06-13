@@ -7,9 +7,6 @@ import Pyro4
 
 if sys.version_info < (3, 0):
     input = raw_input
-    current_thread = threading.currentThread
-else:
-    current_thread = threading.current_thread
 
 
 @Pyro4.expose
@@ -28,7 +25,7 @@ class Server(object):
         return Pyro4.config.asDict()
 
     def delay(self):
-        threadname = current_thread().getName()
+        threadname = threading.current_thread().name
         print("delay called in thread %s" % threadname)
         time.sleep(1)
         self.callcount += 1
@@ -36,7 +33,7 @@ class Server(object):
 
     @Pyro4.oneway
     def onewaydelay(self):
-        threadname = current_thread().getName()
+        threadname = current_thread().name
         print("onewaydelay called in thread %s" % threadname)
         time.sleep(1)
         self.callcount += 1

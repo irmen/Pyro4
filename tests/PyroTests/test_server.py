@@ -123,7 +123,7 @@ class NotEverythingExposedClass(object):
 class DaemonLoopThread(threading.Thread):
     def __init__(self, pyrodaemon):
         super(DaemonLoopThread, self).__init__()
-        self.setDaemon(True)
+        self.daemon = True
         self.pyrodaemon = pyrodaemon
         self.running = threading.Event()
         self.running.clear()
@@ -693,7 +693,7 @@ class ServerTestsOnce(unittest.TestCase):
                 threading.Thread.__init__(self)
                 self.proxy = proxy
                 self.event = event
-                self.setDaemon(True)
+                self.daemon = True
                 self.new_connections.reset()
 
             def run(self):
@@ -1038,7 +1038,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
                 self.proxy = proxy
                 self.terminate = False
                 self.error = True
-                self.setDaemon(True)
+                self.daemon = True
 
             def run(self):
                 try:
@@ -1081,7 +1081,7 @@ class ServerTestsThreadNoTimeout(unittest.TestCase):
         class ClientThread(threading.Thread):
             def __init__(self, uri, name):
                 super(ClientThread, self).__init__()
-                self.setDaemon(True)
+                self.daemon = True
                 self.proxy = Pyro4.core.Proxy(uri)
                 self.name = name
                 self.error = True

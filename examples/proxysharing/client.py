@@ -1,22 +1,16 @@
 from __future__ import print_function
-import sys
 import time
 import threading
 import Pyro4.naming
 import Pyro4.core
 
 
-if sys.version_info < (3, 0):
-    current_thread = threading.currentThread
-else:
-    current_thread = threading.current_thread
-
 stop = False
 
 
 def myThread(nsproxy, proxy):
     global stop
-    name = current_thread().getName()
+    name = threading.current_thread().name
     try:
         while not stop:
             result = nsproxy.list(prefix="example.")
@@ -32,8 +26,8 @@ proxy = Pyro4.core.Proxy("PYRONAME:example.proxysharing")
 threads = []
 for i in range(5):
     thread = threading.Thread(target=myThread, args=(nsproxy, proxy))
-    # thread.setDaemon(True)
-    thread.setDaemon(False)
+    # thread.daemon = True
+    thread.daemon = False
     threads.append(thread)
     thread.start()
 
@@ -61,7 +55,7 @@ proxy.reset_work()
 threads = []
 for i in range(10):
     thread = threading.Thread(target=myThread2, args=[proxy])
-    thread.setDaemon(False)
+    thread.daemon = False
     threads.append(thread)
     thread.start()
 
@@ -86,7 +80,7 @@ threads = []
 for i in range(10):
     proxy = Pyro4.core.Proxy(proxy._pyroUri)  # create a new proxy
     thread = threading.Thread(target=myThread2, args=[proxy])
-    thread.setDaemon(False)
+    thread.daemon = False
     threads.append(thread)
     thread.start()
 

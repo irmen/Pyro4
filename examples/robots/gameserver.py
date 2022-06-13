@@ -243,7 +243,7 @@ class PyroDaemonThread(threading.Thread):
         self.pyroserver = remote.GameServer(engine)
         self.pyrodaemon = Pyro4.Daemon()
         self.ns = Pyro4.locateNS()
-        self.setDaemon(True)
+        self.daemon = True
 
     def run(self):
         with self.pyrodaemon:

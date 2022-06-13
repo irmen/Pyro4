@@ -323,7 +323,7 @@ class TestSocketutil(unittest.TestCase):
         ss = SU.createSocket(bind=("localhost", 0))
         SIZES = [1000, 10000, 32000, 32768, 32780, 41950, 41952, 42000, 65000, 65535, 65600, 80000, 999999]
         serverthread = ReceiveThread(ss, SIZES)
-        serverthread.setDaemon(True)
+        serverthread.daemon = True
         serverthread.start()
         port = ss.getsockname()[1]
         cs = SU.createSocket(connect=("localhost", port), timeout=2)

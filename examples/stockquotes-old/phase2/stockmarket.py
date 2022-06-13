@@ -35,7 +35,7 @@ class StockMarket(object):
                 self.generate()
 
         thread = threading.Thread(target=generate_symbols)
-        thread.setDaemon(True)
+        thread.daemon = True
         thread.start()
 
 

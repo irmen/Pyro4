@@ -18,7 +18,7 @@ from Pyro4.configuration import config
 class NSLoopThread(threading.Thread):
     def __init__(self, nameserver):
         super(NSLoopThread, self).__init__()
-        self.setDaemon(True)
+        self.daemon = True
         self.nameserver = nameserver
         self.running = threading.Event()
         self.running.clear()

@@ -32,7 +32,7 @@ def main():
 
     # create a thread that handles callback requests
     thread = threading.Thread(target=PyroLoop, args=(daemon,))
-    thread.setDaemon(True)
+    thread.daemon = True
     thread.start()
 
     print("This bounce example will deadlock!")

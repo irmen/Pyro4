@@ -15,7 +15,7 @@ from Pyro4.configuration import config
 class EchoServerThread(Thread):
     def __init__(self):
         super(EchoServerThread, self).__init__()
-        self.setDaemon(True)
+        self.daemon = True
         self.started = Event()
         self.echodaemon = self.echoserver = self.uri = None
 

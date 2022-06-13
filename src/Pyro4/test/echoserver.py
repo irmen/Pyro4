@@ -123,7 +123,7 @@ class EchoServer(object):
 class NameServer(threading.Thread):
     def __init__(self, hostname, hmac=None):
         super(NameServer, self).__init__()
-        self.setDaemon(1)
+        self.daemon = 1
         self.hostname = hostname
         self.hmac = hmac
         self.started = threading.Event()
