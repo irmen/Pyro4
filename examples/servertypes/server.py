@@ -33,7 +33,7 @@ class Server(object):
 
     @Pyro4.oneway
     def onewaydelay(self):
-        threadname = current_thread().name
+        threadname = threading.current_thread().name
         print("onewaydelay called in thread %s" % threadname)
         time.sleep(1)
         self.callcount += 1
