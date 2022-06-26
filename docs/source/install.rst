@@ -28,7 +28,7 @@ a (simple) backwards compatibility api layer to make the porting easier.
 Compatibility
 -------------
 Pyro4 is written in 100% Python. It works on any recent operating system where a suitable supported Python implementation is available
-(2.7, or 3.5 and newer). It also works with Pypy (2 and 3). Maybe it also works with other Python implementations, but those are not tested.
+(2.7, or 3.5 and newer up to 3.10). It also works with Pypy (2 and 3).
 (if you only need to write *client* code in Jython/Java, consider using :doc:`pyrolite` instead!)
 
 
@@ -39,6 +39,15 @@ Pyro4 is written in 100% Python. It works on any recent operating system where a
     However it should be fine to have Python 3.5 talk to Python 3.6 for instance.
     The other protocols (serpent, json) don't have this limitation!
 
+.. important::
+    Python 3.10 is the End of the Line for Pyro4
+
+    Pyro4 is tested to work with Python 3.10, but Python 3.11 and beyond are going to bring
+    changes that will start breaking certain parts of Pyro4.
+    *This is not going to be fixed anymore in Pyro4.*
+    *This basically means that Python 3.10 is the end of the line for Pyro4 and that running it on later
+    Python versions will start raising certain problems.*
+    *Pyro5 WILL get updates required to keep it running without issues on future Python versions.*
 
 .. index::
     double: installing Pyro; obtaining Pyro
