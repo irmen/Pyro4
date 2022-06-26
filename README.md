@@ -1,8 +1,8 @@
 [![Latest Version](https://img.shields.io/pypi/v/Pyro4.svg)](https://pypi.python.org/pypi/Pyro4/)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/pyro4/badges/version.svg)](https://anaconda.org/conda-forge/pyro4)
 
-PYRO - Python Remote Objects
-============================
+PYRO4 - Python Remote Objects
+=============================
 
 Pyro enables you to build applications in which objects can talk
 to each other over the network, with minimal programming effort.
@@ -16,14 +16,22 @@ This software is copyright (c) by Irmen de Jong (irmen@razorvine.net).
 This software is released under the MIT software license.
 This license, including disclaimer, is available in the 'LICENSE' file.
 
-Pyro5
------
+Python 3.10 is the End of the Line for Pyro4
+--------------------------------------------
 Pyro4 is considered feature complete and new development is frozen.
 Only very important bug fixes (such as security issues) will still be made to Pyro4.
 New development, improvements and new features will only be available in its successor
 Pyro5: https://pyro5.readthedocs.io New code should strongly consider using Pyro5 unless a feature
 of Pyro4 is strictly required.  Older code should consider migrating to Pyro5. It provides
 a (simple) backwards compatibility api layer to make the porting easier.
+
+Pyro4 is tested to work with Python 3.10, but Python 3.11 and beyond are going to bring
+changes that will start breaking certain parts of Pyro4.
+*This is not going to be fixed anymore in Pyro4.*
+*This basically means that Python 3.10 is the end of the line for Pyro4 and that running it on later 
+Python versions will start raising certain problems.*
+*Pyro5 WILL get updates required to keep it running without issues on future Python versions.*
+
 
 Documentation
 =============
