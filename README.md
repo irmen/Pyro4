@@ -1,6 +1,8 @@
 [![Latest Version](https://img.shields.io/pypi/v/Pyro4.svg)](https://pypi.python.org/pypi/Pyro4/)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/pyro4/badges/version.svg)](https://anaconda.org/conda-forge/pyro4)
 
+## Development Halted. Switch to [Pyro5](https://github.com/irmen/pyro5) instead. 
+
 PYRO4 - Python Remote Objects
 =============================
 
